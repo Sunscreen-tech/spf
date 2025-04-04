@@ -1,0 +1,55 @@
+[package]
+name = "parasol_runtime"
+version = "0.9.0"
+edition = "2024"
+authors = ["Sunscreen"]
+rust-version = "1.85.0"
+license = "AGPL-3.0-only"
+description = "This crate supports the Parasol CPU, providing key generation, encryption, and FHE evaluation functionality."
+homepage = "https://sunscreen.tech"
+repository = "https://github.com/Sunscreen-tech/Sunscreen"
+documentation = "https://docs.sunscreen.tech"
+keywords = ["FHE", "TFHE", "lattice", "cryptography"]
+categories = ["cryptography"]
+
+[dependencies]
+bincode = { workspace = true }
+bumpalo = { workspace = true }
+concurrency = { workspace = true }
+log = { workspace = true }
+mux_circuits = { workspace = true }
+num = { workspace = true }
+petgraph = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+sunscreen_tfhe = { workspace = true }
+thiserror = { workspace = true }
+
+[dev-dependencies]
+clap = { workspace = true }
+criterion = { workspace = true }
+indicatif = { workspace = true }
+rand = { workspace = true }
+serde_json = { workspace = true }
+sunscreen_math = { workspace = true }
+
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[target.wasm32-unknown-unknown.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[features]
+default = []
+debug = []
+
+[[bench]]
+harness = false
+name = "ops"
+
+[[bench]]
+harness = false
+name = "fhe_ops"
+
+[[example]]
+name = "op_noise"

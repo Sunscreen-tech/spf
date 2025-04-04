@@ -1,0 +1,28 @@
+[package]
+name = "sunscreen_math"
+version = "0.9.0"
+edition = "2024"
+authors = ["Sunscreen"]
+rust-version = "1.85.0"
+license = "AGPL-3.0-only"
+description = "This crate contains GPU implementations that support the Sunscreen compiler."
+homepage = "https://sunscreen.tech"
+repository = "https://github.com/Sunscreen-tech/Sunscreen"
+documentation = "https://docs.sunscreen.tech"
+keywords = ["FHE", "BFV", "lattice", "cryptography"]
+categories = ["cryptography"]
+
+[dependencies]
+rand = { workspace = true }
+num = { workspace = true }
+crypto-bigint = { workspace = true }
+thiserror = { workspace = true }
+serde = { workspace = true }
+sunscreen_math_macros = { workspace = true }
+log.workspace = true
+statrs = { workspace = true }
+subtle = { workspace = true }
+
+[dev-dependencies]
+bytemuck = { workspace = true }
+criterion = { workspace = true }

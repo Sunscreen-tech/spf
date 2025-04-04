@@ -1,0 +1,1 @@
+This crate is a component of the [Parasol processor](https://crates.io/crates/parasol_cpu).

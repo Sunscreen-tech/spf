@@ -1,0 +1,1 @@
+This crate provides concurrency primitives and is a component of the [Parasol processor](https://crates.io/crates/parasol_cpu).
