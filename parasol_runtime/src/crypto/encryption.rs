@@ -403,6 +403,7 @@ mod tests {
 
     use super::*;
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_roundtrip_l0_lwe() {
         let sk = get_secret_keys_80();
@@ -415,6 +416,7 @@ mod tests {
         assert!(enc.decrypt_lwe_l0(&lwe, &sk));
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_roundtrip_l1_lwe() {
         let sk = get_secret_keys_80();
@@ -427,6 +429,7 @@ mod tests {
         assert!(enc.decrypt_lwe_l1(&lwe, &sk));
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_glwe1() {
         let secret = get_secret_keys_80();
@@ -440,6 +443,7 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_glwe1() {
         let secret = get_secret_keys_80();
@@ -454,6 +458,7 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_lwe0() {
         let secret = get_secret_keys_80();
@@ -466,6 +471,7 @@ mod tests {
         assert_eq!(actual, false);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_lwe0() {
         let secret = get_secret_keys_80();
@@ -478,6 +484,7 @@ mod tests {
         assert_eq!(actual, true);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_glev1() {
         let secret = get_secret_keys_80();
@@ -490,6 +497,7 @@ mod tests {
         assert_eq!(actual, Polynomial::zero(DEFAULT_80.l1_poly_degree().0));
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_glev1() {
         let secret = get_secret_keys_80();

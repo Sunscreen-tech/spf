@@ -33,6 +33,7 @@ mod tests {
 
     use super::*;
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_safe_deserialize_ciphertexts() {
         let enc = Encryption::new(&DEFAULT_128);
@@ -47,6 +48,7 @@ mod tests {
         deserialize::<L1GlevCiphertext>(&ser, &DEFAULT_128).unwrap();
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn rejects_malformed_serialized_ciphertext() {
         macro_rules! case {
@@ -75,6 +77,7 @@ mod tests {
         case!(L1GlevCiphertext, &enc.trivial_glev_l1_one());
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_safe_deserialize_keys() {
         let sk = get_secret_keys_80();
@@ -94,6 +97,7 @@ mod tests {
         deserialize::<ServerKeyFft>(&ser, &DEFAULT_80).unwrap();
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn rejects_malformed_keys() {
         macro_rules! case {

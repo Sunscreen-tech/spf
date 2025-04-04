@@ -25,6 +25,12 @@ rand = { workspace = true }
 serde_json = { workspace = true }
 sunscreen_math = { workspace = true }
 
+[target.wasm32-unknown-unknown.dependencies]
+getrandom = { version = "0.2", features = ["js"] }
+
+[target.wasm32-unknown-unknown.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
 [features]
 default = []
 debug = []
