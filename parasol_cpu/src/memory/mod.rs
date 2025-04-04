@@ -73,7 +73,7 @@ impl Memory {
         let len = len.next_multiple_of(PAGE_SIZE);
         let num_pages = (len / PAGE_SIZE) as usize;
         let start_page_id = Page::page_id_from_pointer(virtual_address) as usize;
-        let end_page_id = (start_page_id + num_pages - 1) as usize;
+        let end_page_id = (start_page_id + num_pages - 1);
 
         let mut pages = self.pages.lock().unwrap();
 

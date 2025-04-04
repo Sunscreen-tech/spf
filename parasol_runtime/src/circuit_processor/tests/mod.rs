@@ -30,7 +30,7 @@ fn run_uop_program(graph: &FheCircuit) {
     processor
         .lock()
         .unwrap()
-        .spawn_graph(&graph, &flow, parent_op);
+        .spawn_graph(graph, &flow, parent_op);
 
     while !finished.load(Ordering::Acquire) {}
 }
@@ -48,7 +48,7 @@ fn run_uop_program_with_fc_len(graph: &FheCircuit, fc_len: usize) {
     processor
         .lock()
         .unwrap()
-        .spawn_graph(&graph, &flow, parent_op);
+        .spawn_graph(graph, &flow, parent_op);
 
     while !finished.load(Ordering::Acquire) {}
 }

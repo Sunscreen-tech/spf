@@ -57,7 +57,7 @@ macro_rules! impl_tomasulo {
                         T: TrivialZero + TrivialOne,
                         Self: SelectConstant<T>,
                     {
-                        use crate::tomasulo::tomasulo_processor::SelectConstant;
+                        use $crate::tomasulo::tomasulo_processor::SelectConstant;
 
                         match reg_entry {
                             RobEntryRef::Id(x) => x.entry().into(),
@@ -70,7 +70,7 @@ macro_rules! impl_tomasulo {
                     pub fn register_mut<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> Result<RegRef<'a, T>>
                     where
                         T: TrivialZero + TrivialOne,
-                        Self: crate::tomasulo::tomasulo_processor::SelectConstant<T>,
+                        Self: $crate::tomasulo::tomasulo_processor::SelectConstant<T>,
                     {
                         match reg_entry {
                             RobEntryRef::IdMut(x) => Ok(x.entry_mut().into()),
@@ -387,7 +387,7 @@ where
     }
 }
 
-impl<'a, T> Deref for RegRef<'a, T>
+impl<T> Deref for RegRef<'_, T>
 where
     T: TrivialZero + TrivialOne,
 {
@@ -402,7 +402,7 @@ where
     }
 }
 
-impl<'a, T> DerefMut for RegRef<'a, T>
+impl<T> DerefMut for RegRef<'_, T>
 where
     T: TrivialZero + TrivialOne,
 {

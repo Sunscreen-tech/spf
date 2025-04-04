@@ -87,7 +87,7 @@ macro_rules! define_op {
                         match self {
                             $(
                                 Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
-                                    crate::rep_len!($($src_name)*)
+                                    $crate::rep_len!($($src_name)*)
                                 }
                             )*
                         }
@@ -125,7 +125,7 @@ macro_rules! define_op {
                         scoreboard_entry: ScoreboardEntryRef< $dispatch_name>,
                         instruction_id: usize,
                         pc: usize
-                    ) -> crate::error::Result<Self::DispatchedOp> {
+                    ) -> $crate::error::Result<Self::DispatchedOp> {
                         let disp_op = match self {
                             $(
                                 Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {

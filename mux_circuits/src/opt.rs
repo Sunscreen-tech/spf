@@ -376,23 +376,20 @@ pub fn common_subexpression_elimination<O: Operation, E: Clone + Copy + EdgeOps>
                 None
             };
 
-            match child_key {
-                Some(child_key) => {
-                    let equiv_node = visited_nodes.get(&child_key);
+            if let Some(child_key) = child_key {
+                let equiv_node = visited_nodes.get(&child_key);
 
-                    match equiv_node {
-                        Some(equiv_node) => {
-                            // Only collapse distinct equivalent operations.
-                            if *equiv_node != e {
-                                move_edges(*equiv_node, e);
-                            }
+                match equiv_node {
+                    Some(equiv_node) => {
+                        // Only collapse distinct equivalent operations.
+                        if *equiv_node != e {
+                            move_edges(*equiv_node, e);
                         }
-                        None => {
-                            visited_nodes.insert(child_key, e);
-                        }
-                    };
-                }
-                None => {}
+                    }
+                    None => {
+                        visited_nodes.insert(child_key, e);
+                    }
+                };
             };
         }
 

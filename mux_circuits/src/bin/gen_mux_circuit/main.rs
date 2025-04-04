@@ -1,4 +1,3 @@
-use bincode;
 use clap::{Parser, ValueEnum};
 use mux_circuits::mul::{gradeschool_reduce_impl, multiplier_impl, MultiplierParams};
 use std::{fs, path::PathBuf};

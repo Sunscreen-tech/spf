@@ -43,8 +43,8 @@ pub fn multiplier_impl(params: MultiplierParams) -> Result<MuxCircuit, ()> {
     // in the encoded BDD input, each x index appears at an odd value and each
     // y index is even. Use this fact to deduplicate input nodes.
     mux_circuit.remap_inputs(m + n, || {
-        let x_inputs = (0..n).map(|i| i).collect::<Vec<_>>();
-        let y_inputs = (n..n + m).map(|i| i).collect::<Vec<_>>();
+        let x_inputs = (0..n).collect::<Vec<_>>();
+        let y_inputs = (n..n + m).collect::<Vec<_>>();
 
         mul_bdd_encode(&x_inputs, &y_inputs)
     });
@@ -117,7 +117,7 @@ fn multiplier_bdd(n: usize, m: usize) -> Vec<Bdd> {
 
             let a_xor_b = a.xor(&b);
             sums[idx(i, j)] = a_xor_b.xor(&c_in);
-            carries[idx(i, j)] = a_xor_b.and(&c_in).or(&b.and(&a));
+            carries[idx(i, j)] = a_xor_b.and(&c_in).or(&b.and(a));
         }
     }
 

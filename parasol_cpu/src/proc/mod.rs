@@ -666,7 +666,7 @@ impl Buffer {
                 x.iter().enumerate().fold(0u8, |s, (i, x)| {
                     let bit = *x as u8;
 
-                    s | bit << i
+                    s | (bit << i)
                 })
             })
             .collect::<Vec<_>>();

@@ -106,6 +106,7 @@ impl From<GlevCiphertext<u64>> for L1GlevCiphertext {
 }
 
 #[derive(Debug, Clone)]
+#[derive(Default)]
 pub struct Encryption {
     pub params: Params,
 }
@@ -169,7 +170,7 @@ impl Encryption {
     }
 
     pub fn encrypt_rlwe_l1(&self, msg: &PolynomialRef<u64>, pk: &PublicKey) -> L1GlweCiphertext {
-        let mut ct = L1GlweCiphertext::allocate(&self);
+        let mut ct = L1GlweCiphertext::allocate(self);
 
         rlwe_encode_encrypt_public(
             &mut ct.0,
@@ -322,13 +323,6 @@ impl Encryption {
     }
 }
 
-impl Default for Encryption {
-    fn default() -> Self {
-        Self {
-            params: Params::default(),
-        }
-    }
-}
 
 impl GetSize for L0LweCiphertext {
     fn get_size(params: &Params) -> usize {
@@ -468,7 +462,7 @@ mod tests {
 
         let actual = enc.decrypt_lwe_l0(&zero, &secret);
 
-        assert_eq!(actual, false);
+        assert!(!actual);
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
@@ -481,7 +475,7 @@ mod tests {
 
         let actual = enc.decrypt_lwe_l0(&one, &secret);
 
-        assert_eq!(actual, true);
+        assert!(actual);
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]

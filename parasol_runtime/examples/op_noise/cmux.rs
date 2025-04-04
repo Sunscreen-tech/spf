@@ -168,9 +168,9 @@ fn cmux_ntt(
     let mut c = a.to_owned();
     let mut b_min_a = GlweCiphertext::new(glwe);
 
-    sub_glwe_ciphertexts(&mut b_min_a, &b, &a, glwe);
+    sub_glwe_ciphertexts(&mut b_min_a, b, a, glwe);
 
-    glwe_ggsw_mad(&mut c, &b_min_a, &sel, glwe, radix);
+    glwe_ggsw_mad(&mut c, &b_min_a, sel, glwe, radix);
 
     c
 }

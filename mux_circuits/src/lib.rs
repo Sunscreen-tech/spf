@@ -194,9 +194,7 @@ impl MuxCircuit {
         let mut input_map = HashMap::<u32, Vec<NodeIndex>>::new();
 
         for (i, n) in encoded.iter().copied().zip(self.inputs.iter().copied()) {
-            if !input_map.contains_key(&i) {
-                input_map.insert(i, vec![]);
-            }
+            input_map.entry(i).or_insert_with(|| vec![]);
 
             input_map.get_mut(&i).unwrap().push(n);
         }

@@ -7,6 +7,7 @@ use petgraph::{
 use crate::{error::Error, opt::GraphQuery};
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Default)]
 pub struct Bit(pub bool);
 
 impl Deref for Bit {
@@ -17,11 +18,6 @@ impl Deref for Bit {
     }
 }
 
-impl Default for Bit {
-    fn default() -> Self {
-        Self(false)
-    }
-}
 
 impl From<bool> for Bit {
     fn from(value: bool) -> Self {
