@@ -1,0 +1,57 @@
+[workspace]
+resolve = "2"
+members = [
+    "concurrency",
+    "parasol_cpu",
+    "parasol_cpu_macros",
+    "parasol_runtime",
+    "sunscreen_math",
+    "sunscreen_math_macros",
+    "sunscreen_tfhe",
+]
+
+[workspace.dependencies]
+aligned-vec = { version = ">=0.6.2", features = ["serde"] }
+bincode = "1"
+biodivine-lib-bdd = "0.5"
+bumpalo = "3"
+bytemuck = "1"
+cached = "0.55"
+clap = { version = "4", features = ["derive"] }
+criterion = { version = "0.5", default-features = false }
+crypto-bigint = { version = "0.5", features = ["serde"] }
+darling = "0.20"
+elf = "0.7"
+env_logger = "0.11"
+indicatif = "0.17"
+itertools = "0.14"
+log = "0.4"
+num = { version = "0.4", features = ["serde"] }
+paste = "1"
+petgraph = { version = "0.7", features = ["serde-1"] }
+proc-macro2 = "1.0"
+proptest = "1.1"
+quote = "1"
+rand = "0.8"
+rand_distr = "0.4"
+raw-cpuid = "11"
+rayon = "1"
+realfft = "3"
+rustfft = "6"
+serde = { version = "1", features = ["rc", "derive"] }
+serde_json = "1"
+statrs = "0.18"
+subtle = "2"
+syn = { version = "2", features = ["full"] }
+thiserror = "2"
+
+# Crates in this repo
+concurrency = { version = "0.9", path = "./concurrency" }
+mux_circuits = { version = "0.9", path = "./mux_circuits" }
+parasol_cpu = { version = "0.9", path = "./parasol_cpu" }
+parasol_cpu_macros = { version = "0.9", path = "./parasol_cpu_macros" }
+parasol_runtime = { version = "0.9", path = "./parasol_runtime" }
+sunscreen_compiler_macros = { version = "0.9", path = "./sunscreen_compiler_macros" }
+sunscreen_math = { version = "0.9", path = "./sunscreen_math" }
+sunscreen_math_macros = { version = "0.9", path = "./sunscreen_math_macros" }
+sunscreen_tfhe = { version = "0.9", path = "./sunscreen_tfhe" }

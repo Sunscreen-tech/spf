@@ -1,0 +1,17 @@
+[package]
+name = "mux_circuits"
+version = "0.9.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+
+[dependencies]
+biodivine-lib-bdd = { workspace = true }
+bincode = { workspace = true }
+cached = { workspace = true }
+clap = { workspace = true }
+petgraph = { workspace = true }
+serde = { workspace = true }
+sunscreen_math = { workspace = true }
+
+[dev-dependencies]
+rand = { workspace = true }

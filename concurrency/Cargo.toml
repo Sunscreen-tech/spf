@@ -1,0 +1,14 @@
+[package]
+name = "concurrency"
+version = "0.9.0"
+edition = "2021"
+
+[dependencies]
+serde = { workspace = true }
+
+[dev-dependencies]
+criterion = { workspace = true }
+
+[[bench]]
+name = "mutex"
+harness = false

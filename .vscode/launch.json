@@ -1,0 +1,326 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'concurrency'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=concurrency"
+                ],
+                "filter": {
+                    "name": "concurrency",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'mutex'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=mutex",
+                    "--package=concurrency"
+                ],
+                "filter": {
+                    "name": "mutex",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'parasol_cpu'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "parasol_cpu",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug integration test 'examples'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--test=examples",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "examples",
+                    "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'chi_squared'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=chi_squared",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "chi_squared",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'mux_circuits'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=mux_circuits"
+                ],
+                "filter": {
+                    "name": "mux_circuits",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug executable 'gen_mux_circuit'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--bin=gen_mux_circuit",
+                    "--package=mux_circuits"
+                ],
+                "filter": {
+                    "name": "gen_mux_circuit",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in executable 'gen_mux_circuit'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bin=gen_mux_circuit",
+                    "--package=mux_circuits"
+                ],
+                "filter": {
+                    "name": "gen_mux_circuit",
+                    "kind": "bin"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sunscreen_math'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sunscreen_math"
+                ],
+                "filter": {
+                    "name": "sunscreen_math",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'parasol_runtime'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=parasol_runtime"
+                ],
+                "filter": {
+                    "name": "parasol_runtime",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug example 'op_noise'",
+            "cargo": {
+                "args": [
+                    "build",
+                    "--example=op_noise",
+                    "--package=parasol_runtime"
+                ],
+                "filter": {
+                    "name": "op_noise",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in example 'op_noise'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--example=op_noise",
+                    "--package=parasol_runtime"
+                ],
+                "filter": {
+                    "name": "op_noise",
+                    "kind": "example"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'fhe_ops'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=fhe_ops",
+                    "--package=parasol_runtime"
+                ],
+                "filter": {
+                    "name": "fhe_ops",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'ops'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=ops",
+                    "--package=parasol_runtime"
+                ],
+                "filter": {
+                    "name": "ops",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sunscreen_tfhe'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sunscreen_tfhe"
+                ],
+                "filter": {
+                    "name": "sunscreen_tfhe",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'fft'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=fft",
+                    "--package=sunscreen_tfhe"
+                ],
+                "filter": {
+                    "name": "fft",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'ops'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=ops",
+                    "--package=sunscreen_tfhe"
+                ],
+                "filter": {
+                    "name": "ops",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        }
+    ]
+}

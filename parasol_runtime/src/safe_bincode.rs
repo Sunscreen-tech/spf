@@ -1,0 +1,134 @@
+use bincode::{DefaultOptions, Options};
+use serde::Deserialize;
+
+use crate::{Params, Result};
+
+pub trait GetSize {
+    fn get_size(params: &Params) -> usize;
+
+    fn check_is_valid(&self, params: &Params) -> Result<()>;
+}
+
+/// Safely deserialize the given buffer given a type
+pub fn deserialize<'a, T: GetSize + Deserialize<'a>>(data: &'a [u8], params: &Params) -> Result<T> {
+    let options = DefaultOptions::new()
+        .with_limit(T::get_size(params) as u64)
+        .with_fixint_encoding()
+        .allow_trailing_bytes();
+
+    let mut deserializer = bincode::Deserializer::from_slice(data, options);
+    let result = T::deserialize(&mut deserializer)?;
+    result.check_is_valid(params)?;
+
+    Ok(result)
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{
+        test_utils::{get_secret_keys_80, get_server_keys_80},
+        Encryption, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
+        PublicKey, SecretKey, ServerKey, ServerKeyFft, DEFAULT_128, DEFAULT_80,
+    };
+
+    use super::*;
+
+    #[test]
+    fn can_safe_deserialize_ciphertexts() {
+        let enc = Encryption::new(&DEFAULT_128);
+
+        let ser = bincode::serialize(&enc.allocate_lwe_l0()).unwrap();
+        deserialize::<L0LweCiphertext>(&ser, &DEFAULT_128).unwrap();
+        let ser = bincode::serialize(&enc.allocate_lwe_l1()).unwrap();
+        deserialize::<L1LweCiphertext>(&ser, &DEFAULT_128).unwrap();
+        let ser = bincode::serialize(&enc.allocate_glwe_l1()).unwrap();
+        deserialize::<L1GlweCiphertext>(&ser, &DEFAULT_128).unwrap();
+        let ser = bincode::serialize(&enc.allocate_glev_l1()).unwrap();
+        deserialize::<L1GlevCiphertext>(&ser, &DEFAULT_128).unwrap();
+    }
+
+    #[test]
+    fn rejects_malformed_serialized_ciphertext() {
+        macro_rules! case {
+            ($ct_ty:ty, $val: expr) => {
+                // Malformed length
+                let ser = vec![
+                    253, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1, 0x2, 0x3, 0x4,
+                ];
+
+                let res = deserialize::<$ct_ty>(&ser, &DEFAULT_128);
+
+                assert!(res.is_err());
+
+                let ser = bincode::serialize::<$ct_ty>($val).unwrap();
+                let res = deserialize::<$ct_ty>(&ser, &DEFAULT_80);
+
+                assert!(res.is_err());
+            };
+        }
+
+        let enc = Encryption::new(&DEFAULT_128);
+
+        case!(L0LweCiphertext, &enc.trivial_lwe_l0_one());
+        case!(L1LweCiphertext, &enc.trivial_lwe_l1_one());
+        case!(L1GlweCiphertext, &enc.trivial_glwe_l1_one());
+        case!(L1GlevCiphertext, &enc.trivial_glev_l1_one());
+    }
+
+    #[test]
+    fn can_safe_deserialize_keys() {
+        let sk = get_secret_keys_80();
+        let ser = bincode::serialize(&sk).unwrap();
+        deserialize::<SecretKey>(&ser, &DEFAULT_80).unwrap();
+
+        let server = ServerKey::generate(&sk, &DEFAULT_80);
+        let ser = bincode::serialize(&server).unwrap();
+        deserialize::<ServerKey>(&ser, &DEFAULT_80).unwrap();
+
+        let pk = PublicKey::generate(&DEFAULT_80, &sk);
+        let ser = bincode::serialize(&pk).unwrap();
+        deserialize::<PublicKey>(&ser, &DEFAULT_80).unwrap();
+
+        let server = get_server_keys_80();
+        let ser = bincode::serialize(&server).unwrap();
+        deserialize::<ServerKeyFft>(&ser, &DEFAULT_80).unwrap();
+    }
+
+    #[test]
+    fn rejects_malformed_keys() {
+        macro_rules! case {
+            ($key_ty:ty) => {
+                // Malformed length
+                let ser = vec![
+                    253, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0xFF, 0x1, 0x2, 0x3, 0x4,
+                ];
+
+                let res = deserialize::<$key_ty>(&ser, &DEFAULT_128);
+
+                assert!(res.is_err());
+            };
+        }
+
+        case!(PublicKey);
+        case!(SecretKey);
+        case!(ServerKey);
+
+        let sk = get_secret_keys_80();
+
+        let ser = bincode::serialize(&sk).unwrap();
+        let result = deserialize::<SecretKey>(&ser, &DEFAULT_128);
+
+        assert!(result.is_err());
+
+        let ser = bincode::serialize(&ServerKey::generate(&sk, &DEFAULT_80)).unwrap();
+        let result = deserialize::<ServerKey>(&ser, &DEFAULT_128);
+
+        assert!(result.is_err());
+
+        let pk = PublicKey::generate(&DEFAULT_80, &sk);
+        let ser = bincode::serialize(&pk).unwrap();
+        let result = deserialize::<PublicKey>(&ser, &DEFAULT_128);
+
+        assert!(result.is_err());
+    }
+}

@@ -1,0 +1,44 @@
+[package]
+name = "parasol_cpu"
+version = "0.9.0"
+edition = "2021"
+license = "AGPL-3.0-only"
+
+# See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
+
+[dependencies]
+biodivine-lib-bdd = { workspace = true }
+bincode = { workspace = true }
+bytemuck = { workspace = true }
+cached = { workspace = true }
+concurrency = { workspace = true }
+elf = { workspace = true }
+parasol_runtime = { workspace = true }
+log = { workspace = true }
+mux_circuits = { workspace = true }
+num = { workspace = true }
+parasol_cpu_macros = { workspace = true }
+paste = { workspace = true }
+petgraph = { workspace = true }
+rand = { workspace = true }
+rayon = { workspace = true }
+serde = { workspace = true }
+sunscreen_math = { workspace = true }
+sunscreen_tfhe = { workspace = true }
+thiserror = { workspace = true }
+
+[features]
+default = []
+debug = []
+
+[dev-dependencies]
+criterion = { workspace = true }
+env_logger = { workspace = true }
+itertools = { workspace = true }
+
+[profile.dev.package."*"]
+opt-level = 3
+
+[[bench]]
+name = "chi_squared"
+harness = false
