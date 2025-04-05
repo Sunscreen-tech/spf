@@ -46,6 +46,19 @@ jobs:
     # We do everything in release mode so tests run quickly and steps cache each other.
     # Check the submitted change meets style guidelines
 
+    - name: generate lfs file list
+      run: git lfs ls-files -l | cut -d' ' -f1 | sort > .lfs-assets-id
+
+    - name: restore lfs cache
+      uses: actions/cache@v3
+      id: lfs-cache
+      with:
+        path: .git/lfs
+        key: ${{ runner.os }}-lfs-${{ hashFiles('.lfs-assets-id') }}-v1
+
+    - name: pull lfs files
+      run: git lfs pull
+
     - name: Print cargo version
       run: cargo --version
 

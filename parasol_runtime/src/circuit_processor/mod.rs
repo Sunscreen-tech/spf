@@ -688,7 +688,7 @@ impl CompletionHandler {
         }
     }
 
-    /// Creates a new [`ParentOp`] that notifies the returned recv on completion
+    /// Creates a new [`CompletionHandler`] that notifies the returned recv on completion
     pub fn new_notify() -> (Self, Receiver<()>) {
         let (send, recv) = mpsc::channel();
 
