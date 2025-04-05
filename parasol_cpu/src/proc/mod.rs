@@ -220,18 +220,10 @@ impl Register {
     pub fn register_value_type(&self) -> RegisterValueType {
         match self {
             Self::Plaintext { val: _, width: _ } => RegisterValueType::Plaintext,
-            Self::Ciphertext(Ciphertext::L0Lwe { data: _ }) => {
-                RegisterValueType::L0LweCiphertext
-            }
-            Self::Ciphertext(Ciphertext::L1Lwe { data: _ }) => {
-                RegisterValueType::L1LweCiphertext
-            }
-            Self::Ciphertext(Ciphertext::L1Glwe { data: _ }) => {
-                RegisterValueType::L1GlweCiphertext
-            }
-            Self::Ciphertext(Ciphertext::L1Ggsw { data: _ }) => {
-                RegisterValueType::L1GgswCiphertext
-            }
+            Self::Ciphertext(Ciphertext::L0Lwe { data: _ }) => RegisterValueType::L0LweCiphertext,
+            Self::Ciphertext(Ciphertext::L1Lwe { data: _ }) => RegisterValueType::L1LweCiphertext,
+            Self::Ciphertext(Ciphertext::L1Glwe { data: _ }) => RegisterValueType::L1GlweCiphertext,
+            Self::Ciphertext(Ciphertext::L1Ggsw { data: _ }) => RegisterValueType::L1GgswCiphertext,
         }
     }
 }
