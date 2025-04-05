@@ -1,8 +1,8 @@
 use std::sync::Arc;
 
 use concurrency::AtomicRefCell;
-use parasol_runtime::{FheCircuit, L1GlweCiphertext};
 use mux_circuits::{bitshift::bitshift, MuxCircuit};
+use parasol_runtime::{FheCircuit, L1GlweCiphertext};
 
 use crate::{
     proc::DispatchIsaOp,
@@ -98,7 +98,7 @@ impl FheProcessor {
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
                 (
-                    Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: c }),
+                    Register::Ciphertext(Ciphertext::L1Glwe { data: c }),
                     Register::Plaintext {
                         val: shift,
                         width: _,
@@ -106,11 +106,11 @@ impl FheProcessor {
                 ) => {
                     let output = plain_shift(c, *shift as u32, &self.aux_data.l1glwe_zero);
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                (_, Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: c_shift })) => {
+                (_, Register::Ciphertext(Ciphertext::L1Glwe { data: c_shift })) => {
                     let c = register_to_l1glwe_by_trivial_lift(
                         src,
                         &self.aux_data.l1glwe_zero,
@@ -146,7 +146,7 @@ impl FheProcessor {
                         .uop_processor
                         .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
                 }
                 _ => return Err(Error::RegisterCiphertextMismatch),
             }

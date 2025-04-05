@@ -23,7 +23,7 @@ impl Display for MultiplierParams {
 /// # Remarks
 /// The inputs should be ordered from LSB to MSB and interleaved between operands a and b.
 /// When m doesn't equal m, the excess bits from a or b will appear at the end.
-pub fn multiplier_impl(params: MultiplierParams) -> Result<MuxCircuit, ()> {
+pub fn multiplier_impl(params: MultiplierParams) -> MuxCircuit {
     let MultiplierParams { n, m } = params;
 
     assert!(n > 0);
@@ -43,15 +43,15 @@ pub fn multiplier_impl(params: MultiplierParams) -> Result<MuxCircuit, ()> {
     // in the encoded BDD input, each x index appears at an odd value and each
     // y index is even. Use this fact to deduplicate input nodes.
     mux_circuit.remap_inputs(m + n, || {
-        let x_inputs = (0..n).map(|i| i).collect::<Vec<_>>();
-        let y_inputs = (n..n + m).map(|i| i).collect::<Vec<_>>();
+        let x_inputs = (0..n).collect::<Vec<_>>();
+        let y_inputs = (n..n + m).collect::<Vec<_>>();
 
         mul_bdd_encode(&x_inputs, &y_inputs)
     });
 
     mux_circuit.optimize();
 
-    Ok(mux_circuit)
+    mux_circuit
 }
 
 pub fn unsigned_multiplier(n: usize, m: usize) -> MuxCircuit {
@@ -59,7 +59,7 @@ pub fn unsigned_multiplier(n: usize, m: usize) -> MuxCircuit {
         (8, 8) => bincode::deserialize(include_bytes!("data/multiplier-n8-m8")).unwrap(),
         (16, 16) => bincode::deserialize(include_bytes!("data/multiplier-n16-m16")).unwrap(),
         (32, 32) => bincode::deserialize(include_bytes!("data/multiplier-n32-m32")).unwrap(),
-        _ => multiplier_impl(MultiplierParams { n, m }).unwrap(),
+        _ => multiplier_impl(MultiplierParams { n, m }),
     }
 }
 
@@ -117,7 +117,7 @@ fn multiplier_bdd(n: usize, m: usize) -> Vec<Bdd> {
 
             let a_xor_b = a.xor(&b);
             sums[idx(i, j)] = a_xor_b.xor(&c_in);
-            carries[idx(i, j)] = a_xor_b.and(&c_in).or(&b.and(&a));
+            carries[idx(i, j)] = a_xor_b.and(&c_in).or(&b.and(a));
         }
     }
 
@@ -292,7 +292,7 @@ pub fn partition_integer(n: usize) -> (usize, usize) {
 /// This function is internal to integer multiplication.
 /// It assumes:
 /// * The length of a >= length of b. You can commute operands to make
-/// this true.
+///   this true.
 /// * Lengths of partitions a_lo, b_lo >= a_hi, b_hi, respectively.
 ///
 /// # Panic
@@ -405,7 +405,7 @@ pub fn gradeschool_reduce(n: usize, m: usize) -> MuxCircuit {
         (64, 64) => {
             bincode::deserialize(include_bytes!("data/gradeschool-reduction-n64-m64")).unwrap()
         }
-        _ => gradeschool_reduce_impl(MultiplierParams { n, m }).unwrap(),
+        _ => gradeschool_reduce_impl(MultiplierParams { n, m }),
     }
 }
 
@@ -437,7 +437,7 @@ pub fn gradeschool_reduce(n: usize, m: usize) -> MuxCircuit {
 /// \ell(b_h) & \ell(a_h) - \ell(b_h) & \ell(b_h) & \ell(b_l) & \ell(a_l)-\ell(b_l) & \ell(b_l) \\
 /// \end{matrix}$$
 ///
-pub fn gradeschool_reduce_impl(params: MultiplierParams) -> Result<MuxCircuit, ()> {
+pub fn gradeschool_reduce_impl(params: MultiplierParams) -> MuxCircuit {
     let MultiplierParams { n, m } = params;
 
     assert!(n >= m);
@@ -471,8 +471,8 @@ pub fn gradeschool_reduce_impl(params: MultiplierParams) -> Result<MuxCircuit, (
     // Section 1 sums 1 integer (i.e. just output the input)
     let run = b_lo;
 
-    for i in 0..run {
-        result[i] = vars[out_offset + i].clone();
+    for (i, result) in result.iter_mut().enumerate() {
+        *result = vars[out_offset + i].clone();
     }
 
     in_offset += run;
@@ -594,7 +594,7 @@ pub fn gradeschool_reduce_impl(params: MultiplierParams) -> Result<MuxCircuit, (
     let mut circuit = MuxCircuit::from(result.as_slice());
     circuit.optimize();
 
-    Ok(circuit)
+    circuit
 }
 
 #[cfg(test)]
@@ -705,8 +705,8 @@ mod tests {
 
                 let mut result = vec![Bit::default(); len];
 
-                for i in 0..len {
-                    result[i] = Bit::from((val >> i) & 0x1 == 1);
+                for (i, result) in result.iter_mut().enumerate() {
+                    *result = Bit::from((val >> i) & 0x1 == 1);
                 }
 
                 result

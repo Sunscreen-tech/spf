@@ -57,7 +57,7 @@ macro_rules! impl_tomasulo {
                         T: TrivialZero + TrivialOne,
                         Self: SelectConstant<T>,
                     {
-                        use crate::tomasulo::tomasulo_processor::SelectConstant;
+                        use $crate::tomasulo::tomasulo_processor::SelectConstant;
 
                         match reg_entry {
                             RobEntryRef::Id(x) => x.entry().into(),
@@ -70,7 +70,7 @@ macro_rules! impl_tomasulo {
                     pub fn register_mut<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> Result<RegRef<'a, T>>
                     where
                         T: TrivialZero + TrivialOne,
-                        Self: crate::tomasulo::tomasulo_processor::SelectConstant<T>,
+                        Self: $crate::tomasulo::tomasulo_processor::SelectConstant<T>,
                     {
                         match reg_entry {
                             RobEntryRef::IdMut(x) => Ok(x.entry_mut().into()),
@@ -81,7 +81,7 @@ macro_rules! impl_tomasulo {
                     pub fn register_force_mut<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> Result<RegRef<'a, T>>
                     where
                         T: TrivialZero + TrivialOne,
-                        Self: crate::tomasulo::tomasulo_processor::SelectConstant<T>,
+                        Self: $crate::tomasulo::tomasulo_processor::SelectConstant<T>,
                     {
                         match reg_entry {
                             RobEntryRef::IdMut(x) => Ok(x.entry_mut().into()),
@@ -91,7 +91,7 @@ macro_rules! impl_tomasulo {
                     }
                 }
 
-                $(crate::impl_select_constant!{[<$name ConstantPool>], $reg_type, $reg_index})*
+                $($crate::impl_select_constant!{[<$name ConstantPool>], $reg_type, $reg_index})*
 
                 pub struct $name where Self: Tomasulo {
                     /// The register file.
@@ -145,7 +145,7 @@ macro_rules! impl_tomasulo {
                         inst: $inst,
                         pc: usize
                     ) -> Result<usize> {
-                        use crate::tomasulo::{ToDispatchedOp, GetDeps};
+                        use $crate::tomasulo::{ToDispatchedOp, GetDeps};
 
                         inst.validate(self.current_instruction, pc)?;
 
@@ -302,7 +302,7 @@ macro_rules! impl_tomasulo {
                     }
 
                     /// Waits for all issued instructions to retire.
-                    pub fn wait(&mut self) -> crate::Result<()> {
+                    pub fn wait(&mut self) -> $crate::Result<()> {
                         self.execute_ready_instructions(true)?;
 
                         Ok(())
@@ -387,7 +387,7 @@ where
     }
 }
 
-impl<'a, T> Deref for RegRef<'a, T>
+impl<T> Deref for RegRef<'_, T>
 where
     T: TrivialZero + TrivialOne,
 {
@@ -402,7 +402,7 @@ where
     }
 }
 
-impl<'a, T> DerefMut for RegRef<'a, T>
+impl<T> DerefMut for RegRef<'_, T>
 where
     T: TrivialZero + TrivialOne,
 {

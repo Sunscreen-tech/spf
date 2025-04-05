@@ -391,7 +391,7 @@ impl UOpProcessor {
                 let ggsw = ggsw.as_ref().unwrap().borrow_ggsw1();
 
                 let mut res = proc.enc.allocate_glwe_l1();
-                proc.eval.multiply_glwe_ggsw(&mut res, &glwe, &ggsw);
+                proc.eval.multiply_glwe_ggsw(&mut res, glwe, ggsw);
 
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(res.into());
@@ -547,12 +547,12 @@ impl UOpProcessor {
                     .find(|x| matches!(x.1, FheEdge::Unary))
                     .unwrap()
                     .0;
-                let input = AtomicRefCell::borrow(&input);
+                let input = AtomicRefCell::borrow(input);
                 let input = input.as_ref().unwrap().borrow_glwe1();
 
                 let mut res = proc.enc.allocate_glwe_l1();
 
-                proc.eval.mul_xn(&mut res, &input, *n);
+                proc.eval.mul_xn(&mut res, input, *n);
 
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(res.into());
@@ -566,12 +566,12 @@ impl UOpProcessor {
                     .find(|x| matches!(x.1, FheEdge::Unary))
                     .unwrap()
                     .0;
-                let input = AtomicRefCell::borrow(&input);
+                let input = AtomicRefCell::borrow(input);
                 let input = input.as_ref().unwrap().borrow_glev1();
 
                 let mut res = proc.enc.allocate_ggsw_l1();
 
-                proc.eval.scheme_switch(&mut res, &input);
+                proc.eval.scheme_switch(&mut res, input);
 
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(res.into());
@@ -688,7 +688,7 @@ impl CompletionHandler {
         }
     }
 
-    /// Creates a new [`ParentOp`] that notifies the returned recv on completion
+    /// Creates a new [`CompletionHandler`] that notifies the returned recv on completion
     pub fn new_notify() -> (Self, Receiver<()>) {
         let (send, recv) = mpsc::channel();
 

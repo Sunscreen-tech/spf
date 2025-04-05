@@ -1,5 +1,5 @@
 [workspace]
-resolve = "2"
+resolver = "2"
 members = [
     "concurrency",
     "parasol_cpu",
@@ -55,3 +55,11 @@ sunscreen_compiler_macros = { version = "0.9", path = "./sunscreen_compiler_macr
 sunscreen_math = { version = "0.9", path = "./sunscreen_math" }
 sunscreen_math_macros = { version = "0.9", path = "./sunscreen_math_macros" }
 sunscreen_tfhe = { version = "0.9", path = "./sunscreen_tfhe" }
+
+[profile.bench]
+lto = "fat"
+codegen-units = 1
+
+[profile.release]
+lto = "fat"
+codegen-units = 1

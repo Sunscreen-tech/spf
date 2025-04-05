@@ -1,4 +1,3 @@
-use bincode;
 use clap::{Parser, ValueEnum};
 use mux_circuits::mul::{gradeschool_reduce_impl, multiplier_impl, MultiplierParams};
 use std::{fs, path::PathBuf};
@@ -6,7 +5,7 @@ use std::{fs, path::PathBuf};
 #[derive(ValueEnum, Clone)]
 enum CircuitType {
     Mul,
-    GSR,
+    GradeschoolReduce,
 }
 
 #[derive(Parser)]
@@ -45,7 +44,7 @@ fn main() {
             func = multiplier_impl;
             circuit_type = "multiplier";
         }
-        CircuitType::GSR => {
+        CircuitType::GradeschoolReduce => {
             func = gradeschool_reduce_impl;
             circuit_type = "gradeschool-reduction";
         }
@@ -59,7 +58,7 @@ fn main() {
         file_name.as_os_str().to_str().unwrap()
     );
 
-    let circuit = func(params).expect("Failed to generate circuit");
+    let circuit = func(params);
     let data = bincode::serialize(&circuit).expect("Failed to serialize with bincode");
 
     std::fs::write(&file_name, data).expect("Failed to write data to file");

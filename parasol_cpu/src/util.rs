@@ -72,7 +72,7 @@ pub trait FheBuffer
 where
     Self: Sized,
 {
-    fn into_plaintext(&self) -> Vec<u8>;
+    fn clone_into_plaintext(&self) -> Vec<u8>;
 
     fn try_from_plaintext(data: &[u8]) -> Result<Self>;
 }
@@ -85,7 +85,7 @@ where
         T::try_from_bytes(data)
     }
 
-    fn into_plaintext(&self) -> Vec<u8> {
+    fn clone_into_plaintext(&self) -> Vec<u8> {
         let mut data = vec![0u8; T::size()];
 
         T::try_into_bytes(self, &mut data).unwrap();
@@ -104,7 +104,7 @@ where
             .collect()
     }
 
-    fn into_plaintext(&self) -> Vec<u8> {
+    fn clone_into_plaintext(&self) -> Vec<u8> {
         let mut data = vec![0u8; self.len() * T::size()];
 
         for (i, c) in data.chunks_mut(T::size()).enumerate() {
@@ -222,7 +222,7 @@ mod tests {
             },
         ];
 
-        let y = Vec::<Bar>::try_from_plaintext(&x.into_plaintext()).unwrap();
+        let y = Vec::<Bar>::try_from_plaintext(&x.clone_into_plaintext()).unwrap();
 
         assert_eq!(x, y);
     }

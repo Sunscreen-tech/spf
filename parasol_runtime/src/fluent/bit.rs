@@ -74,10 +74,7 @@ pub struct BitNode<T: CiphertextOps> {
 
 impl<T: CiphertextOps> Clone for BitNode<T> {
     fn clone(&self) -> Self {
-        Self {
-            node: self.node,
-            _phantom: PhantomData,
-        }
+        *self
     }
 }
 
@@ -194,6 +191,7 @@ mod tests {
 
     use super::*;
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_safe_deserialize_bit() {
         fn case<T: CiphertextOps + for<'a> Deserialize<'a> + Serialize>() {

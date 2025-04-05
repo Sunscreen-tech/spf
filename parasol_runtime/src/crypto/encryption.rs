@@ -105,7 +105,7 @@ impl From<GlevCiphertext<u64>> for L1GlevCiphertext {
     }
 }
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, Default)]
 pub struct Encryption {
     pub params: Params,
 }
@@ -169,7 +169,7 @@ impl Encryption {
     }
 
     pub fn encrypt_rlwe_l1(&self, msg: &PolynomialRef<u64>, pk: &PublicKey) -> L1GlweCiphertext {
-        let mut ct = L1GlweCiphertext::allocate(&self);
+        let mut ct = L1GlweCiphertext::allocate(self);
 
         rlwe_encode_encrypt_public(
             &mut ct.0,
@@ -318,15 +318,7 @@ impl Encryption {
         let mut msg = Polynomial::zero(self.params.l1_poly_degree().0);
         msg.coeffs_mut()[0] = 1;
 
-        trivial_binary_glev(&mut msg, &self.params.l1_params, &self.params.cbs_radix).into()
-    }
-}
-
-impl Default for Encryption {
-    fn default() -> Self {
-        Self {
-            params: Params::default(),
-        }
+        trivial_binary_glev(&msg, &self.params.l1_params, &self.params.cbs_radix).into()
     }
 }
 
@@ -403,6 +395,7 @@ mod tests {
 
     use super::*;
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_roundtrip_l0_lwe() {
         let sk = get_secret_keys_80();
@@ -415,6 +408,7 @@ mod tests {
         assert!(enc.decrypt_lwe_l0(&lwe, &sk));
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_roundtrip_l1_lwe() {
         let sk = get_secret_keys_80();
@@ -427,6 +421,7 @@ mod tests {
         assert!(enc.decrypt_lwe_l1(&lwe, &sk));
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_glwe1() {
         let secret = get_secret_keys_80();
@@ -440,6 +435,7 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_glwe1() {
         let secret = get_secret_keys_80();
@@ -454,6 +450,7 @@ mod tests {
         assert_eq!(actual, expected);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_lwe0() {
         let secret = get_secret_keys_80();
@@ -463,9 +460,10 @@ mod tests {
 
         let actual = enc.decrypt_lwe_l0(&zero, &secret);
 
-        assert_eq!(actual, false);
+        assert!(!actual);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_lwe0() {
         let secret = get_secret_keys_80();
@@ -475,9 +473,10 @@ mod tests {
 
         let actual = enc.decrypt_lwe_l0(&one, &secret);
 
-        assert_eq!(actual, true);
+        assert!(actual);
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_glev1() {
         let secret = get_secret_keys_80();
@@ -490,6 +489,7 @@ mod tests {
         assert_eq!(actual, Polynomial::zero(DEFAULT_80.l1_poly_degree().0));
     }
 
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_glev1() {
         let secret = get_secret_keys_80();

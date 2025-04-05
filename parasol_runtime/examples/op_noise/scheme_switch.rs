@@ -105,6 +105,7 @@ pub fn search_scheme_switch(args: &SearchSchemeSwitchCommand) -> Vec<SchemeSwitc
     samples
 }
 
+#[allow(clippy::too_many_arguments)]
 fn evaluate_params(
     args: &SearchSchemeSwitchCommand,
     msg: &PolynomialRef<u64>,
@@ -120,12 +121,12 @@ fn evaluate_params(
         count: RadixCount(ss_radix_count),
     };
 
-    let mut ss_key = SchemeSwitchKey::<u64>::new(&glwe, &ss_radix);
-    generate_scheme_switch_key(&mut ss_key, &sk, &glwe, &ss_radix);
+    let mut ss_key = SchemeSwitchKey::<u64>::new(glwe, &ss_radix);
+    generate_scheme_switch_key(&mut ss_key, sk, glwe, &ss_radix);
 
     let ss_key_fft = if !args.ntt {
-        let mut ss_key_fft = SchemeSwitchKeyFft::<Complex<f64>>::new(&glwe, &ss_radix);
-        ss_key.fft(&mut ss_key_fft, &glwe, &ss_radix);
+        let mut ss_key_fft = SchemeSwitchKeyFft::<Complex<f64>>::new(glwe, &ss_radix);
+        ss_key.fft(&mut ss_key_fft, glwe, &ss_radix);
 
         Some(ss_key_fft)
     } else {
@@ -135,8 +136,8 @@ fn evaluate_params(
     let noise = (0..args.sample_count)
         .into_par_iter()
         .map(|_| {
-            let mut output = GgswCiphertext::new(&glwe, cbs_radix);
-            let mut output_fft = GgswCiphertextFft::new(&glwe, &cbs_radix);
+            let mut output = GgswCiphertext::new(glwe, cbs_radix);
+            let mut output_fft = GgswCiphertextFft::new(glwe, cbs_radix);
 
             let encryption_params = GlweDef {
                 std: Stddev(args.input_sigma),
@@ -144,10 +145,10 @@ fn evaluate_params(
             };
 
             let ct = high_level::encryption::encrypt_binary_msg_secret_glev(
-                &msg,
-                &sk,
+                msg,
+                sk,
                 &encryption_params,
-                &cbs_radix,
+                cbs_radix,
             );
 
             let now = Instant::now();
@@ -159,18 +160,18 @@ fn evaluate_params(
                     &mut output_fft,
                     &ct,
                     ss_key_fft.as_ref().unwrap(),
-                    &glwe,
-                    &cbs_radix,
+                    glwe,
+                    cbs_radix,
                     &ss_radix,
                 );
             }
             let time = now.elapsed().as_secs_f64();
 
             if !args.ntt {
-                output_fft.ifft(&mut output, &glwe, &cbs_radix);
+                output_fft.ifft(&mut output, glwe, cbs_radix);
             }
 
-            let noise = measure_noise_ggsw(&output, &sk, true, &glwe, &cbs_radix);
+            let noise = measure_noise_ggsw(&output, sk, true, glwe, cbs_radix);
 
             progress.inc(1);
 

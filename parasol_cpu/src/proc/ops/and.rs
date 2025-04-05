@@ -1,5 +1,5 @@
-use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 use mux_circuits::and::make_and_circuit;
+use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
     check_register_width,
@@ -92,7 +92,7 @@ impl FheProcessor {
                     .uop_processor
                     .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
             }
 
             Ok(())

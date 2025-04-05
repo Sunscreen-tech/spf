@@ -194,9 +194,7 @@ impl MuxCircuit {
         let mut input_map = HashMap::<u32, Vec<NodeIndex>>::new();
 
         for (i, n) in encoded.iter().copied().zip(self.inputs.iter().copied()) {
-            if !input_map.contains_key(&i) {
-                input_map.insert(i, vec![]);
-            }
+            input_map.entry(i).or_insert_with(Vec::new);
 
             input_map.get_mut(&i).unwrap().push(n);
         }
@@ -565,15 +563,13 @@ mod tests {
         let output_0 = opt
             .graph
             .node_indices()
-            .filter(|x| matches!(opt.graph.node_weight(*x).unwrap(), MuxOp::Output(0)))
-            .next()
+            .find(|x| matches!(opt.graph.node_weight(*x).unwrap(), MuxOp::Output(0)))
             .unwrap();
 
         let output_1 = opt
             .graph
             .node_indices()
-            .filter(|x| matches!(opt.graph.node_weight(*x).unwrap(), MuxOp::Output(1)))
-            .next()
+            .find(|x| matches!(opt.graph.node_weight(*x).unwrap(), MuxOp::Output(1)))
             .unwrap();
 
         let mut out_0_edges = opt.graph.edges_directed(output_0, Direction::Incoming);

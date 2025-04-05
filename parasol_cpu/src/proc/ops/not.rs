@@ -34,7 +34,7 @@ impl FheProcessor {
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: c }) => {
+                Register::Ciphertext(Ciphertext::L1Glwe { data: c }) => {
                     let width = c.len();
 
                     let mut graph = FheCircuit::new();
@@ -53,7 +53,7 @@ impl FheProcessor {
 
                     let parent_op = make_parent_op(&retirement_info);
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: dst_data });
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: dst_data });
 
                     self.aux_data
                         .uop_processor

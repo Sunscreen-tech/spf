@@ -6,7 +6,7 @@ use petgraph::{
 
 use crate::{error::Error, opt::GraphQuery};
 
-#[derive(Debug, Clone, Copy, Eq, PartialEq)]
+#[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct Bit(pub bool);
 
 impl Deref for Bit {
@@ -14,12 +14,6 @@ impl Deref for Bit {
 
     fn deref(&self) -> &Self::Target {
         &self.0
-    }
-}
-
-impl Default for Bit {
-    fn default() -> Self {
-        Self(false)
     }
 }
 
@@ -36,8 +30,12 @@ pub fn try_to_bits(val: u64, bits: usize) -> Result<Vec<Bit>, Error> {
         return Err(Error::OutOfRange);
     }
 
-    for i in 0..usize::min(bits, u64::BITS as usize) {
-        result[i] = Bit((val >> i) & 0x1 == 1);
+    for (i, result) in result
+        .iter_mut()
+        .enumerate()
+        .take(usize::min(bits, u64::BITS as usize))
+    {
+        *result = Bit((val >> i) & 0x1 == 1);
     }
 
     Ok(result)

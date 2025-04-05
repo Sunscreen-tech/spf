@@ -82,7 +82,7 @@ mod tests {
                     .collect::<Vec<_>>();
 
                 let carry_in = if cin {
-                    vec![Bit::from(Bit(thread_rng().next_u64() % 2 == 1))]
+                    vec![Bit(thread_rng().next_u64() % 2 == 1)]
                 } else {
                     vec![]
                 };

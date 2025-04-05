@@ -469,6 +469,10 @@ impl ProgramBufferInfo {
         self.buffers.len()
     }
 
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
+    }
+
     pub fn num_read_buffers(&self) -> usize {
         self.buffers
             .iter()
@@ -544,61 +548,53 @@ impl FheProgram {
         // Single pass through instructions
         for op in &self.instructions {
             match op {
-                IsaOp::BindReadOnly(reg, id, encrypted) => {
-                    if let RegisterName::Named(reg_num, _) = reg {
-                        if reg_num != id {
-                            return Err(BufferInfoError::MismatchedBinding(*reg_num, *id));
-                        }
-                        if bindings.contains_key(reg_num) {
-                            return Err(BufferInfoError::DuplicateBinding(*reg_num));
-                        }
-                        bindings.insert(*reg_num, (*id, true, *encrypted));
+                IsaOp::BindReadOnly(RegisterName::Named(reg_num, _), id, encrypted) => {
+                    if reg_num != id {
+                        return Err(BufferInfoError::MismatchedBinding(*reg_num, *id));
                     }
-                }
-                IsaOp::BindReadWrite(reg, id, encrypted) => {
-                    if let RegisterName::Named(reg_num, _) = reg {
-                        if reg_num != id {
-                            return Err(BufferInfoError::MismatchedBinding(*reg_num, *id));
-                        }
-                        if bindings.contains_key(reg_num) {
-                            return Err(BufferInfoError::DuplicateBinding(*reg_num));
-                        }
-                        bindings.insert(*reg_num, (*id, false, *encrypted));
+                    if bindings.contains_key(reg_num) {
+                        return Err(BufferInfoError::DuplicateBinding(*reg_num));
                     }
+                    bindings.insert(*reg_num, (*id, true, *encrypted));
                 }
-                IsaOp::Load(_, ptr, width) => {
-                    if let RegisterName::Named(reg_num, _) = ptr {
-                        if let Some(&(id, is_read_only, encrypted)) = bindings.get(reg_num) {
-                            if is_read_only {
-                                verified_buffers.insert(
-                                    id,
-                                    BufferInfo {
-                                        register: *reg_num,
-                                        buffer_type: BufferType::Read,
-                                        is_encrypted: encrypted,
-                                        buffer_id: id,
-                                        width: *width,
-                                    },
-                                );
-                            }
+                IsaOp::BindReadWrite(RegisterName::Named(reg_num, _), id, encrypted) => {
+                    if reg_num != id {
+                        return Err(BufferInfoError::MismatchedBinding(*reg_num, *id));
+                    }
+                    if bindings.contains_key(reg_num) {
+                        return Err(BufferInfoError::DuplicateBinding(*reg_num));
+                    }
+                    bindings.insert(*reg_num, (*id, false, *encrypted));
+                }
+                IsaOp::Load(_, RegisterName::Named(reg_num, _), width) => {
+                    if let Some(&(id, is_read_only, encrypted)) = bindings.get(reg_num) {
+                        if is_read_only {
+                            verified_buffers.insert(
+                                id,
+                                BufferInfo {
+                                    register: *reg_num,
+                                    buffer_type: BufferType::Read,
+                                    is_encrypted: encrypted,
+                                    buffer_id: id,
+                                    width: *width,
+                                },
+                            );
                         }
                     }
                 }
-                IsaOp::Store(ptr, _, width) => {
-                    if let RegisterName::Named(reg_num, _) = ptr {
-                        if let Some(&(id, is_read_only, encrypted)) = bindings.get(reg_num) {
-                            if !is_read_only {
-                                verified_buffers.insert(
-                                    id,
-                                    BufferInfo {
-                                        register: *reg_num,
-                                        buffer_type: BufferType::ReadWrite,
-                                        is_encrypted: encrypted,
-                                        buffer_id: id,
-                                        width: *width,
-                                    },
-                                );
-                            }
+                IsaOp::Store(RegisterName::Named(reg_num, _), _, width) => {
+                    if let Some(&(id, is_read_only, encrypted)) = bindings.get(reg_num) {
+                        if !is_read_only {
+                            verified_buffers.insert(
+                                id,
+                                BufferInfo {
+                                    register: *reg_num,
+                                    buffer_type: BufferType::ReadWrite,
+                                    is_encrypted: encrypted,
+                                    buffer_id: id,
+                                    width: *width,
+                                },
+                            );
                         }
                     }
                 }

@@ -14,21 +14,18 @@ mod or;
 mod sub;
 mod xor;
 
-#[cfg(test)]
-mod tests {
-    use parasol_runtime::{Encryption, DEFAULT_80};
+use parasol_runtime::{Encryption, DEFAULT_80};
 
-    use crate::Buffer;
-    use parasol_runtime::test_utils::get_secret_keys_80;
+use crate::Buffer;
+use parasol_runtime::test_utils::get_secret_keys_80;
 
-    #[test]
-    fn ciphertext_buffers_contain_multiple_of_8_bits() {
-        let enc = Encryption::new(&DEFAULT_80);
-        let buffer = Buffer::cipher_from_value(&1u8, &enc, &get_secret_keys_80());
+#[test]
+fn ciphertext_buffers_contain_multiple_of_8_bits() {
+    let enc = Encryption::new(&DEFAULT_80);
+    let buffer = Buffer::cipher_from_value(&1u8, &enc, &get_secret_keys_80());
 
-        assert_eq!(buffer.try_ciphertext().unwrap().len(), 8);
+    assert_eq!(buffer.try_ciphertext().unwrap().len(), 8);
 
-        let buffer = Buffer::cipher_from_value(&vec![0u8, 1, 2], &enc, &get_secret_keys_80());
-        assert_eq!(buffer.try_ciphertext().unwrap().len(), 24);
-    }
+    let buffer = Buffer::cipher_from_value(&vec![0u8, 1, 2], &enc, &get_secret_keys_80());
+    assert_eq!(buffer.try_ciphertext().unwrap().len(), 24);
 }

@@ -139,7 +139,7 @@ fn missing_input() {
     let program =
         FheProgram::from_instructions(vec![IsaOp::BindReadOnly(RegisterName::named(0), 0, true)]);
 
-    let result = proc.run_program(&program, &vec![]);
+    let result = proc.run_program(&program, &[]);
 
     assert_eq!(result.err().unwrap(), Error::NoBuffer { inst_id: 0, pc: 0 });
 }
@@ -151,7 +151,7 @@ fn missing_output() {
     let program =
         FheProgram::from_instructions(vec![IsaOp::BindReadWrite(RegisterName::named(0), 0, true)]);
 
-    let result = proc.run_program(&program, &vec![]);
+    let result = proc.run_program(&program, &[]);
 
     assert_eq!(result.err().unwrap(), Error::NoBuffer { inst_id: 0, pc: 0 });
 }

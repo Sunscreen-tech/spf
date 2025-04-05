@@ -36,7 +36,7 @@ pub fn append_uint_multiply<OutCt: Muxable>(
         let (b_lo, b_hi) = b.split_at(b_lo_len);
 
         if a_hi_len == 0 && b_hi_len == 0 {
-            return {
+            {
                 let mul_block = unsigned_multiplier(a.len(), b.len());
 
                 let interleaved = a
@@ -46,7 +46,7 @@ pub fn append_uint_multiply<OutCt: Muxable>(
                     .collect::<Vec<_>>();
 
                 uop_graph.insert_mux_circuit(&mul_block, &interleaved, OutCt::MUX_MODE)
-            };
+            }
         } else if b_hi_len == 0 {
             // Since we ensured our larger operand was on top, we don't have to consider only
             // a_hi_len being zero. In this case, we compute

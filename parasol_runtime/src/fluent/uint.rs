@@ -85,7 +85,7 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
     }
 }
 
-impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GlweCiphertext> {
+impl<const N: usize> UIntGraphNodes<'_, N, L1GlweCiphertext> {
     pub fn pack(
         &self,
         ctx: &FheCircuitCtx,

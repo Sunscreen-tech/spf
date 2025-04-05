@@ -99,13 +99,13 @@ pub struct Ref<'a, T> {
     count: &'a AtomicUsize,
 }
 
-impl<'a, T> Drop for Ref<'a, T> {
+impl<T> Drop for Ref<'_, T> {
     fn drop(&mut self) {
         self.count.fetch_sub(1, Ordering::Release);
     }
 }
 
-impl<'a, T> Deref for Ref<'a, T> {
+impl<T> Deref for Ref<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -118,13 +118,13 @@ pub struct RefMut<'a, T> {
     count: &'a AtomicUsize,
 }
 
-impl<'a, T> Drop for RefMut<'a, T> {
+impl<T> Drop for RefMut<'_, T> {
     fn drop(&mut self) {
         self.count.store(1, Ordering::Release)
     }
 }
 
-impl<'a, T> Deref for RefMut<'a, T> {
+impl<T> Deref for RefMut<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -132,7 +132,7 @@ impl<'a, T> Deref for RefMut<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for RefMut<'a, T> {
+impl<T> DerefMut for RefMut<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         self.val
     }
@@ -187,19 +187,6 @@ impl<T> Spinlock<T> {
         }
     }
 
-    /// Forcibly unlock the spinlock.
-    ///
-    /// This function should only be called after a thread has called
-    /// [`keep_locked`] on its handle or the spinlock is otherwise
-    /// guaranteed to already be unlocked.
-    ///
-    /// # Undefined Behavior
-    /// Calling this function while another thread holds a lock handle
-    /// will probably result in a data race.
-    pub unsafe fn force_unlock(&self) {
-        self.unlock()
-    }
-
     fn unlock(&self) {
         self.lock.store(false, Ordering::Release);
     }
@@ -209,20 +196,20 @@ pub struct SpinLockHandle<'a, T> {
     lock: &'a Spinlock<T>,
 }
 
-impl<'a, T> SpinLockHandle<'a, T> {
+impl<T> SpinLockHandle<'_, T> {
     /// Drop this handle, keeping the spinlock locked.
     pub fn keep_locked(self) {
         std::mem::forget(self)
     }
 }
 
-impl<'a, T> Drop for SpinLockHandle<'a, T> {
+impl<T> Drop for SpinLockHandle<'_, T> {
     fn drop(&mut self) {
         self.lock.unlock();
     }
 }
 
-impl<'a, T> Deref for SpinLockHandle<'a, T> {
+impl<T> Deref for SpinLockHandle<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -230,7 +217,7 @@ impl<'a, T> Deref for SpinLockHandle<'a, T> {
     }
 }
 
-impl<'a, T> DerefMut for SpinLockHandle<'a, T> {
+impl<T> DerefMut for SpinLockHandle<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.lock.val.get().as_mut().unwrap() }
     }

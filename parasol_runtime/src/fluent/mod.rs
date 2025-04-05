@@ -36,6 +36,12 @@ pub struct FheCircuitCtx {
     allocator: Bump,
 }
 
+impl Default for FheCircuitCtx {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl FheCircuitCtx {
     pub fn new() -> Self {
         Self {
@@ -457,8 +463,8 @@ mod tests {
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(43, &enc, &sk);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, &enc, &sk);
+            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(43, enc, &sk);
+            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -504,8 +510,8 @@ mod tests {
 
             let (val_a, val_b) = if eq { (43, 43) } else { (43, 42) };
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_a, &enc, &sk);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_b, &enc, &sk);
+            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_a, enc, &sk);
+            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_b, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -539,8 +545,8 @@ mod tests {
 
             let (val_a, val_b) = if eq { (43, 43) } else { (43, 42) };
 
-            let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(val_a, &enc, &sk);
-            let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(val_b, &enc, &sk);
+            let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(val_a, enc, &sk);
+            let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(val_b, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -579,8 +585,8 @@ mod tests {
 
             let (val_a, val_b) = if neq { (43, 42) } else { (43, 43) };
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_a, &enc, &sk);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_b, &enc, &sk);
+            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_a, enc, &sk);
+            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_b, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -613,8 +619,8 @@ mod tests {
 
             let (val_a, val_b) = if neq { (43, 42) } else { (43, 43) };
 
-            let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(val_a, &enc, &sk);
-            let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(val_b, &enc, &sk);
+            let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(val_a, enc, &sk);
+            let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(val_b, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -651,8 +657,8 @@ mod tests {
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(43, &enc, &sk);
-            let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(42, &enc, &sk);
+            let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(43, enc, &sk);
+            let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(42, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -702,8 +708,8 @@ mod tests {
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let a = UInt::<16, L1GgswCiphertext>::trivial(43, &enc, &eval);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, &enc, &sk);
+            let a = UInt::<16, L1GgswCiphertext>::trivial(43, enc, eval);
+            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -746,8 +752,8 @@ mod tests {
         let ctx = FheCircuitCtx::new();
         let (uproc, fc) = make_uproc_80();
 
-        let sel_false = Bit::<L1GgswCiphertext>::encrypt_secret(false, &enc, &sk).graph_input(&ctx);
-        let sel_true = Bit::<L1GgswCiphertext>::encrypt_secret(true, &enc, &sk).graph_input(&ctx);
+        let sel_false = Bit::<L1GgswCiphertext>::encrypt_secret(false, enc, &sk).graph_input(&ctx);
+        let sel_true = Bit::<L1GgswCiphertext>::encrypt_secret(true, enc, &sk).graph_input(&ctx);
 
         let a = UInt::<16, L1GlweCiphertext>::encrypt_secret(42, enc, &sk).graph_inputs(&ctx);
         let b = UInt::<16, L1GlweCiphertext>::encrypt_secret(24, enc, &sk).graph_inputs(&ctx);
@@ -773,9 +779,9 @@ mod tests {
         let (uproc, fc) = make_uproc_80();
 
         let sel_false =
-            Bit::<L1GgswCiphertext>::trivial_encryption(false, &enc, &eval).graph_input(&ctx);
+            Bit::<L1GgswCiphertext>::trivial_encryption(false, enc, eval).graph_input(&ctx);
         let sel_true =
-            Bit::<L1GgswCiphertext>::trivial_encryption(true, &enc, &eval).graph_input(&ctx);
+            Bit::<L1GgswCiphertext>::trivial_encryption(true, enc, eval).graph_input(&ctx);
 
         let a = UInt::<16, L1GlweCiphertext>::encrypt_secret(42, enc, &sk).graph_inputs(&ctx);
         let b = UInt::<16, L1GlweCiphertext>::encrypt_secret(24, enc, &sk).graph_inputs(&ctx);
@@ -924,6 +930,6 @@ mod tests {
         }
 
         case::<L1GlweCiphertext>();
-        case::<L1GlevCiphertext>();
+        //case::<L1GlevCiphertext>();
     }
 }

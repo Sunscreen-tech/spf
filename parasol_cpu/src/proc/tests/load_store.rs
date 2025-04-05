@@ -82,9 +82,9 @@ fn can_load_store_ciphertext_byte_width() {
             .iter()
             .zip(params[1].try_ciphertext().unwrap()[0..width as usize].chunks(8))
         {
-            for j in 0..out.len() {
+            for (j, out) in out.iter().enumerate() {
                 let expected = (plain >> j) & 0x1;
-                let actual = enc.decrypt_glwe_l1(&out[j], &get_secret_keys_80()).coeffs()[0];
+                let actual = enc.decrypt_glwe_l1(out, &get_secret_keys_80()).coeffs()[0];
                 assert_eq!(expected as u64, actual);
             }
         }
@@ -139,7 +139,7 @@ fn load_immediate_fails_out_of_range() {
     let params = vec![output];
 
     let result = proc.run_program(
-        &&FheProgram::from_instructions(vec![
+        &FheProgram::from_instructions(vec![
             IsaOp::BindReadWrite(RegisterName::named(0), 0, false),
             IsaOp::LoadI(RegisterName::named(0), 1234, 4),
             IsaOp::Store(RegisterName::named(0), RegisterName::named(0), 15),
@@ -163,7 +163,7 @@ fn can_compute_effective_address_plain_ptr() {
     let params = vec![input, output];
 
     proc.run_program(
-        &&FheProgram::from_instructions(vec![
+        &FheProgram::from_instructions(vec![
             IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
             IsaOp::BindReadWrite(RegisterName::named(1), 1, false),
             IsaOp::LoadI(RegisterName::named(0), 2, 16),

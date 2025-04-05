@@ -1,10 +1,6 @@
-
 use crate::{Error, Result};
 use sunscreen_tfhe::{
-    entities::{
-        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial,
-        PolynomialRef,
-    },
+    entities::{GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial, PolynomialRef},
     ops::encryption::{decrypt_glwe_ciphertext, scale_msg_by_gadget_factor},
     polynomial::polynomial_external_mad,
     GlweDef, PlaintextBits, RadixDecomposition, Torus,
@@ -22,7 +18,7 @@ pub fn measure_noise_glwe(
 
     decrypt_glwe_ciphertext(&mut result, ct, sk, params);
 
-    Ok(result
+    result
         .coeffs()
         .iter()
         .zip(expected.coeffs().iter())
@@ -33,7 +29,7 @@ pub fn measure_noise_glwe(
                 Ok(a.normalized_torus_distance(e))
             }
         })
-        .collect::<Result<Vec<_>>>()?)
+        .collect::<Result<Vec<_>>>()
 }
 
 /// Measures the noise in the GGSW ciphertext requiring the largest plaintext space to represent.
@@ -61,13 +57,13 @@ pub fn measure_noise_ggsw(
     // Multiply by sk.
     let mut expected_poly = Polynomial::zero(params.dim.polynomial_degree.0);
 
-    polynomial_external_mad(&mut expected_poly, &scaled, sk.s(params).nth(0).unwrap());
+    polynomial_external_mad(&mut expected_poly, &scaled, sk.s(params).next().unwrap());
 
     let expected_poly = expected_poly.map(|x| x.wrapping_neg());
 
     let glwe_ct = ct
         .rows(params, cbs_radix)
-        .nth(0)
+        .next()
         .unwrap()
         .glwe_ciphertexts(params)
         .last()
@@ -76,7 +72,7 @@ pub fn measure_noise_ggsw(
     measure_noise_glwe(
         glwe_ct,
         sk,
-        &expected_poly.as_torus(),
+        expected_poly.as_torus(),
         params,
         PlaintextBits((cbs_radix.radix_log.0 * cbs_radix.count.0) as u32),
     )

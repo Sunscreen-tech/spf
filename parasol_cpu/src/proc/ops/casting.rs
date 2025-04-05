@@ -39,7 +39,7 @@ impl FheProcessor {
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                Register::Ciphertext(Ciphertext::L1GlweCiphertext { data }) => {
+                Register::Ciphertext(Ciphertext::L1Glwe { data }) => {
                     let current_width = data.len() as u32;
 
                     // Get trivial zeros
@@ -52,7 +52,7 @@ impl FheProcessor {
                         .cloned()
                         .collect();
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
@@ -102,12 +102,12 @@ impl FheProcessor {
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                Register::Ciphertext(Ciphertext::L1GlweCiphertext { data }) => {
+                Register::Ciphertext(Ciphertext::L1Glwe { data }) => {
                     // Little endian, we just take the first `new_width` elements
                     // let output = data.iter().take(new_width as usize).cloned().collect();
                     let output = data[0..new_width as usize].to_vec();
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }

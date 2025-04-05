@@ -5,6 +5,7 @@ use crate::{
     FheProcessorConstantPool, PlainOffsetCtPtr, PlaintextPtr, PtrRegister, Result,
 };
 
+#[allow(clippy::too_many_arguments)]
 /// Creates a PtrRegister to the buffer at the given index.
 pub fn assign_io(
     constant_pool: &Arc<FheProcessorConstantPool>,
