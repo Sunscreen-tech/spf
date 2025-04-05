@@ -12,8 +12,7 @@ use petgraph::{
 
 /**
  * A wrapper for ascertaining the structure of the underlying graph.
- * This type is used in [`forward_traverse`] and
- * [`reverse_traverse`] callbacks.
+ * This type is used in [`forward_traverse_mut`] callbacks.
  */
 pub struct GraphQuery<'a, N, E>(pub &'a StableGraph<N, E>);
 
@@ -273,7 +272,7 @@ where
 
 /**
  * A supertrait that concisely contains all the traits needed to serve
- * as an operation for [`NodeInfo`](crate::context::NodeInfo).
+ * as an operation.
  *
  * Also provides functions that describe properties of an operation.
  */
@@ -410,7 +409,7 @@ pub fn common_subexpression_elimination<O: Operation, E: Clone + Copy + EdgeOps>
  * * `callback`: A closure that receives the current node index and an
  *   object allowing you to make graph queries. This closure returns a    
  *   transform list or an error.
- *   On success, [`reverse_traverse`] will apply these transformations
+ *   On success, [`forward_traverse_mut`] will apply these transformations
  *   before continuing the traversal. Errors will be propagated to the
  *   caller.
  */
