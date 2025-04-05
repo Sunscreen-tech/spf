@@ -66,7 +66,7 @@ impl FheProcessor {
                     .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
                 // There is a carry out bit that we will ignore
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe {
                     data: output[0..output.len() - 1].to_owned(),
                 });
             }
@@ -158,11 +158,11 @@ impl FheProcessor {
                     .uop_processor
                     .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe {
                     data: output[0..output.len() - 1].to_owned(),
                 });
 
-                *carry_out = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                *carry_out = Register::Ciphertext(Ciphertext::L1Glwe {
                     data: vec![output[output.len() - 1].to_owned()],
                 });
             }

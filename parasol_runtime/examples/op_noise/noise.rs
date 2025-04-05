@@ -1,10 +1,6 @@
-
 use crate::{Error, Result};
 use sunscreen_tfhe::{
-    entities::{
-        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial,
-        PolynomialRef,
-    },
+    entities::{GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial, PolynomialRef},
     ops::encryption::{decrypt_glwe_ciphertext, scale_msg_by_gadget_factor},
     polynomial::polynomial_external_mad,
     GlweDef, PlaintextBits, RadixDecomposition, Torus,
@@ -66,7 +62,8 @@ pub fn measure_noise_ggsw(
     let expected_poly = expected_poly.map(|x| x.wrapping_neg());
 
     let glwe_ct = ct
-        .rows(params, cbs_radix).next()
+        .rows(params, cbs_radix)
+        .next()
         .unwrap()
         .glwe_ciphertexts(params)
         .last()

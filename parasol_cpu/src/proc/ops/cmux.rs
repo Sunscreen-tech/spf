@@ -70,7 +70,7 @@ impl FheProcessor {
                         &self.aux_data.l1glwe_one,
                     )?;
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe {
                         data: if decision { ca } else { cb },
                     });
                 }
@@ -104,7 +104,7 @@ impl FheProcessor {
             // We know the data must be a single bit, so we can just take the
             // first element.
             let input_select = match select {
-                Register::Ciphertext(Ciphertext::L1GlweCiphertext { data }) => {
+                Register::Ciphertext(Ciphertext::L1Glwe { data }) => {
                     let input_node = graph.add_node(FheOp::InputGlwe1(data[0].clone()));
 
                     let se = graph.add_node(FheOp::SampleExtract(0));
@@ -118,7 +118,7 @@ impl FheProcessor {
 
                     cbs
                 }
-                Register::Ciphertext(Ciphertext::L1GgswCiphertext { data }) => {
+                Register::Ciphertext(Ciphertext::L1Ggsw { data }) => {
                     let input_node = graph.add_node(FheOp::InputGgsw1(data[0].clone()));
 
                     let se = graph.add_node(FheOp::SampleExtract(0));
@@ -154,7 +154,7 @@ impl FheProcessor {
                 .uop_processor
                 .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
-            *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+            *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
 
             Ok(())
         };

@@ -1,5 +1,5 @@
-use parasol_runtime::circuits::sub_circuit;
 use mux_circuits::util::arbitrary_width_borrowing_sub;
+use parasol_runtime::circuits::sub_circuit;
 
 use crate::{
     check_register_width,
@@ -68,7 +68,7 @@ impl FheProcessor {
                     .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
                 // There is a borrow out bit that we will ignore
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe {
                     data: output[0..output.len() - 1].to_owned(),
                 });
             }
@@ -160,11 +160,11 @@ impl FheProcessor {
                     .uop_processor
                     .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe {
                     data: output[0..output.len() - 1].to_owned(),
                 });
 
-                *borrow_out = Register::Ciphertext(Ciphertext::L1GlweCiphertext {
+                *borrow_out = Register::Ciphertext(Ciphertext::L1Glwe {
                     data: vec![output[output.len() - 1].to_owned()],
                 });
             }

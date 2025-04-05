@@ -14,6 +14,7 @@ use crate::{
 use super::{check_offset, read_write_mask};
 
 impl FheProcessor {
+    #[allow(clippy::too_many_arguments)]
     /// Execute a store instruction.
     pub fn store(
         &mut self,

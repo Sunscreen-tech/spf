@@ -105,8 +105,7 @@ impl From<GlevCiphertext<u64>> for L1GlevCiphertext {
     }
 }
 
-#[derive(Debug, Clone)]
-#[derive(Default)]
+#[derive(Debug, Clone, Default)]
 pub struct Encryption {
     pub params: Params,
 }
@@ -319,10 +318,9 @@ impl Encryption {
         let mut msg = Polynomial::zero(self.params.l1_poly_degree().0);
         msg.coeffs_mut()[0] = 1;
 
-        trivial_binary_glev(&mut msg, &self.params.l1_params, &self.params.cbs_radix).into()
+        trivial_binary_glev(&msg, &self.params.l1_params, &self.params.cbs_radix).into()
     }
 }
-
 
 impl GetSize for L0LweCiphertext {
     fn get_size(params: &Params) -> usize {

@@ -103,7 +103,7 @@ impl FheProcessor {
 
         let parent_op = make_parent_op(retirement_info);
 
-        *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: dst_data });
+        *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: dst_data });
 
         self.aux_data
             .uop_processor
@@ -125,7 +125,7 @@ impl FheProcessor {
             &self.aux_data.l1glwe_one,
         );
 
-        let b = Ciphertext::L1GlweCiphertext { data: b };
+        let b = Ciphertext::L1Glwe { data: b };
 
         self.unsigned_multiply_cipher_cipher(retirement_info, dst, a, &b, width);
     }

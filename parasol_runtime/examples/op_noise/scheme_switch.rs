@@ -105,6 +105,7 @@ pub fn search_scheme_switch(args: &SearchSchemeSwitchCommand) -> Vec<SchemeSwitc
     samples
 }
 
+#[allow(clippy::too_many_arguments)]
 fn evaluate_params(
     args: &SearchSchemeSwitchCommand,
     msg: &PolynomialRef<u64>,

@@ -193,7 +193,7 @@ impl<T> Spinlock<T> {
     /// [`keep_locked`] on its handle or the spinlock is otherwise
     /// guaranteed to already be unlocked.
     ///
-    /// # Undefined Behavior
+    /// # Safety
     /// Calling this function while another thread holds a lock handle
     /// will probably result in a data race.
     pub unsafe fn force_unlock(&self) {

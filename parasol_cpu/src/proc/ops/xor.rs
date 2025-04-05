@@ -79,7 +79,7 @@ impl FheProcessor {
 
                 let parent_op = make_parent_op(&retirement_info);
 
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: dst_data });
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: dst_data });
 
                 self.aux_data
                     .uop_processor

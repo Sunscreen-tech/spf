@@ -1,13 +1,9 @@
-
 use indicatif::ProgressBar;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
-    entities::{
-        GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, GlweSecretKey,
-        Polynomial,
-    },
+    entities::{GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, Polynomial},
     high_level::{self},
     ops::{
         ciphertext::{glwe_ggsw_mad, sub_glwe_ciphertexts},

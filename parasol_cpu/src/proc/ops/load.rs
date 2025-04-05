@@ -14,6 +14,7 @@ use crate::{
 use super::{check_offset, read_write_mask};
 
 impl FheProcessor {
+    #[allow(clippy::too_many_arguments)]
     /// Execute a load instruction.
     pub fn load(
         &mut self,
@@ -68,7 +69,7 @@ impl FheProcessor {
                         output.clone_from(&input);
                     }
 
-                    *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: result });
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: result });
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }

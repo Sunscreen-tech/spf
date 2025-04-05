@@ -104,8 +104,8 @@ pub fn bitshift(inputs: u16, shift_size: u16, right: bool, zeros: bool) -> MuxCi
             clear_bit = clear_bit.or(&excess_shift_bit);
         }
 
-        for i in 0..result.len() {
-            result[i] = Bdd::if_then_else(&clear_bit, &variable_set.mk_false(), &result[i].clone());
+        for res in result.iter_mut() {
+            *res = Bdd::if_then_else(&clear_bit, &variable_set.mk_false(), &res.clone());
         }
     }
 
@@ -253,12 +253,12 @@ mod tests {
 
         for zeros in [false, true] {
             for right in [false, true] {
-                for width in 1..=6 {
+                for width in 1..=6u16 {
                     let mask = (1 << width) - 1;
 
                     // Skip the cases where we would need to perform a modulus
                     // operation.
-                    if !zeros && !((width as u16).is_power_of_two()) {
+                    if !zeros && !(width.is_power_of_two()) {
                         continue;
                     }
 

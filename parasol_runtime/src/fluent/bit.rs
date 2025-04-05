@@ -74,10 +74,7 @@ pub struct BitNode<T: CiphertextOps> {
 
 impl<T: CiphertextOps> Clone for BitNode<T> {
     fn clone(&self) -> Self {
-        Self {
-            node: self.node,
-            _phantom: PhantomData,
-        }
+        *self
     }
 }
 

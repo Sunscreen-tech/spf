@@ -14,45 +14,45 @@ pub enum CiphertextType {
 
 #[derive(Clone)]
 pub enum Ciphertext {
-    L0LweCiphertext(L0LweCiphertext),
-    L1LweCiphertext(L1LweCiphertext),
-    L1GlweCiphertext(L1GlweCiphertext),
-    L1GgswCiphertext(L1GgswCiphertext),
-    L1GlevCiphertext(L1GlevCiphertext),
+    L0Lwe(L0LweCiphertext),
+    L1Lwe(L1LweCiphertext),
+    L1Glwe(L1GlweCiphertext),
+    L1Ggsw(L1GgswCiphertext),
+    L1Glev(L1GlevCiphertext),
 }
 
 impl Ciphertext {
     pub fn borrow_lwe0(&self) -> &L0LweCiphertext {
         match self {
-            Self::L0LweCiphertext(x) => x,
+            Self::L0Lwe(x) => x,
             _ => panic!("Ciphertext was not L0LweCiphertext"),
         }
     }
 
     pub fn borrow_lwe1(&self) -> &L1LweCiphertext {
         match self {
-            Self::L1LweCiphertext(x) => x,
+            Self::L1Lwe(x) => x,
             _ => panic!("Ciphertext was not L1LweCiphertext"),
         }
     }
 
     pub fn borrow_glwe1(&self) -> &L1GlweCiphertext {
         match self {
-            Self::L1GlweCiphertext(x) => x,
+            Self::L1Glwe(x) => x,
             _ => panic!("Ciphertext was not L1GlweCiphertext"),
         }
     }
 
     pub fn borrow_ggsw1(&self) -> &L1GgswCiphertext {
         match self {
-            Self::L1GgswCiphertext(x) => x,
+            Self::L1Ggsw(x) => x,
             _ => panic!("Ciphertext was not L1GgswCiphertext"),
         }
     }
 
     pub fn borrow_glev1(&self) -> &L1GlevCiphertext {
         match self {
-            Self::L1GlevCiphertext(x) => x,
+            Self::L1Glev(x) => x,
             _ => panic!("Ciphertext was not L1GlevCiphertext"),
         }
     }
@@ -60,31 +60,31 @@ impl Ciphertext {
 
 impl From<L0LweCiphertext> for Ciphertext {
     fn from(value: L0LweCiphertext) -> Self {
-        Ciphertext::L0LweCiphertext(value)
+        Ciphertext::L0Lwe(value)
     }
 }
 
 impl From<L1LweCiphertext> for Ciphertext {
     fn from(value: L1LweCiphertext) -> Self {
-        Ciphertext::L1LweCiphertext(value)
+        Ciphertext::L1Lwe(value)
     }
 }
 
 impl From<L1GlweCiphertext> for Ciphertext {
     fn from(value: L1GlweCiphertext) -> Self {
-        Ciphertext::L1GlweCiphertext(value)
+        Ciphertext::L1Glwe(value)
     }
 }
 
 impl From<L1GgswCiphertext> for Ciphertext {
     fn from(value: L1GgswCiphertext) -> Self {
-        Ciphertext::L1GgswCiphertext(value)
+        Ciphertext::L1Ggsw(value)
     }
 }
 
 impl From<L1GlevCiphertext> for Ciphertext {
     fn from(value: L1GlevCiphertext) -> Self {
-        Ciphertext::L1GlevCiphertext(value)
+        Ciphertext::L1Glev(value)
     }
 }
 
@@ -93,7 +93,7 @@ impl TryInto<L0LweCiphertext> for Ciphertext {
 
     fn try_into(self) -> Result<L0LweCiphertext, Self::Error> {
         match self {
-            Self::L0LweCiphertext(x) => Ok(x),
+            Self::L0Lwe(x) => Ok(x),
             _ => Err(Error::CiphertextMismatch),
         }
     }
@@ -104,7 +104,7 @@ impl TryInto<L1LweCiphertext> for Ciphertext {
 
     fn try_into(self) -> Result<L1LweCiphertext, Self::Error> {
         match self {
-            Self::L1LweCiphertext(x) => Ok(x),
+            Self::L1Lwe(x) => Ok(x),
             _ => Err(Error::CiphertextMismatch),
         }
     }
@@ -115,7 +115,7 @@ impl TryInto<L1GlweCiphertext> for Ciphertext {
 
     fn try_into(self) -> Result<L1GlweCiphertext, Self::Error> {
         match self {
-            Self::L1GlweCiphertext(x) => Ok(x),
+            Self::L1Glwe(x) => Ok(x),
             _ => Err(Error::CiphertextMismatch),
         }
     }
@@ -126,7 +126,7 @@ impl TryInto<L1GgswCiphertext> for Ciphertext {
 
     fn try_into(self) -> Result<L1GgswCiphertext, Self::Error> {
         match self {
-            Self::L1GgswCiphertext(x) => Ok(x),
+            Self::L1Ggsw(x) => Ok(x),
             _ => Err(Error::CiphertextMismatch),
         }
     }
@@ -137,7 +137,7 @@ impl TryInto<L1GlevCiphertext> for Ciphertext {
 
     fn try_into(self) -> Result<L1GlevCiphertext, Self::Error> {
         match self {
-            Self::L1GlevCiphertext(x) => Ok(x),
+            Self::L1Glev(x) => Ok(x),
             _ => Err(Error::CiphertextMismatch),
         }
     }

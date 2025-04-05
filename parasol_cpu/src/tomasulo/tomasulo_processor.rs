@@ -81,7 +81,7 @@ macro_rules! impl_tomasulo {
                     pub fn register_force_mut<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> Result<RegRef<'a, T>>
                     where
                         T: TrivialZero + TrivialOne,
-                        Self: crate::tomasulo::tomasulo_processor::SelectConstant<T>,
+                        Self: $crate::tomasulo::tomasulo_processor::SelectConstant<T>,
                     {
                         match reg_entry {
                             RobEntryRef::IdMut(x) => Ok(x.entry_mut().into()),
@@ -91,7 +91,7 @@ macro_rules! impl_tomasulo {
                     }
                 }
 
-                $(crate::impl_select_constant!{[<$name ConstantPool>], $reg_type, $reg_index})*
+                $($crate::impl_select_constant!{[<$name ConstantPool>], $reg_type, $reg_index})*
 
                 pub struct $name where Self: Tomasulo {
                     /// The register file.
@@ -145,7 +145,7 @@ macro_rules! impl_tomasulo {
                         inst: $inst,
                         pc: usize
                     ) -> Result<usize> {
-                        use crate::tomasulo::{ToDispatchedOp, GetDeps};
+                        use $crate::tomasulo::{ToDispatchedOp, GetDeps};
 
                         inst.validate(self.current_instruction, pc)?;
 
@@ -302,7 +302,7 @@ macro_rules! impl_tomasulo {
                     }
 
                     /// Waits for all issued instructions to retire.
-                    pub fn wait(&mut self) -> crate::Result<()> {
+                    pub fn wait(&mut self) -> $crate::Result<()> {
                         self.execute_ready_instructions(true)?;
 
                         Ok(())

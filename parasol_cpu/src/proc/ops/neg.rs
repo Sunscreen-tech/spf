@@ -31,7 +31,7 @@ impl FheProcessor {
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: _c1 }) => {
+                Register::Ciphertext(Ciphertext::L1Glwe { data: _c1 }) => {
                     todo!()
                     // let output = add_l1glwe_cipher_cipher(c1, c2);
 

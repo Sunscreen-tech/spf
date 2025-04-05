@@ -6,11 +6,11 @@ use crate::{
 };
 
 use concurrency::AtomicRefCell;
+use mux_circuits::convert_value_to_bits;
 use parasol_runtime::{
     insert_ciphertext_conversion, CiphertextType, CompletionHandler, FheCircuit, FheOp,
     L1GlweCiphertext,
 };
-use mux_circuits::convert_value_to_bits;
 use petgraph::stable_graph::NodeIndex;
 
 mod input_output;
@@ -43,7 +43,7 @@ pub fn insert_ciphertext_inputs(
     // We mutate graph inside `map`, which is kinda gross, but not
     // as gross as a dozen dozen.
     match input {
-        Ciphertext::L0LweCiphertext { data } => data
+        Ciphertext::L0Lwe { data } => data
             .iter()
             .map(|x| {
                 let input_node = graph.add_node(FheOp::InputLwe0(x.clone()));
@@ -56,7 +56,7 @@ pub fn insert_ciphertext_inputs(
                 )
             })
             .collect(),
-        Ciphertext::L1GgswCiphertext { data } => data
+        Ciphertext::L1Ggsw { data } => data
             .iter()
             .map(|x| {
                 let input_node = graph.add_node(FheOp::InputGgsw1(x.clone()));
@@ -69,7 +69,7 @@ pub fn insert_ciphertext_inputs(
                 )
             })
             .collect(),
-        Ciphertext::L1GlweCiphertext { data } => data
+        Ciphertext::L1Glwe { data } => data
             .iter()
             .map(|x| {
                 let input_node = graph.add_node(FheOp::InputGlwe1(x.clone()));
@@ -82,7 +82,7 @@ pub fn insert_ciphertext_inputs(
                 )
             })
             .collect(),
-        Ciphertext::L1LweCiphertext { data } => data
+        Ciphertext::L1Lwe { data } => data
             .iter()
             .map(|x| {
                 let input_node = graph.add_node(FheOp::InputLwe1(x.clone()));

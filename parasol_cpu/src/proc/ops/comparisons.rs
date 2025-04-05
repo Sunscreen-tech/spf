@@ -1,8 +1,8 @@
-use parasol_runtime::FheCircuit;
 use mux_circuits::{
     comparisons::{compare_equal, compare_or_maybe_equal},
     MuxCircuit,
 };
+use parasol_runtime::FheCircuit;
 
 use crate::{
     check_register_width,
@@ -15,6 +15,7 @@ use crate::{
 use super::make_parent_op;
 
 impl FheProcessor {
+    #[allow(clippy::too_many_arguments)]
     fn comparison_operation(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
@@ -89,7 +90,7 @@ impl FheProcessor {
                     .uop_processor
                     .spawn_graph(&graph, &self.aux_data.flow, parent_op);
 
-                *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
             }
 
             Ok(())

@@ -139,16 +139,16 @@ impl TrivialOne for PtrRegister {
 }
 
 pub enum Ciphertext {
-    L0LweCiphertext {
+    L0Lwe {
         data: Vec<Arc<AtomicRefCell<L0LweCiphertext>>>,
     },
-    L1LweCiphertext {
+    L1Lwe {
         data: Vec<Arc<AtomicRefCell<L1LweCiphertext>>>,
     },
-    L1GlweCiphertext {
+    L1Glwe {
         data: Vec<Arc<AtomicRefCell<L1GlweCiphertext>>>,
     },
-    L1GgswCiphertext {
+    L1Ggsw {
         data: Vec<Arc<AtomicRefCell<L1GgswCiphertext>>>,
     },
 }
@@ -156,23 +156,27 @@ pub enum Ciphertext {
 impl Ciphertext {
     pub fn len(&self) -> usize {
         match self {
-            Self::L0LweCiphertext { data } => data.len(),
-            Self::L1LweCiphertext { data } => data.len(),
-            Self::L1GlweCiphertext { data } => data.len(),
-            Self::L1GgswCiphertext { data } => data.len(),
+            Self::L0Lwe { data } => data.len(),
+            Self::L1Lwe { data } => data.len(),
+            Self::L1Glwe { data } => data.len(),
+            Self::L1Ggsw { data } => data.len(),
         }
+    }
+
+    pub fn is_empty(&self) -> bool {
+        self.len() == 0
     }
 
     pub fn unwrap_l1glwe(&self) -> &[Arc<AtomicRefCell<L1GlweCiphertext>>] {
         match self {
-            Self::L1GlweCiphertext { data } => data,
+            Self::L1Glwe { data } => data,
             _ => panic!("Ciphertext was not L1GlweCiphertext"),
         }
     }
 
     pub fn try_into_l1glwe(&self) -> Result<&[Arc<AtomicRefCell<L1GlweCiphertext>>]> {
         match self {
-            Self::L1GlweCiphertext { data } => Ok(data),
+            Self::L1Glwe { data } => Ok(data),
             _ => Err(Error::RegisterCiphertextMismatch),
         }
     }
@@ -216,16 +220,16 @@ impl Register {
     pub fn register_value_type(&self) -> RegisterValueType {
         match self {
             Self::Plaintext { val: _, width: _ } => RegisterValueType::Plaintext,
-            Self::Ciphertext(Ciphertext::L0LweCiphertext { data: _ }) => {
+            Self::Ciphertext(Ciphertext::L0Lwe { data: _ }) => {
                 RegisterValueType::L0LweCiphertext
             }
-            Self::Ciphertext(Ciphertext::L1LweCiphertext { data: _ }) => {
+            Self::Ciphertext(Ciphertext::L1Lwe { data: _ }) => {
                 RegisterValueType::L1LweCiphertext
             }
-            Self::Ciphertext(Ciphertext::L1GlweCiphertext { data: _ }) => {
+            Self::Ciphertext(Ciphertext::L1Glwe { data: _ }) => {
                 RegisterValueType::L1GlweCiphertext
             }
-            Self::Ciphertext(Ciphertext::L1GgswCiphertext { data: _ }) => {
+            Self::Ciphertext(Ciphertext::L1Ggsw { data: _ }) => {
                 RegisterValueType::L1GgswCiphertext
             }
         }
@@ -281,7 +285,7 @@ pub fn register_to_l1glwe_by_trivial_lift(
         Register::Plaintext { val, width } => {
             Ok(trivially_encrypt_value_l1glwe(*val, *width, zero, one))
         }
-        Register::Ciphertext(Ciphertext::L1GlweCiphertext { data }) => Ok(data.clone()),
+        Register::Ciphertext(Ciphertext::L1Glwe { data }) => Ok(data.clone()),
         _ => Err(Error::RegisterCiphertextMismatch),
     }
 }
@@ -595,7 +599,7 @@ pub enum Buffer {
 impl Buffer {
     pub fn plain_from_value<T: FheBuffer>(x: &T) -> Self {
         Self::Plaintext(Arc::new(
-            T::into_plaintext(x)
+            T::clone_into_plaintext(x)
                 .into_iter()
                 .map(AtomicRefCell::new)
                 .collect(),
@@ -603,7 +607,7 @@ impl Buffer {
     }
 
     pub fn cipher_from_value<T: FheBuffer>(x: &T, enc: &Encryption, sk: &SecretKey) -> Self {
-        let x = T::into_plaintext(x);
+        let x = T::clone_into_plaintext(x);
 
         let mut poly = Polynomial::zero(enc.params.l1_poly_degree().0);
 

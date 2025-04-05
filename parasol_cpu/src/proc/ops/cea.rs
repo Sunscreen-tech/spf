@@ -8,6 +8,7 @@ use crate::{
 };
 
 impl FheProcessor {
+    #[allow(clippy::too_many_arguments)]
     pub fn cea(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
