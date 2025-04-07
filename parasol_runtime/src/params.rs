@@ -16,7 +16,7 @@ use sunscreen_tfhe::{
 /// computation unfolds.
 ///
 /// Ciphertexts convert in a cycle as follows:
-/// ```
+/// ```ignore
 /// l0 LWE -> l1 GGSW -> l1 GLWE -> l1 LWE -> l0 LWE
 /// ```
 ///

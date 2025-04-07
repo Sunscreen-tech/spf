@@ -634,11 +634,15 @@ where
 ///
 /// # Example
 /// ```rust
-/// let enc = get_encryption_128();
+/// # use parasol_runtime::{
+/// #   test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
+/// #   L0LweCiphertext, L1GlweCiphertext, DEFAULT_128, fluent::{FheCircuitCtx, PackedUInt}
+/// # };
+/// # let enc = get_encryption_128();
 ///
-/// let sk = get_secret_keys_128();
-/// let pk = get_public_key_128();
-/// let (uproc, fc) = make_uproc_128();
+/// # let sk = get_secret_keys_128();
+/// # let pk = get_public_key_128();
+/// # let (uproc, fc) = make_uproc_128();
 ///
 /// let val = PackedUInt::<16, L1GlweCiphertext>::encrypt(42, &enc, &pk);
 ///
