@@ -2,6 +2,7 @@ use biodivine_lib_bdd::BddVariableSet;
 
 use super::MuxCircuit;
 
+/// Construct a bitwise `or` circuit for 2 integers with `inputs` bits.
 pub fn make_or_circuit(inputs: u16) -> MuxCircuit {
     let variable_set = BddVariableSet::new_anonymous(2 * inputs);
     let vars = variable_set.variables();

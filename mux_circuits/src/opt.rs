@@ -57,18 +57,19 @@ impl<'a, N, E> GraphQuery<'a, N, E> {
     }
 }
 
-pub enum BinaryOperandInfo {
+#[allow(unused)]
+pub(crate) enum BinaryOperandInfo {
     Left,
     Right,
 }
 
-pub enum MuxOperandInfo {
+pub(crate) enum MuxOperandInfo {
     Low,
     High,
     Select,
 }
 
-pub trait EdgeOps {
+pub(crate) trait EdgeOps {
     fn binary_operand_type(&self) -> Option<BinaryOperandInfo>;
 
     fn mux_operand_type(&self) -> Option<MuxOperandInfo>;
@@ -324,7 +325,7 @@ pub trait Operation: Clone + std::fmt::Debug + std::hash::Hash + PartialEq + Eq 
  * The `c * d` subexpression can be computed once and shared between
  * the two expressions.
  */
-pub fn common_subexpression_elimination<O: Operation, E: Clone + Copy + EdgeOps>(
+pub(crate) fn common_subexpression_elimination<O: Operation, E: Clone + Copy + EdgeOps>(
     graph: &mut StableGraph<O, E>,
 ) {
     forward_traverse_mut(graph, |query, index| {

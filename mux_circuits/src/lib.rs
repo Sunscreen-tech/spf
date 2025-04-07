@@ -1,7 +1,13 @@
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+//! This crate provides algorithms for building multiplexer circuits as well as a standard library
+//! of common operations.
+
 use std::{collections::HashMap, convert::Infallible, mem::size_of};
 
 use biodivine_lib_bdd::Bdd;
-use graph_ops::{forward_traverse, Bit};
+use graph_ops::forward_traverse;
+pub use graph_ops::Bit;
 use opt::{common_subexpression_elimination, EdgeOps, Operation};
 use petgraph::{
     graph::NodeIndex,
@@ -11,33 +17,93 @@ use petgraph::{
 };
 use serde::{Deserialize, Serialize};
 
+/// Integer Adders
 pub mod add;
+
+/// Bitwise-and
 pub mod and;
+
+/// Bitshift
 pub mod bitshift;
-pub mod cache;
+
+/// Integer comparisons.
 pub mod comparisons;
+
+/// Errors that can occur in this crate.
 pub mod error;
-pub mod graph_ops;
+
+/// Operations
+mod graph_ops;
+
+/// Integer multipliers
 pub mod mul;
+
+/// Circuit optimizations.
 pub mod opt;
+
+/// Bitwise-or
 pub mod or;
+
+/// Integer subtractors
 pub mod sub;
+
+/// Misc operations on integers.
 pub mod util;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash, Serialize, Deserialize)]
+/// The operations in a [`MuxCircuit`]. These operations are connected with [`MuxEdgeInfo`]s.
 pub enum MuxOp {
+    /// The literal value '1'.
+    ///
+    /// # Remarks
+    /// [`MuxOp::One`] takes no inputs. Violating this results in a malformed circuit.
     One,
+
+    /// The literal value '0'.
+    ///
+    /// # Remarks
+    /// [`MuxOp::Zero`] takes no inputs. Violating this results in a malformed circuit.
     Zero,
+
+    /// A multiplexer. Takes 3 inputs: high, low, and select.
+    ///
+    /// # Remarks
+    /// The output of a multiplexer is the low input when select is `0` and
+    /// high when select is `1`.`
+    ///
+    /// [`MuxOp::Mux`] takes exactly one each of [`MuxEdgeInfo::Low`], [`MuxEdgeInfo::High`],
+    /// and [`MuxEdgeInfo::Select`]. Violating this results in a malformed circuit.
     Mux,
+
+    /// The `i`th input variable to the circuit, where `i` is the struct member.
+    ///
+    /// # Remarks
+    /// Input variables have no inputs. Furthermore, for a circuit with N inputs, each input index
+    /// `i` in 0..N must appear exactly once. Violating this results in a malformed circuit.
     Variable(u32),
+
+    /// The `i`th output variable, where `i` is the struct member.
+    ///
+    /// # Remarks
+    /// Output variables have one input of type [`MuxEdgeInfo::Output`]. Furthermore, for a circuit
+    /// with N outputs, each output index `i` in 0..N must appear exactly once. Violating this
+    /// results in a malformed circuit.
     Output(u32),
 }
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+/// The wires of the [`MuxCircuit`] connecting [`MuxOp`]s.
 pub enum MuxEdgeInfo {
+    /// Connects a circuit element to the "low" input of a [`MuxOp::Mux`]
     Low,
+
+    /// Connects a circuit element to the "high" input of a [`MuxOp::Mux`]
     High,
+
+    /// Connects a circuit element to the "select" input of a [`MuxOp::Mux`]
     Select,
+
+    /// Connects a circuit element to the "output" input of a [`MuxOp::Output`]
     Output,
 }
 
@@ -83,26 +149,51 @@ impl Operation for MuxOp {
 }
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
+/// A DAG describing a multiplexer tree.
+///
+/// # Remarks
+/// When used in the context of FHE, [`MuxOp::Mux`]s should connect to [`MuxEdgeInfo::Low`] or
+/// [`MuxEdgeInfo::High`] edges on another [`MuxOp::Mux`] or a [`MuxOp::Output`]. Additionally,
+/// [`MuxOp::Variable`]s should connect to the [`MuxEdgeInfo::Select`] lines of [`MuxOp::Mux`]
+/// operations.
+///
+/// Well-formed [`MuxCircuit`]s must additionally contain no cycles.
 pub struct MuxCircuit {
+    /// The DAG describing the multiplexer tree.
     pub graph: StableGraph<MuxOp, MuxEdgeInfo>,
+
+    /// Inputs to the multiplexer tree.
     pub inputs: Vec<NodeIndex>,
 }
 
 #[derive(Debug, Clone, Copy)]
+/// Metrcs for a [`MuxCircuit`]
 pub struct MuxCircuitInfo {
+    /// The number of [`MuxOp::Mux`] operations.
     pub mux_gates: usize,
+
+    /// The number of [`MuxOp::Variable`] operations.
     pub inputs: usize,
+
+    /// The number of [`MuxOp::Output`] operations.
     pub outputs: usize,
 }
 
 #[derive(Hash, PartialEq, Eq)]
+/// The [`NodeIndex`]es of a [`MuxOp::Mux`]'s parent operations.
 pub struct MuxInputs {
+    /// The node corresponding to [`MuxEdgeInfo::Select`].
     pub sel_id: NodeIndex,
+
+    /// The node corresponding to [`MuxEdgeInfo::High`].
     pub low_id: NodeIndex,
+
+    /// The node corresponding to [`MuxEdgeInfo::Low`].
     pub high_id: NodeIndex,
 }
 
 impl MuxCircuit {
+    /// Get the operation counts of this [`MuxCircuit`].
     pub fn metrics(&self) -> MuxCircuitInfo {
         MuxCircuitInfo {
             mux_gates: self
@@ -146,6 +237,7 @@ impl MuxCircuit {
         inputs
     }
 
+    /// Returns the parents of a [`MuxOp::Mux`] operations.
     pub fn get_mux_inputs(&self, node_id: NodeIndex) -> MuxInputs {
         assert!(matches!(self.graph.node_weight(node_id), Some(MuxOp::Mux)));
 
@@ -176,6 +268,8 @@ impl MuxCircuit {
         }
     }
 
+    /// Run common-subexpression elimination on the circuit to collapse redundant [`MuxOp::Mux`]
+    /// operations.
     pub fn optimize(&mut self) {
         common_subexpression_elimination(&mut self.graph);
         self.compact_indices();
@@ -347,6 +441,7 @@ impl From<&[Bdd]> for MuxCircuit {
     }
 }
 
+/// Run the given inputs through [`MuxCircuit`] and return the resuling output [`Bit`]s
 pub fn test_mux_circuit(circuit: &MuxCircuit, inputs: &[Bit]) -> Vec<Bit> {
     assert_eq!(
         inputs.len(),
