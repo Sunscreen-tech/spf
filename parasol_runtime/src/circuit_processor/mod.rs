@@ -38,9 +38,22 @@ pub fn push_completed(id: usize) {
 }
 
 #[derive(Clone)]
+/// A "backend" processor that runs computations over directed graphs of FHE operations.
+///
+/// # Remarks
+/// This processor is designed to allow executing graphs that are currently being constructed in
+/// another thread. Internally, graph these tasks are issued when you call [`Self::spawn_graph`]
+/// or [`Self::run_graph_blocking`].
+///
+/// To limit memory usage, it features `flow_control` whereby the thread issuing
+/// tasks must pass the [`Receiver`] returned by [`UOpProcessor::new`] to the
+/// [`Self::spawn_graph`] and [`Self::run_graph_blocking`] methods, which will block the
+/// calling thread when the number of in-flight tasks exceeds the `flow_control` value passed to
+/// [`UOpProcessor::new`].
 pub struct UOpProcessor {
     flow_control: SyncSender<()>,
     thread_pool: Arc<ThreadPool>,
+    /// An [`Evaluation`] that can perform FHE operations.
     pub eval: Arc<Evaluation>,
     enc: Arc<Encryption>,
     /// A trivial encryption of zero, wrapped in a whole bunch of nonsense so
@@ -56,6 +69,7 @@ pub struct UOpProcessor {
 }
 
 impl UOpProcessor {
+    /// Create a new [`UOpProcessor`].
     pub fn new(
         flow_control_len: usize,
         thread_pool: Arc<ThreadPool>,
@@ -662,12 +676,15 @@ impl UOpProcessor {
     }
 }
 
+/// A callback that fires when all the operations in an [`FheCircuit`] passed to
+/// [`UOpProcessor::spawn_graph`] or [`UOpProcessor::run_graph_blocking`] finish.
 pub struct CompletionHandler {
     ops_remaining: AtomicUsize,
     callback: Box<dyn Fn() + 'static + Sync + Send>,
 }
 
 impl CompletionHandler {
+    /// Create a [`CompletionHandler`] with the passed callback.
     pub fn new<F>(callback: F) -> Self
     where
         F: Fn() + Sync + Send + 'static,
@@ -678,11 +695,11 @@ impl CompletionHandler {
         }
     }
 
-    pub fn dispatch(&self) {
+    pub(crate) fn dispatch(&self) {
         self.ops_remaining.fetch_add(1, Ordering::Acquire);
     }
 
-    pub fn retire(&self) {
+    pub(crate) fn retire(&self) {
         if self.ops_remaining.fetch_sub(1, Ordering::Release) == 1 {
             (self.callback)();
         }

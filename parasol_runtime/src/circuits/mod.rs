@@ -5,8 +5,13 @@ use mux_circuits::sub::full_subtractor;
 
 use crate::{Encryption, FheCircuit, L1GlweCiphertext};
 
+/// Generators for addition [`FheCircuit`]s.
 pub mod add;
+
+/// Generators for multiplication [`FheCircuit`]s
 pub mod mul;
+
+/// Generators for subtraction [`FheCircuit`]s.
 pub mod sub;
 
 /// sub two ciphertexts together using a full subtractor. The borrow in is
