@@ -38,7 +38,7 @@ pub fn push_completed(id: usize) {
 }
 
 #[derive(Clone)]
-/// A "backend" processor that runs computations over directed graphs of FHE operations.
+/// A "backend" processor that runs [`FheCircuit`]s.
 ///
 /// # Remarks
 /// This processor is designed to allow executing graphs that are currently being constructed in

@@ -3,9 +3,12 @@ use serde::Deserialize;
 
 use crate::{Params, Result};
 
+/// Get the expected size of a type for safe bincode deserialization.
 pub trait GetSize {
+    /// The expected size under the given [`Params`].
     fn get_size(params: &Params) -> usize;
 
+    /// Checks if the given object is valid under the given [`Params`].
     fn check_is_valid(&self, params: &Params) -> Result<()>;
 }
 

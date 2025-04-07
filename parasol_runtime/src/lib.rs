@@ -33,7 +33,7 @@ pub use crypto::{
 };
 pub use fhe_circuit::{
     insert_ciphertext_conversion, prune, FheCircuit, FheEdge, FheOp, SharedL0LweCiphertext,
-    SharedL1GgswCiphertext, SharedL1GlweCiphertext, SharedL1LweCiphertext,
+    SharedL1GgswCiphertext, SharedL1GlevCiphertext, SharedL1GlweCiphertext, SharedL1LweCiphertext,
 };
 pub use params::*;
 
