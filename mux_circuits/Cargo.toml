@@ -3,6 +3,9 @@ name = "mux_circuits"
 version = "0.9.0"
 edition = "2021"
 license = "AGPL-3.0-only"
+homepage = "https://sunscreen.tech"
+repository = "https://github.com/Sunscreen-tech/hpu"
+description = "Provides functionality for describing and testing multiplexer tree circuits. Additionally provides a library of basic MUX circuits."
 
 [dependencies]
 biodivine-lib-bdd = { workspace = true }
