@@ -4,7 +4,7 @@ use petgraph::{
     prelude::StableGraph, stable_graph::NodeIndex, visit::IntoNodeIdentifiers, Direction,
 };
 
-use crate::{error::Error, opt::GraphQuery};
+use crate::opt::GraphQuery;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
 pub struct Bit(pub bool);
@@ -21,24 +21,6 @@ impl From<bool> for Bit {
     fn from(value: bool) -> Self {
         Self(value)
     }
-}
-
-pub fn try_to_bits(val: u64, bits: usize) -> Result<Vec<Bit>, Error> {
-    let mut result = vec![Bit(false); bits];
-
-    if val >= 0x1 << bits {
-        return Err(Error::OutOfRange);
-    }
-
-    for (i, result) in result
-        .iter_mut()
-        .enumerate()
-        .take(usize::min(bits, u64::BITS as usize))
-    {
-        *result = Bit((val >> i) & 0x1 == 1);
-    }
-
-    Ok(result)
 }
 
 impl<'a, N, E> From<&'a StableGraph<N, E>> for GraphQuery<'a, N, E> {

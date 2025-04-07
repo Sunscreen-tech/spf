@@ -7,8 +7,12 @@ use crate::MuxCircuit;
 use sunscreen_math::combination::Combinations;
 
 #[derive(Clone, Copy, Debug, Hash, Eq, PartialEq)]
+/// Parameters that define an `n`-by-`m` multiplier circuit.
 pub struct MultiplierParams {
+    /// `n`
     pub n: usize,
+
+    /// `m`
     pub m: usize,
 }
 
@@ -54,6 +58,7 @@ pub fn multiplier_impl(params: MultiplierParams) -> MuxCircuit {
     mux_circuit
 }
 
+/// Create an `n`-by-`m` unsigned multiplier circuit.
 pub fn unsigned_multiplier(n: usize, m: usize) -> MuxCircuit {
     match (n, m) {
         (8, 8) => bincode::deserialize(include_bytes!("data/multiplier-n8-m8")).unwrap(),
@@ -247,25 +252,6 @@ fn n_bits_are_true(variable_set: &BddVariableSet, bits: &[&Bdd], n: usize) -> Bd
     result
 }
 
-pub fn vector_boolean_and<const N: usize>() -> MuxCircuit {
-    let variable_set = BddVariableSet::new_anonymous((N + 1) as u16);
-    let vars = variable_set.variables();
-    let mut result = vec![variable_set.mk_false(); N];
-
-    let other = &variable_set.mk_var(vars[N]);
-
-    for i in 0..N {
-        let a = &variable_set.mk_var(vars[i]);
-
-        result[i] = a.and(other);
-    }
-
-    let mut circuit = MuxCircuit::from(result.as_slice());
-    circuit.optimize();
-
-    circuit
-}
-
 /// The cutoff point at which we stop subdividing values.
 pub(crate) const CIRCUIT_CUTOFF: usize = 32;
 
@@ -400,6 +386,8 @@ where
     reduction_bits
 }
 
+/// Generate a 4-way addition reduction of the partial outputs of each step of the divide-and-conquer
+/// multiplication algorithm.
 pub fn gradeschool_reduce(n: usize, m: usize) -> MuxCircuit {
     match (n, m) {
         (64, 64) => {
@@ -602,10 +590,7 @@ mod tests {
     use biodivine_lib_bdd::BddValuation;
     use rand::{thread_rng, RngCore};
 
-    use crate::{
-        graph_ops::{try_to_bits, Bit},
-        test_mux_circuit,
-    };
+    use crate::{graph_ops::Bit, test_mux_circuit, util::try_to_bits};
 
     use super::*;
 

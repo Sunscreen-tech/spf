@@ -1,3 +1,5 @@
+use crate::{error::Error, graph_ops::Bit};
+
 // From nightly, originally is a macro that worked over all unsigned integer
 // sizes.
 /// Calculates `lhs` &minus; `rhs` &minus; `borrow` and returns a tuple
@@ -36,4 +38,26 @@ pub fn arbitrary_width_borrowing_sub(
     let diff = diff & diff_mask;
 
     (diff, borrow as u128)
+}
+
+/// Convenience function during testing that decomposes the given `val` into a `bits`-bit integer.
+///
+/// # Remarks
+/// The bits are returned from least to most significant order.
+pub fn try_to_bits(val: u64, bits: usize) -> Result<Vec<Bit>, Error> {
+    let mut result = vec![Bit(false); bits];
+
+    if val >= 0x1 << bits {
+        return Err(Error::OutOfRange);
+    }
+
+    for (i, result) in result
+        .iter_mut()
+        .enumerate()
+        .take(usize::min(bits, u64::BITS as usize))
+    {
+        *result = Bit((val >> i) & 0x1 == 1);
+    }
+
+    Ok(result)
 }

@@ -2,6 +2,7 @@ use biodivine_lib_bdd::BddVariableSet;
 
 use super::MuxCircuit;
 
+/// Crate a bitwise-and circuit for 2 integers of bit length `inputs`.
 pub fn make_and_circuit(inputs: u16) -> MuxCircuit {
     let variable_set = BddVariableSet::new_anonymous(2 * inputs);
     let vars = variable_set.variables();
