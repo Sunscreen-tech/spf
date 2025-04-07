@@ -6,7 +6,8 @@
 use std::{collections::HashMap, convert::Infallible, mem::size_of};
 
 use biodivine_lib_bdd::Bdd;
-use graph_ops::{forward_traverse, Bit};
+use graph_ops::forward_traverse;
+pub use graph_ops::Bit;
 use opt::{common_subexpression_elimination, EdgeOps, Operation};
 use petgraph::{
     graph::NodeIndex,

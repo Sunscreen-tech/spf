@@ -7,6 +7,7 @@ use petgraph::{
 use crate::opt::GraphQuery;
 
 #[derive(Debug, Clone, Copy, Eq, PartialEq, Default)]
+/// A bit containing the value true or false.
 pub struct Bit(pub bool);
 
 impl Deref for Bit {
