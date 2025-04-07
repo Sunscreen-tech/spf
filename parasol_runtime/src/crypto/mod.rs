@@ -7,17 +7,21 @@ pub use encryption::*;
 pub use evaluation::*;
 pub use keys::*;
 
+/// A trait that produces a trivial zero encryption for the implementing ciphertext type.
 pub trait TrivialZero
 where
     Self: Sized,
 {
+    /// Produce a trivial encryption of zero.
     fn trivial_zero(enc: &Encryption) -> Self;
 }
 
+/// A trait that produces a trivial one encryption for the implementing ciphertext type.
 pub trait TrivialOne
 where
     Self: Sized,
 {
+    /// Produce a trivial encryption of one.
     fn trivial_one(enc: &Encryption) -> Self;
 }
 

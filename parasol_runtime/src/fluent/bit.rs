@@ -12,6 +12,7 @@ use crate::{
 use petgraph::stable_graph::NodeIndex;
 
 #[derive(Clone, Serialize, Deserialize)]
+/// An encrypted bit with ciphertext type `T`.
 pub struct Bit<T: CiphertextOps> {
     ct: Arc<AtomicRefCell<T>>,
 }
@@ -38,12 +39,15 @@ impl<T: CiphertextOps> Bit<T> {
         self.with_decryption_fn(|x| x.decrypt(enc, sk))
     }
 
+    /// Encrypt a bit under the given secret key.
     pub fn encrypt_secret(val: bool, enc: &Encryption, sk: &SecretKey) -> Self {
         Self {
             ct: Arc::new(AtomicRefCell::new(T::encrypt_secret(val, enc, sk))),
         }
     }
 
+    /// Use this bit as an input to an FHE computation. Adds an `FheOp::Input*` of the appropriate type
+    /// corresponding to `T` to the [`FheCircuitCtx`]. Returns a handle to the added [`BitNode`].
     pub fn graph_input(&self, ctx: &FheCircuitCtx) -> BitNode<T> {
         BitNode {
             node: ctx.circuit.borrow_mut().add_node(T::graph_input(&self.ct)),
@@ -59,6 +63,7 @@ impl<T: CiphertextOps> Bit<T> {
         f(&self.ct.borrow())
     }
 
+    /// Create a trivial encryption of the bit as a `T` ciphertext.
     pub fn trivial_encryption(val: bool, enc: &Encryption, eval: &Evaluation) -> Self {
         Self {
             ct: Arc::new(AtomicRefCell::new(T::trivial_encryption(val, enc, eval))),
@@ -67,7 +72,9 @@ impl<T: CiphertextOps> Bit<T> {
 }
 
 #[derive(Debug)]
+/// A node in an [`FheCircuitCtx`] that represents an encrypted bit of type `T`
 pub struct BitNode<T: CiphertextOps> {
+    /// The underlying petgraph [`NodeIndex`].
     pub node: NodeIndex,
     pub(crate) _phantom: PhantomData<T>,
 }
@@ -81,6 +88,12 @@ impl<T: CiphertextOps> Clone for BitNode<T> {
 impl<T: CiphertextOps> Copy for BitNode<T> {}
 
 impl BitNode<L1GgswCiphertext> {
+    /// Given two integers `if_true` and `if_false`, adds a computation that returns
+    /// `if_true` when this bit encrypts true and `if_false` when this bit encrypts false.
+    ///
+    /// # Remarks
+    /// This operations requires this bit be an [`L1GgswCiphertext`]. You can use [`Self::convert`]
+    /// to convert other ciphertext types to this.
     pub fn select<'a, const N: usize>(
         &self,
         if_true: &UIntGraphNodes<'a, N, L1GlweCiphertext>,
@@ -107,6 +120,17 @@ impl BitNode<L1GgswCiphertext> {
 }
 
 impl<T: CiphertextOps> BitNode<T> {
+    /// Add an output node to the computation. When the [`FheCircuitCtx`]'s DAG finishes computing,
+    /// the returned [`Bit`] will encrypt the result of this DAG node.
+    ///
+    /// # Remarks
+    /// The returned [`Bit`] has not yet been evaluated and will be a trivial zero until the
+    /// computation completes. You should generally submit the computation using
+    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
+    ///
+    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
+    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
+    /// is running.
     pub fn collect_output(&self, ctx: &FheCircuitCtx, enc: &Encryption) -> Bit<T> {
         let mut circuit = ctx.circuit.borrow_mut();
         let output = Arc::new(AtomicRefCell::new(T::allocate(enc)));
@@ -117,6 +141,10 @@ impl<T: CiphertextOps> BitNode<T> {
         Bit { ct: output }
     }
 
+    /// Add a trivial or precomputed (if GGSW) encryption of one to the graph.
+    ///
+    /// # Remarks
+    /// These encryptions are not guaranteed to be secure, but are useful as constants.
     pub fn one(ctx: &FheCircuitCtx) -> Self {
         let mut circuit = ctx.circuit.borrow_mut();
         let mut one_cache = ctx.one_cache.borrow_mut();
@@ -136,6 +164,10 @@ impl<T: CiphertextOps> BitNode<T> {
         }
     }
 
+    /// Add a trivial or precomputed (if GGSW) encryption of zero to the graph.
+    ///
+    /// # Remarks
+    /// These encryptions are not guaranteed to be secure, but are useful as constants.
     pub fn zero(ctx: &FheCircuitCtx) -> Self {
         let mut circuit = ctx.circuit.borrow_mut();
         let mut zero_cache = ctx.zero_cache.borrow_mut();
@@ -155,6 +187,8 @@ impl<T: CiphertextOps> BitNode<T> {
         }
     }
 
+    /// Convert this [`BitNode<T>`] to type [`BitNode<U>`]. Generally, you'll convert ciphertexts to
+    /// `GGSW` to perform computation.
     pub fn convert<U: CiphertextOps>(&self, ctx: &FheCircuitCtx) -> BitNode<U> {
         let node = insert_ciphertext_conversion(
             &mut ctx.circuit.borrow_mut(),

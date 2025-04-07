@@ -16,7 +16,13 @@ use crate::params::Params;
 use crate::safe_bincode::GetSize;
 
 #[derive(Clone, Serialize, Deserialize)]
+/// A public key
+///
+/// # Remarks
+/// FHE public keys 10s of kB and you should generally serialize them using APIs that provide compact
+/// arrays, such as [`bincode`]. JSON is not recommended.
 pub struct PublicKey {
+    /// The inner [`RlwePublicKey`]
     pub rlwe_1: RlwePublicKey<u64>,
 }
 
@@ -32,6 +38,13 @@ impl GetSize for PublicKey {
 }
 
 impl PublicKey {
+    /// Generate a public key from the given secret key.
+    ///
+    /// # Panics
+    /// If the passed parameters aren't the same as those used when generating the secret key.
+    ///
+    /// Additionally, the params must feature a level-1 GLWE polynomial count of 1. I.e.
+    /// `params.l1_params.dim.count.0 == 1`. [`crate::DEFAULT_128`] have this property.
     pub fn generate(params: &Params, sk: &SecretKey) -> Self {
         assert_eq!(params.l1_params.dim.size.0, 1, "Unfortunately, public keys currently require a GLWE size of 1. This restriction will likely be eased in the future.");
 
@@ -44,9 +57,22 @@ impl PublicKey {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// A secret key.
+///
+/// # Security
+/// You should generally never share the [`SecretKey`] with other parties, as they'll be able to
+/// decrypt any data encrypted under it.
+///
+/// # Remarks
+/// FHE secret keys are 10s of kB and you should generally serialize them using APIs that provide
+/// compact arrays, such as [`bincode`]. JSON is not recommended. Furthermore, you must treat
+/// serialized secret keys with the same care as deserialized ones with regards to not sharing them.
 pub struct SecretKey {
+    /// The internal [`LweSecretKey`] under level-0 parameters.
     pub lwe_0: LweSecretKey<u64>,
+    /// The internal [`GlweSecretKey`] under level-1 parameters.
     pub glwe_1: GlweSecretKey<u64>,
+    /// The internal [`GlweSecretKey`] under level-2 parameters.
     pub glwe_2: GlweSecretKey<u64>,
 }
 
@@ -70,6 +96,7 @@ impl GetSize for SecretKey {
 }
 
 impl SecretKey {
+    /// Generate a [`SecretKey`] under the given parameter set.
     pub fn generate(params: &Params) -> Self {
         let lwe_0 = keygen::generate_binary_lwe_sk(&params.l0_params);
         let glwe_1 = keygen::generate_binary_glwe_sk(&params.l1_params);
@@ -84,10 +111,23 @@ impl SecretKey {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// A set of keys that can be FFT'd and used during evaluation.
+///
+/// # Remarks
+/// Evaluation keys are quite large (100s of MB), so you should serialize with a protocol that can
+/// efficiently store arrays. Additionally, you should design your protocol around not having to
+/// frequently share these.
 pub struct ServerKey {
+    /// The boostrapping key used internally in circuit bootstrapping operations.
     pub cbs_key: BootstrapKey<u64>,
+
+    /// The private functional keyswitch keys used internally during circuit bootstrapping.
     pub pfks_key: CircuitBootstrappingKeyswitchKeys<u64>,
+
+    /// The keyswitch keys for converting L1 LWE ciphertexts to L0 LWE ciphertexts.
     pub ks_key: LweKeyswitchKey<u64>,
+
+    /// Scheme switching keys used for turning L1 GLEV ciphertexts into L1 GGSW ciphertexts.
     pub ss_key: SchemeSwitchKey<u64>,
 }
 
@@ -135,6 +175,10 @@ impl GetSize for ServerKey {
 }
 
 impl ServerKey {
+    /// Generate the server keys from the given secret keys.
+    ///
+    /// # Remarks
+    /// The params passed must be the same as those used during secret key generation.
     pub fn generate(secret_key: &SecretKey, params: &Params) -> Self {
         let cbs_key = keygen::generate_bootstrapping_key(
             &secret_key.lwe_0,
@@ -177,6 +221,7 @@ impl ServerKey {
         }
     }
 
+    /// Takes the fast-fourier transform of the keys, which is used during evaluation.
     pub fn fft(&self, params: &Params) -> ServerKeyFft {
         let mut ssk_fft = SchemeSwitchKeyFft::new(&params.l1_params, &params.ss_radix);
 
@@ -198,10 +243,18 @@ impl ServerKey {
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// A Fourier transformed version of [`ServerKey`].
 pub struct ServerKeyFft {
+    /// The FFT'd circuit bootstrap key.
     pub cbs_key: BootstrapKeyFft<Complex<f64>>,
+
+    /// The private function keyswitch keys (not FFT'd).
     pub pfks_key: CircuitBootstrappingKeyswitchKeys<u64>,
+
+    /// The keyswitch keys (not FFT'd).
     pub ks_key: LweKeyswitchKey<u64>,
+
+    /// The FFT'd scheme switch keys.
     pub ss_key: SchemeSwitchKeyFft<Complex<f64>>,
 }
 
