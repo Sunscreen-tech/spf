@@ -186,29 +186,29 @@ impl<T> Spinlock<T> {
     ///
     /// # Remarks
     /// Semantically, this behaves the same as [`std::sync::Mutex::lock`], except that one can
-    /// call [`std::mem::forget`] on the returned [`SpinLockHandle`] without leaking OS resources.
-    pub fn lock(&self) -> SpinLockHandle<'_, T> {
+    /// call [`std::mem::forget`] on the returned [`SpinlockHandle`] without leaking OS resources.
+    pub fn lock(&self) -> SpinlockHandle<'_, T> {
         while self
             .lock
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_err()
         {}
 
-        SpinLockHandle { lock: self }
+        SpinlockHandle { lock: self }
     }
 
     /// Attempts to acquire a mutable borrow to the underlying `T`. On failure, returns [`None`].
     ///
     /// # Remarks
     /// Semantically, this behaves the same as [`std::sync::Mutex::try_lock`], except that one can
-    /// call [`std::mem::forget`] on the returned [`SpinLockHandle`] without leaking OS resources.
-    pub fn try_lock(&self) -> Option<SpinLockHandle<T>> {
+    /// call [`std::mem::forget`] on the returned [`SpinlockHandle`] without leaking OS resources.
+    pub fn try_lock(&self) -> Option<SpinlockHandle<T>> {
         if self
             .lock
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)
             .is_ok()
         {
-            Some(SpinLockHandle { lock: self })
+            Some(SpinlockHandle { lock: self })
         } else {
             None
         }
@@ -221,24 +221,24 @@ impl<T> Spinlock<T> {
 
 /// Semantically similar to [`std::sync::MutexGuard`]. Allows you to mutably access the underlying
 /// `T` and unlocks the parent lock when dropped.
-pub struct SpinLockHandle<'a, T> {
+pub struct SpinlockHandle<'a, T> {
     lock: &'a Spinlock<T>,
 }
 
-impl<T> SpinLockHandle<'_, T> {
+impl<T> SpinlockHandle<'_, T> {
     /// Drop this handle, keeping the spinlock locked.
     pub fn keep_locked(self) {
         std::mem::forget(self)
     }
 }
 
-impl<T> Drop for SpinLockHandle<'_, T> {
+impl<T> Drop for SpinlockHandle<'_, T> {
     fn drop(&mut self) {
         self.lock.unlock();
     }
 }
 
-impl<T> Deref for SpinLockHandle<'_, T> {
+impl<T> Deref for SpinlockHandle<'_, T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -246,7 +246,7 @@ impl<T> Deref for SpinLockHandle<'_, T> {
     }
 }
 
-impl<T> DerefMut for SpinLockHandle<'_, T> {
+impl<T> DerefMut for SpinlockHandle<'_, T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         unsafe { self.lock.val.get().as_mut().unwrap() }
     }

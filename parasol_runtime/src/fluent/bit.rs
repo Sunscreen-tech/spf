@@ -12,7 +12,7 @@ use crate::{
 use petgraph::stable_graph::NodeIndex;
 
 #[derive(Clone, Serialize, Deserialize)]
-/// An encrypted bit with ciphertext type `T`.
+/// An bit encrypted under ciphertext type `T`.
 pub struct Bit<T: CiphertextOps> {
     ct: Arc<AtomicRefCell<T>>,
 }

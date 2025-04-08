@@ -729,7 +729,7 @@ where
         val
     }
 
-    /// Creates input nodes in the [`FheCircuitCtx`] graph.
+    /// Create input nodes in the [`FheCircuitCtx`] graph.
     pub fn graph_input(&self, ctx: &FheCircuitCtx) -> PackedUIntGraphNode<N, T> {
         PackedUIntGraphNode {
             id: ctx.circuit.borrow_mut().add_node(T::graph_input(&self.ct)),

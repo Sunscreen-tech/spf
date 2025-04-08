@@ -33,12 +33,16 @@ use sunscreen_tfhe::{
 ///   first bootstraps to l2 LWE multiple ciphertexts then applies private functional keyswitching
 ///   to generate the l1 GGSW ciphertext.
 /// * l1 GGSW -> l1 GLWE
-///   GGSW ciphertexts serve as encrypted select bits for a multiplexer tree, a circuit that supports
-///   universal computation. It does so by evaluating an N-bit function, which features N layers.
+///   This step actually evaluates functions using trees of multiplexers (via the CMux
+///   operation). The CMux operation accepts 2 GLWE ciphertexts, `a` and `b`, and a `GGSW`
+///   ciphertext `sel`. The output is a GLWE ciphertext encrypting the same message as `a` when
+///   `sel` is 0 and `b` when `sel` is 1.
+///
+///   To evaluate an N-bit function, we build a multiplexer tree using N layers.
 ///   At the first layer of the tree, we pass trivial one and zero encryptions as the a and b inputs
-///   as the truth table requires as well as the first GGSW. Subsequent `i-th` layers chain the
-///   `(i-1)-th` layer outputs as a and b inputs and the `i-th` GGSW encrypted bit to evaluate. The
-///   final result is an l1 GLWE ciphertext.
+///   as the truth table requires as well as the first GGSW. We evaluate each subsequent `i-th`
+///   mux layer, using outputs from the `(i-1)-th` layer as `a` and `b` inputs and the `i-th`
+///   GGSW encrypted input as `sel`. The final result of this mux tree is an l1 GLWE ciphertext.
 /// * l1 GLWE -> l1 LWE
 ///   We perform sample extraction to produce an LWE encryption of the 0th coefficient of the input
 ///   GLWE ciphertext's contained message (i.e. the encrypted bit).
@@ -69,10 +73,10 @@ pub struct Params {
     /// The radix decomposition internally used during the bootstrapping step of circuit bootstrapping.
     pub pbs_radix: RadixDecomposition,
 
-    /// The decomposition used when keyswtichhing from l1 LWE to l0 LWE
+    /// The decomposition used when keyswitching from l1 LWE to l0 LWE
     pub ks_radix: RadixDecomposition,
 
-    /// The decomposition to used during the private function keyswitch step of circuit bootstrapping.
+    /// The decomposition used during the private function keyswitch step of circuit bootstrapping.
     pub pfks_radix: RadixDecomposition,
 
     /// Unused and will be removed.

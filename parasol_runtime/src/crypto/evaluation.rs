@@ -195,7 +195,7 @@ impl Evaluation {
     /// [`L1GgswCiphertext`].
     ///
     /// # See also
-    /// [`circuit_bootstrap`]
+    /// [`sunscreen_tfhe::ops::bootstrapping::circuit_bootstrap`]
     pub fn circuit_bootstrap(&self, output: &mut L1GgswCiphertext, input: &L0LweCiphertext) {
         let mut tmp = GgswCiphertext::new(&self.params.l1_params, &self.params.cbs_radix);
 
@@ -222,7 +222,7 @@ impl Evaluation {
     /// Converts an [`L1GlevCiphertext`] to an [`L1GgswCiphertext`].
     ///
     /// # See also
-    /// [`scheme_switch_fft`]
+    /// [`sunscreen_tfhe::ops::fft_ops::scheme_switch_fft`]
     pub fn scheme_switch(&self, output: &mut L1GgswCiphertext, input: &L1GlevCiphertext) {
         scheme_switch_fft(
             &mut output.0,
@@ -237,7 +237,7 @@ impl Evaluation {
     /// Convert an [`L1LweCiphertext`] to an [`L0LweCiphertext`].
     ///
     /// # See also
-    /// [`keyswitch_lwe_to_lwe`]
+    /// [`sunscreen_tfhe::ops::keyswitch::lwe_keyswitch::keyswitch_lwe_to_lwe`]
     pub fn keyswitch_lwe_l1_lwe_l0(&self, output: &mut L0LweCiphertext, input: &L1LweCiphertext) {
         keyswitch_lwe_to_lwe(
             &mut output.0,

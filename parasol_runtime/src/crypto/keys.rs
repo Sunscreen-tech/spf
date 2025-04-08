@@ -19,8 +19,8 @@ use crate::safe_bincode::GetSize;
 /// A public key
 ///
 /// # Remarks
-/// FHE public keys 10s of kB and you should generally serialize them using APIs that provide compact
-/// arrays, such as [`bincode`]. JSON is not recommended.
+/// FHE public keys are 10s of kB and you should generally serialize them using APIs that
+/// provide compact arrays, such as [`bincode`]. JSON is not recommended.
 pub struct PublicKey {
     /// The inner [`RlwePublicKey`]
     pub rlwe_1: RlwePublicKey<u64>,
@@ -114,7 +114,7 @@ impl SecretKey {
 /// A set of keys that can be FFT'd and used during evaluation.
 ///
 /// # Remarks
-/// Evaluation keys are quite large (100s of MB), so you should serialize with a protocol that can
+/// Server keys are quite large (100s of MB), so you should serialize with a protocol that can
 /// efficiently store arrays. Additionally, you should design your protocol around not having to
 /// frequently share these.
 pub struct ServerKey {

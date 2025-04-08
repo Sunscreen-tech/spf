@@ -104,13 +104,13 @@ where
     /// This is used internally to facilitate ciphertext conversion.
     const CIPHERTEXT_TYPE: CiphertextType;
 
-    /// Allocate a new trivial zero cipehrtext.
+    /// Allocate a new trivial zero ciphertext.
     fn allocate(encryption: &Encryption) -> Self;
 
-    /// Encrypts a bit under the given secret key. Returns the cipehrtext.
+    /// Encrypt a bit under the given secret key. Returns the ciphertext.
     fn encrypt_secret(msg: bool, encryption: &Encryption, sk: &SecretKey) -> Self;
 
-    /// Decrypt and return an encrypted bit.
+    /// Decrypt and return the bit message contained in `self`.
     fn decrypt(&self, encryption: &Encryption, sk: &SecretKey) -> bool;
 
     /// Create an [`FheOp`] input corresponding to this ciphertext.
@@ -119,17 +119,17 @@ where
     /// Create an [`FheOp`] output corresponding to this ciphertext.
     fn graph_output(bit: &Arc<AtomicRefCell<Self>>) -> FheOp;
 
-    /// Create a trivial encryption of the given bit message of the this ciphertext type.
+    /// Create a trivial encryption of the given bit message with ciphertext type `Self`.
     ///
     /// # Remarks
     /// In the case of [`L1GgswCiphertext`]s, this will return a pre-encrypted one or zero, as
     /// trivial encryptions of one would require knowing and would reveal the secret key.
     fn trivial_encryption(bit: bool, encryption: &Encryption, eval: &Evaluation) -> Self;
 
-    /// Add a [`FheOp`] corresponding to this ciphertext's trivial one node.
+    /// Add an [`FheOp`] corresponding to this ciphertext's trivial one node.
     fn graph_trivial_one() -> FheOp;
 
-    /// Add a [`FheOp`] corresponding to this ciphertext's trivial zero node.
+    /// Add an [`FheOp`] corresponding to this ciphertext's trivial zero node.
     fn graph_trivial_zero() -> FheOp;
 }
 
