@@ -1,7 +1,5 @@
 use std::sync::{mpsc::Receiver, Arc, Mutex, OnceLock};
 
-use rayon::ThreadPoolBuilder;
-
 use crate::{
     crypto::PublicKey, params::DEFAULT_80, Encryption, Evaluation, SecretKey, ServerKey,
     ServerKeyFft, UOpProcessor, DEFAULT_128,
@@ -66,12 +64,7 @@ pub fn make_uproc_80() -> (Mutex<UOpProcessor>, Receiver<()>) {
     let enc = get_encryption_80();
     let eval = Evaluation::new(get_server_keys_80(), &DEFAULT_80, &enc);
 
-    let proc = UOpProcessor::new(
-        16384,
-        Arc::new(ThreadPoolBuilder::new().build().unwrap()),
-        &eval,
-        &enc,
-    );
+    let proc = UOpProcessor::new(16384, None, &eval, &enc);
 
     (Mutex::new(proc.0), proc.1)
 }
@@ -84,12 +77,7 @@ pub fn make_uproc_128() -> (Mutex<UOpProcessor>, Receiver<()>) {
     let enc = get_encryption_128();
     let eval = Evaluation::new(get_server_keys_128(), &DEFAULT_128, &enc);
 
-    let proc = UOpProcessor::new(
-        16384,
-        Arc::new(ThreadPoolBuilder::new().build().unwrap()),
-        &eval,
-        &enc,
-    );
+    let proc = UOpProcessor::new(16384, None, &eval, &enc);
 
     (Mutex::new(proc.0), proc.1)
 }
@@ -100,12 +88,7 @@ pub fn make_uproc_with_flow_control_len_80(
     let enc = get_encryption_80();
     let eval = Evaluation::new(get_server_keys_80(), &DEFAULT_80, &enc);
 
-    let proc = UOpProcessor::new(
-        flow_control_len,
-        Arc::new(ThreadPoolBuilder::new().build().unwrap()),
-        &eval,
-        &enc,
-    );
+    let proc = UOpProcessor::new(flow_control_len, None, &eval, &enc);
 
     (Mutex::new(proc.0), proc.1)
 }

@@ -43,7 +43,10 @@ pub fn make_computer_80() -> (FheComputer, Encryption) {
     let enc = Encryption::new(&DEFAULT_80);
     let eval = Evaluation::new(server_key, &DEFAULT_80, &enc);
 
-    (FheComputer::new(&enc, &eval, get_thread_pool()), enc)
+    (
+        FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool()),
+        enc,
+    )
 }
 
 pub fn make_computer_128() -> (FheComputer, Encryption) {
@@ -51,7 +54,10 @@ pub fn make_computer_128() -> (FheComputer, Encryption) {
     let enc = Encryption::new(&DEFAULT_128);
     let eval = Evaluation::new(server_key, &DEFAULT_128, &enc);
 
-    (FheComputer::new(&enc, &eval, get_thread_pool()), enc)
+    (
+        FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool()),
+        enc,
+    )
 }
 
 /// Create a buffer from a value, either encrypted or plaintext, using a secret key.
