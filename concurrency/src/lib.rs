@@ -186,7 +186,7 @@ impl<T> Spinlock<T> {
     ///
     /// # Remarks
     /// Semantically, this behaves the same as [`std::sync::Mutex::lock`], except that one can
-    /// call [`std::mem::forget`] on the returned [`SpinLockHandle`] without leaking OS resources.
+    /// call [`std::mem::forget`] on the returned [`SpinlockHandle`] without leaking OS resources.
     pub fn lock(&self) -> SpinlockHandle<'_, T> {
         while self
             .lock
@@ -201,7 +201,7 @@ impl<T> Spinlock<T> {
     ///
     /// # Remarks
     /// Semantically, this behaves the same as [`std::sync::Mutex::try_lock`], except that one can
-    /// call [`std::mem::forget`] on the returned [`SpinLockHandle`] without leaking OS resources.
+    /// call [`std::mem::forget`] on the returned [`SpinlockHandle`] without leaking OS resources.
     pub fn try_lock(&self) -> Option<SpinlockHandle<T>> {
         if self
             .lock

@@ -170,7 +170,7 @@ impl std::fmt::Debug for FheOp {
 }
 
 #[derive(Copy, Clone, Debug)]
-/// The input types to [`FheOp`]s in an [`FheCircuit`].
+/// The input types for [`FheOp`]s in an [`FheCircuit`].
 pub enum FheEdge {
     /// The value selected by a cmux when Sel is 0.
     Low,
@@ -184,10 +184,10 @@ pub enum FheEdge {
     /// A unary input.
     Unary,
 
-    /// A [L1GlweCiphertext] operand.
+    /// An [L1GlweCiphertext] operand.
     Glwe,
 
-    /// A [L1GgswCiphertext] operand.
+    /// An [L1GgswCiphertext] operand.
     Ggsw,
 
     /// The left operand to a binary function.
@@ -201,7 +201,7 @@ pub enum FheEdge {
 /// A directed graph of FHE operations that describe a computational circuit.
 ///
 /// # Remarks
-/// To be well-formed, the circuit must be acyclic.
+/// Well-formed circuits must be acyclic.
 pub struct FheCircuit {
     /// The DAG.
     pub graph: StableGraph<FheOp, FheEdge>,
