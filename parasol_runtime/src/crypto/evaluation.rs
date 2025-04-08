@@ -191,7 +191,7 @@ impl Evaluation {
         }
     }
 
-    /// Generates a new [`Evaluation`] with the default parameters ([`DEFAULT_128`])
+    /// Generates a new [`Evaluation`] with the default parameters ([`crate::DEFAULT_128`])
     pub fn with_default_params(server_key: Arc<ServerKeyFft>) -> Self {
         let params = Params::default();
         let enc = Encryption::default();
