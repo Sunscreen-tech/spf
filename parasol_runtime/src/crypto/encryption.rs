@@ -125,11 +125,11 @@ impl From<GlevCiphertext<u64>> for L1GlevCiphertext {
 /// When using the Parasol processor (another crate), you should use its provided encryption
 /// APIs.
 pub struct Encryption {
-    /// The [`Params`] parameter sets this [`Encryption`] object is using.
+    /// The [`Params`] parameter set this [`Encryption`] object is using.
     pub params: Params,
 }
 
-pub const PLAINTEXT_BITS: PlaintextBits = PlaintextBits(1);
+pub(crate) const NUM_PLAINTEXT_BITS: PlaintextBits = PlaintextBits(1);
 
 impl Encryption {
     /// Create a new [`Encryption`] over the given parameter set.
@@ -167,7 +167,7 @@ impl Encryption {
     /// Encrypt `value` as an [`L0LweCiphertext`] under the given [`SecretKey`]
     pub fn encrypt_lwe_l0_secret(&self, value: bool, sk: &SecretKey) -> L0LweCiphertext {
         sk.lwe_0
-            .encrypt(value as u64, &self.params.l0_params, PLAINTEXT_BITS)
+            .encrypt(value as u64, &self.params.l0_params, NUM_PLAINTEXT_BITS)
             .0
             .into()
     }
@@ -179,7 +179,7 @@ impl Encryption {
             .encrypt(
                 value as u64,
                 &self.params.l1_params.as_lwe_def(),
-                PLAINTEXT_BITS,
+                NUM_PLAINTEXT_BITS,
             )
             .0
             .into()
@@ -192,7 +192,7 @@ impl Encryption {
         sk: &SecretKey,
     ) -> L1GlweCiphertext {
         sk.glwe_1
-            .encode_encrypt_glwe(poly, &self.params.l1_params, PLAINTEXT_BITS)
+            .encode_encrypt_glwe(poly, &self.params.l1_params, NUM_PLAINTEXT_BITS)
             .into()
     }
 
@@ -259,7 +259,7 @@ impl Encryption {
                 &poly,
                 &self.params.l1_params,
                 &self.params.cbs_radix,
-                PLAINTEXT_BITS,
+                NUM_PLAINTEXT_BITS,
             )
             .fft(
                 &mut ggsw_fft.0,
@@ -270,22 +270,27 @@ impl Encryption {
         ggsw_fft
     }
 
-    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
+    /// Given [`SecretKey`] `sk`, decrypt the given [`L0LweCiphertext`] `input`.
     pub fn decrypt_lwe_l0(&self, input: &L0LweCiphertext, sk: &SecretKey) -> bool {
-        decrypt_lwe(&input.0, &sk.lwe_0, &self.params.l0_params, PLAINTEXT_BITS) == 1
+        decrypt_lwe(
+            &input.0,
+            &sk.lwe_0,
+            &self.params.l0_params,
+            NUM_PLAINTEXT_BITS,
+        ) == 1
     }
 
-    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
+    /// Given [`SecretKey`] `sk`, decrypt the given [`L1LweCiphertext`] `input``.
     pub fn decrypt_lwe_l1(&self, input: &L1LweCiphertext, sk: &SecretKey) -> bool {
         decrypt_lwe(
             &input.0,
             sk.glwe_1.to_lwe_secret_key(),
             &self.params.l1_params.as_lwe_def(),
-            PLAINTEXT_BITS,
+            NUM_PLAINTEXT_BITS,
         ) == 1
     }
 
-    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
+    /// Given [`SecretKey`] `sk`, decrypt the given [`L1GgswCiphertext`] `input`.
     pub fn decrypt_ggsw_l1(&self, input: &L1GgswCiphertext, sk: &SecretKey) -> bool {
         let mut ggsw = GgswCiphertext::<u64>::new(&self.params.l1_params, &self.params.cbs_radix);
 
@@ -298,18 +303,23 @@ impl Encryption {
             &sk.glwe_1,
             &self.params.l1_params,
             &self.params.cbs_radix,
-            PLAINTEXT_BITS,
+            NUM_PLAINTEXT_BITS,
         );
 
         poly.coeffs()[0] == 1
     }
 
-    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
+    /// Given [`SecretKey`] `sk`, decrypt the given [`L0LweCiphertext`] `input`.
     pub fn decrypt_glwe_l1(&self, ct: &L1GlweCiphertext, sk: &SecretKey) -> Polynomial<u64> {
-        decrypt_glwe(&ct.0, &sk.glwe_1, &self.params.l1_params, PLAINTEXT_BITS)
+        decrypt_glwe(
+            &ct.0,
+            &sk.glwe_1,
+            &self.params.l1_params,
+            NUM_PLAINTEXT_BITS,
+        )
     }
 
-    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
+    /// Given [`SecretKey`] `sk`, decrypt the given [`L1GlevCiphertext`] `input`.
     pub fn decrypt_glev_l1(&self, ct: &L1GlevCiphertext, sk: &SecretKey) -> Polynomial<u64> {
         let mut msg = Polynomial::<Torus<u64>>::zero(self.params.l1_params.dim.polynomial_degree.0);
 
@@ -362,7 +372,7 @@ impl Encryption {
     /// # Security
     /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_glwe_l1(&self, pt: &PolynomialRef<u64>) -> L1GlweCiphertext {
-        trivial_glwe(pt, &self.params.l1_params, PLAINTEXT_BITS).into()
+        trivial_glwe(pt, &self.params.l1_params, NUM_PLAINTEXT_BITS).into()
     }
 
     /// Create a trivial encryption of zero for the returned ciphertext type.
@@ -374,7 +384,7 @@ impl Encryption {
     /// # Security
     /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l0_zero(&self) -> L0LweCiphertext {
-        trivial_lwe(0, &self.params.l0_params, PLAINTEXT_BITS).into()
+        trivial_lwe(0, &self.params.l0_params, NUM_PLAINTEXT_BITS).into()
     }
 
     /// Create a trivial encryption of one for the returned ciphertext type.
@@ -386,7 +396,7 @@ impl Encryption {
     /// # Security
     /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l0_one(&self) -> L0LweCiphertext {
-        trivial_lwe(1, &self.params.l0_params, PLAINTEXT_BITS).into()
+        trivial_lwe(1, &self.params.l0_params, NUM_PLAINTEXT_BITS).into()
     }
 
     /// Create a trivial encryption of zero for the returned ciphertext type.
@@ -398,7 +408,7 @@ impl Encryption {
     /// # Security
     /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l1_zero(&self) -> L1LweCiphertext {
-        trivial_lwe(0, &self.params.l1_params.as_lwe_def(), PLAINTEXT_BITS).into()
+        trivial_lwe(0, &self.params.l1_params.as_lwe_def(), NUM_PLAINTEXT_BITS).into()
     }
 
     /// Create a trivial encryption of one for the returned ciphertext type.
@@ -410,7 +420,7 @@ impl Encryption {
     /// # Security
     /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l1_one(&self) -> L1LweCiphertext {
-        trivial_lwe(1, &self.params.l1_params.as_lwe_def(), PLAINTEXT_BITS).into()
+        trivial_lwe(1, &self.params.l1_params.as_lwe_def(), NUM_PLAINTEXT_BITS).into()
     }
 
     /// Create a trivial encryption of zero for the returned ciphertext type.

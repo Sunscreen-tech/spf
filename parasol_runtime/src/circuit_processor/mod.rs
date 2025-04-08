@@ -41,9 +41,11 @@ pub fn push_completed(id: usize) {
 /// A "backend" processor that runs [`FheCircuit`]s.
 ///
 /// # Remarks
-/// This processor is designed to allow executing graphs that are currently being constructed in
-/// another thread. Internally, graph these tasks are issued when you call [`Self::spawn_graph`]
-/// or [`Self::run_graph_blocking`].
+/// This processor is designed to immediately execute circuits' tasks as they are issued. This
+/// means that the execution DAG is still being built while it's running. The [`Self::spawn_graph`]
+/// and [`Self::run_graph_blocking`] methods take as input an [`FheCircuit`] and begin scheduling
+/// the execution DAG. The former method returns when all tasks are scheduled, invoking a passed
+/// callback when all complete, while the latter blocks until all tasks are complete.
 ///
 /// To limit memory usage, it features `flow_control` whereby the thread issuing
 /// tasks must pass the [`Receiver`] returned by [`UOpProcessor::new`] to the

@@ -48,7 +48,10 @@ impl FheProcessor {
                     // We are little endian so we append zeros to the end
                     let output = data
                         .iter()
-                        .chain(std::iter::repeat_n(&zero, (new_width - current_width) as usize))
+                        .chain(std::iter::repeat_n(
+                            &zero,
+                            (new_width - current_width) as usize,
+                        ))
                         .cloned()
                         .collect();
 

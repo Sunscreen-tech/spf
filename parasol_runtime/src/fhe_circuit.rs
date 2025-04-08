@@ -62,8 +62,8 @@ pub enum FheOp {
     /// An output resulting from the computation of type [`SharedL1GlevCiphertext`].
     OutputGlev1(SharedL1GlevCiphertext),
 
-    /// Perform sample extraction, producing an LWE encryption of the i-th coefficient of a GLWE
-    /// ciphertext's message
+    /// Perform sample extraction, producing an LWE encryption of the `i`-th coefficient of a GLWE
+    /// ciphertext's message. The contained [`usize`] member is `i`.
     SampleExtract(usize),
 
     /// Keyswitch a [`SharedL1LweCiphertext`] to [`SharedL0LweCiphertext`].
@@ -121,7 +121,8 @@ pub enum FheOp {
     /// Do nothing.
     Nop,
 
-    /// Negacyclically multiplies the message encrypted in a GLWE ciphertext by `X^N`.
+    /// Negacyclically multiplies the message encrypted in a GLWE ciphertext by `X^N`. The contained
+    /// [`usize`] member is `N`.
     MulXN(usize),
 }
 
@@ -169,24 +170,24 @@ impl std::fmt::Debug for FheOp {
 }
 
 #[derive(Copy, Clone, Debug)]
-/// The input types in an [`FheCircuit`]
+/// The input types to [`FheOp`]s in an [`FheCircuit`].
 pub enum FheEdge {
-    /// The value selected by a cmux when Sel is 0
+    /// The value selected by a cmux when Sel is 0.
     Low,
 
-    /// The value selected by a cmux when Sel is 1
+    /// The value selected by a cmux when Sel is 1.
     High,
 
-    /// The Select bit of a cmux
+    /// The Select bit of a cmux.
     Sel,
 
-    /// A unary input
+    /// A unary input.
     Unary,
 
-    /// A [L1GlweCiphertext] operand
+    /// A [L1GlweCiphertext] operand.
     Glwe,
 
-    /// A [L1GgswCiphertext] operand
+    /// A [L1GgswCiphertext] operand.
     Ggsw,
 
     /// The left operand to a binary function.
@@ -200,7 +201,7 @@ pub enum FheEdge {
 /// A directed graph of FHE operations that describe a computational circuit.
 ///
 /// # Remarks
-/// To be well-formed, the circuit must be asyclic.
+/// To be well-formed, the circuit must be acyclic.
 pub struct FheCircuit {
     /// The DAG.
     pub graph: StableGraph<FheOp, FheEdge>,

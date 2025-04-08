@@ -1,7 +1,7 @@
 #[derive(Debug, thiserror::Error)]
 /// Errors that can occur in this crate.
 pub enum Error {
-    /// Attempted to perform an operation with an incorrect ciphertext type.
+    /// Attempted an operation using an incorrect ciphertext type.
     #[error("Ciphertext was not of the expected type.")]
     CiphertextMismatch,
 
