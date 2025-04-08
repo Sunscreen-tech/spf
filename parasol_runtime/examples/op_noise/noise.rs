@@ -66,7 +66,7 @@ pub fn measure_noise_ggsw(
         .next()
         .unwrap()
         .glwe_ciphertexts(params)
-        .last()
+        .next_back()
         .unwrap();
 
     measure_noise_glwe(

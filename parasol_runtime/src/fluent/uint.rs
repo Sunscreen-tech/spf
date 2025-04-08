@@ -652,7 +652,7 @@ where
 ///     .graph_input(&ctx)
 ///     .unpack(&ctx)
 ///     .collect_outputs(&ctx, &enc);
-
+///
 /// uproc
 ///     .lock()
 ///     .unwrap()

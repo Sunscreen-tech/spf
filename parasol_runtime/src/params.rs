@@ -28,23 +28,23 @@ use sunscreen_tfhe::{
 /// and each ciphertext encrypts a single 1 or 0 bit.
 ///
 /// * l0 LWE -> l1 GGSW
-///     The first step in the cycle is circuit bootstrapping, which simultaneously resets the noise in
-///     the input l0 LWE ciphertext and emits a GGSW ciphertext. Internally, circuit bootstrapping
-///     first bootstraps to l2 LWE multiple ciphertexts then applies private functional keyswitching
-///     to generate the l1 GGSW ciphertext.
+///   The first step in the cycle is circuit bootstrapping, which simultaneously resets the noise in
+///   the input l0 LWE ciphertext and emits a GGSW ciphertext. Internally, circuit bootstrapping
+///   first bootstraps to l2 LWE multiple ciphertexts then applies private functional keyswitching
+///   to generate the l1 GGSW ciphertext.
 /// * l1 GGSW -> l1 GLWE
-///     GGSW ciphertexts serve as encrypted select bits for a multiplexer tree, a circuit that supports
-///     universal computation. It does so by evaluating an N-bit function, which features N layers.
-///     At the first layer of the tree, we pass trivial one and zero encryptions as the a and b inputs
-///     as the truth table requires as well as the first GGSW. Subsequent `i-th` layers chain the
-///     `(i-1)-th` layer outputs as a and b inputs and the `i-th` GGSW encrypted bit to evaluate. The
-///     final result is an l1 GLWE ciphertext.
+///   GGSW ciphertexts serve as encrypted select bits for a multiplexer tree, a circuit that supports
+///   universal computation. It does so by evaluating an N-bit function, which features N layers.
+///   At the first layer of the tree, we pass trivial one and zero encryptions as the a and b inputs
+///   as the truth table requires as well as the first GGSW. Subsequent `i-th` layers chain the
+///   `(i-1)-th` layer outputs as a and b inputs and the `i-th` GGSW encrypted bit to evaluate. The
+///   final result is an l1 GLWE ciphertext.
 /// * l1 GLWE -> l1 LWE
-///     We perform sample extraction to produce an LWE encryption of the 0th coefficient of the input
-///     GLWE ciphertext's contained message (i.e. the encrypted bit).
+///   We perform sample extraction to produce an LWE encryption of the 0th coefficient of the input
+///   GLWE ciphertext's contained message (i.e. the encrypted bit).
 /// * l1 LWE -> l0 LWE
-///     LWE keyswitching changes the ciphertext's key so we can repeat this process and chain our
-///     computation.
+///   LWE keyswitching changes the ciphertext's key so we can repeat this process and chain our
+///   computation.
 ///
 /// # Radix decomposition
 /// Many operations decompose polynomials into the sum of polynomials with smaller coefficients, which
