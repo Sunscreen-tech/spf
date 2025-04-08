@@ -73,10 +73,10 @@ pub struct Params {
     /// The radix decomposition internally used during the bootstrapping step of circuit bootstrapping.
     pub pbs_radix: RadixDecomposition,
 
-    /// The decomposition used when keyswtichhing from l1 LWE to l0 LWE
+    /// The decomposition used when keyswitching from l1 LWE to l0 LWE
     pub ks_radix: RadixDecomposition,
 
-    /// The decomposition to used during the private function keyswitch step of circuit bootstrapping.
+    /// The decomposition used during the private function keyswitch step of circuit bootstrapping.
     pub pfks_radix: RadixDecomposition,
 
     /// Unused and will be removed.
