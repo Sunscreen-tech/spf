@@ -25,7 +25,7 @@ pub fn run_program(
         .get_program(&Symbol::new(c_program_name.as_c_str()))
         .ok_or(Error::SymbolNotInElf(program_name.to_string()))?;
 
-    proc.run_program(program, &arguments)?;
+    proc.run_program(program, arguments)?;
 
     Ok(arguments.to_owned())
 }
