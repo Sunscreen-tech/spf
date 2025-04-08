@@ -2,7 +2,6 @@
 #![deny(rustdoc::broken_intra_doc_links)]
 //! Derive macros used with the Parasol processor.
 
-
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
