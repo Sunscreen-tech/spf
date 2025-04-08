@@ -191,6 +191,13 @@ impl Evaluation {
         }
     }
 
+    /// Generates a new [`Evaluation`] with the default parameters ([`crate::DEFAULT_128`])
+    pub fn with_default_params(server_key: Arc<ServerKeyFft>) -> Self {
+        let params = Params::default();
+        let enc = Encryption::default();
+        Self::new(server_key, &params, &enc)
+    }
+
     /// Perform a circuit bootstrap operation, converting an [`L0LweCiphertext`] into an
     /// [`L1GgswCiphertext`].
     ///

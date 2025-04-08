@@ -104,8 +104,14 @@ pub enum Error {
     #[error("ELF file is not ELF32")]
     NotElf32,
 
+    #[error("The ELF file does not contain the specified symbol: {0}")]
+    SymbolNotInElf(String),
+
     #[error("Failed to allocate virtual address space. Already in use.")]
     VirtualAddressInUse,
+
+    #[error("Failed to create CString: {0}")]
+    CStringCreationError(#[from] std::ffi::NulError),
 }
 
 // Stupid ParseError isn't Clone, so we gotta stringify it

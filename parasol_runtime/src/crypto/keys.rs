@@ -240,6 +240,14 @@ impl ServerKey {
             ss_key: ssk_fft,
         }
     }
+
+    /// Generate the server keys from the given secret keys in FFT form.
+    ///
+    /// # Remarks
+    /// The params passed must be the same as those used during secret key generation.
+    pub fn generate_fft(secret_key: &SecretKey, params: &Params) -> ServerKeyFft {
+        Self::generate(secret_key, params).fft(params)
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
