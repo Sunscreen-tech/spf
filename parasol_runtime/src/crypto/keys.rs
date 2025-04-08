@@ -111,7 +111,7 @@ impl SecretKey {
 
     /// Generate a [`SecretKey`] with the default parameter set
     /// ([`crate::DEFAULT_128`])
-    pub fn with_default_params() -> Self {
+    pub fn generate_with_default_params() -> Self {
         Self::generate(&Params::default())
     }
 }
