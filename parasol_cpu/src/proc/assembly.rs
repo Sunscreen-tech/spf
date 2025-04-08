@@ -1,5 +1,6 @@
 use crate::{PtrRegister, Register};
 
+/// Defines the list of opcodes for the processors ISA.
 #[macro_export]
 macro_rules! define_op {
     (

@@ -1,9 +1,8 @@
 use parasol_cpu::{
     assembly::IsaOp,
-    program::FheProgram,
     test_utils::{buffer_from_value_80, make_computer_80, read_result},
     tomasulo::registers::RegisterName,
-    IntoBytes, Register,
+    FheProgram, IntoBytes, Register,
 };
 
 /// An implementation of the chi-squared test that does not use any

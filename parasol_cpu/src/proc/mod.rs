@@ -23,13 +23,14 @@ use crate::{
 
 use self::ops::trivially_encrypt_value_l1glwe;
 
+#[doc(hidden)]
 pub mod assembly;
 mod ops;
 
 #[cfg(test)]
 mod tests;
 
-pub mod program;
+mod program;
 pub use program::*;
 
 pub(crate) use assembly::*;
@@ -41,7 +42,7 @@ pub fn add_dependency(
 ) {
 }
 
-pub trait MemHazards {
+pub(crate) trait MemHazards {
     fn last_write(&self) -> &Option<ScoreboardEntryRef<DispatchIsaOp>>;
 
     fn last_write_mut(&mut self) -> &mut Option<ScoreboardEntryRef<DispatchIsaOp>>;
@@ -61,6 +62,7 @@ pub trait MemHazards {
     }
 }
 
+#[doc(hidden)]
 pub struct PlaintextPtr {
     base: Arc<Vec<AtomicRefCell<u8>>>,
     offset: u32,
@@ -77,6 +79,7 @@ impl MemHazards for PlaintextPtr {
     }
 }
 
+#[doc(hidden)]
 pub struct PlainOffsetCtPtr {
     base: Arc<Vec<AtomicRefCell<L1GlweCiphertext>>>,
     offset: u32,
@@ -93,6 +96,7 @@ impl MemHazards for PlainOffsetCtPtr {
     }
 }
 
+#[doc(hidden)]
 pub struct EncOffsetCtPtr {
     _base: Vec<Arc<AtomicRefCell<L1GlweCiphertext>>>,
     _offset: Vec<Arc<AtomicRefCell<L1GgswCiphertext>>>,
@@ -109,8 +113,11 @@ impl MemHazards for EncOffsetCtPtr {
     }
 }
 
+#[doc(hidden)]
 pub enum CiphertextPtr {
     PlainOffset(PlainOffsetCtPtr),
+
+    #[allow(unused)]
     EncOffset(EncOffsetCtPtr),
 }
 
@@ -120,6 +127,7 @@ impl std::fmt::Debug for CiphertextPtr {
     }
 }
 
+#[doc(hidden)]
 pub enum PtrRegister {
     Uninit,
     Plaintext(PlaintextPtr),
@@ -138,16 +146,20 @@ impl TrivialOne for PtrRegister {
     }
 }
 
+#[doc(hidden)]
 pub enum Ciphertext {
+    #[allow(unused)]
     L0Lwe {
         data: Vec<Arc<AtomicRefCell<L0LweCiphertext>>>,
     },
+    #[allow(unused)]
     L1Lwe {
         data: Vec<Arc<AtomicRefCell<L1LweCiphertext>>>,
     },
     L1Glwe {
         data: Vec<Arc<AtomicRefCell<L1GlweCiphertext>>>,
     },
+    #[allow(unused)]
     L1Ggsw {
         data: Vec<Arc<AtomicRefCell<L1GgswCiphertext>>>,
     },
@@ -163,10 +175,12 @@ impl Ciphertext {
         }
     }
 
+    #[allow(unused)]
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    #[allow(unused)]
     pub fn unwrap_l1glwe(&self) -> &[Arc<AtomicRefCell<L1GlweCiphertext>>] {
         match self {
             Self::L1Glwe { data } => data,
@@ -182,6 +196,7 @@ impl Ciphertext {
     }
 }
 
+#[doc(hidden)]
 /// The type of value stored in a register.
 #[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
 pub enum RegisterValueType {
@@ -192,8 +207,10 @@ pub enum RegisterValueType {
     L1GgswCiphertext,
 }
 
+#[doc(hidden)]
 pub enum Register {
     Plaintext { val: u128, width: u32 },
+
     Ciphertext(Ciphertext),
 }
 
@@ -526,6 +543,7 @@ impl FheProcessor {
         Ok(())
     }
 
+    /// Runs the given program using the passed user [`Buffer`]s as arguments.
     pub fn run_program(&mut self, program: &[IsaOp], data: &[Buffer]) -> Result<()> {
         self.reset_io(data)?;
 
@@ -549,7 +567,7 @@ impl FheProcessor {
     }
 }
 
-pub struct FheProcessorAuxData {
+pub(crate) struct FheProcessorAuxData {
     uop_processor: UOpProcessor,
     flow: std::sync::mpsc::Receiver<()>,
     data: Vec<Buffer>,
@@ -578,17 +596,23 @@ impl FheProcessorAuxData {
     }
 }
 
+/// The Parasol processor that can run programs over encrypted and plaintext data.
 pub struct FheComputer {
     processor: FheProcessor,
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// A buffer to the [`FheComputer`].
 pub enum Buffer {
+    /// The buffer contains plaintext data.
     Plaintext(Arc<Vec<AtomicRefCell<u8>>>),
+
+    /// The buffer contains encrypted data.
     Ciphertext(Arc<Vec<AtomicRefCell<L1GlweCiphertext>>>),
 }
 
 impl Buffer {
+    /// Create a [`Buffer::Plaintext`] from the given value.
     pub fn plain_from_value<T: FheBuffer>(x: &T) -> Self {
         Self::Plaintext(Arc::new(
             T::clone_into_plaintext(x)
@@ -598,6 +622,7 @@ impl Buffer {
         ))
     }
 
+    /// Create a [`Buffer::Ciphertext`] from the given value.
     pub fn cipher_from_value<T: FheBuffer>(x: &T, enc: &Encryption, sk: &SecretKey) -> Self {
         let x = T::clone_into_plaintext(x);
 
@@ -636,10 +661,12 @@ impl Buffer {
         Self::trivial_zero(n, enc)
     }
 
+    /// Attempt to turn the given buffer back into a `T`.
     pub fn plain_try_into_value<T: FheBuffer>(&self) -> Result<T> {
         T::try_from_plaintext(&self.try_plaintext()?)
     }
 
+    /// Attempt to decrypt the given buffer and return the decrypted bits.
     pub fn cipher_to_bits(&self, enc: &Encryption, sk: &SecretKey) -> Result<Vec<bool>> {
         let pt = self
             .try_ciphertext()?
@@ -650,6 +677,7 @@ impl Buffer {
         Ok(pt)
     }
 
+    /// Attempt to decrypt the given buffer and recombobulate the bits back into a `T`.
     pub fn cipher_try_into_value<T: FheBuffer>(
         &self,
         enc: &Encryption,
@@ -716,6 +744,7 @@ impl<const N: usize> TryFrom<Buffer> for UInt<N, L1GlweCiphertext> {
 }
 
 impl FheComputer {
+    /// Create a new [`FheComputer`]. Tasks will run on the global [`rayon::ThreadPool`].
     pub fn new(enc: &Encryption, eval: &Evaluation) -> Self {
         let config = FheProcessorRegisterConfig {
             register_num_registers: 64,
@@ -729,6 +758,7 @@ impl FheComputer {
         Self { processor }
     }
 
+    /// Create a new [`FheComputer`]. Tasks will run on the given [`rayon::ThreadPool`].
     pub fn new_with_threadpool(
         enc: &Encryption,
         eval: &Evaluation,
@@ -746,6 +776,7 @@ impl FheComputer {
         Self { processor }
     }
 
+    /// Run the given FHE program with user specified data.
     pub fn run_program(&mut self, program: &FheProgram, data: &[Buffer]) -> Result<()> {
         self.processor.run_program(&program.instructions, data)
     }
@@ -832,13 +863,6 @@ impl FheComputer {
             .collect::<Vec<_>>();
 
         Ok(outputs)
-    }
-
-    pub fn uproc(&mut self) -> (&mut UOpProcessor, &std::sync::mpsc::Receiver<()>) {
-        (
-            &mut self.processor.aux_data.uop_processor,
-            &self.processor.aux_data.flow,
-        )
     }
 }
 

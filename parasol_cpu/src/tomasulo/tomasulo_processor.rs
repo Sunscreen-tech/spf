@@ -8,6 +8,7 @@ use parasol_runtime::{TrivialOne, TrivialZero};
 use super::{registers::RobEntry, scoreboard::ScoreboardEntryRef};
 use crate::Result;
 
+/// An internal macro that generates an out-of-order executing processor with the given ISA.
 #[macro_export]
 macro_rules! impl_tomasulo {
     ($name:ident, $inst:ty,$dispatch:tt,[$(($reg_index:tt, $reg_type:ty, $reg_name:ident),)*]) => {
@@ -39,7 +40,7 @@ macro_rules! impl_tomasulo {
                     mpsc::{self, Sender, Receiver},
                 };
 
-                pub struct [<$name ConstantPool>] {
+                pub(crate) struct [<$name ConstantPool>] {
                     zero: ($($reg_type,)*),
                     one: ($($reg_type,)*)
                 }
@@ -93,7 +94,7 @@ macro_rules! impl_tomasulo {
 
                 $($crate::impl_select_constant!{[<$name ConstantPool>], $reg_type, $reg_index})*
 
-                pub struct $name where Self: Tomasulo {
+                pub(crate) struct $name where Self: Tomasulo {
                     /// The register file.
                     $($reg_name: RegisterFile<$reg_type, $dispatch>,)*
 
@@ -118,7 +119,7 @@ macro_rules! impl_tomasulo {
                     )
                 }
 
-                pub struct [<$name RegisterConfig>] {
+                pub(crate) struct [<$name RegisterConfig>] {
                     $(pub [<$reg_name _num_registers>]: usize,)*
                 }
 
@@ -310,7 +311,7 @@ macro_rules! impl_tomasulo {
                 }
             }
 
-            pub use [<$name:snake _internal>]::*;
+            pub(crate) use [<$name:snake _internal>]::*;
         }
     };
 }
@@ -414,6 +415,7 @@ where
     }
 }
 
+/// An implementation detail of the [`impl_tomasulo`]` macro
 #[macro_export]
 macro_rules! impl_select_constant {
     ($ty:ident, $ct_ty:ident,$idx:tt) => {
