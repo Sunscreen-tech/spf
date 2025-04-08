@@ -104,7 +104,7 @@ pub enum Error {
     #[error("ELF file is not ELF32")]
     NotElf32,
 
-    #[error("The ELF file does not contained the specified symbol: {0}")]
+    #[error("The ELF file does not contain the specified symbol: {0}")]
     SymbolNotInElf(String),
 
     #[error("Failed to allocate virtual address space. Already in use.")]
