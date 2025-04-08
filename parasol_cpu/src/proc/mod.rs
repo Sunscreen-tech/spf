@@ -560,7 +560,7 @@ pub struct FheProcessorAuxData {
 }
 
 impl FheProcessorAuxData {
-    pub fn new(enc: &Encryption, eval: &Evaluation, thread_pool: Arc<ThreadPool>) -> Self {
+    pub fn new(enc: &Encryption, eval: &Evaluation, thread_pool: Option<Arc<ThreadPool>>) -> Self {
         let (uop_processor, flow) = UOpProcessor::new(1024, thread_pool, eval, enc);
 
         let l1glwe_zero = L1GlweCiphertext::trivial_zero(enc);
@@ -716,13 +716,30 @@ impl<const N: usize> TryFrom<Buffer> for UInt<N, L1GlweCiphertext> {
 }
 
 impl FheComputer {
-    pub fn new(enc: &Encryption, eval: &Evaluation, thread_pool: Arc<ThreadPool>) -> Self {
+    pub fn new(enc: &Encryption, eval: &Evaluation) -> Self {
         let config = FheProcessorRegisterConfig {
             register_num_registers: 64,
             ptr_register_num_registers: 64,
         };
 
-        let aux_data = FheProcessorAuxData::new(enc, eval, thread_pool);
+        let aux_data = FheProcessorAuxData::new(enc, eval, None);
+
+        let processor = FheProcessor::new(enc, &config, aux_data);
+
+        Self { processor }
+    }
+
+    pub fn new_with_threadpool(
+        enc: &Encryption,
+        eval: &Evaluation,
+        thread_pool: Arc<ThreadPool>,
+    ) -> Self {
+        let config = FheProcessorRegisterConfig {
+            register_num_registers: 64,
+            ptr_register_num_registers: 64,
+        };
+
+        let aux_data = FheProcessorAuxData::new(enc, eval, Some(thread_pool));
 
         let processor = FheProcessor::new(enc, &config, aux_data);
 
@@ -827,12 +844,14 @@ impl FheComputer {
 
 #[cfg(test)]
 mod buffer_uint_tests {
-    use crate::test_utils::make_computer_128;
+    use crate::test_utils::{get_thread_pool, make_computer_128, read_result_sk};
     use crate::tomasulo::registers::RegisterName;
 
     use super::*;
     use parasol_runtime::fluent::UInt;
-    use parasol_runtime::test_utils::{get_encryption_128, get_secret_keys_128};
+    use parasol_runtime::test_utils::{
+        get_encryption_128, get_evaluation_128, get_secret_keys_128,
+    };
     use rand::{thread_rng, RngCore};
 
     #[test]
@@ -925,5 +944,51 @@ mod buffer_uint_tests {
                 val1, val2, expected, actual
             );
         }
+    }
+
+    #[test]
+    fn can_run_on_global_or_local_threadpool() {
+        fn case(use_global_threadpool: bool) {
+            let enc = get_encryption_128();
+            let eval = get_evaluation_128();
+
+            let mut cpu = if use_global_threadpool {
+                FheComputer::new(&enc, &eval)
+            } else {
+                FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool())
+            };
+
+            let buffers = vec![
+                Buffer::cipher_from_value(&32u8, &enc, &get_secret_keys_128()),
+                Buffer::cipher_from_value(&42u8, &enc, &get_secret_keys_128()),
+                Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
+            ];
+
+            let add_program = &FheProgram {
+                instructions: vec![
+                    IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
+                    IsaOp::BindReadOnly(RegisterName::named(1), 1, true),
+                    IsaOp::BindReadWrite(RegisterName::named(2), 2, true),
+                    IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 8),
+                    IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 8),
+                    IsaOp::Add(
+                        RegisterName::named(2),
+                        RegisterName::named(0),
+                        RegisterName::named(1),
+                    ),
+                    IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 8),
+                ],
+            };
+
+            cpu.run_program(add_program, &buffers).unwrap();
+
+            assert_eq!(
+                read_result_sk::<u8>(&buffers[2], &enc, &get_secret_keys_128(), true),
+                74
+            );
+        }
+
+        case(false);
+        case(true);
     }
 }

@@ -14,7 +14,7 @@ use petgraph::{
     visit::{EdgeRef, Topo},
     Direction,
 };
-use rayon::ThreadPool;
+use rayon::{spawn, ThreadPool};
 
 use crate::{
     crypto::{
@@ -52,9 +52,12 @@ pub fn push_completed(id: usize) {
 /// [`Self::spawn_graph`] and [`Self::run_graph_blocking`] methods, which will block the
 /// calling thread when the number of in-flight tasks exceeds the `flow_control` value passed to
 /// [`UOpProcessor::new`].
+///
+/// The `thread_pool` argument is optional. When set, tasks will be scheduled on the specified
+/// threadpool. Otherwise, the global rayon threadpool will be used.
 pub struct UOpProcessor {
     flow_control: SyncSender<()>,
-    thread_pool: Arc<ThreadPool>,
+    thread_pool: Option<Arc<ThreadPool>>,
     /// An [`Evaluation`] that can perform FHE operations.
     pub eval: Arc<Evaluation>,
     enc: Arc<Encryption>,
@@ -71,10 +74,11 @@ pub struct UOpProcessor {
 }
 
 impl UOpProcessor {
-    /// Create a new [`UOpProcessor`].
+    /// Create a new [`UOpProcessor`]. When `thread_pool` is [`None`], the global rayon threadpool
+    /// will be used.
     pub fn new(
         flow_control_len: usize,
-        thread_pool: Arc<ThreadPool>,
+        thread_pool: Option<Arc<ThreadPool>>,
         eval: &Evaluation,
         enc: &Encryption,
     ) -> (Self, Receiver<()>) {
@@ -192,7 +196,15 @@ impl UOpProcessor {
 
         let uproc_clone = uproc.clone();
 
-        uproc.thread_pool.spawn(move || {
+        let spawn_wrapper = |task| {
+            if let Some(tp) = &uproc.thread_pool {
+                tp.spawn(task);
+            } else {
+                spawn(task);
+            }
+        };
+
+        spawn_wrapper(move || {
             // Ensure our inputs are visible. This fence should match the one below
             // that our dependencies called.
             std::sync::atomic::fence(Ordering::Acquire);

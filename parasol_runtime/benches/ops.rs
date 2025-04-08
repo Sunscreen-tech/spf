@@ -6,7 +6,6 @@ use parasol_runtime::{
     Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
     SecretKey, ServerKey, ServerKeyFft, UOpProcessor, DEFAULT_128,
 };
-use rayon::{ThreadPool, ThreadPoolBuilder};
 
 fn make_computer() -> (
     Encryption,
@@ -17,7 +16,6 @@ fn make_computer() -> (
 ) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
     static SERVER_KEY: OnceLock<Arc<ServerKeyFft>> = OnceLock::new();
-    static THREADPOOL: OnceLock<Arc<ThreadPool>> = OnceLock::new();
 
     let sk = SK
         .get_or_init(|| Arc::new(SecretKey::generate(&DEFAULT_128)))
@@ -31,14 +29,10 @@ fn make_computer() -> (
         })
         .clone();
 
-    let threadpool = THREADPOOL
-        .get_or_init(|| Arc::new(ThreadPoolBuilder::default().build().unwrap()))
-        .clone();
-
     let enc = Encryption::new(&DEFAULT_128);
     let eval = Evaluation::new(server_key.to_owned(), &DEFAULT_128, &enc);
 
-    let (uproc, fc) = UOpProcessor::new(16384, threadpool, &eval, &enc);
+    let (uproc, fc) = UOpProcessor::new(16384, None, &eval, &enc);
 
     (enc, sk, uproc, fc, eval)
 }
