@@ -216,7 +216,7 @@ pub fn refify_binary_op(
     };
 
     // Get the non-reference type argument to the trait.
-    let gen_args = &trait_path.segments.iter().last().unwrap().arguments;
+    let gen_args = &trait_path.segments.iter().next_back().unwrap().arguments;
 
     let mut trait_path_segments = vec![];
 

@@ -19,7 +19,13 @@ use petgraph::stable_graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::entities::Polynomial;
 
+/// A collection of graph nodes resulting from FHE operations over unsigned integers (e.g. the
+/// result of adding two 7-bit unsigned values).
+///
+/// # Remarks
+/// This integer is in unpacked form, meaning each bit resides in a different ciphertext of type `T`.
 pub struct UIntGraphNodes<'a, const N: usize, T: CiphertextOps> {
+    /// The unsigned integer's [`BitNode`]s from least to most significant.
     pub bits: &'a [BitNode<T>],
 }
 
@@ -50,12 +56,26 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
         Self { bits: nodes }
     }
 
+    /// Convert this [`UIntGraphNodes<T>`] to a [`UIntGraphNodes<U>`]. Usually, you'll use this
+    /// to convert to [`L1GgswCiphertext`] so you can perform arithmetic computation over integers.
     pub fn convert<U: CiphertextOps>(&self, graph: &'a FheCircuitCtx) -> UIntGraphNodes<'a, N, U> {
         let iter = self.bits.iter().map(|x| x.convert(graph));
 
         UIntGraphNodes::from_bit_nodes(iter, &graph.allocator)
     }
 
+    /// Add output nodes to the computation for each of this unsigned integer's bits.
+    /// When the [`FheCircuitCtx`]'s DAG finishes computing, the returned [`UInt<N, T>`] will encrypt
+    /// the result of this unsigned integer's DAG nodes.
+    ///
+    /// # Remarks
+    /// The returned [`UInt`] has not yet been evaluated and will be a trivial zero until the
+    /// computation completes. You should generally submit the computation using
+    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
+    ///
+    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
+    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
+    /// is running.
     pub fn collect_outputs(&self, ctx: &FheCircuitCtx, enc: &Encryption) -> UInt<N, T> {
         let result = UInt::new(enc);
 
@@ -69,6 +89,14 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
         result
     }
 
+    /// Convert this `N`-bit integer to an `M`-bit integer of the same ciphertext type.
+    ///
+    /// # Remarks
+    /// If M > N, this will zero extend the integer with trivial encryptions.
+    /// If M < N, this will truncate the high-order bits.
+    /// If M == N, why did you call this? In any case, the returned nodes will equal the input nodes.
+    ///
+    /// This operation is "free" in that it adds no computation to the graph.
     pub fn resize<const M: usize>(&self, ctx: &'a FheCircuitCtx) -> UIntGraphNodes<'a, M, T> {
         let extend = if M > N { M - N } else { 0 };
 
@@ -86,6 +114,11 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
 }
 
 impl<const N: usize> UIntGraphNodes<'_, N, L1GlweCiphertext> {
+    /// Convert this unpacked unsigned integer to packed form.
+    ///
+    /// # Remarks
+    /// This requires T be an [`L1GlweCiphertext`]. If required, use [`Self::convert`] to get into
+    /// this form.
     pub fn pack(
         &self,
         ctx: &FheCircuitCtx,
@@ -186,6 +219,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         }
     }
 
+    /// Compute `self == other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn eq<const M: usize, OutCt: Muxable>(
         &self,
         other: &UIntGraphNodes<M, L1GgswCiphertext>,
@@ -217,6 +255,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         }
     }
 
+    /// Compute `self != other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn neq<const M: usize, OutCt: Muxable>(
         &self,
         other: &UIntGraphNodes<M, L1GgswCiphertext>,
@@ -248,6 +291,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         }
     }
 
+    /// Compute `self > other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn gt<const M: usize, OutCt: Muxable>(
         &self,
         other: &UIntGraphNodes<M, L1GgswCiphertext>,
@@ -256,6 +304,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         self.cmp(other, ctx, true, false)
     }
 
+    /// Compute `self >= other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn ge<const M: usize, OutCt: Muxable>(
         &self,
         other: &UIntGraphNodes<M, L1GgswCiphertext>,
@@ -264,6 +317,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         self.cmp(other, ctx, true, true)
     }
 
+    /// Compute `self < other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn lt<const M: usize, OutCt: Muxable>(
         &self,
         other: &UIntGraphNodes<M, L1GgswCiphertext>,
@@ -272,6 +330,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         self.cmp(other, ctx, false, false)
     }
 
+    /// Compute `self <= other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn le<const M: usize, OutCt: Muxable>(
         &self,
         other: &UIntGraphNodes<M, L1GgswCiphertext>,
@@ -280,6 +343,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         self.cmp(other, ctx, false, true)
     }
 
+    /// Compute `self - other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn sub<OutCt: Muxable>(
         &self,
         other: &Self,
@@ -305,6 +373,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         )
     }
 
+    /// Compute `self & other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn and<OutCt: Muxable>(
         &self,
         other: &Self,
@@ -330,6 +403,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         )
     }
 
+    /// Compute `self + other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn add<OutCt: Muxable>(
         &self,
         other: &Self,
@@ -355,6 +433,11 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         )
     }
 
+    /// Compute `self * other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
     pub fn mul<OutCt: Muxable>(
         &self,
         other: &Self,
@@ -372,12 +455,15 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
     }
 }
 
+/// A graph node that represents an unsigned integer in packed form. See [`PackedUInt`] for a
+/// description of packing.
 pub struct PackedUIntGraphNode<const N: usize, T: CiphertextOps + PolynomialCiphertextOps> {
     id: NodeIndex,
     _phantom: PhantomData<T>,
 }
 
 impl<const N: usize> PackedUIntGraphNode<N, L1GlweCiphertext> {
+    /// Convert this integer into unpacked form, where each bit appears in a different ciphertext.
     pub fn unpack<'a>(&self, ctx: &'a FheCircuitCtx) -> UIntGraphNodes<'a, N, L1LweCiphertext> {
         let nodes = (0..N).map(|i| {
             let mut circuit = ctx.circuit.borrow_mut();
@@ -393,6 +479,16 @@ impl<const N: usize> PackedUIntGraphNode<N, L1GlweCiphertext> {
 }
 
 impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps> PackedUIntGraphNode<N, T> {
+    /// Create an output node in the graph and return the ciphertext.
+    ///
+    /// # Remarks
+    /// The returned [`UInt`] has not yet been evaluated and will be a trivial zero until the
+    /// computation completes. You should generally submit the computation using
+    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
+    ///
+    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
+    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
+    /// is running.
     pub fn collect_output(&self, ctx: &FheCircuitCtx, enc: &Encryption) -> PackedUInt<N, T> {
         let result = Arc::new(AtomicRefCell::new(T::allocate(enc)));
 
@@ -406,7 +502,10 @@ impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps> PackedUIntGraph
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// An unsigned integer store in unpacked form. An `N`-bit unsigned integer encrypts its bits in
+/// `N` different ciphertexts of type `T`.
 pub struct UInt<const N: usize, T: CiphertextOps> {
+    /// The ciphertexts encrypting this unsigned integer's bits in least-to-most significant order.
     pub bits: Vec<Arc<AtomicRefCell<T>>>,
 }
 
@@ -428,6 +527,8 @@ impl<const N: usize, T> UInt<N, T>
 where
     T: CiphertextOps,
 {
+    /// Allocate a new UInt using trivial or precomputed (if T is [`L1GgswCiphertext`]) encryptions
+    /// of zero.
     pub fn new(enc: &Encryption) -> Self {
         Self {
             bits: (0..N)
@@ -436,6 +537,10 @@ where
         }
     }
 
+    /// Create a [`UInt`] from a previously encrypted set of type `T` ciphertexts.
+    ///
+    /// # Remarks
+    /// `bits` are ordered from least to most significant.
     pub fn from_bits(bits: Vec<T>) -> Self {
         Self {
             bits: bits
@@ -469,6 +574,7 @@ where
         self.with_decryption_fn(|x| x.decrypt(enc, sk))
     }
 
+    /// Add input nodes to the given [`FheCircuitCtx`].
     pub fn graph_inputs<'a>(&self, ctx: &'a FheCircuitCtx) -> UIntGraphNodes<'a, N, T> {
         UIntGraphNodes::from_nodes(
             self.bits
@@ -490,6 +596,11 @@ where
         })
     }
 
+    /// Create a trivial encryption of `val`.
+    ///
+    /// # Remarks
+    /// If `T` is [`L1GgswCiphertext`], then the result will contain precomputed
+    /// rather than trivial ciphertexts.
     pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation) -> Self {
         if val > 0x1 << N {
             panic!("Out of bounds");
@@ -507,6 +618,48 @@ where
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// An `N`-bit integer encrypted and packed into a single ciphertext of type `T`. Note `T` must
+/// allow polynomial messages (e.g. [`L1GlweCiphertext`]).
+///
+/// # Remarks
+/// The plaintext coefficient corresponding to `x**n` contains the `n`-th bit of the integer ordered
+/// from least to most significant. For example, the number `10 = 0b1010` would be stored as
+/// `0x^0 + 1x^1 + 0x^2 + 1x^3`.
+///
+/// For integers greater than a few (e.g. 6) bits, packing integers reduces their size for
+/// transmission over the wire.
+///
+/// Packed integers must be unpacked (with [`PackedUIntGraphNode::unpack`]) before you can perform
+/// computation.
+///
+/// # Example
+/// ```rust
+/// # use parasol_runtime::{
+/// #   test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
+/// #   L0LweCiphertext, L1GlweCiphertext, DEFAULT_128, fluent::{FheCircuitCtx, PackedUInt}
+/// # };
+/// # let enc = get_encryption_128();
+///
+/// # let sk = get_secret_keys_128();
+/// # let pk = get_public_key_128();
+/// # let (uproc, fc) = make_uproc_128();
+///
+/// let val = PackedUInt::<16, L1GlweCiphertext>::encrypt(42, &enc, &pk);
+///
+/// let ctx = FheCircuitCtx::new();
+///
+/// let as_unpacked = val
+///     .graph_input(&ctx)
+///     .unpack(&ctx)
+///     .collect_outputs(&ctx, &enc);
+///
+/// uproc
+///     .lock()
+///     .unwrap()
+///     .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+///
+/// assert_eq!(as_unpacked.decrypt(&enc, &sk), 42);
+/// ```
 pub struct PackedUInt<const N: usize, T>
 where
     T: CiphertextOps + PolynomialCiphertextOps,
@@ -539,6 +692,8 @@ impl<const N: usize, T> PackedUInt<N, T>
 where
     T: CiphertextOps + PolynomialCiphertextOps,
 {
+    /// Encrypt and pack the given `val` into a single `T` ciphertext.
+    /// See [`PackedUInt`] for more details on packing.
     pub fn encrypt(val: u64, enc: &Encryption, pk: &PublicKey) -> Self {
         let msg = Self::encode(val, enc);
 
@@ -560,6 +715,7 @@ where
         msg
     }
 
+    /// Decrypt this packed encrypted unsigned integer.
     pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
         assert!(N < T::poly_degree(&enc.params).0);
         let mut val = 0;
@@ -573,6 +729,7 @@ where
         val
     }
 
+    /// Creates input nodes in the [`FheCircuitCtx`] graph.
     pub fn graph_input(&self, ctx: &FheCircuitCtx) -> PackedUIntGraphNode<N, T> {
         PackedUIntGraphNode {
             id: ctx.circuit.borrow_mut().add_node(T::graph_input(&self.ct)),
@@ -580,6 +737,7 @@ where
         }
     }
 
+    /// Trivially encrypt the given value as a [`PackedUInt`].
     pub fn trivial_encrypt(val: u64, enc: &Encryption) -> Self {
         let msg = Self::encode(val, enc);
 
@@ -590,6 +748,7 @@ where
         }
     }
 
+    /// Returns the inner ciphertext.
     pub fn inner(&self) -> T {
         self.ct.borrow().clone()
     }

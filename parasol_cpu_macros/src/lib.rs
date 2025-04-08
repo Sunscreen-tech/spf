@@ -1,3 +1,7 @@
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+//! Derive macros used with the Parasol processor.
+
 extern crate proc_macro;
 use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
@@ -5,6 +9,8 @@ use quote::quote;
 use syn::{parse_macro_input, Data, DeriveInput, Fields};
 
 #[proc_macro_derive(IntoBytes)]
+/// Allows you to `#[derive(IntoBytes)]` on structures where each member impls
+/// `IntoBytes`
 pub fn derive_into_bytes(item: TokenStream) -> TokenStream {
     let input = parse_macro_input!(item as DeriveInput);
 

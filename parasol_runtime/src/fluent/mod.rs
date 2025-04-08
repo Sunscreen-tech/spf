@@ -28,8 +28,9 @@ pub use uint::*;
 /// # Panics
 /// The APIs in this module take the context as an immutable borrow to hide the
 /// allocator details from you, but rest assured you'll get a panic if you try
-/// to mutate use said primitives concurrently on multiple threads.
+/// to mutate using said primitives concurrently on multiple threads.
 pub struct FheCircuitCtx {
+    /// The underlying [`FheCircuit`].
     pub circuit: AtomicRefCell<FheCircuit>,
     one_cache: AtomicRefCell<[Option<NodeIndex>; 4]>,
     zero_cache: AtomicRefCell<[Option<NodeIndex>; 4]>,
@@ -43,6 +44,7 @@ impl Default for FheCircuitCtx {
 }
 
 impl FheCircuitCtx {
+    /// Create a new [`FheCircuitCtx`].
     pub fn new() -> Self {
         Self {
             circuit: AtomicRefCell::new(FheCircuit::new()),
@@ -53,15 +55,22 @@ impl FheCircuitCtx {
     }
 }
 
+/// Operations one can perform on ciphertexts that encrypt polynomials (e.g. [`L1GlweCiphertext`] and
+/// [`L1GlevCiphertext`]).
 pub trait PolynomialCiphertextOps {
+    /// Encrypt a polynomial under the given secret key. Returns the ciphertext.
     fn encrypt_secret(msg: &PolynomialRef<u64>, enc: &Encryption, sk: &SecretKey) -> Self;
 
+    /// Encrypt a polynomial using the given public key. Returns the ciphertext.
     fn encrypt(msg: &PolynomialRef<u64>, enc: &Encryption, pk: &PublicKey) -> Self;
 
+    /// Decrypt an encrypted polynomial using the given secret key. Returns the message.
     fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> Polynomial<u64>;
 
+    /// Create a trivial encryption of the given polynomial.
     fn trivial_encryption(polynomial: &PolynomialRef<u64>, encryption: &Encryption) -> Self;
 
+    /// Get the polynomial degree of messages for the given params.
     fn poly_degree(params: &Params) -> PolynomialDegree;
 }
 
@@ -87,28 +96,40 @@ impl PolynomialCiphertextOps for L1GlweCiphertext {
     }
 }
 
+/// Operations supported by all ciphertext types.
 pub trait CiphertextOps: GetSize + Clone
 where
     Self: Sized,
 {
+    /// This is used internally to facilitate ciphertext conversion.
     const CIPHERTEXT_TYPE: CiphertextType;
 
+    /// Allocate a new trivial zero cipehrtext.
     fn allocate(encryption: &Encryption) -> Self;
 
+    /// Encrypts a bit under the given secret key. Returns the cipehrtext.
     fn encrypt_secret(msg: bool, encryption: &Encryption, sk: &SecretKey) -> Self;
 
+    /// Decrypt and return an encrypted bit.
     fn decrypt(&self, encryption: &Encryption, sk: &SecretKey) -> bool;
 
-    // Create an [`FheOp`] input corresponding to this ciphertext.
+    /// Create an [`FheOp`] input corresponding to this ciphertext.
     fn graph_input(bit: &Arc<AtomicRefCell<Self>>) -> FheOp;
 
-    // Create an [`FheOp`] output corresponding to this ciphertext.
+    /// Create an [`FheOp`] output corresponding to this ciphertext.
     fn graph_output(bit: &Arc<AtomicRefCell<Self>>) -> FheOp;
 
+    /// Create a trivial encryption of the given bit message of the this ciphertext type.
+    ///
+    /// # Remarks
+    /// In the case of [`L1GgswCiphertext`]s, this will return a pre-encrypted one or zero, as
+    /// trivial encryptions of one would require knowing and would reveal the secret key.
     fn trivial_encryption(bit: bool, encryption: &Encryption, eval: &Evaluation) -> Self;
 
+    /// Add a [`FheOp`] corresponding to this ciphertext's trivial one node.
     fn graph_trivial_one() -> FheOp;
 
+    /// Add a [`FheOp`] corresponding to this ciphertext's trivial zero node.
     fn graph_trivial_zero() -> FheOp;
 }
 
@@ -318,7 +339,11 @@ impl CiphertextOps for L1GlevCiphertext {
     }
 }
 
+/// A trait indicating one can perform Mux Operations over this ciphertext with a [`L1GgswCiphertext`]
+/// select bit. Used to abstract Mux circuits over different ciphertext types.
 pub trait Muxable: CiphertextOps {
+    /// The type of the `a` and `b` inputs and output of a mux operation. Allows the runtime to
+    /// dynamically choose [`FheOp::CMux`] or [`FheOp::GlevCMux`] as appropriate.
     const MUX_MODE: MuxMode;
 }
 

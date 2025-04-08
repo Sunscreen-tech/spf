@@ -18,9 +18,9 @@ fn ilog2_rounded_up(x: u16) -> u32 {
 /// # Arguments
 ///
 /// * `inputs` - The number of bits in the input. Note that the input should be
-///              specified MSB first.
+///   specified MSB first.
 /// * `shift_size` - The number of bits in the shift. Note that the shift should
-///                  be specified MSB first.
+///   be specified MSB first.
 /// * `right` - Whether to shift right or left.
 /// * `zeros` - Whether to fill the shifted bits with zeros.
 pub fn bitshift(inputs: u16, shift_size: u16, right: bool, zeros: bool) -> MuxCircuit {

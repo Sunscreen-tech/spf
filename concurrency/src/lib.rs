@@ -1,3 +1,7 @@
+#![deny(missing_docs)]
+#![deny(rustdoc::broken_intra_doc_links)]
+//! Contains primitives for synchronizing and safely managing concurrency.
+
 use std::{
     cell::UnsafeCell,
     ops::{Deref, DerefMut},
@@ -6,6 +10,12 @@ use std::{
 
 use serde::{Deserialize, Serialize};
 
+/// Similar to [std::cell::RefCell], but works in a concurrent setting.
+///
+/// # Remarks
+/// As with [std::cell::RefCell] call [`Self::borrow_mut`] to get a mutable borrow
+/// and [`Self::borrow`] to get an immutable borrow to the underlying `T`. Both of these methods
+/// only require an immutable borrow of self.
 pub struct AtomicRefCell<T> {
     val: UnsafeCell<T>,
     state: AtomicUsize,
@@ -50,6 +60,7 @@ where
 unsafe impl<T> Sync for AtomicRefCell<T> where T: Sync {}
 
 impl<T> AtomicRefCell<T> {
+    /// Create a new [`AtomicRefCell`] wrapping the given `val`.
     pub fn new(val: T) -> Self {
         Self {
             val: UnsafeCell::new(val),
@@ -57,6 +68,10 @@ impl<T> AtomicRefCell<T> {
         }
     }
 
+    /// Get an immutable borrow to the underlying `T`.
+    ///
+    /// # Panics
+    /// If the underlying value is already mutably borrowed.
     pub fn borrow(&self) -> Ref<T> {
         let old = self.state.fetch_add(1, Ordering::Acquire);
 
@@ -75,6 +90,10 @@ impl<T> AtomicRefCell<T> {
         }
     }
 
+    /// Get a mutable borrow to the underlying `T`.
+    ///
+    /// # Panics
+    /// If the underlying value is already borrowed (any type).
     pub fn borrow_mut(&self) -> RefMut<T> {
         if let Err(e) = self
             .state
@@ -94,6 +113,7 @@ impl<T> AtomicRefCell<T> {
     }
 }
 
+/// An immutable borrow returned by [`AtomicRefCell`].
 pub struct Ref<'a, T> {
     val: &'a T,
     count: &'a AtomicUsize,
@@ -113,6 +133,7 @@ impl<T> Deref for Ref<'_, T> {
     }
 }
 
+/// A mutable borrow returned by [`AtomicRefCell`].
 pub struct RefMut<'a, T> {
     val: &'a mut T,
     count: &'a AtomicUsize,
@@ -139,16 +160,11 @@ impl<T> DerefMut for RefMut<'_, T> {
 }
 
 /// The use of Spinlocks in user processes is a contentious topic. However,
-/// we have a reuse pattern that requires us to forcibly unlock objects.
-/// Additionally, contention is extremely rare in this application.
-///
-/// A common pattern in the latter case is locking a dependents list. One
-/// thread will try_lock() and push back to the list while the thread
-/// executing the task will permanently lock the list and do nothing with
-/// it.
+/// they allow for some unconventional patterns, such as permanantly locking
+/// objects and dropping locked locks.
 ///
 /// Using [`Mutex`](std::sync::Mutex) in this manner can leak resources on
-/// systems that use pthread instead of Futex (i.e. MacOs).
+/// systems that use pthread instead of Futex (i.e. MacOS).
 pub struct Spinlock<T> {
     lock: AtomicBool,
     val: UnsafeCell<T>,
@@ -158,6 +174,7 @@ unsafe impl<T> Sync for Spinlock<T> {}
 unsafe impl<T> Send for Spinlock<T> {}
 
 impl<T> Spinlock<T> {
+    /// Create a new [`Spinlock`].
     pub fn new(val: T) -> Self {
         Self {
             lock: AtomicBool::new(false),
@@ -165,6 +182,11 @@ impl<T> Spinlock<T> {
         }
     }
 
+    /// Acquire a mutable borrow to the underlying `T`.
+    ///
+    /// # Remarks
+    /// Semantically, this behaves the same as [`std::sync::Mutex::lock`], except that one can
+    /// call [`std::mem::forget`] on the returned [`SpinLockHandle`] without leaking OS resources.
     pub fn lock(&self) -> SpinLockHandle<'_, T> {
         while self
             .lock
@@ -175,6 +197,11 @@ impl<T> Spinlock<T> {
         SpinLockHandle { lock: self }
     }
 
+    /// Attempts to acquire a mutable borrow to the underlying `T`. On failure, returns [`None`].
+    ///
+    /// # Remarks
+    /// Semantically, this behaves the same as [`std::sync::Mutex::try_lock`], except that one can
+    /// call [`std::mem::forget`] on the returned [`SpinLockHandle`] without leaking OS resources.
     pub fn try_lock(&self) -> Option<SpinLockHandle<T>> {
         if self
             .lock
@@ -192,6 +219,8 @@ impl<T> Spinlock<T> {
     }
 }
 
+/// Semantically similar to [`std::sync::MutexGuard`]. Allows you to mutably access the underlying
+/// `T` and unlocks the parent lock when dropped.
 pub struct SpinLockHandle<'a, T> {
     lock: &'a Spinlock<T>,
 }

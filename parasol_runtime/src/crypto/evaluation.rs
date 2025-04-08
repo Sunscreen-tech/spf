@@ -127,6 +127,12 @@ impl KeylessEvaluation {
 
 #[derive(Clone)]
 /// Performs FHE operations, including those that require the server key.
+///
+/// # Remarks
+/// This type exposes low-level operations and one should generally prefer the higher-level
+/// [`crate::fluent`] API or using the Parasol processor.
+///
+/// All FHE operations in the evaluation run on the current thread.
 pub struct Evaluation {
     keyless_eval: KeylessEvaluation,
     server_key: Arc<ServerKeyFft>,
@@ -143,6 +149,7 @@ impl Deref for Evaluation {
 }
 
 impl Evaluation {
+    /// Create a new [`Evaluation`].
     pub fn new(server_key: Arc<ServerKeyFft>, params: &Params, enc: &Encryption) -> Self {
         let mk_ggsw = |msg: bool| {
             let lwe = if msg {
@@ -184,6 +191,11 @@ impl Evaluation {
         }
     }
 
+    /// Perform a circuit bootstrap operation, converting an [`L0LweCiphertext`] into an
+    /// [`L1GgswCiphertext`].
+    ///
+    /// # See also
+    /// [`circuit_bootstrap`]
     pub fn circuit_bootstrap(&self, output: &mut L1GgswCiphertext, input: &L0LweCiphertext) {
         let mut tmp = GgswCiphertext::new(&self.params.l1_params, &self.params.cbs_radix);
 
@@ -207,6 +219,10 @@ impl Evaluation {
         );
     }
 
+    /// Converts an [`L1GlevCiphertext`] to an [`L1GgswCiphertext`].
+    ///
+    /// # See also
+    /// [`scheme_switch_fft`]
     pub fn scheme_switch(&self, output: &mut L1GgswCiphertext, input: &L1GlevCiphertext) {
         scheme_switch_fft(
             &mut output.0,
@@ -218,6 +234,10 @@ impl Evaluation {
         );
     }
 
+    /// Convert an [`L1LweCiphertext`] to an [`L0LweCiphertext`].
+    ///
+    /// # See also
+    /// [`keyswitch_lwe_to_lwe`]
     pub fn keyswitch_lwe_l1_lwe_l0(&self, output: &mut L0LweCiphertext, input: &L1LweCiphertext) {
         keyswitch_lwe_to_lwe(
             &mut output.0,
@@ -229,10 +249,12 @@ impl Evaluation {
         );
     }
 
+    /// Returns a precomputed GGSW encryption of zero
     pub fn l1ggsw_zero(&self) -> &L1GgswCiphertext {
         &self.l1ggsw_zero
     }
 
+    /// Returns a precomputed GGSW encryption of one
     pub fn l1ggsw_one(&self) -> &L1GgswCiphertext {
         &self.l1ggsw_one
     }

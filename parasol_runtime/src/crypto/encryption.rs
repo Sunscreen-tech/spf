@@ -21,6 +21,8 @@ use core::mem::size_of;
 
 #[repr(transparent)]
 #[derive(Clone, Serialize, Deserialize)]
+/// An [`LweCiphertext`] under the level 0 parameters. See [`Params`] for more details as to the
+/// significance of these ciphertexts.
 pub struct L0LweCiphertext(pub LweCiphertext<u64>);
 
 impl From<LweCiphertext<u64>> for L0LweCiphertext {
@@ -43,6 +45,8 @@ impl TrivialOne for L0LweCiphertext {
 
 #[repr(transparent)]
 #[derive(Clone, Serialize, Deserialize)]
+/// An [`LweCiphertext`] under the level 1 parameters. See [`Params`] for more details as to the
+/// significance of these ciphertexts.
 pub struct L1LweCiphertext(pub LweCiphertext<u64>);
 
 impl From<LweCiphertext<u64>> for L1LweCiphertext {
@@ -65,6 +69,8 @@ impl TrivialOne for L1LweCiphertext {
 
 #[repr(transparent)]
 #[derive(Clone, Serialize, Deserialize)]
+/// A [`GlweCiphertext`] under the level 1 parameters. See [`Params`] for more details as to the
+/// significance of these ciphertexts.
 pub struct L1GlweCiphertext(pub GlweCiphertext<u64>);
 
 impl From<GlweCiphertext<u64>> for L1GlweCiphertext {
@@ -87,6 +93,8 @@ impl TrivialOne for L1GlweCiphertext {
 
 #[repr(transparent)]
 #[derive(Clone)]
+/// A [`GgswCiphertext`] under the level 1 parameters. See [`Params`] for more details as to the
+/// significance of these ciphertexts.
 pub struct L1GgswCiphertext(pub GgswCiphertextFft<Complex<f64>>);
 
 impl From<GgswCiphertextFft<Complex<f64>>> for L1GgswCiphertext {
@@ -97,6 +105,8 @@ impl From<GgswCiphertextFft<Complex<f64>>> for L1GgswCiphertext {
 
 #[repr(transparent)]
 #[derive(Clone, Serialize, Deserialize)]
+/// A [`GlevCiphertext`] under the level 1 parameters. See [`Params`] for more details as to the
+/// significance of these ciphertexts.
 pub struct L1GlevCiphertext(pub GlevCiphertext<u64>);
 
 impl From<GlevCiphertext<u64>> for L1GlevCiphertext {
@@ -106,39 +116,55 @@ impl From<GlevCiphertext<u64>> for L1GlevCiphertext {
 }
 
 #[derive(Debug, Clone, Default)]
+/// A low-level type that allows encrypting and decrypting various ciphertext types.
+///
+/// # Remarks
+/// When interacting with the [`crate::fluent`] API, you should generally use
+/// [`crate::fluent::PackedUInt::encrypt`] to create public-key encryptions of integers.
+///
+/// When using the Parasol processor (another crate), you should use its provided encryption
+/// APIs.
 pub struct Encryption {
+    /// The [`Params`] parameter sets this [`Encryption`] object is using.
     pub params: Params,
 }
 
 pub const PLAINTEXT_BITS: PlaintextBits = PlaintextBits(1);
 
 impl Encryption {
+    /// Create a new [`Encryption`] over the given parameter set.
     pub fn new(params: &Params) -> Self {
         Self {
             params: params.clone(),
         }
     }
 
+    /// Allocate a new zero [`L0LweCiphertext`]
     pub fn allocate_lwe_l0(&self) -> L0LweCiphertext {
         LweCiphertext::new(&self.params.l0_params).into()
     }
 
+    /// Allocate a new zero [`L1LweCiphertext`]
     pub fn allocate_lwe_l1(&self) -> L1LweCiphertext {
         LweCiphertext::new(&self.params.l1_params.as_lwe_def()).into()
     }
 
+    /// Allocate a new zero [`L1GgswCiphertext`]
     pub fn allocate_ggsw_l1(&self) -> L1GgswCiphertext {
         GgswCiphertextFft::new(&self.params.l1_params, &self.params.cbs_radix).into()
     }
 
+    /// Allocate a new zero [`L1GlweCiphertext`]
     pub fn allocate_glwe_l1(&self) -> L1GlweCiphertext {
         GlweCiphertext::new(&self.params.l1_params).into()
     }
 
+    /// Allocate a new zero [`L1GlevCiphertext`]
     pub fn allocate_glev_l1(&self) -> L1GlevCiphertext {
         GlevCiphertext::new(&self.params.l1_params, &self.params.cbs_radix).into()
     }
 
+    /// Encrypt `value` as an [`L0LweCiphertext`] under the given [`SecretKey`]
     pub fn encrypt_lwe_l0_secret(&self, value: bool, sk: &SecretKey) -> L0LweCiphertext {
         sk.lwe_0
             .encrypt(value as u64, &self.params.l0_params, PLAINTEXT_BITS)
@@ -146,6 +172,7 @@ impl Encryption {
             .into()
     }
 
+    /// Encrypt `value` as an [`L1LweCiphertext`] under the given [`SecretKey`]
     pub fn encrypt_lwe_l1_secret(&self, value: bool, sk: &SecretKey) -> L1LweCiphertext {
         sk.glwe_1
             .to_lwe_secret_key()
@@ -158,6 +185,7 @@ impl Encryption {
             .into()
     }
 
+    /// Encrypt `value` as an [`L1GlweCiphertext`] under the given [`SecretKey`]
     pub fn encrypt_glwe_l1_secret(
         &self,
         poly: &PolynomialRef<u64>,
@@ -168,6 +196,12 @@ impl Encryption {
             .into()
     }
 
+    /// Encrypt `value` as an [`L1GlweCiphertext`] under the given [`PublicKey`]. Note that
+    /// RLWE is a special case of GLWE where the number of polynomials is 1. This is the case
+    /// for the [`crate::DEFAULT_128`] parameter set.
+    ///
+    /// # Panics
+    /// If `self.params.l1_params.dim.size.0 != 1`
     pub fn encrypt_rlwe_l1(&self, msg: &PolynomialRef<u64>, pk: &PublicKey) -> L1GlweCiphertext {
         let mut ct = L1GlweCiphertext::allocate(self);
 
@@ -182,6 +216,7 @@ impl Encryption {
         ct
     }
 
+    /// Encrypt `value` as an [`L1GlevCiphertext`] under the given [`SecretKey`]
     pub fn encrypt_glev_l1_secret(
         &self,
         poly: &PolynomialRef<u64>,
@@ -196,6 +231,12 @@ impl Encryption {
         .into()
     }
 
+    /// Encrypt `value` as an [`L1GlevCiphertext`] under the given [`PublicKey`]. Note that
+    /// RLEV is a special case of GLEV where the number of polynomials is 1. This is the case
+    /// for the [`crate::DEFAULT_128`] parameter set.
+    ///
+    /// # Panics
+    /// If `self.params.l1_params.dim.size.0 != 1`
     pub fn encrypt_rlev_l1(&self, poly: &PolynomialRef<u64>, pk: &PublicKey) -> L1GlevCiphertext {
         encrypt_binary_msg_rlev(
             poly,
@@ -206,6 +247,7 @@ impl Encryption {
         .into()
     }
 
+    /// Encrypt `value` as an [`L1GgswCiphertext`] under the given [`SecretKey`]
     pub fn encrypt_ggsw_l1_secret(&self, msg: bool, sk: &SecretKey) -> L1GgswCiphertext {
         let mut poly = Polynomial::new(&vec![0u64; self.params.l1_params.dim.polynomial_degree.0]);
         poly.coeffs_mut()[0] = msg as u64;
@@ -228,10 +270,12 @@ impl Encryption {
         ggsw_fft
     }
 
+    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
     pub fn decrypt_lwe_l0(&self, input: &L0LweCiphertext, sk: &SecretKey) -> bool {
         decrypt_lwe(&input.0, &sk.lwe_0, &self.params.l0_params, PLAINTEXT_BITS) == 1
     }
 
+    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
     pub fn decrypt_lwe_l1(&self, input: &L1LweCiphertext, sk: &SecretKey) -> bool {
         decrypt_lwe(
             &input.0,
@@ -241,6 +285,7 @@ impl Encryption {
         ) == 1
     }
 
+    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
     pub fn decrypt_ggsw_l1(&self, input: &L1GgswCiphertext, sk: &SecretKey) -> bool {
         let mut ggsw = GgswCiphertext::<u64>::new(&self.params.l1_params, &self.params.cbs_radix);
 
@@ -259,10 +304,12 @@ impl Encryption {
         poly.coeffs()[0] == 1
     }
 
+    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
     pub fn decrypt_glwe_l1(&self, ct: &L1GlweCiphertext, sk: &SecretKey) -> Polynomial<u64> {
         decrypt_glwe(&ct.0, &sk.glwe_1, &self.params.l1_params, PLAINTEXT_BITS)
     }
 
+    /// Decrypt the given `input` ciphertext under the given secret key `sk`.
     pub fn decrypt_glev_l1(&self, ct: &L1GlevCiphertext, sk: &SecretKey) -> Polynomial<u64> {
         let mut msg = Polynomial::<Torus<u64>>::zero(self.params.l1_params.dim.polynomial_degree.0);
 
@@ -277,12 +324,28 @@ impl Encryption {
         msg.map(|x| x.inner())
     }
 
+    /// Create a trivial encryption of zero for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_glwe_l1_zero(&self) -> L1GlweCiphertext {
         let zero = Polynomial::zero(self.params.l1_poly_degree().0);
 
         self.trivial_glwe_l1(&zero)
     }
 
+    /// Create a trivial encryption of one for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_glwe_l1_one(&self) -> L1GlweCiphertext {
         let mut one = Polynomial::zero(self.params.l1_poly_degree().0);
         one.coeffs_mut()[0] = 1;
@@ -290,30 +353,86 @@ impl Encryption {
         self.trivial_glwe_l1(&one)
     }
 
+    /// Create a trivial encryption of the given polynomial for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_glwe_l1(&self, pt: &PolynomialRef<u64>) -> L1GlweCiphertext {
         trivial_glwe(pt, &self.params.l1_params, PLAINTEXT_BITS).into()
     }
 
+    /// Create a trivial encryption of zero for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l0_zero(&self) -> L0LweCiphertext {
         trivial_lwe(0, &self.params.l0_params, PLAINTEXT_BITS).into()
     }
 
+    /// Create a trivial encryption of one for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l0_one(&self) -> L0LweCiphertext {
         trivial_lwe(1, &self.params.l0_params, PLAINTEXT_BITS).into()
     }
 
+    /// Create a trivial encryption of zero for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l1_zero(&self) -> L1LweCiphertext {
         trivial_lwe(0, &self.params.l1_params.as_lwe_def(), PLAINTEXT_BITS).into()
     }
 
+    /// Create a trivial encryption of one for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_lwe_l1_one(&self) -> L1LweCiphertext {
         trivial_lwe(1, &self.params.l1_params.as_lwe_def(), PLAINTEXT_BITS).into()
     }
 
+    /// Create a trivial encryption of zero for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_glev_l1_zero(&self) -> L1GlevCiphertext {
         GlevCiphertext::new(&self.params.l1_params, &self.params.cbs_radix).into()
     }
 
+    /// Create a trivial encryption of one for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
     pub fn trivial_glev_l1_one(&self) -> L1GlevCiphertext {
         let mut msg = Polynomial::zero(self.params.l1_poly_degree().0);
         msg.coeffs_mut()[0] = 1;

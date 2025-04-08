@@ -14,52 +14,114 @@ use crate::crypto::{
     L1GlweCiphertext, L1LweCiphertext,
 };
 
+/// An [`L0LweCiphertext`] that can be shared across threads.
 pub type SharedL0LweCiphertext = Arc<AtomicRefCell<L0LweCiphertext>>;
+
+/// An [`L1LweCiphertext`] that can be shared across threads.
 pub type SharedL1LweCiphertext = Arc<AtomicRefCell<L1LweCiphertext>>;
+
+/// An [`L1GlweCiphertext`] that can be shared across threads.
 pub type SharedL1GlweCiphertext = Arc<AtomicRefCell<L1GlweCiphertext>>;
+
+/// An [`L1GgswCiphertext`] that can be shared across threads.
 pub type SharedL1GgswCiphertext = Arc<AtomicRefCell<L1GgswCiphertext>>;
+
+/// An [`L1GlevCiphertext`] that can be shared across threads.
 pub type SharedL1GlevCiphertext = Arc<AtomicRefCell<L1GlevCiphertext>>;
 
 #[derive(Clone)]
+/// A node in an [`FheCircuit`] representing a low-level crypto operation.
 pub enum FheOp {
+    /// An input to the computation of type [`SharedL0LweCiphertext`].
     InputLwe0(SharedL0LweCiphertext),
+
+    /// An input to the computation of type [`SharedL1LweCiphertext`].
     InputLwe1(SharedL1LweCiphertext),
+
+    /// An input to the computation of type [`SharedL1GlweCiphertext`].
     InputGlwe1(SharedL1GlweCiphertext),
+
+    /// An input to the computation of type [`SharedL1GgswCiphertext`].
     InputGgsw1(SharedL1GgswCiphertext),
+
+    /// An input to the computation of type [`SharedL1GlevCiphertext`].
     InputGlev1(SharedL1GlevCiphertext),
+
+    /// An output resulting from the computation of type [`SharedL0LweCiphertext`].
     OutputLwe0(SharedL0LweCiphertext),
+
+    /// An output resulting from the computation of type [`SharedL1LweCiphertext`].
     OutputLwe1(SharedL1LweCiphertext),
+
+    /// An output resulting from the computation of type [`SharedL1GlweCiphertext`].
     OutputGlwe1(SharedL1GlweCiphertext),
+
+    /// An output resulting from the computation of type [`SharedL1GgswCiphertext`].
     OutputGgsw1(SharedL1GgswCiphertext),
+
+    /// An output resulting from the computation of type [`SharedL1GlevCiphertext`].
     OutputGlev1(SharedL1GlevCiphertext),
+
+    /// Perform sample extraction, producing an LWE encryption of the i-th coefficient of a GLWE
+    /// ciphertext's message
     SampleExtract(usize),
+
+    /// Keyswitch a [`SharedL1LweCiphertext`] to [`SharedL0LweCiphertext`].
     KeyswitchL1toL0,
+
+    /// Compute a homomorphic not operation.
     Not,
+
+    /// Add 2 GLWE ciphertexts.
     GlweAdd,
+
+    /// Compute a CMux of a GGSW and 2 GLWE ciphertexts.
     CMux,
+
+    /// Compute a CMux of a GGSW and 2 GLEV ciphertexts.
     GlevCMux,
+
     /// Compute the outer product of [L1GgswCiphertext] x [L1GlweCiphertext] -> [L1GlweCiphertext] ciphertexts.
     MultiplyGgswGlwe,
 
     /// Run circuit bootstrapping, taking an [L0LweCiphertext] and producing a [L1GgswCiphertext] with reset noise.
     CircuitBootstrap,
 
-    /// Turns a GLEV into a GGSW very quickly.
+    /// Turns a GLEV into a GGSW using scheme switching. Orders of magnitude faster than bootstrapping.
     SchemeSwitch,
+
+    /// A [`L0LweCiphertext`] trivial encryption of zero.
     ZeroLwe0,
+
+    /// A [`L0LweCiphertext`] trivial encryption of one.
     OneLwe0,
+
+    /// A [`L1GlweCiphertext`] trivial encryption of zero.
     ZeroGlwe1,
+
+    /// A [`L1GlweCiphertext`] trivial encryption of one.
     OneGlwe1,
+
+    /// A [`L1GgswCiphertext`] precomputed encryption of zero.
     ZeroGgsw1,
+
+    /// A [`L1GgswCiphertext`] precomputed encryption of one.
     OneGgsw1,
+
+    /// A [`L1GlevCiphertext`] trivial encryption of zero.
     ZeroGlev1,
+
+    /// A [`L1GlevCiphertext`] trivial encryption of one.
     OneGlev1,
 
     /// A Nop beacon operation that indicates no more FheOp uops will dispatch for the
     /// given parent instruction
     Retire,
+
+    /// Do nothing.
     Nop,
 
+    /// Negacyclically multiplies the message encrypted in a GLWE ciphertext by `X^N`.
     MulXN(usize),
 }
 
@@ -107,6 +169,7 @@ impl std::fmt::Debug for FheOp {
 }
 
 #[derive(Copy, Clone, Debug)]
+/// The input types in an [`FheCircuit`]
 pub enum FheEdge {
     /// The value selected by a cmux when Sel is 0
     Low,
@@ -126,15 +189,20 @@ pub enum FheEdge {
     /// A [L1GgswCiphertext] operand
     Ggsw,
 
-    /// The left operand to a binary function
+    /// The left operand to a binary function.
     Left,
 
-    /// The right operand to a binary function
+    /// The right operand to a binary function.
     Right,
 }
 
 #[derive(Debug)]
+/// A directed graph of FHE operations that describe a computational circuit.
+///
+/// # Remarks
+/// To be well-formed, the circuit must be asyclic.
 pub struct FheCircuit {
+    /// The DAG.
     pub graph: StableGraph<FheOp, FheEdge>,
 }
 
@@ -191,6 +259,7 @@ impl MuxMode {
 }
 
 impl FheCircuit {
+    /// Create a new [`FheCircuit`]
     pub fn new() -> Self {
         Self {
             graph: StableGraph::new(),
@@ -350,6 +419,8 @@ impl FheCircuit {
         outputs
     }
 
+    /// Insert a [`MuxCircuit`] into the [`FheCircuit`] and emit outputs for each resulting
+    /// [`L1GlweCiphertext`]. Returns the output node indices.
     pub fn insert_mux_circuit_output_glwe1_outputs(
         &mut self,
         mux_circuit: &MuxCircuit,
@@ -374,6 +445,8 @@ impl FheCircuit {
         outputs
     }
 
+    /// Insert a [`MuxCircuit`] into the [`FheCircuit`] and emit outputs for each resulting
+    /// [`L1GlweCiphertext`]. Returns the output ciphertexts.
     pub fn insert_mux_circuit_l1glwe_outputs(
         &mut self,
         mux_circuit: &MuxCircuit,
@@ -438,6 +511,10 @@ impl From<StableGraph<FheOp, FheEdge>> for FheCircuit {
     }
 }
 
+/// Removes any nodes not reachable from any of `nodes` to optimize a computation.
+///
+/// # Remarks
+/// This can remove unused inputs from the graph!
 pub fn prune<N: Clone, E: Clone>(
     graph: &StableGraph<N, E>,
     nodes: &[NodeIndex],

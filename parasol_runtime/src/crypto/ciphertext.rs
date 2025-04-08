@@ -4,11 +4,21 @@ use super::{
 use crate::error::Error;
 
 #[derive(Debug, PartialEq, Eq, Copy, Clone)]
+/// An enum of possible ciphertext types.
 pub enum CiphertextType {
+    /// Indicates an [`L0LweCiphertext`]
     L0LweCiphertext = 0,
+
+    /// Indicates an [`L1LweCiphertext`]
     L1LweCiphertext = 1,
+
+    /// Indicates an [`L1GlweCiphertext`]
     L1GlweCiphertext = 2,
+
+    /// Indicates an [`L1GgswCiphertext`]
     L1GgswCiphertext = 3,
+
+    /// Indicates an [`L1GlevCiphertext`]
     L1GlevCiphertext = 4,
 }
 
