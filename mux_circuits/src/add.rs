@@ -2,8 +2,8 @@ use biodivine_lib_bdd::BddVariableSet;
 
 use super::MuxCircuit;
 
-/// Create a ripple carry adder between an two n-bit integers. Produces a n bit
-/// value (the top bit is the carry out).
+/// Create a ripple carry adder between an n-bit integer and an m-bit integer.
+/// Produces a max(n, m) + 1 bit value (the top bit is the carry out).
 ///
 /// # Remarks
 /// If cin is true, then the carry in appears as the first bit. If not, there is
