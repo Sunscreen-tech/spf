@@ -108,6 +108,12 @@ impl SecretKey {
             glwe_2,
         }
     }
+
+    /// Generate a [`SecretKey`] with the default parameter set
+    /// ([`crate::DEFAULT_128`])
+    pub fn with_default_params() -> Self {
+        Self::generate(&Params::default())
+    }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -246,6 +252,13 @@ impl ServerKey {
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
     pub fn generate_fft(secret_key: &SecretKey, params: &Params) -> ServerKeyFft {
+        Self::generate(secret_key, params).fft(params)
+    }
+
+    /// Generate the server keys from the given secret keys in FFT form with
+    /// default parameters ([`crate::DEFAULT_128`]).
+    pub fn generate_fft_with_default_params(secret_key: &SecretKey) -> ServerKeyFft {
+        let params = &Params::default();
         Self::generate(secret_key, params).fft(params)
     }
 }
