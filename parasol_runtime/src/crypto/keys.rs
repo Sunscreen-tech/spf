@@ -247,19 +247,15 @@ impl ServerKeyNonFft {
         }
     }
 
-    /// Generate the server keys from the given secret keys in FFT form.
+    /// Generate the server keys in non-fft form from the given secret keys with
+    /// the default parameters ([`crate::DEFAULT_128`]).
     ///
     /// # Remarks
-    /// The params passed must be the same as those used during secret key generation.
-    pub fn generate_fft(secret_key: &SecretKey, params: &Params) -> ServerKey {
-        Self::generate(secret_key, params).fft(params)
-    }
+    /// The secret key must have also been generated with the default parameters.
+    pub fn generate_with_default_params(secret_key: &SecretKey) -> Self {
+        let params = Params::default();
 
-    /// Generate the server keys from the given secret keys in FFT form with
-    /// default parameters ([`crate::DEFAULT_128`]).
-    pub fn generate_fft_with_default_params(secret_key: &SecretKey) -> ServerKey {
-        let params = &Params::default();
-        Self::generate(secret_key, params).fft(params)
+        Self::generate(secret_key, &params)
     }
 }
 
@@ -339,5 +335,16 @@ impl ServerKey {
     /// The params passed must be the same as those used during secret key generation.
     pub fn generate(secret_key: &SecretKey, params: &Params) -> Self {
         ServerKeyNonFft::generate(secret_key, params).fft(params)
+    }
+
+    /// Generate the server keys from the given secret keys with default
+    /// parameters (['crate::DEFAULT_128`])
+    ///
+    /// # Remarks
+    /// The secret key must have also been generated with the default parameters.
+    pub fn generate_with_default_params(secret_key: &SecretKey) -> Self {
+        let params = Params::default();
+
+        Self::generate(secret_key, &params)
     }
 }
