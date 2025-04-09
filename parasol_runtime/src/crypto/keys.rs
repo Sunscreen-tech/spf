@@ -124,7 +124,7 @@ impl SecretKey {
 /// efficiently store arrays. Additionally, you should design your protocol around not having to
 /// frequently share these.
 pub struct ServerKeyNonFft {
-    /// The boostrapping key used internally in circuit bootstrapping operations.
+    /// The bootstrapping key used internally in circuit bootstrapping operations.
     pub cbs_key: BootstrapKey<u64>,
 
     /// The private functional keyswitch keys used internally during circuit bootstrapping.
