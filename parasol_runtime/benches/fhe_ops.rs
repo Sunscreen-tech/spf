@@ -1,9 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use criterion::{criterion_group, criterion_main, Criterion};
-use parasol_runtime::{
-    Encryption, Evaluation, SecretKey, ServerKey, ServerKeyNonFft, DEFAULT_128,
-};
+use parasol_runtime::{Encryption, Evaluation, SecretKey, ServerKey, ServerKeyNonFft, DEFAULT_128};
 use sunscreen_tfhe::entities::Polynomial;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
