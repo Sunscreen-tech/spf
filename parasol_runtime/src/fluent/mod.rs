@@ -17,9 +17,11 @@ use crate::{
 };
 
 mod bit;
+mod int;
 mod uint;
 
 pub use bit::*;
+pub use int::*;
 pub use uint::*;
 
 /// A context for building FHE circuits out of high-level primitives (e.g.
@@ -952,6 +954,31 @@ mod tests {
                 .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
             assert_eq!(c.decrypt(&enc, &sk), 672);
+        }
+
+        case::<L1GlweCiphertext>();
+        //case::<L1GlevCiphertext>();
+    }
+
+    #[test]
+    fn can_imul() {
+        fn case<OutCt: Muxable>() {
+            let enc = get_encryption_128();
+            let sk = get_secret_keys_128();
+            let ctx = FheCircuitCtx::new();
+            let (proc, fc) = make_uproc_128();
+
+            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
+            let b =
+                UInt::<16, L1GgswCiphertext>::encrypt_secret(65520, &enc, &sk).graph_inputs(&ctx); // 2^16 - 16 = 65520
+
+            let c = a.mul::<OutCt>(&b, &ctx).collect_outputs(&ctx, &enc);
+
+            proc.lock()
+                .unwrap()
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+
+            assert_eq!(c.decrypt(&enc, &sk), 64864); // 2^16 - 672 = 64864
         }
 
         case::<L1GlweCiphertext>();
