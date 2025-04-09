@@ -543,7 +543,7 @@ impl FheProcessor {
         Ok(())
     }
 
-    /// Runs the given program using the passed user [`Buffer`]s as arguments.
+    /// Runs the given program using the passed user `data` as arguments.
     pub fn run_program(&mut self, program: &[IsaOp], data: &[Buffer]) -> Result<()> {
         self.reset_io(data)?;
 
@@ -612,7 +612,7 @@ pub enum Buffer {
 }
 
 impl Buffer {
-    /// Create a [`Buffer::Plaintext`] from the given value.
+    /// Create a plaintext buffer from `x`.
     pub fn plain_from_value<T: FheBuffer>(x: &T) -> Self {
         Self::Plaintext(Arc::new(
             T::clone_into_plaintext(x)
@@ -622,7 +622,7 @@ impl Buffer {
         ))
     }
 
-    /// Create a [`Buffer::Ciphertext`] from the given value.
+    /// Create an encrypted buffer from the value `x` using secret key `sk`.
     pub fn cipher_from_value<T: FheBuffer>(x: &T, enc: &Encryption, sk: &SecretKey) -> Self {
         let x = T::clone_into_plaintext(x);
 
@@ -661,12 +661,12 @@ impl Buffer {
         Self::trivial_zero(n, enc)
     }
 
-    /// Attempt to turn the given buffer back into a `T`.
+    /// Attempt to turn the plaintext buffer `self` back into a `T`.
     pub fn plain_try_into_value<T: FheBuffer>(&self) -> Result<T> {
         T::try_from_plaintext(&self.try_plaintext()?)
     }
 
-    /// Attempt to decrypt the given buffer and return the decrypted bits.
+    /// Attempt to decrypt `self` using `sk` and return the decrypted bits.
     pub fn cipher_to_bits(&self, enc: &Encryption, sk: &SecretKey) -> Result<Vec<bool>> {
         let pt = self
             .try_ciphertext()?
@@ -677,7 +677,7 @@ impl Buffer {
         Ok(pt)
     }
 
-    /// Attempt to decrypt the given buffer and recombobulate the bits back into a `T`.
+    /// Attempt to decrypt the `self` using `sk` and recombobulate the bits back into a `T`.
     pub fn cipher_try_into_value<T: FheBuffer>(
         &self,
         enc: &Encryption,

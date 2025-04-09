@@ -74,7 +74,7 @@ pub enum Error {
         /// The program counter at time of error.
         pc: usize,
 
-        /// The buffer's index.
+        /// The buffer's index in a call to [`crate::FheComputer::run_program`].
         buffer_id: usize,
     },
 
@@ -116,7 +116,7 @@ pub enum Error {
     #[error("The given buffer wasn't a ciphertext")]
     BufferNotACiphertext,
 
-    /// The buffer was the wrong size.
+    /// The buffer had the wrong size.
     #[error("The given buffer is the wrong size for the given type")]
     BufferSizeMismatch,
 
@@ -163,19 +163,19 @@ pub enum Error {
 
     /// The ELF file lacks a symbol table, and thus cannot be loaded.
     #[error("ELF file has no symbol table")]
-    NoSymbolTable,
+    ElfNoSymbolTable,
 
     /// The ELF file lacks a segment table, and thus cannot be loaded.
     #[error("ELF file has no segment table")]
-    NoSegmentTable,
+    ElfNoSegmentTable,
 
     /// The given ELF file is ELF64.
     #[error("ELF file is not ELF32")]
-    NotElf32,
+    ElfNotElf32,
 
     /// The specified symbol does not exist the ELF file.
     #[error("The ELF file does not contain the specified symbol: {0}")]
-    SymbolNotInElf(String),
+    ElfSymbolNotFound(String),
 
     /// Attempted to allocate a virtual address that's already mapped.
     #[error("Failed to allocate virtual address space. Already in use.")]

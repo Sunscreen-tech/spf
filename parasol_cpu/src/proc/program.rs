@@ -63,7 +63,7 @@ enum OpCode {
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
 /// The name of an FHE program as it appears in an ELF file.
 pub struct Symbol {
-    /// ELF symbols have no requirement that they be UTF-8 encoded, so we must use a
+    /// ELF symbols aren't required to be UTF-8, so we must use a
     /// CString to represent them.
     name: CString,
 }
@@ -120,7 +120,7 @@ impl FheApplication {
             Ok(CStr::from_bytes_until_nul(&binary[str_offset..])?)
         };
 
-        let (sym, _) = elf.symbol_table()?.ok_or(Error::NoSymbolTable)?;
+        let (sym, _) = elf.symbol_table()?.ok_or(Error::ElfNoSymbolTable)?;
 
         let mut programs = HashMap::new();
 
@@ -475,7 +475,7 @@ pub struct BufferInfo {
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
-/// Information about each of a program's buffer bindings.
+/// Information about buffer bindings during a call to [`crate::FheComputer::run_program`].
 pub struct ProgramBufferInfo {
     buffers: Vec<BufferInfo>,
 }
@@ -499,7 +499,7 @@ impl ProgramBufferInfo {
             .count()
     }
 
-    /// Get the number or writable buffers.
+    /// Get the number of writable buffers.
     pub fn num_read_write_buffers(&self) -> usize {
         self.buffers
             .iter()
@@ -507,21 +507,21 @@ impl ProgramBufferInfo {
             .count()
     }
 
-    /// Returns an iterator over the read-only [`BufferInfo`]s.
+    /// Return an iterator over the read-only [`BufferInfo`]s.
     pub fn read_buffers(&self) -> impl Iterator<Item = &BufferInfo> {
         self.buffers
             .iter()
             .filter(|info| info.buffer_type == BufferType::Read)
     }
 
-    /// Returns an iterator over the read/write [`BufferInfo`]s.
+    /// Return an iterator over the read/write [`BufferInfo`]s.
     pub fn read_write_buffers(&self) -> impl Iterator<Item = &BufferInfo> {
         self.buffers
             .iter()
             .filter(|info| info.buffer_type == BufferType::ReadWrite)
     }
 
-    /// Returns an iterator over all the [`BufferInfo`]s.
+    /// Return an iterator over all [`BufferInfo`]s.
     pub fn iter(&self) -> std::slice::Iter<BufferInfo> {
         self.buffers.iter()
     }
@@ -550,7 +550,7 @@ pub struct FheProgram {
 }
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
-/// An error when attempting to understand buffers in an [`FheProgram`]
+/// An error when attempting to gather buffer information in an [`FheProgram`]
 pub enum BufferInfoError {
     /// Bindings were mismatched.
     #[error("Register bind pointer ID {} and meta ID {} don't match", .0, .1)]
@@ -570,7 +570,7 @@ impl FheProgram {
         Self { instructions: inst }
     }
 
-    /// Get information about each of the program's bind instructions.
+    /// Get information about a program's bound buffers.
     pub fn get_buffer_info(&self) -> std::result::Result<ProgramBufferInfo, BufferInfoError> {
         let mut bindings = HashMap::new();
         let mut verified_buffers = HashMap::new();

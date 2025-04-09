@@ -83,7 +83,7 @@ where
     }
 }
 
-/// Returns an expression that evaluates to `$idx_ident`'s index in `$($src_name)*`.
+/// Return an expression that evaluates to `$idx_ident`'s index in `$($src_name)*`.
 #[macro_export]
 macro_rules! dep_idx {
     ($idx_ident:ident, $($src_name:ident)*) => {
@@ -115,7 +115,7 @@ macro_rules! dep_idx {
     };
 }
 
-/// Emits an expression that evaluates to the length of a macro rep expression.
+/// Emit an expression that evaluates to the length of a macro rep expression.
 #[macro_export]
 macro_rules! rep_len {
     () => {
