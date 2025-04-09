@@ -2,13 +2,13 @@ use std::sync::{Arc, OnceLock};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use parasol_runtime::{
-    Encryption, Evaluation, SecretKey, ServerKeyFft, ServerKeyNonFft, DEFAULT_128,
+    Encryption, Evaluation, SecretKey, ServerKey, ServerKeyNonFft, DEFAULT_128,
 };
 use sunscreen_tfhe::entities::Polynomial;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
-    static SERVER_KEY: OnceLock<Arc<ServerKeyFft>> = OnceLock::new();
+    static SERVER_KEY: OnceLock<Arc<ServerKey>> = OnceLock::new();
 
     let sk = SK
         .get_or_init(|| Arc::new(SecretKey::generate(&DEFAULT_128)))

@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use parasol_runtime::{
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
     Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
-    SecretKey, ServerKeyFft, ServerKeyNonFft, UOpProcessor, DEFAULT_128,
+    SecretKey, ServerKey, ServerKeyNonFft, UOpProcessor, DEFAULT_128,
 };
 
 fn make_computer() -> (
@@ -15,7 +15,7 @@ fn make_computer() -> (
     Evaluation,
 ) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
-    static SERVER_KEY: OnceLock<Arc<ServerKeyFft>> = OnceLock::new();
+    static SERVER_KEY: OnceLock<Arc<ServerKey>> = OnceLock::new();
 
     let sk = SK
         .get_or_init(|| Arc::new(SecretKey::generate(&DEFAULT_128)))

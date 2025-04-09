@@ -228,13 +228,13 @@ impl ServerKeyNonFft {
     }
 
     /// Takes the fast-fourier transform of the keys, which is used during evaluation.
-    pub fn fft(&self, params: &Params) -> ServerKeyFft {
+    pub fn fft(&self, params: &Params) -> ServerKey {
         let mut ssk_fft = SchemeSwitchKeyFft::new(&params.l1_params, &params.ss_radix);
 
         self.ss_key
             .fft(&mut ssk_fft, &params.l1_params, &params.ss_radix);
 
-        ServerKeyFft {
+        ServerKey {
             cbs_key: fft::fft_bootstrap_key(
                 &self.cbs_key,
                 &params.l0_params,
@@ -251,21 +251,31 @@ impl ServerKeyNonFft {
     ///
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
-    pub fn generate_fft(secret_key: &SecretKey, params: &Params) -> ServerKeyFft {
+    pub fn generate_fft(secret_key: &SecretKey, params: &Params) -> ServerKey {
         Self::generate(secret_key, params).fft(params)
     }
 
     /// Generate the server keys from the given secret keys in FFT form with
     /// default parameters ([`crate::DEFAULT_128`]).
-    pub fn generate_fft_with_default_params(secret_key: &SecretKey) -> ServerKeyFft {
+    pub fn generate_fft_with_default_params(secret_key: &SecretKey) -> ServerKey {
         let params = &Params::default();
         Self::generate(secret_key, params).fft(params)
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-/// A Fourier transformed version of [`ServerKey`].
-pub struct ServerKeyFft {
+/// A set of keys used during FHE evaluation.
+///
+/// # Remarks
+/// - Server keys are quite large (100s of MB), so you should serialize with a
+///   protocol that can efficiently store arrays.
+/// - You should design your protocol around not having to frequently share
+///   these.
+/// - The server key contains floating point values, which can be represented
+///   with insufficient precision when serializing and deserializing across
+///   different mediums. Ensure that your key is being serialized and deserialized
+///   to the same object.
+pub struct ServerKey {
     /// The FFT'd circuit bootstrap key.
     pub cbs_key: BootstrapKeyFft<Complex<f64>>,
 
@@ -279,7 +289,7 @@ pub struct ServerKeyFft {
     pub ss_key: SchemeSwitchKeyFft<Complex<f64>>,
 }
 
-impl GetSize for ServerKeyFft {
+impl GetSize for ServerKey {
     fn get_size(params: &Params) -> usize {
         // The magic 4 is the lengths of the 4 serialized sequences.
         (BootstrapKeyRef::<u64>::size((
@@ -322,7 +332,7 @@ impl GetSize for ServerKeyFft {
     }
 }
 
-impl ServerKeyFft {
+impl ServerKey {
     /// Generate the server keys from the given secret keys.
     ///
     /// # Remarks

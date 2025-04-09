@@ -1,15 +1,15 @@
 use std::sync::{mpsc::Receiver, Arc, Mutex, OnceLock};
 
 use crate::{
-    crypto::PublicKey, params::DEFAULT_80, Encryption, Evaluation, SecretKey, ServerKeyFft,
+    crypto::PublicKey, params::DEFAULT_80, Encryption, Evaluation, SecretKey, ServerKey,
     ServerKeyNonFft, UOpProcessor, DEFAULT_128,
 };
 
 static SECRET_KEYS_80: OnceLock<Arc<SecretKey>> = OnceLock::new();
-static SERVER_KEYS_80: OnceLock<Arc<ServerKeyFft>> = OnceLock::new();
+static SERVER_KEYS_80: OnceLock<Arc<ServerKey>> = OnceLock::new();
 
 static SECRET_KEYS_128: OnceLock<Arc<SecretKey>> = OnceLock::new();
-static SERVER_KEYS_128: OnceLock<Arc<ServerKeyFft>> = OnceLock::new();
+static SERVER_KEYS_128: OnceLock<Arc<ServerKey>> = OnceLock::new();
 static PUBLIC_KEYS_128: OnceLock<Arc<PublicKey>> = OnceLock::new();
 
 pub fn get_secret_keys_80() -> Arc<SecretKey> {
@@ -18,7 +18,7 @@ pub fn get_secret_keys_80() -> Arc<SecretKey> {
         .clone()
 }
 
-pub fn get_server_keys_80() -> Arc<ServerKeyFft> {
+pub fn get_server_keys_80() -> Arc<ServerKey> {
     SERVER_KEYS_80
         .get_or_init(|| {
             Arc::new(ServerKeyNonFft::generate(&get_secret_keys_80(), &DEFAULT_80).fft(&DEFAULT_80))
@@ -32,7 +32,7 @@ pub fn get_secret_keys_128() -> Arc<SecretKey> {
         .clone()
 }
 
-pub fn get_server_keys_128() -> Arc<ServerKeyFft> {
+pub fn get_server_keys_128() -> Arc<ServerKey> {
     SERVER_KEYS_128
         .get_or_init(|| {
             Arc::new(

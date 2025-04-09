@@ -31,7 +31,7 @@ mod tests {
     use crate::{
         test_utils::{get_secret_keys_80, get_server_keys_80},
         Encryption, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
-        PublicKey, SecretKey, ServerKeyFft, ServerKeyNonFft, DEFAULT_128, DEFAULT_80,
+        PublicKey, SecretKey, ServerKey, ServerKeyNonFft, DEFAULT_128, DEFAULT_80,
     };
 
     use super::*;
@@ -97,7 +97,7 @@ mod tests {
 
         let server = get_server_keys_80();
         let ser = bincode::serialize(&server).unwrap();
-        deserialize::<ServerKeyFft>(&ser, &DEFAULT_80).unwrap();
+        deserialize::<ServerKey>(&ser, &DEFAULT_80).unwrap();
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]

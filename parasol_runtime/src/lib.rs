@@ -28,7 +28,7 @@ pub mod test_utils;
 pub use circuit_processor::{CompletionHandler, UOpProcessor};
 pub use crypto::{
     ciphertext::CiphertextType, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
-    L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, ServerKeyFft,
+    L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, ServerKey,
     ServerKeyNonFft, TrivialOne, TrivialZero,
 };
 pub use fhe_circuit::{
