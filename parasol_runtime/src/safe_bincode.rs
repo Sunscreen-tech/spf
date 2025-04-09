@@ -31,7 +31,7 @@ mod tests {
     use crate::{
         test_utils::{get_secret_keys_80, get_server_keys_80},
         Encryption, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
-        PublicKey, SecretKey, ServerKey, ServerKeyFft, DEFAULT_128, DEFAULT_80,
+        PublicKey, SecretKey, ServerKeyFft, ServerKeyNonFft, DEFAULT_128, DEFAULT_80,
     };
 
     use super::*;
@@ -87,9 +87,9 @@ mod tests {
         let ser = bincode::serialize(&sk).unwrap();
         deserialize::<SecretKey>(&ser, &DEFAULT_80).unwrap();
 
-        let server = ServerKey::generate(&sk, &DEFAULT_80);
+        let server = ServerKeyNonFft::generate(&sk, &DEFAULT_80);
         let ser = bincode::serialize(&server).unwrap();
-        deserialize::<ServerKey>(&ser, &DEFAULT_80).unwrap();
+        deserialize::<ServerKeyNonFft>(&ser, &DEFAULT_80).unwrap();
 
         let pk = PublicKey::generate(&DEFAULT_80, &sk);
         let ser = bincode::serialize(&pk).unwrap();
@@ -118,7 +118,7 @@ mod tests {
 
         case!(PublicKey);
         case!(SecretKey);
-        case!(ServerKey);
+        case!(ServerKeyNonFft);
 
         let sk = get_secret_keys_80();
 
@@ -127,8 +127,8 @@ mod tests {
 
         assert!(result.is_err());
 
-        let ser = bincode::serialize(&ServerKey::generate(&sk, &DEFAULT_80)).unwrap();
-        let result = deserialize::<ServerKey>(&ser, &DEFAULT_128);
+        let ser = bincode::serialize(&ServerKeyNonFft::generate(&sk, &DEFAULT_80)).unwrap();
+        let result = deserialize::<ServerKeyNonFft>(&ser, &DEFAULT_128);
 
         assert!(result.is_err());
 

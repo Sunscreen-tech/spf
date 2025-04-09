@@ -4,7 +4,7 @@ use criterion::{criterion_group, criterion_main, Criterion};
 use parasol_runtime::{
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
     Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
-    SecretKey, ServerKey, ServerKeyFft, UOpProcessor, DEFAULT_128,
+    SecretKey, ServerKeyFft, ServerKeyNonFft, UOpProcessor, DEFAULT_128,
 };
 
 fn make_computer() -> (
@@ -23,7 +23,7 @@ fn make_computer() -> (
 
     let server_key = SERVER_KEY
         .get_or_init(|| {
-            let server = ServerKey::generate(&sk, &DEFAULT_128);
+            let server = ServerKeyNonFft::generate(&sk, &DEFAULT_128);
 
             Arc::new(server.fft(&DEFAULT_128))
         })

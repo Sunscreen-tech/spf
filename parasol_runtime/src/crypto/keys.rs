@@ -123,7 +123,7 @@ impl SecretKey {
 /// Server keys are quite large (100s of MB), so you should serialize with a protocol that can
 /// efficiently store arrays. Additionally, you should design your protocol around not having to
 /// frequently share these.
-pub struct ServerKey {
+pub struct ServerKeyNonFft {
     /// The boostrapping key used internally in circuit bootstrapping operations.
     pub cbs_key: BootstrapKey<u64>,
 
@@ -137,7 +137,7 @@ pub struct ServerKey {
     pub ss_key: SchemeSwitchKey<u64>,
 }
 
-impl GetSize for ServerKey {
+impl GetSize for ServerKeyNonFft {
     fn get_size(params: &Params) -> usize {
         // The magic 4 is the lengths of the 4 serialized sequences.
         (BootstrapKeyRef::<u64>::size((
@@ -180,8 +180,8 @@ impl GetSize for ServerKey {
     }
 }
 
-impl ServerKey {
-    /// Generate the server keys from the given secret keys.
+impl ServerKeyNonFft {
+    /// Generate the server keys in non-fft form from the given secret keys.
     ///
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
@@ -319,5 +319,15 @@ impl GetSize for ServerKeyFft {
             .check_is_valid((params.l1_params.dim, params.ss_radix.count))?;
 
         Ok(())
+    }
+}
+
+impl ServerKeyFft {
+    /// Generate the server keys from the given secret keys.
+    ///
+    /// # Remarks
+    /// The params passed must be the same as those used during secret key generation.
+    pub fn generate(secret_key: &SecretKey, params: &Params) -> Self {
+        ServerKeyNonFft::generate(secret_key, params).fft(params)
     }
 }
