@@ -1,13 +1,13 @@
 use crate::Result;
 
-/// A trait for converting data to and from buffers usable with an [`FheProcessor`](crate::proc::FheProcessor).
+/// A trait for converting data to and from buffers usable with an [`FheComputer`](crate::FheComputer).
 /// # Remarks
 /// You should usually `derive(IntoBytes)` for any struct type you want to use
-/// with an [`FheProcessor`](crate::proc::FheProcessor). While ISA's size and
+/// with an [`FheComputer`](crate::FheComputer). While ISA's size and
 /// alignment rules are simple, they're annoying.
 ///
 /// The data layout in the buffer from the perspective of the
-/// [`FheProcessor`](crate::proc::FheProcessor) is as if this struct was declared
+/// [`FheComputer`](crate::FheComputer) is as if this struct was declared
 /// with #[repr(C)]. It's generally advisable, but not required to add this to
 /// your type.
 pub trait IntoBytes
@@ -16,12 +16,15 @@ where
 {
     /// The required alignment for this
     fn alignment() -> usize;
+
+    /// The size of this type.
     fn size() -> usize;
 
     /// Convert this type into a buffer format with satisfied size and alignment
-    /// requirements for use in an [`FheProcessor`](crate::proc::FheProcessor).
+    /// requirements for use in an [`FheComputer`](crate::FheComputer).
     fn try_into_bytes(&self, data: &mut [u8]) -> Result<()>;
 
+    /// Convert a byte array into this type.
     fn try_from_bytes(data: &[u8]) -> Result<Self>;
 }
 

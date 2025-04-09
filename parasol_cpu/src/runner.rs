@@ -23,7 +23,7 @@ pub fn run_program(
 
     let program = fhe_app
         .get_program(&Symbol::new(c_program_name.as_c_str()))
-        .ok_or(Error::SymbolNotInElf(program_name.to_string()))?;
+        .ok_or(Error::ElfSymbolNotFound(program_name.to_string()))?;
 
     proc.run_program(program, arguments)?;
 

@@ -46,10 +46,10 @@ impl Memory {
         let abi_version = elf.ehdr.abiversion;
 
         if elf.ehdr.class != Class::ELF32 {
-            return Err(Error::NotElf32);
+            return Err(Error::ElfNotElf32);
         }
 
-        let segments = elf.segments().ok_or(Error::NoSegmentTable)?;
+        let segments = elf.segments().ok_or(Error::ElfNoSegmentTable)?;
 
         for s in segments {
             if s.p_memsz > u32::MAX as u64 || s.p_vaddr > u32::MAX as u64 {

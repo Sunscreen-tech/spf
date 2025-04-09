@@ -6,7 +6,7 @@ pub mod registers;
 pub mod scoreboard;
 pub mod tomasulo_processor;
 
-pub trait ToDispatchedOp<'a>
+pub(crate) trait ToDispatchedOp<'a>
 where
     Self: Sized,
 {
@@ -23,7 +23,7 @@ where
     ) -> Result<Self::DispatchedOp>;
 }
 
-pub trait GetDeps<'a>
+pub(crate) trait GetDeps<'a>
 where
     Self: Sized,
 {
@@ -50,7 +50,7 @@ where
     }
 }
 
-pub struct Deps<'a, T, U, V>
+pub(crate) struct Deps<'a, T, U, V>
 where
     T: GetDeps<'a, DispatchedOp = U, RenameSet = V>,
     V: Copy,
@@ -83,6 +83,7 @@ where
     }
 }
 
+/// Return an expression that evaluates to `$idx_ident`'s index in `$($src_name)*`.
 #[macro_export]
 macro_rules! dep_idx {
     ($idx_ident:ident, $($src_name:ident)*) => {
@@ -114,6 +115,7 @@ macro_rules! dep_idx {
     };
 }
 
+/// Emit an expression that evaluates to the length of a macro rep expression.
 #[macro_export]
 macro_rules! rep_len {
     () => {

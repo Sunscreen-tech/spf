@@ -15,7 +15,7 @@ use elf::{abi::STT_FUNC, endian::LittleEndian, ElfBytes};
 //   - Added rotl, rotr, neg, xor, addc, subb
 //   - Note that addc and subb are not currently implemented in the backend, but
 //     they do have defined opcodes.
-pub const SUPPORTED_ABI_VERSION: u8 = 1;
+pub(crate) const SUPPORTED_ABI_VERSION: u8 = 1;
 
 enum OpCode {
     // Types and loading
@@ -61,13 +61,15 @@ enum OpCode {
 }
 
 #[derive(Debug, Clone, Hash, PartialEq, Eq)]
+/// The name of an FHE program as it appears in an ELF file.
 pub struct Symbol {
-    /// ELF symbols have no requirement that they be UTF-8 encoded, so we must use a
+    /// ELF symbols aren't required to be UTF-8, so we must use a
     /// CString to represent them.
     name: CString,
 }
 
 impl Symbol {
+    /// Create a [`Symbol`] from a [`CStr`].
     pub fn new(name: &CStr) -> Self {
         Self {
             name: name.to_owned(),
@@ -77,29 +79,28 @@ impl Symbol {
 
 impl From<&CStr> for Symbol {
     fn from(name: &CStr) -> Self {
-        Self {
-            name: name.to_owned(),
-        }
+        Self::new(name)
     }
 }
 
 impl From<&str> for Symbol {
     fn from(name: &str) -> Self {
-        Self {
-            name: CString::new(name).unwrap(),
-        }
+        Self::new(&CString::new(name).unwrap())
     }
 }
 
+/// A collection of [`FheProgram`]s parsed out of an ELF file.
 pub struct FheApplication {
     programs: HashMap<Symbol, FheProgram>,
 }
 
 impl FheApplication {
+    /// Retreive an FHE program by its Symbol
     pub fn get_program(&self, name: &Symbol) -> Option<&FheProgram> {
         self.programs.get(name)
     }
 
+    /// Attempt to parse the given bytes as an ELF file and return the resulting [`FheApplication`].
     pub fn parse_elf(binary: &[u8]) -> Result<Self> {
         let elf = ElfBytes::<LittleEndian>::minimal_parse(binary)?;
 
@@ -119,7 +120,7 @@ impl FheApplication {
             Ok(CStr::from_bytes_until_nul(&binary[str_offset..])?)
         };
 
-        let (sym, _) = elf.symbol_table()?.ok_or(Error::NoSymbolTable)?;
+        let (sym, _) = elf.symbol_table()?.ok_or(Error::ElfNoSymbolTable)?;
 
         let mut programs = HashMap::new();
 
@@ -444,35 +445,53 @@ impl FheApplication {
     }
 }
 
+/// Whether a buffer is bound as read-only or read/write.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum BufferType {
+    /// Buffer is read-only.
     Read,
+
+    /// Buffer is read/write.
     ReadWrite,
 }
 
+/// Information about an FHE program's bindings.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct BufferInfo {
+    /// The assigned data register for the first load/store on the binding.
     pub register: usize,
+
+    /// Whether the buffer is writable or not.
     pub buffer_type: BufferType,
+
+    /// Whether the buffer is encrypted of not.
     pub is_encrypted: bool,
+
+    /// The buffer's ID.
     pub buffer_id: usize,
+
+    /// The width of the first load/store on the bound buffer.
     pub width: u32,
 }
 
 #[derive(Debug, Clone, PartialEq, Eq)]
+/// Information about buffer bindings during a call to [`crate::FheComputer::run_program`].
 pub struct ProgramBufferInfo {
     buffers: Vec<BufferInfo>,
 }
 
 impl ProgramBufferInfo {
+    /// The number of bindings in an [`FheProgram`].
     pub fn len(&self) -> usize {
         self.buffers.len()
     }
 
+    /// Whether the [`FheProgram`] lacks bindings or not.
     pub fn is_empty(&self) -> bool {
         self.len() == 0
     }
 
+    /// Get the number of read-only buffers.
     pub fn num_read_buffers(&self) -> usize {
         self.buffers
             .iter()
@@ -480,6 +499,7 @@ impl ProgramBufferInfo {
             .count()
     }
 
+    /// Get the number of writable buffers.
     pub fn num_read_write_buffers(&self) -> usize {
         self.buffers
             .iter()
@@ -487,18 +507,21 @@ impl ProgramBufferInfo {
             .count()
     }
 
+    /// Return an iterator over the read-only [`BufferInfo`]s.
     pub fn read_buffers(&self) -> impl Iterator<Item = &BufferInfo> {
         self.buffers
             .iter()
             .filter(|info| info.buffer_type == BufferType::Read)
     }
 
+    /// Return an iterator over the read/write [`BufferInfo`]s.
     pub fn read_write_buffers(&self) -> impl Iterator<Item = &BufferInfo> {
         self.buffers
             .iter()
             .filter(|info| info.buffer_type == BufferType::ReadWrite)
     }
 
+    /// Return an iterator over all [`BufferInfo`]s.
     pub fn iter(&self) -> std::slice::Iter<BufferInfo> {
         self.buffers.iter()
     }
@@ -521,26 +544,33 @@ impl Index<usize> for ProgramBufferInfo {
     }
 }
 
+/// An executable Parasol program located in an ELF file.
 pub struct FheProgram {
-    pub instructions: Vec<IsaOp>,
+    pub(crate) instructions: Vec<IsaOp>,
 }
 
 #[derive(Debug, Clone, Error, PartialEq, Eq)]
+/// An error when attempting to gather buffer information in an [`FheProgram`]
 pub enum BufferInfoError {
+    /// Bindings were mismatched.
     #[error("Register bind pointer ID {} and meta ID {} don't match", .0, .1)]
     MismatchedBinding(usize, usize),
 
+    /// Bind instruction's buffer IDs were not sequential.
     #[error("Non-sequential buffer IDs")]
     NonSequentialBufferIds,
 
+    /// Program contained multiple bind instructions binding to the same value.
     #[error("Duplicate binding for register ID {}", .0)]
     DuplicateBinding(usize),
 }
 
 impl FheProgram {
-    pub fn from_instructions(inst: Vec<IsaOp>) -> Self {
+    pub(crate) fn from_instructions(inst: Vec<IsaOp>) -> Self {
         Self { instructions: inst }
     }
+
+    /// Get information about a program's bound buffers.
     pub fn get_buffer_info(&self) -> std::result::Result<ProgramBufferInfo, BufferInfoError> {
         let mut bindings = HashMap::new();
         let mut verified_buffers = HashMap::new();
