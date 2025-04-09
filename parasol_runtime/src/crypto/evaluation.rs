@@ -16,7 +16,7 @@ use super::{
     encryption::{
         Encryption, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
     },
-    L1GlevCiphertext, ServerKeyFft, TrivialOne, TrivialZero,
+    L1GlevCiphertext, ServerKey, TrivialOne, TrivialZero,
 };
 
 #[derive(Clone)]
@@ -135,7 +135,7 @@ impl KeylessEvaluation {
 /// All FHE operations in the evaluation run on the current thread.
 pub struct Evaluation {
     keyless_eval: KeylessEvaluation,
-    server_key: Arc<ServerKeyFft>,
+    server_key: Arc<ServerKey>,
     l1ggsw_zero: L1GgswCiphertext,
     l1ggsw_one: L1GgswCiphertext,
 }
@@ -150,7 +150,7 @@ impl Deref for Evaluation {
 
 impl Evaluation {
     /// Create a new [`Evaluation`].
-    pub fn new(server_key: Arc<ServerKeyFft>, params: &Params, enc: &Encryption) -> Self {
+    pub fn new(server_key: Arc<ServerKey>, params: &Params, enc: &Encryption) -> Self {
         let mk_ggsw = |msg: bool| {
             let lwe = if msg {
                 enc.trivial_lwe_l0_one()
@@ -192,7 +192,7 @@ impl Evaluation {
     }
 
     /// Generates a new [`Evaluation`] with the default parameters ([`crate::DEFAULT_128`])
-    pub fn with_default_params(server_key: Arc<ServerKeyFft>) -> Self {
+    pub fn with_default_params(server_key: Arc<ServerKey>) -> Self {
         let params = Params::default();
         let enc = Encryption::default();
         Self::new(server_key, &params, &enc)

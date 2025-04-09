@@ -4,7 +4,7 @@ use args::{AnalyzeNoise, Command};
 use cbs::analyze_cbs;
 use clap::Parser;
 use cmux::analyze_cmux;
-use parasol_runtime::{Params, SecretKey, ServerKey};
+use parasol_runtime::{Params, SecretKey, ServerKeyNonFft};
 use scheme_switch::{analyze_scheme_switch, search_scheme_switch};
 use secret_key_encryption::run_secret_key_encryption;
 use serde::Serialize;
@@ -18,10 +18,10 @@ mod noise;
 mod scheme_switch;
 mod secret_key_encryption;
 
-pub fn get_keys(params: &Params) -> (SecretKey, ServerKey) {
+pub fn get_keys(params: &Params) -> (SecretKey, ServerKeyNonFft) {
     let sk = SecretKey::generate(params);
 
-    let server = ServerKey::generate(&sk, params);
+    let server = ServerKeyNonFft::generate(&sk, params);
 
     (sk, server)
 }

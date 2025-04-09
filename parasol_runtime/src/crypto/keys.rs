@@ -123,8 +123,8 @@ impl SecretKey {
 /// Server keys are quite large (100s of MB), so you should serialize with a protocol that can
 /// efficiently store arrays. Additionally, you should design your protocol around not having to
 /// frequently share these.
-pub struct ServerKey {
-    /// The boostrapping key used internally in circuit bootstrapping operations.
+pub struct ServerKeyNonFft {
+    /// The bootstrapping key used internally in circuit bootstrapping operations.
     pub cbs_key: BootstrapKey<u64>,
 
     /// The private functional keyswitch keys used internally during circuit bootstrapping.
@@ -137,7 +137,7 @@ pub struct ServerKey {
     pub ss_key: SchemeSwitchKey<u64>,
 }
 
-impl GetSize for ServerKey {
+impl GetSize for ServerKeyNonFft {
     fn get_size(params: &Params) -> usize {
         // The magic 4 is the lengths of the 4 serialized sequences.
         (BootstrapKeyRef::<u64>::size((
@@ -180,8 +180,8 @@ impl GetSize for ServerKey {
     }
 }
 
-impl ServerKey {
-    /// Generate the server keys from the given secret keys.
+impl ServerKeyNonFft {
+    /// Generate the server keys in non-fft form from the given secret keys.
     ///
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
@@ -228,13 +228,13 @@ impl ServerKey {
     }
 
     /// Takes the fast-fourier transform of the keys, which is used during evaluation.
-    pub fn fft(&self, params: &Params) -> ServerKeyFft {
+    pub fn fft(&self, params: &Params) -> ServerKey {
         let mut ssk_fft = SchemeSwitchKeyFft::new(&params.l1_params, &params.ss_radix);
 
         self.ss_key
             .fft(&mut ssk_fft, &params.l1_params, &params.ss_radix);
 
-        ServerKeyFft {
+        ServerKey {
             cbs_key: fft::fft_bootstrap_key(
                 &self.cbs_key,
                 &params.l0_params,
@@ -247,25 +247,31 @@ impl ServerKey {
         }
     }
 
-    /// Generate the server keys from the given secret keys in FFT form.
+    /// Generate the server keys in non-fft form from the given secret keys with
+    /// the default parameters ([`crate::DEFAULT_128`]).
     ///
     /// # Remarks
-    /// The params passed must be the same as those used during secret key generation.
-    pub fn generate_fft(secret_key: &SecretKey, params: &Params) -> ServerKeyFft {
-        Self::generate(secret_key, params).fft(params)
-    }
+    /// The secret key must have also been generated with the default parameters.
+    pub fn generate_with_default_params(secret_key: &SecretKey) -> Self {
+        let params = Params::default();
 
-    /// Generate the server keys from the given secret keys in FFT form with
-    /// default parameters ([`crate::DEFAULT_128`]).
-    pub fn generate_fft_with_default_params(secret_key: &SecretKey) -> ServerKeyFft {
-        let params = &Params::default();
-        Self::generate(secret_key, params).fft(params)
+        Self::generate(secret_key, &params)
     }
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-/// A Fourier transformed version of [`ServerKey`].
-pub struct ServerKeyFft {
+/// A set of keys used during FHE evaluation.
+///
+/// # Remarks
+/// - Server keys are quite large (100s of MB), so you should serialize with a
+///   protocol that can efficiently store arrays.
+/// - You should design your protocol around not having to frequently share
+///   these.
+/// - The server key contains floating point values, which can be represented
+///   with insufficient precision when serializing and deserializing across
+///   different mediums. Ensure that your key is being serialized and deserialized
+///   to the same object.
+pub struct ServerKey {
     /// The FFT'd circuit bootstrap key.
     pub cbs_key: BootstrapKeyFft<Complex<f64>>,
 
@@ -279,7 +285,7 @@ pub struct ServerKeyFft {
     pub ss_key: SchemeSwitchKeyFft<Complex<f64>>,
 }
 
-impl GetSize for ServerKeyFft {
+impl GetSize for ServerKey {
     fn get_size(params: &Params) -> usize {
         // The magic 4 is the lengths of the 4 serialized sequences.
         (BootstrapKeyRef::<u64>::size((
@@ -319,5 +325,26 @@ impl GetSize for ServerKeyFft {
             .check_is_valid((params.l1_params.dim, params.ss_radix.count))?;
 
         Ok(())
+    }
+}
+
+impl ServerKey {
+    /// Generate the server keys from the given secret keys.
+    ///
+    /// # Remarks
+    /// The params passed must be the same as those used during secret key generation.
+    pub fn generate(secret_key: &SecretKey, params: &Params) -> Self {
+        ServerKeyNonFft::generate(secret_key, params).fft(params)
+    }
+
+    /// Generate the server keys from the given secret keys with default
+    /// parameters (['crate::DEFAULT_128`])
+    ///
+    /// # Remarks
+    /// The secret key must have also been generated with the default parameters.
+    pub fn generate_with_default_params(secret_key: &SecretKey) -> Self {
+        let params = Params::default();
+
+        Self::generate(secret_key, &params)
     }
 }

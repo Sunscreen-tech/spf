@@ -29,7 +29,7 @@ pub use circuit_processor::{CompletionHandler, UOpProcessor};
 pub use crypto::{
     ciphertext::CiphertextType, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
     L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, ServerKey,
-    ServerKeyFft, TrivialOne, TrivialZero,
+    ServerKeyNonFft, TrivialOne, TrivialZero,
 };
 pub use fhe_circuit::{
     insert_ciphertext_conversion, prune, FheCircuit, FheEdge, FheOp, SharedL0LweCiphertext,

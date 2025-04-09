@@ -1,6 +1,6 @@
 use std::{ffi::CString, sync::Arc};
 
-use parasol_runtime::{Encryption, Evaluation, ServerKeyFft};
+use parasol_runtime::{Encryption, Evaluation, ServerKey};
 
 use crate::{error::Result, Buffer, Error, FheApplication, FheComputer, Symbol};
 
@@ -8,7 +8,7 @@ use crate::{error::Result, Buffer, Error, FheApplication, FheComputer, Symbol};
 /// for simple testing of a program; for full applications see the
 /// [`FheComputer`] struct.
 pub fn run_program(
-    server_key: ServerKeyFft,
+    server_key: ServerKey,
     elf_file: &[u8],
     program_name: &str,
     arguments: &[Buffer],
@@ -46,7 +46,7 @@ mod tests {
     #[test]
     fn test_run_program() {
         let server_key = get_server_keys_128();
-        let server_key: &ServerKeyFft = server_key.borrow();
+        let server_key: &ServerKey = server_key.borrow();
         let enc = Encryption::default();
 
         let bound = 20u8;
