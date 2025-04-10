@@ -2,6 +2,7 @@
 resolver = "2"
 members = [
     "concurrency",
+    "examples/basic_add",
     "parasol_cpu",
     "parasol_cpu_macros",
     "parasol_runtime",
