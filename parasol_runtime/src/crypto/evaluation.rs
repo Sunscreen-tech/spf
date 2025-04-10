@@ -16,7 +16,7 @@ use super::{
     encryption::{
         Encryption, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
     },
-    L1GlevCiphertext, ComputeKey, TrivialOne, TrivialZero,
+    ComputeKey, L1GlevCiphertext, TrivialOne, TrivialZero,
 };
 
 #[derive(Clone)]
@@ -275,7 +275,7 @@ mod tests {
     use crate::{
         crypto::encryption::Encryption,
         params::DEFAULT_80,
-        test_utils::{get_secret_keys_80, get_compute_key_80},
+        test_utils::{get_compute_key_80, get_secret_keys_80},
     };
 
     use super::*;

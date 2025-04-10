@@ -1,8 +1,8 @@
 use std::sync::{mpsc::Receiver, Arc, Mutex, OnceLock};
 
 use crate::{
-    crypto::PublicKey, params::DEFAULT_80, Encryption, Evaluation, SecretKey, ComputeKey,
-    ComputeKeyNonFft, UOpProcessor, DEFAULT_128,
+    crypto::PublicKey, params::DEFAULT_80, ComputeKey, ComputeKeyNonFft, Encryption, Evaluation,
+    SecretKey, UOpProcessor, DEFAULT_128,
 };
 
 static SECRET_KEYS_80: OnceLock<Arc<SecretKey>> = OnceLock::new();
@@ -21,7 +21,9 @@ pub fn get_secret_keys_80() -> Arc<SecretKey> {
 pub fn get_compute_key_80() -> Arc<ComputeKey> {
     COMPUTE_KEYS_80
         .get_or_init(|| {
-            Arc::new(ComputeKeyNonFft::generate(&get_secret_keys_80(), &DEFAULT_80).fft(&DEFAULT_80))
+            Arc::new(
+                ComputeKeyNonFft::generate(&get_secret_keys_80(), &DEFAULT_80).fft(&DEFAULT_80),
+            )
         })
         .clone()
 }

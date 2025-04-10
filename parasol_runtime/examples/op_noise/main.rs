@@ -4,7 +4,7 @@ use args::{AnalyzeNoise, Command};
 use cbs::analyze_cbs;
 use clap::Parser;
 use cmux::analyze_cmux;
-use parasol_runtime::{Params, SecretKey, ComputeKeyNonFft};
+use parasol_runtime::{ComputeKeyNonFft, Params, SecretKey};
 use scheme_switch::{analyze_scheme_switch, search_scheme_switch};
 use secret_key_encryption::run_secret_key_encryption;
 use serde::Serialize;

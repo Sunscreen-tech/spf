@@ -1,6 +1,6 @@
 use std::{ffi::CString, sync::Arc};
 
-use parasol_runtime::{Encryption, Evaluation, ComputeKey};
+use parasol_runtime::{ComputeKey, Encryption, Evaluation};
 
 use crate::{error::Result, Buffer, Error, FheApplication, FheComputer, Symbol};
 
@@ -37,7 +37,7 @@ mod tests {
     use super::*;
     use crate::test_utils::buffer_from_value_128;
     use parasol_runtime::{
-        test_utils::{get_secret_keys_128, get_compute_key_128},
+        test_utils::{get_compute_key_128, get_secret_keys_128},
         Encryption,
     };
 

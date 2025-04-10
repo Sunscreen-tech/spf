@@ -3,8 +3,8 @@ use std::sync::{mpsc::Receiver, Arc, OnceLock};
 use criterion::{criterion_group, criterion_main, Criterion};
 use parasol_runtime::{
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
-    Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
-    SecretKey, ComputeKey, ComputeKeyNonFft, UOpProcessor, DEFAULT_128,
+    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
+    L1GlevCiphertext, L1GlweCiphertext, SecretKey, UOpProcessor, DEFAULT_128,
 };
 
 fn make_computer() -> (

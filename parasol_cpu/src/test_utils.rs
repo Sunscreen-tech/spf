@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use parasol_runtime::{
     test_utils::{
-        get_secret_keys_128, get_secret_keys_80, get_compute_key_128, get_compute_key_80,
+        get_compute_key_128, get_compute_key_80, get_secret_keys_128, get_secret_keys_80,
     },
     Encryption, Evaluation, SecretKey, DEFAULT_128, DEFAULT_80,
 };
