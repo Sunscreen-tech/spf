@@ -1,0 +1,1 @@
+This crate provides low-level TFHE primitives and is a component of the [Parasol CPU](https://crates.io/crates/parasol_cpu).

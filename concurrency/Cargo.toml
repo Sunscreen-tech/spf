@@ -2,6 +2,7 @@
 name = "concurrency"
 version = "0.9.0"
 edition = "2021"
+readme = "crates-io.md"
 
 [dependencies]
 serde = { workspace = true }

@@ -1,0 +1,1 @@
+This crate provides supporting multiplexer circuits for computing binary operations with TFHE circuit bootstrapping. It is a component of [`parasol_cpu`](https://crates.io/crates/parasol_cpu).
