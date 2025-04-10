@@ -17,7 +17,7 @@
 //!
 //! // Embed the compiled Parasol add program into a constant.
 //! const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
-//! 
+//!
 //! // Generate a secret key for the user. By default this ensures
 //! // 128-bit security.
 //! let secret_key =
@@ -31,7 +31,7 @@
 //!         &secret_key,
 //!     );
 //!
-//! // Define the values we want to add. The values' 
+//! // Define the values we want to add. The values'
 //! // sizes must match the Parasol C program's parameters!
 //! let a = 2u8;
 //! let b = 7u8;

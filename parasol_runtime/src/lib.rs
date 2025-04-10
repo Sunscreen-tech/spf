@@ -35,7 +35,7 @@
 //! let b = PackedUInt::<16, L1GlweCiphertext>::encrypt(16, &enc, &pk);
 //!
 //! // Build a circuit that first `unpack()`s each encrypted value into 16 ciphertexts.
-//! // Next, we convert our encrypted values to L1GgswCiphertext, which will insert 
+//! // Next, we convert our encrypted values to L1GgswCiphertext, which will insert
 //! // circuit bootstrapping operations.
 //! // The fluent types ensure at compile time that you only create valid graphs
 //! // and guarantees you've `convert()`ed ciphertexts appropriately.
