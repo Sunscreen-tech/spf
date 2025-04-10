@@ -14,8 +14,9 @@
 //!
 //! ```rust
 //! use parasol_runtime::{
-//! fluent::{FheCircuitCtx, PackedUInt}, ComputeKey, Encryption, Evaluation, L1GgswCiphertext,
-//! L1GlweCiphertext, PublicKey, SecretKey, UOpProcessor, DEFAULT_128
+//! fluent::{
+//!     FheCircuitCtx, PackedUInt}, ComputeKey, Encryption, Evaluation, L1GgswCiphertext,
+//!     L1GlweCiphertext, PublicKey, SecretKey, UOpProcessor, DEFAULT_128
 //! };
 //! use std::sync::Arc;
 //!
@@ -24,7 +25,7 @@
 //! let ck = Arc::new(ComputeKey::generate_with_default_params(&sk));
 //! let pk = PublicKey::generate(&DEFAULT_128, &sk);
 //!
-//! // Generate the
+//! // Generate the things needed to encrypt data and run our circuit.
 //! let enc = Encryption::new(&DEFAULT_128);
 //! let eval = Evaluation::new(ck, &DEFAULT_128, &enc);
 //! let (mut proc, flow_control) = UOpProcessor::new(16384, None, &eval, &enc);

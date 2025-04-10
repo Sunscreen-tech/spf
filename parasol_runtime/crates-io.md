@@ -13,7 +13,7 @@ fn multiply_16_bit() {
     let ck = Arc::new(ComputeKey::generate_with_default_params(&sk));
     let pk = PublicKey::generate(&DEFAULT_128, &sk);
 
-    // Generate the 
+    // Generate the things needed to encrypt data and run our circuit.
     let enc = Encryption::new(&DEFAULT_128);
     let eval = Evaluation::new(ck, &DEFAULT_128, &enc);
     let (mut proc, flow_control) = UOpProcessor::new(16384, None, &eval, &enc);
