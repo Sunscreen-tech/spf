@@ -20,10 +20,10 @@ Program that will run on the Parasol processor:
 
 Compile `add.c`
 ```bash
-$LLVM_DIR/clang -c add.o -o add.a -O2 -target parasol
+$LLVM_DIR/clang -c add.c -o add.a -O2 -target parasol
 ```
 
-This Rust program that runs on the host. This performs encryption, key generation, runs our program, and decrypts the result:
+This Rust program that runs on the host generates keys, encrypts our data, runs our program, and decrypts the result:
 
 `main.rs`
 ```rust
