@@ -7,7 +7,7 @@ use crate::{
 };
 use std::sync::Arc;
 
-fn horse() {
+fn multiply_16_bit() {
     // Generate our keys.
     let sk = SecretKey::generate_with_default_params();
     let ck = Arc::new(ComputeKey::generate_with_default_params(&sk));
@@ -27,11 +27,11 @@ fn horse() {
     // The fluent types ensure at compile time that you only create valid graphs
     // and guarantees you've `convert()`ed ciphertexts appropriately.
     let ctx = FheCircuitCtx::new();
-    let a = a.
+    let a = a
         .graph_input(&ctx)
         .unpack(&ctx)
         .convert::<L1GgswCiphertext>(&ctx);
-    let b = b.
+    let b = b
         .graph_input(&ctx)
         .unpack(&ctx)
         .convert::<L1GgswCiphertext>(&ctx);
