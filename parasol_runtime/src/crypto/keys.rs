@@ -120,10 +120,10 @@ impl SecretKey {
 /// A set of keys that can be FFT'd and used during evaluation.
 ///
 /// # Remarks
-/// Server keys are quite large (100s of MB), so you should serialize with a protocol that can
+/// Compute keys are quite large (100s of MB), so you should serialize with a protocol that can
 /// efficiently store arrays. Additionally, you should design your protocol around not having to
 /// frequently share these.
-pub struct ServerKeyNonFft {
+pub struct ComputeKeyNonFft {
     /// The bootstrapping key used internally in circuit bootstrapping operations.
     pub cbs_key: BootstrapKey<u64>,
 
@@ -137,7 +137,7 @@ pub struct ServerKeyNonFft {
     pub ss_key: SchemeSwitchKey<u64>,
 }
 
-impl GetSize for ServerKeyNonFft {
+impl GetSize for ComputeKeyNonFft {
     fn get_size(params: &Params) -> usize {
         // The magic 4 is the lengths of the 4 serialized sequences.
         (BootstrapKeyRef::<u64>::size((
@@ -180,8 +180,8 @@ impl GetSize for ServerKeyNonFft {
     }
 }
 
-impl ServerKeyNonFft {
-    /// Generate the server keys in non-fft form from the given secret keys.
+impl ComputeKeyNonFft {
+    /// Generate the compute keys in non-fft form from the given secret keys.
     ///
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
@@ -228,13 +228,13 @@ impl ServerKeyNonFft {
     }
 
     /// Takes the fast-fourier transform of the keys, which is used during evaluation.
-    pub fn fft(&self, params: &Params) -> ServerKey {
+    pub fn fft(&self, params: &Params) -> ComputeKey {
         let mut ssk_fft = SchemeSwitchKeyFft::new(&params.l1_params, &params.ss_radix);
 
         self.ss_key
             .fft(&mut ssk_fft, &params.l1_params, &params.ss_radix);
 
-        ServerKey {
+        ComputeKey {
             cbs_key: fft::fft_bootstrap_key(
                 &self.cbs_key,
                 &params.l0_params,
@@ -247,7 +247,7 @@ impl ServerKeyNonFft {
         }
     }
 
-    /// Generate the server keys in non-fft form from the given secret keys with
+    /// Generate the compute keys in non-fft form from the given secret keys with
     /// the default parameters ([`crate::DEFAULT_128`]).
     ///
     /// # Remarks
@@ -263,15 +263,15 @@ impl ServerKeyNonFft {
 /// A set of keys used during FHE evaluation.
 ///
 /// # Remarks
-/// - Server keys are quite large (100s of MB), so you should serialize with a
+/// - Compute keys are quite large (100s of MB), so you should serialize with a
 ///   protocol that can efficiently store arrays.
 /// - You should design your protocol around not having to frequently share
 ///   these.
-/// - The server key contains floating point values, which can be represented
+/// - The compute key contains floating point values, which can be represented
 ///   with insufficient precision when serializing and deserializing across
 ///   different mediums. Ensure that your key is being serialized and deserialized
 ///   to the same object.
-pub struct ServerKey {
+pub struct ComputeKey {
     /// The FFT'd circuit bootstrap key.
     pub cbs_key: BootstrapKeyFft<Complex<f64>>,
 
@@ -285,7 +285,7 @@ pub struct ServerKey {
     pub ss_key: SchemeSwitchKeyFft<Complex<f64>>,
 }
 
-impl GetSize for ServerKey {
+impl GetSize for ComputeKey {
     fn get_size(params: &Params) -> usize {
         // The magic 4 is the lengths of the 4 serialized sequences.
         (BootstrapKeyRef::<u64>::size((
@@ -328,16 +328,16 @@ impl GetSize for ServerKey {
     }
 }
 
-impl ServerKey {
-    /// Generate the server keys from the given secret keys.
+impl ComputeKey {
+    /// Generate the compute keys from the given secret keys.
     ///
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
     pub fn generate(secret_key: &SecretKey, params: &Params) -> Self {
-        ServerKeyNonFft::generate(secret_key, params).fft(params)
+        ComputeKeyNonFft::generate(secret_key, params).fft(params)
     }
 
-    /// Generate the server keys from the given secret keys with default
+    /// Generate the compute keys from the given secret keys with default
     /// parameters (['crate::DEFAULT_128`])
     ///
     /// # Remarks

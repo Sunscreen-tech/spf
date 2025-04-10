@@ -29,9 +29,9 @@ pub fn deserialize<'a, T: GetSize + Deserialize<'a>>(data: &'a [u8], params: &Pa
 #[cfg(test)]
 mod tests {
     use crate::{
-        test_utils::{get_secret_keys_80, get_server_keys_80},
-        Encryption, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
-        PublicKey, SecretKey, ServerKey, ServerKeyNonFft, DEFAULT_128, DEFAULT_80,
+        test_utils::{get_compute_key_80, get_secret_keys_80},
+        ComputeKey, ComputeKeyNonFft, Encryption, L0LweCiphertext, L1GlevCiphertext,
+        L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, DEFAULT_128, DEFAULT_80,
     };
 
     use super::*;
@@ -87,17 +87,17 @@ mod tests {
         let ser = bincode::serialize(&sk).unwrap();
         deserialize::<SecretKey>(&ser, &DEFAULT_80).unwrap();
 
-        let server = ServerKeyNonFft::generate(&sk, &DEFAULT_80);
-        let ser = bincode::serialize(&server).unwrap();
-        deserialize::<ServerKeyNonFft>(&ser, &DEFAULT_80).unwrap();
+        let compute = ComputeKeyNonFft::generate(&sk, &DEFAULT_80);
+        let ser = bincode::serialize(&compute).unwrap();
+        deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_80).unwrap();
 
         let pk = PublicKey::generate(&DEFAULT_80, &sk);
         let ser = bincode::serialize(&pk).unwrap();
         deserialize::<PublicKey>(&ser, &DEFAULT_80).unwrap();
 
-        let server = get_server_keys_80();
-        let ser = bincode::serialize(&server).unwrap();
-        deserialize::<ServerKey>(&ser, &DEFAULT_80).unwrap();
+        let compute = get_compute_key_80();
+        let ser = bincode::serialize(&compute).unwrap();
+        deserialize::<ComputeKey>(&ser, &DEFAULT_80).unwrap();
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
@@ -118,7 +118,7 @@ mod tests {
 
         case!(PublicKey);
         case!(SecretKey);
-        case!(ServerKeyNonFft);
+        case!(ComputeKeyNonFft);
 
         let sk = get_secret_keys_80();
 
@@ -127,8 +127,8 @@ mod tests {
 
         assert!(result.is_err());
 
-        let ser = bincode::serialize(&ServerKeyNonFft::generate(&sk, &DEFAULT_80)).unwrap();
-        let result = deserialize::<ServerKeyNonFft>(&ser, &DEFAULT_128);
+        let ser = bincode::serialize(&ComputeKeyNonFft::generate(&sk, &DEFAULT_80)).unwrap();
+        let result = deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_128);
 
         assert!(result.is_err());
 

@@ -64,10 +64,10 @@ We can use existing coefficient extraction techniques (e.g. homomorphic trace) t
 This technique does not incur the $\ell$ factor overhead during CMUX computation, but requires extracting a few coefficients. Extrapolating results from Circuit Bootstrapping: Faster and Smaller by Wang et. al. we estimate this to take a millisecond or two, which is still an order of magnitude faster than the KS + CBS process.
 
 # Another new approach: GGSWCMux
-We can extend GLEVCmux to implement a GGSWCmux. However, this is going to require a new server key. Furthermore, this trick only works when we would otherwise be able to use a CMux tree with trivially encrypted a and b, which is fortunately always when using CMux-based computation.
+We can extend GLEVCmux to implement a GGSWCmux. However, this is going to require a new compute key. Furthermore, this trick only works when we would otherwise be able to use a CMux tree with trivially encrypted a and b, which is fortunately always when using CMux-based computation.
 
-## GGSWCMux server key
-A GGSWCMux server key $sk_{ggswcmux}$ consists of k+1 (k being the GLWE size) GLEV encryptions encrypting 0 and -s_i for $0 \le i \lt j$ respectively. The GLEV encryption of zero can collapse to a single GLWE encryption of zero (as an optimization) since the each gadget decomposition of $-sk_i * 0$ is zero and thus we can reuse the same ciphertext.
+## GGSWCMux compute key
+A GGSWCMux compute key $sk_{ggswcmux}$ consists of k+1 (k being the GLWE size) GLEV encryptions encrypting 0 and -s_i for $0 \le i \lt j$ respectively. The GLEV encryption of zero can collapse to a single GLWE encryption of zero (as an optimization) since the each gadget decomposition of $-sk_i * 0$ is zero and thus we can reuse the same ciphertext.
 
 We informally remark that these encrypt that these two values should exactly encrypt the same messages as a standard GGSW's first $k$ GLEV rows, so the exact make security analysis holds.
 

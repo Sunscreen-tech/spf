@@ -3,8 +3,8 @@ use std::sync::{mpsc::Receiver, Arc, OnceLock};
 use criterion::{criterion_group, criterion_main, Criterion};
 use parasol_runtime::{
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
-    Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
-    SecretKey, ServerKey, ServerKeyNonFft, UOpProcessor, DEFAULT_128,
+    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
+    L1GlevCiphertext, L1GlweCiphertext, SecretKey, UOpProcessor, DEFAULT_128,
 };
 
 fn make_computer() -> (
@@ -15,22 +15,22 @@ fn make_computer() -> (
     Evaluation,
 ) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
-    static SERVER_KEY: OnceLock<Arc<ServerKey>> = OnceLock::new();
+    static COMPUTE_KEY: OnceLock<Arc<ComputeKey>> = OnceLock::new();
 
     let sk = SK
         .get_or_init(|| Arc::new(SecretKey::generate(&DEFAULT_128)))
         .clone();
 
-    let server_key = SERVER_KEY
+    let compute_key = COMPUTE_KEY
         .get_or_init(|| {
-            let server = ServerKeyNonFft::generate(&sk, &DEFAULT_128);
+            let compute = ComputeKeyNonFft::generate(&sk, &DEFAULT_128);
 
-            Arc::new(server.fft(&DEFAULT_128))
+            Arc::new(compute.fft(&DEFAULT_128))
         })
         .clone();
 
     let enc = Encryption::new(&DEFAULT_128);
-    let eval = Evaluation::new(server_key.to_owned(), &DEFAULT_128, &enc);
+    let eval = Evaluation::new(compute_key.to_owned(), &DEFAULT_128, &enc);
 
     let (uproc, fc) = UOpProcessor::new(16384, None, &eval, &enc);
 

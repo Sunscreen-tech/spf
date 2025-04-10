@@ -16,11 +16,11 @@ use super::{
     encryption::{
         Encryption, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
     },
-    L1GlevCiphertext, ServerKey, TrivialOne, TrivialZero,
+    ComputeKey, L1GlevCiphertext, TrivialOne, TrivialZero,
 };
 
 #[derive(Clone)]
-/// Performs FHE operations that don't require the server key.
+/// Performs FHE operations that don't require the compute key.
 pub struct KeylessEvaluation {
     pub params: Params,
     #[allow(unused)]
@@ -126,7 +126,7 @@ impl KeylessEvaluation {
 }
 
 #[derive(Clone)]
-/// Performs FHE operations, including those that require the server key.
+/// Performs FHE operations, including those that require the compute key.
 ///
 /// # Remarks
 /// This type exposes low-level operations and one should generally prefer the higher-level
@@ -135,7 +135,7 @@ impl KeylessEvaluation {
 /// All FHE operations in the evaluation run on the current thread.
 pub struct Evaluation {
     keyless_eval: KeylessEvaluation,
-    server_key: Arc<ServerKey>,
+    compute_key: Arc<ComputeKey>,
     l1ggsw_zero: L1GgswCiphertext,
     l1ggsw_one: L1GgswCiphertext,
 }
@@ -150,7 +150,7 @@ impl Deref for Evaluation {
 
 impl Evaluation {
     /// Create a new [`Evaluation`].
-    pub fn new(server_key: Arc<ServerKey>, params: &Params, enc: &Encryption) -> Self {
+    pub fn new(compute_key: Arc<ComputeKey>, params: &Params, enc: &Encryption) -> Self {
         let mk_ggsw = |msg: bool| {
             let lwe = if msg {
                 enc.trivial_lwe_l0_one()
@@ -163,8 +163,8 @@ impl Evaluation {
             circuit_bootstrap(
                 &mut tmp,
                 &lwe.0,
-                &server_key.cbs_key,
-                &server_key.pfks_key,
+                &compute_key.cbs_key,
+                &compute_key.pfks_key,
                 &params.l0_params,
                 &params.l1_params,
                 &params.l2_params,
@@ -185,17 +185,17 @@ impl Evaluation {
 
         Self {
             keyless_eval: KeylessEvaluation::new(params, enc),
-            server_key,
+            compute_key,
             l1ggsw_zero,
             l1ggsw_one,
         }
     }
 
     /// Generates a new [`Evaluation`] with the default parameters ([`crate::DEFAULT_128`])
-    pub fn with_default_params(server_key: Arc<ServerKey>) -> Self {
+    pub fn with_default_params(compute_key: Arc<ComputeKey>) -> Self {
         let params = Params::default();
         let enc = Encryption::default();
-        Self::new(server_key, &params, &enc)
+        Self::new(compute_key, &params, &enc)
     }
 
     /// Perform a circuit bootstrap operation, converting an [`L0LweCiphertext`] into an
@@ -209,8 +209,8 @@ impl Evaluation {
         circuit_bootstrap(
             &mut tmp,
             &input.0,
-            &self.server_key.cbs_key,
-            &self.server_key.pfks_key,
+            &self.compute_key.cbs_key,
+            &self.compute_key.pfks_key,
             &self.params.l0_params,
             &self.params.l1_params,
             &self.params.l2_params,
@@ -234,7 +234,7 @@ impl Evaluation {
         scheme_switch_fft(
             &mut output.0,
             &input.0,
-            &self.server_key.ss_key,
+            &self.compute_key.ss_key,
             &self.params.l1_params,
             &self.params.cbs_radix,
             &self.params.ss_radix,
@@ -249,7 +249,7 @@ impl Evaluation {
         keyswitch_lwe_to_lwe(
             &mut output.0,
             &input.0,
-            &self.server_key.ks_key,
+            &self.compute_key.ks_key,
             &self.params.l1_params.as_lwe_def(),
             &self.params.l0_params,
             &self.params.ks_radix,
@@ -275,7 +275,7 @@ mod tests {
     use crate::{
         crypto::encryption::Encryption,
         params::DEFAULT_80,
-        test_utils::{get_secret_keys_80, get_server_keys_80},
+        test_utils::{get_compute_key_80, get_secret_keys_80},
     };
 
     use super::*;
@@ -283,10 +283,10 @@ mod tests {
     #[test]
     fn can_circuit_bootstrap() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut ggsw = enc.allocate_ggsw_l1();
 
@@ -302,10 +302,10 @@ mod tests {
     #[test]
     fn can_lwe_keyswitch() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut lwe_0 = enc.allocate_lwe_l0();
 
@@ -323,10 +323,10 @@ mod tests {
     #[test]
     fn can_cmux() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut ggsw = enc.allocate_ggsw_l1();
         let mut result = enc.allocate_glwe_l1();
@@ -348,10 +348,10 @@ mod tests {
     #[test]
     fn can_sample_extract() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut poly = vec![0; DEFAULT_80.l1_poly_degree().0];
         poly[1] = 1;
@@ -367,10 +367,10 @@ mod tests {
     #[test]
     fn can_not() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut output = enc.allocate_glwe_l1();
 
@@ -398,10 +398,10 @@ mod tests {
     #[test]
     fn can_xor() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut output = enc.allocate_glwe_l1();
 
@@ -448,10 +448,10 @@ mod tests {
     #[test]
     fn can_multiply_glwe_ggsw() {
         let secret = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         for a in [false, true] {
             for b in [false, true] {
@@ -478,10 +478,10 @@ mod tests {
     #[test]
     fn can_mul_xn() {
         let sk = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut msg = Polynomial::<u64>::zero(DEFAULT_80.l1_params.dim.polynomial_degree.0);
 
@@ -505,10 +505,10 @@ mod tests {
     #[test]
     fn can_scheme_switch() {
         let sk = get_secret_keys_80();
-        let server = get_server_keys_80();
+        let compute = get_compute_key_80();
 
         let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(server, &DEFAULT_80, &enc);
+        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
 
         let mut msg = Polynomial::zero(DEFAULT_80.l1_poly_degree().0);
         msg.coeffs_mut()[0] = 1;

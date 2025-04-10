@@ -1,15 +1,15 @@
 use std::sync::{mpsc::Receiver, Arc, Mutex, OnceLock};
 
 use crate::{
-    crypto::PublicKey, params::DEFAULT_80, Encryption, Evaluation, SecretKey, ServerKey,
-    ServerKeyNonFft, UOpProcessor, DEFAULT_128,
+    crypto::PublicKey, params::DEFAULT_80, ComputeKey, ComputeKeyNonFft, Encryption, Evaluation,
+    SecretKey, UOpProcessor, DEFAULT_128,
 };
 
 static SECRET_KEYS_80: OnceLock<Arc<SecretKey>> = OnceLock::new();
-static SERVER_KEYS_80: OnceLock<Arc<ServerKey>> = OnceLock::new();
+static COMPUTE_KEYS_80: OnceLock<Arc<ComputeKey>> = OnceLock::new();
 
 static SECRET_KEYS_128: OnceLock<Arc<SecretKey>> = OnceLock::new();
-static SERVER_KEYS_128: OnceLock<Arc<ServerKey>> = OnceLock::new();
+static COMPUTE_KEYS_128: OnceLock<Arc<ComputeKey>> = OnceLock::new();
 static PUBLIC_KEYS_128: OnceLock<Arc<PublicKey>> = OnceLock::new();
 
 pub fn get_secret_keys_80() -> Arc<SecretKey> {
@@ -18,10 +18,12 @@ pub fn get_secret_keys_80() -> Arc<SecretKey> {
         .clone()
 }
 
-pub fn get_server_keys_80() -> Arc<ServerKey> {
-    SERVER_KEYS_80
+pub fn get_compute_key_80() -> Arc<ComputeKey> {
+    COMPUTE_KEYS_80
         .get_or_init(|| {
-            Arc::new(ServerKeyNonFft::generate(&get_secret_keys_80(), &DEFAULT_80).fft(&DEFAULT_80))
+            Arc::new(
+                ComputeKeyNonFft::generate(&get_secret_keys_80(), &DEFAULT_80).fft(&DEFAULT_80),
+            )
         })
         .clone()
 }
@@ -32,11 +34,11 @@ pub fn get_secret_keys_128() -> Arc<SecretKey> {
         .clone()
 }
 
-pub fn get_server_keys_128() -> Arc<ServerKey> {
-    SERVER_KEYS_128
+pub fn get_compute_key_128() -> Arc<ComputeKey> {
+    COMPUTE_KEYS_128
         .get_or_init(|| {
             Arc::new(
-                ServerKeyNonFft::generate(&get_secret_keys_128(), &DEFAULT_128).fft(&DEFAULT_128),
+                ComputeKeyNonFft::generate(&get_secret_keys_128(), &DEFAULT_128).fft(&DEFAULT_128),
             )
         })
         .clone()
@@ -59,12 +61,12 @@ pub fn get_encryption_128() -> Encryption {
 }
 
 pub fn get_evaluation_80() -> Evaluation {
-    Evaluation::new(get_server_keys_80(), &DEFAULT_80, &get_encryption_80())
+    Evaluation::new(get_compute_key_80(), &DEFAULT_80, &get_encryption_80())
 }
 
 pub fn make_uproc_80() -> (Mutex<UOpProcessor>, Receiver<()>) {
     let enc = get_encryption_80();
-    let eval = Evaluation::new(get_server_keys_80(), &DEFAULT_80, &enc);
+    let eval = Evaluation::new(get_compute_key_80(), &DEFAULT_80, &enc);
 
     let proc = UOpProcessor::new(16384, None, &eval, &enc);
 
@@ -72,12 +74,12 @@ pub fn make_uproc_80() -> (Mutex<UOpProcessor>, Receiver<()>) {
 }
 
 pub fn get_evaluation_128() -> Evaluation {
-    Evaluation::new(get_server_keys_128(), &DEFAULT_128, &get_encryption_128())
+    Evaluation::new(get_compute_key_128(), &DEFAULT_128, &get_encryption_128())
 }
 
 pub fn make_uproc_128() -> (Mutex<UOpProcessor>, Receiver<()>) {
     let enc = get_encryption_128();
-    let eval = Evaluation::new(get_server_keys_128(), &DEFAULT_128, &enc);
+    let eval = Evaluation::new(get_compute_key_128(), &DEFAULT_128, &enc);
 
     let proc = UOpProcessor::new(16384, None, &eval, &enc);
 
@@ -88,7 +90,7 @@ pub fn make_uproc_with_flow_control_len_80(
     flow_control_len: usize,
 ) -> (Mutex<UOpProcessor>, Receiver<()>) {
     let enc = get_encryption_80();
-    let eval = Evaluation::new(get_server_keys_80(), &DEFAULT_80, &enc);
+    let eval = Evaluation::new(get_compute_key_80(), &DEFAULT_80, &enc);
 
     let proc = UOpProcessor::new(flow_control_len, None, &eval, &enc);
 

@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use parasol_runtime::{
     test_utils::{
-        get_secret_keys_128, get_secret_keys_80, get_server_keys_128, get_server_keys_80,
+        get_compute_key_128, get_compute_key_80, get_secret_keys_128, get_secret_keys_80,
     },
     Encryption, Evaluation, SecretKey, DEFAULT_128, DEFAULT_80,
 };
@@ -39,9 +39,9 @@ pub fn get_thread_pool() -> Arc<ThreadPool> {
 
 /// Create a computer with the default encryption and evaluation.
 pub fn make_computer_80() -> (FheComputer, Encryption) {
-    let server_key = get_server_keys_80();
+    let compute_key = get_compute_key_80();
     let enc = Encryption::new(&DEFAULT_80);
-    let eval = Evaluation::new(server_key, &DEFAULT_80, &enc);
+    let eval = Evaluation::new(compute_key, &DEFAULT_80, &enc);
 
     (
         FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool()),
@@ -50,9 +50,9 @@ pub fn make_computer_80() -> (FheComputer, Encryption) {
 }
 
 pub fn make_computer_128() -> (FheComputer, Encryption) {
-    let server_key = get_server_keys_128();
+    let compute_key = get_compute_key_128();
     let enc = Encryption::new(&DEFAULT_128);
-    let eval = Evaluation::new(server_key, &DEFAULT_128, &enc);
+    let eval = Evaluation::new(compute_key, &DEFAULT_128, &enc);
 
     (
         FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool()),
