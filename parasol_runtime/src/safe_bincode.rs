@@ -29,7 +29,7 @@ pub fn deserialize<'a, T: GetSize + Deserialize<'a>>(data: &'a [u8], params: &Pa
 #[cfg(test)]
 mod tests {
     use crate::{
-        test_utils::{get_secret_keys_80, get_compute_keys_80},
+        test_utils::{get_secret_keys_80, get_compute_key_80},
         Encryption, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         PublicKey, SecretKey, ComputeKey, ComputeKeyNonFft, DEFAULT_128, DEFAULT_80,
     };
@@ -95,7 +95,7 @@ mod tests {
         let ser = bincode::serialize(&pk).unwrap();
         deserialize::<PublicKey>(&ser, &DEFAULT_80).unwrap();
 
-        let compute = get_compute_keys_80();
+        let compute = get_compute_key_80();
         let ser = bincode::serialize(&compute).unwrap();
         deserialize::<ComputeKey>(&ser, &DEFAULT_80).unwrap();
     }

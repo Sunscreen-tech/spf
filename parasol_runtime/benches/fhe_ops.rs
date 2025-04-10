@@ -12,7 +12,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
         .get_or_init(|| Arc::new(SecretKey::generate(&DEFAULT_128)))
         .clone();
 
-    let compute_keys = COMPUTE_KEY
+    let compute_key = COMPUTE_KEY
         .get_or_init(|| {
             let compute = ComputeKeyNonFft::generate(&sk, &DEFAULT_128);
 
@@ -21,7 +21,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
         .clone();
 
     let enc = Encryption::new(&DEFAULT_128);
-    let eval = Evaluation::new(compute_keys.to_owned(), &DEFAULT_128, &enc);
+    let eval = Evaluation::new(compute_key.to_owned(), &DEFAULT_128, &enc);
 
     (sk, enc, eval)
 }
