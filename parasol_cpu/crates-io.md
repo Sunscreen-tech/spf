@@ -4,7 +4,7 @@ This crate contains Sunscreen's Parasol CPU, which allows users to run computati
 When combined with the `parasol_runtime` crate, you can build rich privacy-preserving applications.
 
 # Prereqs
-While the contained `parasol_cpu` crate contains everything your need to *run* programs, to write them you'll need the Parasol-llvm compiler. You can get that [here](https://github.com/Sunscreen-tech/testnet-starter/tree/main/compiler).
+While the contained `parasol_cpu` crate contains everything you need to *run* programs, to write them you'll need the Parasol-llvm compiler. You can get that [here](https://github.com/Sunscreen-tech/testnet-starter/tree/main/compiler).
 
 * Download the tar file for your host architecture and OS.
 * Run `tar xvzf parasol-compiler-<variant>.tar.gz`.
@@ -57,9 +57,8 @@ fn main() {
             &secret_key,
         );
 
-    // Define the values we want to add. The sizes of the values' 
-    // sizes must match the values' sizes defined in the
-    // Parasol C program!
+    // Define the values we want to add. The values' 
+    // sizes must match the Parasol C program's parameters!
     let a = 2u8;
     let b = 7u8;
 
