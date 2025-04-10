@@ -15,7 +15,15 @@ Program that will run on the Parasol processor:
 
 `add.c`:
 ```C
-{{#include examples/basic_add/data/add.c}}
+typedef unsigned char uint8_t;
+
+[[clang::fhe_circuit]] void add(
+    [[clang::encrypted]] uint8_t *a,
+    [[clang::encrypted]] uint8_t *b,
+    [[clang::encrypted]] uint8_t *output
+) {
+    *output = *a + *b;
+}
 ```
 
 Compile `add.c`
@@ -27,7 +35,65 @@ This Rust program that runs on the host generates keys, encrypts our data, runs 
 
 `main.rs`
 ```rust
-{{#include examples/basic_add/src/main.rs}}
+use parasol_cpu::{run_program, Buffer};
+use parasol_runtime::{ComputeKey, Encryption, SecretKey};
+
+// Define the path to the compiled TFHE add program.
+const FHE_FILE: &[u8] =
+    include_bytes!("../data/add.a");
+
+fn main() {
+    // Generate a secret key for the user. By default this ensures
+    // 128 bit security.
+    let secret_key =
+        SecretKey::generate_with_default_params();
+
+    // Generate a compute key for the user. These keys are used for
+    // operations and do not give access to the plaintext data;
+    // therefore, this key can safely be shared with another party.
+    let compute_key =
+        ComputeKey::generate_with_default_params(
+            &secret_key,
+        );
+
+    // Define the values we want to add. The sizes of the values
+    // must match the size of the values defined in the
+    // C TFHE program!
+    let a = 2u8;
+    let b = 7u8;
+
+    // To pass arguments into the TFHE C program, we must convert
+    // them to `Buffer`s. Note that we must provide an output
+    // buffer as well!
+    let arguments = [a, b, 0u8].map(|x| {
+        Buffer::cipher_from_value(
+            &x,
+            &Encryption::default(),
+            &secret_key,
+        )
+    });
+
+    // Run the program.
+    let encrypted_result = run_program(
+        compute_key.clone(),
+        FHE_FILE,
+        "add",
+        &arguments,
+    )
+    .unwrap();
+
+    // Decypt the result. Note that we have to choose the index
+    // to decrypt from all the arguments passed to the C function;
+    // since the result is written out to the third argument of
+    // the `add` function in C, we specify that index here.
+    let result = encrypted_result[2]
+        .cipher_try_into_value::<u8>(
+            &Encryption::default(),
+            &secret_key,
+        )
+        .unwrap();
+    println!("Encrypted {a} + {b} = {result}");
+}
 ```
 
 And finally, our `Cargo.toml`
