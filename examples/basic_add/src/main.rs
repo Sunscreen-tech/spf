@@ -1,13 +1,12 @@
 use parasol_cpu::{run_program, Buffer};
 use parasol_runtime::{ComputeKey, Encryption, SecretKey};
 
-// Define the path to the compiled TFHE add program.
-const FHE_FILE: &[u8] =
-    include_bytes!("../data/add.a");
+// Embed the compiled Parasol add program into a constant.
+const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
 
 fn main() {
     // Generate a secret key for the user. By default this ensures
-    // 128 bit security.
+    // 128-bit security.
     let secret_key =
         SecretKey::generate_with_default_params();
 
@@ -19,13 +18,13 @@ fn main() {
             &secret_key,
         );
 
-    // Define the values we want to add. The sizes of the values
-    // must match the size of the values defined in the
-    // C TFHE program!
+    // Define the values we want to add. The sizes of the values' 
+    // sizes must match the values' sizes defined in the
+    // Parasol C program!
     let a = 2u8;
     let b = 7u8;
 
-    // To pass arguments into the TFHE C program, we must convert
+    // To pass arguments into the Parasol C program, we must convert
     // them to `Buffer`s. Note that we must provide an output
     // buffer as well!
     let arguments = [a, b, 0u8].map(|x| {
@@ -45,7 +44,7 @@ fn main() {
     )
     .unwrap();
 
-    // Decypt the result. Note that we have to choose the index
+    // Decrypt the result. Note that we have to choose the index
     // to decrypt from all the arguments passed to the C function;
     // since the result is written out to the third argument of
     // the `add` function in C, we specify that index here.
