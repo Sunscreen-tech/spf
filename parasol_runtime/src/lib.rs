@@ -35,7 +35,8 @@
 //! let b = PackedUInt::<16, L1GlweCiphertext>::encrypt(16, &enc, &pk);
 //!
 //! // Build a circuit that first `unpack()`s each encrypted value into 16 ciphertexts.
-//! // Next, we convert to L1GgswCiphertext, which will insert circuit bootstrapping operations.
+//! // Next, we convert our encrypted values to L1GgswCiphertext, which will insert 
+//! // circuit bootstrapping operations.
 //! // The fluent types ensure at compile time that you only create valid graphs
 //! // and guarantees you've `convert()`ed ciphertexts appropriately.
 //! let ctx = FheCircuitCtx::new();
@@ -49,7 +50,7 @@
 //!     .convert::<L1GgswCiphertext>(&ctx);
 //!
 //! // With our data in GGSW form, we can now multiply the two encrypted integers, which will result in
-//! // L1GlweCiphertexts that we `repack()` into a single ciphertext.
+//! // L1GlweCiphertexts that we re`pack()` into a single ciphertext.
 //! let c = a
 //!     .mul::<L1GlweCiphertext>(&b, &ctx)
 //!     .pack(&ctx, &enc)
