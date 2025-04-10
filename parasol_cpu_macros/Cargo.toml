@@ -4,6 +4,7 @@ version = "0.9.0"
 edition = "2021"
 license = "AGPL-3.0-only"
 description = "Macros for deriving types for use with the Parasol processor."
+readme = "crates-io.md"
 
 [lib]
 proc-macro = true

@@ -1,0 +1,1 @@
+This `proc-macro` crate is a component of [`parasol_cpu`](https://crates.io/parasol_cpu).

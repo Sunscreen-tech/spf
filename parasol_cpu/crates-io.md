@@ -1,5 +1,7 @@
 # Parasol CPU
-This repository contains Sunscreen's Parasol CPU, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Its out-of-order processor design automatically extracts parallelism from user-provided programs to run them efficiently on modern architectures. Additionally, its processor design that can crunch numbers over a mix of plaintext and encrypted data provides more flexibility than the traditional circuits used in FHE.
+This crate contains Sunscreen's Parasol CPU, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Its out-of-order processor design automatically extracts parallelism from user-provided programs to run them efficiently on modern architectures. Additionally, its processor design that can crunch numbers over a mix of plaintext and encrypted data provides more flexibility than the traditional circuits used in FHE.
+
+When combined with the `parasol_runtime` crate, you can build rich privacy-preserving applications.
 
 # Prereqs
 While the contained `parasol_cpu` crate contains everything you need to *run* programs, to write them you'll need the Parasol-llvm compiler. You can get that [here](https://github.com/Sunscreen-tech/testnet-starter/tree/main/compiler).
