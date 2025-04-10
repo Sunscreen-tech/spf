@@ -1,6 +1,6 @@
 use std::{ffi::CString, sync::Arc};
 
-use parasol_runtime::{Encryption, Evaluation, ServerKey};
+use parasol_runtime::{Encryption, Evaluation, ComputeKey};
 
 use crate::{error::Result, Buffer, Error, FheApplication, FheComputer, Symbol};
 
@@ -8,13 +8,13 @@ use crate::{error::Result, Buffer, Error, FheApplication, FheComputer, Symbol};
 /// for simple testing of a program; for full applications see the
 /// [`FheComputer`] struct.
 pub fn run_program(
-    server_key: ServerKey,
+    compute_keys: ComputeKey,
     elf_file: &[u8],
     program_name: &str,
     arguments: &[Buffer],
 ) -> Result<Vec<Buffer>> {
     let enc = Encryption::default();
-    let eval = Evaluation::with_default_params(Arc::new(server_key));
+    let eval = Evaluation::with_default_params(Arc::new(compute_keys));
     let mut proc = FheComputer::new(&enc, &eval);
 
     let fhe_app = FheApplication::parse_elf(elf_file)?;
@@ -37,7 +37,7 @@ mod tests {
     use super::*;
     use crate::test_utils::buffer_from_value_128;
     use parasol_runtime::{
-        test_utils::{get_secret_keys_128, get_server_keys_128},
+        test_utils::{get_secret_keys_128, get_compute_keys_128},
         Encryption,
     };
 
@@ -45,8 +45,8 @@ mod tests {
 
     #[test]
     fn test_run_program() {
-        let server_key = get_server_keys_128();
-        let server_key: &ServerKey = server_key.borrow();
+        let compute_keys = get_compute_keys_128();
+        let compute_keys: &ComputeKey = compute_keys.borrow();
         let enc = Encryption::default();
 
         let bound = 20u8;
@@ -60,7 +60,7 @@ mod tests {
 
         let arguments = vec![buffer_0, buffer_1, buffer_2, output_buffer];
 
-        let result = run_program(server_key.clone(), CMUX_ELF, "cmux", &arguments).unwrap();
+        let result = run_program(compute_keys.clone(), CMUX_ELF, "cmux", &arguments).unwrap();
 
         let output = result[3]
             .cipher_try_into_value::<u8>(&enc, &get_secret_keys_128())
