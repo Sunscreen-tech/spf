@@ -1,5 +1,5 @@
-use parasol_concurrency::Spinlock;
 use criterion::{Criterion, criterion_group, criterion_main};
+use parasol_concurrency::Spinlock;
 
 use std::sync::Mutex;
 

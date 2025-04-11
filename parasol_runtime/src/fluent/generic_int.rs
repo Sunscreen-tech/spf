@@ -8,7 +8,6 @@ use crate::{
 use super::{CiphertextOps, FheCircuitCtx, Muxable, PolynomialCiphertextOps, bit::BitNode};
 
 use bumpalo::Bump;
-use parasol_concurrency::AtomicRefCell;
 use mux_circuits::{
     MuxCircuit,
     add::ripple_carry_adder,
@@ -16,6 +15,7 @@ use mux_circuits::{
     comparisons::{compare_equal, compare_not_equal},
     sub::full_subtractor,
 };
+use parasol_concurrency::AtomicRefCell;
 use petgraph::stable_graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::entities::Polynomial;
