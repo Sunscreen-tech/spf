@@ -2,20 +2,20 @@ use crate::{circuits::mul::append_uint_multiply, L1GgswCiphertext};
 
 use super::{
     bit::BitNode,
-    gint::{GInt, GIntGraphNodes, PackedGIntGraphNode, Sign},
-    CiphertextOps, FheCircuitCtx, GeneratesCompareCircuit, Muxable, PackedGInt,
+    generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
+    CiphertextOps, FheCircuitCtx, GeneratesCompareCircuit, Muxable, PackedGenericInt,
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
 
 /// Marker struct
 #[derive(Clone)]
-pub struct UnsignedInt;
+pub struct Unsigned;
 
-impl Sign for UnsignedInt {}
+impl Sign for Unsigned {}
 
-/// Unsigned variant for [`GIntGraphNodes`]
-pub type UIntGraphNodes<'a, const N: usize, T> = GIntGraphNodes<'a, N, T, UnsignedInt>;
+/// Unsigned variant for [`GenericIntGraphNodes`]
+pub type UIntGraphNodes<'a, const N: usize, T> = GenericIntGraphNodes<'a, N, T, Unsigned>;
 
 impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
     /// Convert this `N`-bit integer to an `M`-bit integer of the same ciphertext type.
@@ -43,7 +43,7 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
 }
 
 impl<const N: usize> GeneratesCompareCircuit for UIntGraphNodes<'_, N, L1GgswCiphertext> {
-    fn gen_circuit(&self, max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
+    fn gen_compare_circuit(&self, max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
         compare_or_maybe_equal(max_len, gt, eq)
     }
 }
@@ -71,14 +71,14 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
     }
 }
 
-/// Unsigned variant for [`PackedGIntGraphNode`]
-pub type PackedUIntGraphNode<const N: usize, T> = PackedGIntGraphNode<N, T, UnsignedInt>;
+/// Unsigned variant for [`PackedGenericIntGraphNode`]
+pub type PackedUIntGraphNode<const N: usize, T> = PackedGenericIntGraphNode<N, T, Unsigned>;
 
-/// Unsigned variant for [`GInt`]
-pub type UInt<const N: usize, T> = GInt<N, T, UnsignedInt>;
+/// Unsigned variant for [`GenericInt`]
+pub type UInt<const N: usize, T> = GenericInt<N, T, Unsigned>;
 
-/// Unsigned variant for [`PackedGInt`]
-pub type PackedUInt<const N: usize, T> = PackedGInt<N, T, UnsignedInt>;
+/// Unsigned variant for [`PackedGenericInt`]
+pub type PackedUInt<const N: usize, T> = PackedGenericInt<N, T, Unsigned>;
 
 #[cfg(test)]
 mod tests {
