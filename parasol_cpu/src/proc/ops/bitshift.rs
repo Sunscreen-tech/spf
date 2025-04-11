@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use concurrency::AtomicRefCell;
 use mux_circuits::{MuxCircuit, bitshift::bitshift};
+use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, L1GlweCiphertext};
 
 use crate::{

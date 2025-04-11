@@ -1,8 +1,8 @@
 [workspace]
 resolver = "2"
 members = [
-    "concurrency",
     "examples/basic_add",
+    "parasol_concurrency",
     "parasol_cpu",
     "parasol_cpu_macros",
     "parasol_runtime",
@@ -47,8 +47,8 @@ syn = { version = "2", features = ["full"] }
 thiserror = "2"
 
 # Crates in this repo
-concurrency = { version = "0.9", path = "./concurrency" }
 mux_circuits = { version = "0.9", path = "./mux_circuits" }
+parasol_concurrency = { version = "0.9", path = "./parasol_concurrency" }
 parasol_cpu = { version = "0.9", path = "./parasol_cpu" }
 parasol_cpu_macros = { version = "0.9", path = "./parasol_cpu_macros" }
 parasol_runtime = { version = "0.9", path = "./parasol_runtime" }

@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{

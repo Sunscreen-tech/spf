@@ -5,8 +5,8 @@ use std::{
     sync::Arc,
 };
 
-use concurrency::AtomicRefCell;
 use mux_circuits::{MuxCircuit, MuxEdgeInfo, MuxOp};
+use parasol_concurrency::AtomicRefCell;
 use petgraph::{Direction, prelude::StableGraph, stable_graph::NodeIndex, visit::EdgeRef};
 
 use crate::crypto::{

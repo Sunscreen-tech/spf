@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     CiphertextType, FheCircuit, FheEdge, FheOp, L1GlweCiphertext,
     circuits::mul::append_uint_multiply, prune,

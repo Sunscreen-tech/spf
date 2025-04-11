@@ -5,8 +5,8 @@ use crate::{
     tomasulo::tomasulo_processor::RetirementInfo,
 };
 
-use concurrency::AtomicRefCell;
 use mux_circuits::convert_value_to_bits;
+use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     CiphertextType, CompletionHandler, FheCircuit, FheOp, L1GlweCiphertext,
     insert_ciphertext_conversion,

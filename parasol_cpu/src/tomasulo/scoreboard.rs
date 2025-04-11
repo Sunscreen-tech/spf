@@ -4,7 +4,7 @@ use std::{
     sync::{Arc, atomic::AtomicUsize},
 };
 
-use concurrency::{AtomicRefCell, Spinlock};
+use parasol_concurrency::{AtomicRefCell, Spinlock};
 
 #[derive(Debug, Eq)]
 pub struct ScoreboardEntryId<I> {

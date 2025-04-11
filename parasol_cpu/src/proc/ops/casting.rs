@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 
 use crate::{
     Ciphertext, FheProcessor, Register, Result,

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use bumpalo::Bump;
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use petgraph::stable_graph::NodeIndex;
 use sunscreen_tfhe::{
     PolynomialDegree,

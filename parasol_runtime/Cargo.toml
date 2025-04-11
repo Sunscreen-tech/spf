@@ -15,10 +15,10 @@ categories = ["cryptography"]
 [dependencies]
 bincode = { workspace = true }
 bumpalo = { workspace = true }
-concurrency = { workspace = true }
 log = { workspace = true }
 mux_circuits = { workspace = true }
 num = { workspace = true }
+parasol_concurrency = { workspace = true }
 petgraph = { workspace = true }
 rayon = { workspace = true }
 serde = { workspace = true }

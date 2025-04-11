@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
-use concurrency::AtomicRefCell;
 use mux_circuits::add::ripple_carry_adder;
+use parasol_concurrency::AtomicRefCell;
 
 use crate::{Encryption, FheCircuit, L1GlweCiphertext};
 
