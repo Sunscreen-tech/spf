@@ -1,6 +1,6 @@
 use std::{marker::PhantomData, sync::Arc};
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use serde::{Deserialize, Serialize};
 
 use super::{CiphertextOps, FheCircuitCtx, uint::UIntGraphNodes};

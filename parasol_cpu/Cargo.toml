@@ -15,17 +15,17 @@ categories = ["cryptography"]
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
 [dependencies]
-biodivine-lib-bdd = { workspace = true }
 bincode = { workspace = true }
+biodivine-lib-bdd = { workspace = true }
 bytemuck = { workspace = true }
 cached = { workspace = true }
-concurrency = { workspace = true }
 elf = { workspace = true }
-parasol_runtime = { workspace = true }
 log = { workspace = true }
 mux_circuits = { workspace = true }
 num = { workspace = true }
+parasol_concurrency = { workspace = true }
 parasol_cpu_macros = { workspace = true }
+parasol_runtime = { workspace = true }
 paste = { workspace = true }
 petgraph = { workspace = true }
 rand = { workspace = true }

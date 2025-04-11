@@ -4,7 +4,7 @@
 use std::sync::{Arc, Mutex};
 
 use crate::{Error, Result};
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use elf::{ElfBytes, endian::LittleEndian, file::Class};
 use parasol_runtime::L1GlweCiphertext;
 

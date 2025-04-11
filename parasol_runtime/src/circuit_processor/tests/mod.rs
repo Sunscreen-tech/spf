@@ -3,7 +3,7 @@ use std::sync::{
     atomic::{AtomicBool, Ordering},
 };
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use mux_circuits::and::make_and_circuit;
 use sunscreen_tfhe::entities::Polynomial;
 

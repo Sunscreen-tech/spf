@@ -1,6 +1,6 @@
 use std::ops::DerefMut;
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 
 use crate::{
     CiphertextPtr, Error, FheProcessor, MemHazards, PtrRegister, Register, Result,

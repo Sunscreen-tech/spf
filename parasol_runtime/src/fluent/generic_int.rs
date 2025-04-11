@@ -8,7 +8,7 @@ use crate::{
 use super::{CiphertextOps, FheCircuitCtx, Muxable, PolynomialCiphertextOps, bit::BitNode};
 
 use bumpalo::Bump;
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use mux_circuits::{
     MuxCircuit,
     add::ripple_carry_adder,

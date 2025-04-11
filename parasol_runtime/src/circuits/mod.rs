@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use mux_circuits::sub::full_subtractor;
 
 use crate::{Encryption, FheCircuit, L1GlweCiphertext};

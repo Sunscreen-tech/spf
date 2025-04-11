@@ -7,7 +7,7 @@ use std::{
     },
 };
 
-use concurrency::{AtomicRefCell, Spinlock};
+use parasol_concurrency::{AtomicRefCell, Spinlock};
 use log::trace;
 use petgraph::{
     Direction,

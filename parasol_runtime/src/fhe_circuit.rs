@@ -5,7 +5,7 @@ use std::{
     sync::Arc,
 };
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use mux_circuits::{MuxCircuit, MuxEdgeInfo, MuxOp};
 use petgraph::{Direction, prelude::StableGraph, stable_graph::NodeIndex, visit::EdgeRef};
 

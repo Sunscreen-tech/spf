@@ -1,6 +1,6 @@
 use std::{array, collections::HashSet, ops::Deref, sync::Arc};
 
-use concurrency::AtomicRefCell;
+use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
     SecretKey, TrivialOne, TrivialZero, UOpProcessor, fluent::UInt,
