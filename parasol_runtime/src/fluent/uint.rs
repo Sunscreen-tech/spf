@@ -14,11 +14,7 @@ pub struct UnsignedInt;
 
 impl Sign for UnsignedInt {}
 
-/// A collection of graph nodes resulting from FHE operations over unsigned integers (e.g. the
-/// result of adding two 7-bit unsigned values).
-///
-/// # Remarks
-/// This integer is in unpacked form, meaning each bit resides in a different ciphertext of type `T`.
+/// Unsigned variant for [`GIntGraphNodes`]
 pub type UIntGraphNodes<'a, const N: usize, T> = GIntGraphNodes<'a, N, T, UnsignedInt>;
 
 impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
@@ -46,7 +42,7 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
     }
 }
 
-impl<'a, const N: usize> GeneratesCompareCircuit for UIntGraphNodes<'a, N, L1GgswCiphertext> {
+impl<const N: usize> GeneratesCompareCircuit for UIntGraphNodes<'_, N, L1GgswCiphertext> {
     fn gen_circuit(&self, max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
         compare_or_maybe_equal(max_len, gt, eq)
     }
@@ -75,16 +71,13 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
     }
 }
 
-/// A graph node that represents an unsigned integer in packed form. See [`PackedUInt`] for a
-/// description of packing.
+/// Unsigned variant for [`PackedGIntGraphNode`]
 pub type PackedUIntGraphNode<const N: usize, T> = PackedGIntGraphNode<N, T, UnsignedInt>;
 
-/// An unsigned integer store in unpacked form. An `N`-bit unsigned integer encrypts its bits in
-/// `N` different ciphertexts of type `T`.
+/// Unsigned variant for [`GInt`]
 pub type UInt<const N: usize, T> = GInt<N, T, UnsignedInt>;
 
-/// An `N`-bit integer encrypted and packed into a single ciphertext of type `T`. Note `T` must
-/// allow polynomial messages (e.g. [`L1GlweCiphertext`]).
+/// Unsigned variant for [`PackedGInt`]
 pub type PackedUInt<const N: usize, T> = PackedGInt<N, T, UnsignedInt>;
 
 #[cfg(test)]

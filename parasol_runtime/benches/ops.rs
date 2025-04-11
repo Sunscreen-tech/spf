@@ -2,7 +2,7 @@ use std::sync::{mpsc::Receiver, Arc, OnceLock};
 
 use criterion::{criterion_group, criterion_main, Criterion};
 use parasol_runtime::{
-    fluent::{FheCircuitCtx, UInt, UIntGraphNodes, UnsignedInt},
+    fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
     ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
     L1GlevCiphertext, L1GlweCiphertext, SecretKey, UOpProcessor, DEFAULT_128,
 };
@@ -61,8 +61,8 @@ fn bench_binary_function<const N: usize, F1, F2>(
     let a = UInt::<N, L1GlevCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
     let b = UInt::<N, L1GlevCiphertext>::encrypt_secret(35, &enc, &sk).graph_inputs(&ctx);
 
-    let a = a.convert::<L1GgswCiphertext, UnsignedInt>(&ctx);
-    let b = b.convert::<L1GgswCiphertext, UnsignedInt>(&ctx);
+    let a = a.convert::<L1GgswCiphertext>(&ctx);
+    let b = b.convert::<L1GgswCiphertext>(&ctx);
 
     op_glev(&ctx, &a, &b);
 
@@ -75,8 +75,8 @@ fn bench_binary_function<const N: usize, F1, F2>(
     let a = UInt::<N, L0LweCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
     let b = UInt::<N, L0LweCiphertext>::encrypt_secret(35, &enc, &sk).graph_inputs(&ctx);
 
-    let a = a.convert::<L1GgswCiphertext, UnsignedInt>(&ctx);
-    let b = b.convert::<L1GgswCiphertext, UnsignedInt>(&ctx);
+    let a = a.convert::<L1GgswCiphertext>(&ctx);
+    let b = b.convert::<L1GgswCiphertext>(&ctx);
 
     op_glwe(&ctx, &a, &b);
 

@@ -364,7 +364,6 @@ mod tests {
     use uint::UInt;
 
     use crate::{
-        fluent::gint::Sign,
         test_utils::{
             get_encryption_128, get_encryption_80, get_evaluation_80, get_secret_keys_128,
             get_secret_keys_80, make_uproc_128, make_uproc_80,
@@ -451,7 +450,7 @@ mod tests {
 
     #[test]
     fn can_convert_ciphertexts() {
-        fn convert_test<T: CiphertextOps, U: CiphertextOps, V: Sign>() {
+        fn convert_test<T: CiphertextOps, U: CiphertextOps>() {
             let graph = FheCircuitCtx::new();
             let enc = get_encryption_80();
             let (uproc, fc) = make_uproc_80();
@@ -460,7 +459,7 @@ mod tests {
             let val = UInt::<16, T>::encrypt_secret(1234, &enc, &sk);
 
             let inputs = val.graph_inputs(&graph);
-            let converted = inputs.convert::<U, V>(&graph);
+            let converted = inputs.convert::<U>(&graph);
             let outputs = converted.collect_outputs(&graph, &enc);
 
             uproc
@@ -472,15 +471,15 @@ mod tests {
             assert_eq!(actual, 1234);
         }
 
-        convert_test::<L0LweCiphertext, L1GgswCiphertext, UnsignedInt>();
-        convert_test::<L0LweCiphertext, L1GlweCiphertext, UnsignedInt>();
-        convert_test::<L0LweCiphertext, L1LweCiphertext, UnsignedInt>();
-        convert_test::<L0LweCiphertext, L0LweCiphertext, UnsignedInt>();
+        convert_test::<L0LweCiphertext, L1GgswCiphertext>();
+        convert_test::<L0LweCiphertext, L1GlweCiphertext>();
+        convert_test::<L0LweCiphertext, L1LweCiphertext>();
+        convert_test::<L0LweCiphertext, L0LweCiphertext>();
 
         // GLEV ciphertexts are weird children, so give them a few cases.
-        convert_test::<L1GlevCiphertext, L1GgswCiphertext, UnsignedInt>();
-        convert_test::<L1GgswCiphertext, L1GlevCiphertext, UnsignedInt>();
-        convert_test::<L0LweCiphertext, L1GlevCiphertext, UnsignedInt>();
+        convert_test::<L1GlevCiphertext, L1GgswCiphertext>();
+        convert_test::<L1GgswCiphertext, L1GlevCiphertext>();
+        convert_test::<L0LweCiphertext, L1GlevCiphertext>();
     }
 
     #[test]

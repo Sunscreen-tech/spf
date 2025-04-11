@@ -70,10 +70,10 @@ impl<'a, const N: usize, T: CiphertextOps, U: Sign> GIntGraphNodes<'a, N, T, U> 
 
     /// Convert this [`GIntGraphNodes<T, W>`] to a [`GIntGraphNodes<V, W>`]. Usually, you'll use this
     /// to convert to [`L1GgswCiphertext`] so you can perform arithmetic computation over integers.
-    pub fn convert<V: CiphertextOps, W: Sign>(
+    pub fn convert<V: CiphertextOps>(
         &self,
         graph: &'a FheCircuitCtx,
-    ) -> GIntGraphNodes<'a, N, V, W> {
+    ) -> GIntGraphNodes<'a, N, V, U> {
         let iter = self.bits.iter().map(|x| x.convert(graph));
 
         GIntGraphNodes::from_bit_nodes(iter, &graph.allocator)
