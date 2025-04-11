@@ -17,9 +17,11 @@ use crate::{
 };
 
 mod bit;
+mod generic_int;
 mod uint;
 
 pub use bit::*;
+pub use generic_int::*;
 pub use uint::*;
 
 /// A context for building FHE circuits out of high-level primitives (e.g.
