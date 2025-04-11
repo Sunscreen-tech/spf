@@ -3,7 +3,7 @@ use std::ops::{Add, Index, IndexMut, Mul, Neg, Sub};
 use serde::{Deserialize, Serialize};
 use sunscreen_math_macros::refify_binary_op;
 
-use crate::{ring::Ring, One, Zero};
+use crate::{One, Zero, ring::Ring};
 
 #[derive(Debug, Clone, Eq, Serialize, Deserialize)]
 /// A polynomial over the ring `T`.
@@ -318,10 +318,9 @@ mod tests {
     use sunscreen_math_macros::BarrettConfig;
 
     use crate::{
-        self as sunscreen_math,
+        self as sunscreen_math, One, Zero,
         poly::Polynomial,
         ring::{BarrettBackend, Zq},
-        One, Zero,
     };
 
     #[test]

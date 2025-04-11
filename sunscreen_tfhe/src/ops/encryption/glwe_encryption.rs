@@ -1,10 +1,10 @@
 use num::Zero;
 
 use crate::{
+    GlweDef, Torus, TorusOps,
     entities::{GlweCiphertextRef, GlweSecretKeyRef, Polynomial, PolynomialRef},
     polynomial::{polynomial_add_assign, polynomial_external_mad, polynomial_sub_assign},
     rand::{normal_torus, uniform_torus},
-    GlweDef, Torus, TorusOps,
 };
 
 pub(crate) fn trivially_encrypt_glwe_with_sk_argument<S>(
@@ -127,7 +127,7 @@ pub fn decrypt_glwe_ciphertext<S>(
 
 #[cfg(test)]
 mod tests {
-    use crate::{high_level::*, PlaintextBits};
+    use crate::{PlaintextBits, high_level::*};
 
     use super::*;
 

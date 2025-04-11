@@ -1,6 +1,6 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{dst::OverlaySize, LweDef, LweDimension, RadixCount, Torus, TorusOps};
+use crate::{LweDef, LweDimension, RadixCount, Torus, TorusOps, dst::OverlaySize};
 
 use super::{LweCiphertextIterator, LweCiphertextIteratorMut, LweCiphertextRef};
 
@@ -22,7 +22,7 @@ where
     type Inputs = (LweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
-        LweCiphertextRef::<S>::size(t.0) * t.1 .0
+        LweCiphertextRef::<S>::size(t.0) * t.1.0
     }
 }
 

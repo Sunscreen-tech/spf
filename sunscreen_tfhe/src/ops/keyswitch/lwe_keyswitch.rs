@@ -1,4 +1,5 @@
 use crate::{
+    LweDef, OverlaySize, PolynomialDegree, RadixDecomposition, TorusOps,
     dst::{FromMutSlice, FromSlice},
     entities::{LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef, PolynomialRef},
     ops::{
@@ -7,7 +8,6 @@ use crate::{
     },
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
-    LweDef, OverlaySize, PolynomialDegree, RadixDecomposition, TorusOps,
 };
 
 /// Switches a ciphertext under the original key to a ciphertext under the new
@@ -64,9 +64,9 @@ pub fn keyswitch_lwe_to_lwe<S>(
 #[cfg(test)]
 mod tests {
 
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
-    use crate::{high_level::*, PlaintextBits};
+    use crate::{PlaintextBits, high_level::*};
 
     #[test]
     fn keyswitch_lwe() {

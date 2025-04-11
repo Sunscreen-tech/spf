@@ -1,9 +1,16 @@
 [package]
 name = "parasol_runtime"
 version = "0.9.0"
-edition = "2021"
+edition = "2024"
+authors = ["Sunscreen"]
+rust-version = "1.85.0"
 license = "AGPL-3.0-only"
-readme = "crates-io.md"
+description = "This crate supports the Parasol CPU, providing key generation, encryption, and FHE evaluation functionality."
+homepage = "https://sunscreen.tech"
+repository = "https://github.com/Sunscreen-tech/Sunscreen"
+documentation = "https://docs.sunscreen.tech"
+keywords = ["FHE", "TFHE", "lattice", "cryptography"]
+categories = ["cryptography"]
 
 [dependencies]
 bincode = { workspace = true }

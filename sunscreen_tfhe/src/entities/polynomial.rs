@@ -7,11 +7,11 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    FrequencyTransform, PolynomialDegree, ReinterpretAsSigned, ToF64, Torus, TorusOps,
     dst::{AsMutSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize},
     fft::negacyclic::get_fft,
     polynomial::{polynomial_add_assign, polynomial_external_mad, polynomial_sub_assign},
     scratch::allocate_scratch,
-    FrequencyTransform, PolynomialDegree, ReinterpretAsSigned, ToF64, Torus, TorusOps,
 };
 
 use super::PolynomialFftRef;
@@ -294,12 +294,13 @@ where
     fn add(self, rhs: &PolynomialRef<S>) -> Self::Output {
         assert_eq!(self.data.as_ref().len(), rhs.data.as_ref().len());
 
-        let coeffs = avec_from_iter!(self
-            .coeffs()
-            .as_ref()
-            .iter()
-            .zip(rhs.coeffs().as_ref().iter())
-            .map(|(a, b)| *a + *b));
+        let coeffs = avec_from_iter!(
+            self.coeffs()
+                .as_ref()
+                .iter()
+                .zip(rhs.coeffs().as_ref().iter())
+                .map(|(a, b)| *a + *b)
+        );
 
         Polynomial { data: coeffs }
     }
@@ -334,12 +335,13 @@ where
     fn sub(self, rhs: &PolynomialRef<S>) -> Self::Output {
         assert_eq!(self.data.as_ref().len(), rhs.data.as_ref().len());
 
-        let coeffs = avec_from_iter!(self
-            .coeffs()
-            .as_ref()
-            .iter()
-            .zip(rhs.coeffs().as_ref().iter())
-            .map(|(a, b)| *a - *b));
+        let coeffs = avec_from_iter!(
+            self.coeffs()
+                .as_ref()
+                .iter()
+                .zip(rhs.coeffs().as_ref().iter())
+                .map(|(a, b)| *a - *b)
+        );
 
         Polynomial { data: coeffs }
     }
@@ -387,7 +389,7 @@ impl<T: std::fmt::Debug + Clone> std::fmt::Debug for PolynomialRef<T> {
 mod tests {
     use std::ops::Deref;
 
-    use crate::{entities::Polynomial, Torus};
+    use crate::{Torus, entities::Polynomial};
 
     #[test]
     fn can_add_polynomials() {

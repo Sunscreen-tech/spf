@@ -1,6 +1,6 @@
 use std::{
     ops::{Deref, DerefMut},
-    sync::{mpsc::Sender, RwLockReadGuard, RwLockWriteGuard},
+    sync::{RwLockReadGuard, RwLockWriteGuard, mpsc::Sender},
 };
 
 use parasol_runtime::{TrivialOne, TrivialZero};

@@ -1,7 +1,7 @@
 use std::{ffi::CString, time::Instant};
 
-use parasol_cpu::{test_utils::*, FheApplication, Symbol};
-use rand::{thread_rng, RngCore};
+use parasol_cpu::{FheApplication, Symbol, test_utils::*};
+use rand::{RngCore, thread_rng};
 
 const CHI_SQUARED_ELF: &[u8] = include_bytes!("test_data/chi_squared.o");
 const CMUX_ELF: &[u8] = include_bytes!("test_data/cmux.o");
@@ -9,9 +9,9 @@ const CARDIO_ELF: &[u8] = include_bytes!("test_data/cardio.o");
 const VECTOR_ADD: &[u8] = include_bytes!("test_data/vector-add.o");
 
 use parasol_runtime::{
-    fluent::UInt,
-    test_utils::{get_secret_keys_128, get_secret_keys_80},
     L1GlweCiphertext,
+    fluent::UInt,
+    test_utils::{get_secret_keys_80, get_secret_keys_128},
 };
 
 #[test]

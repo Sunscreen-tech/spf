@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 use sunscreen_math::Zero;
 
 use crate::{
-    dst::{AsMutSlice, AsSlice, OverlaySize},
     GlweDef, GlweDimension, LweDef, LweDimension, PrivateFunctionalKeyswitchLweCount, RadixCount,
     RadixDecomposition, Torus, TorusOps,
+    dst::{AsMutSlice, AsSlice, OverlaySize},
 };
 
 use super::{

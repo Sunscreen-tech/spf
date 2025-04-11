@@ -4,10 +4,10 @@ use indicatif::ProgressBar;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
+    GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, Torus,
     entities::{GlweSecretKey, Polynomial},
     ops::polynomial::encode_polynomial,
     rand::Stddev,
-    GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, Torus,
 };
 
 use sunscreen_math::stats::RunningMeanVariance;

@@ -1,9 +1,9 @@
-use num::{complex::Complex64, Complex, Zero};
+use num::{Complex, Zero, complex::Complex64};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::{AsMutSlice, AsSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize},
     GlweDef, GlweDimension, TorusOps,
+    dst::{AsMutSlice, AsSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize},
 };
 
 use super::{GlweCiphertextRef, PolynomialFftIterator, PolynomialFftIteratorMut, PolynomialFftRef};
@@ -113,7 +113,7 @@ impl GlweCiphertextFftRef<Complex<f64>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{entities::Polynomial, high_level::*, PlaintextBits, GLWE_1_1024_80};
+    use crate::{GLWE_1_1024_80, PlaintextBits, entities::Polynomial, high_level::*};
 
     #[test]
     fn can_decrypt_glwe_after_fft_roundtrip() {

@@ -4,6 +4,7 @@ use std::{
 };
 
 use crate::{
+    GlweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
     dst::{AsSlice, FromMutSlice},
     entities::{
         GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial,
@@ -13,7 +14,6 @@ use crate::{
     ops::{ciphertext::decomposed_polynomial_glev_mad, encryption::encrypt_secret_glev_ciphertext},
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
-    GlweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
 };
 use num::{Complex, Zero};
 
@@ -322,16 +322,16 @@ pub fn scheme_switch<S>(
 #[cfg(test)]
 mod tests {
 
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
+        PlaintextBits, RadixCount, RadixLog, Torus,
         entities::{
             GgswCiphertext, GlevCiphertext, GlweCiphertext, GlweSecretKey, SchemeSwitchKey,
         },
         high_level::{
-            self,
+            self, TEST_GLWE_DEF_2, TEST_RADIX,
             encryption::{decrypt_glwe, encrypt_glwe},
-            TEST_GLWE_DEF_2, TEST_RADIX,
         },
         ops::{
             encryption::{
@@ -340,7 +340,6 @@ mod tests {
             fft_ops::cmux,
         },
         polynomial::{polynomial_external_mad, polynomial_mad_by_wrap},
-        PlaintextBits, RadixCount, RadixLog, Torus,
     };
 
     use super::*;
@@ -661,8 +660,7 @@ mod tests {
             let expected_m_from_b_encoded = expected_m_from_b_encoded.map(|x| (x.wrapping_neg()));
 
             assert_eq!(
-                expected_m_from_b_encoded,
-                m_from_b_encoded,
+                expected_m_from_b_encoded, m_from_b_encoded,
                 "The decrypted secret key component did not match the expected result. The expected result is -b * s_i where b is the body of the original ciphertext and s_i is the secret key component."
             );
         }

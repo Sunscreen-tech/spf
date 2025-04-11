@@ -11,10 +11,10 @@ use crate::polynomial::polynomial_add_assign;
 use crate::radix::PolynomialRadixIterator;
 use crate::scratch::allocate_scratch;
 use crate::{
+    GlweDef, LweDef, RadixDecomposition, TorusOps,
     entities::{GlweCiphertextFftRef, GlweSecretKeyRef, PublicFunctionalKeyswitchKeyRef},
     radix::scale_by_decomposition_factor,
     scratch::allocate_scratch_ref,
-    GlweDef, LweDef, RadixDecomposition, TorusOps,
 };
 use crate::{OverlaySize, Torus};
 
@@ -150,12 +150,12 @@ pub fn public_functional_keyswitch<S, F>(
 #[cfg(test)]
 mod tests {
 
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
-        entities::{GlweCiphertext, PublicFunctionalKeyswitchKey},
-        high_level::{encryption, keygen, TEST_GLWE_DEF_1, TEST_LWE_DEF_1, TEST_RADIX},
         PlaintextBits,
+        entities::{GlweCiphertext, PublicFunctionalKeyswitchKey},
+        high_level::{TEST_GLWE_DEF_1, TEST_LWE_DEF_1, TEST_RADIX, encryption, keygen},
     };
 
     use super::*;

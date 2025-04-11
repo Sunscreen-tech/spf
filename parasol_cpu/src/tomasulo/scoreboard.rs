@@ -1,7 +1,7 @@
 use std::{
     marker::PhantomData,
     ops::Deref,
-    sync::{atomic::AtomicUsize, Arc},
+    sync::{Arc, atomic::AtomicUsize},
 };
 
 use concurrency::{AtomicRefCell, Spinlock};

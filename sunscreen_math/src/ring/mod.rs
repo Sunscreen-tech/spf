@@ -1,4 +1,4 @@
-use crate::{field::Field, Error, One, Zero};
+use crate::{Error, One, Zero, field::Field};
 use crypto_bigint::NonZero;
 pub use crypto_bigint::Uint;
 use num::traits::{ToBytes, WrappingAdd, WrappingMul, WrappingNeg, WrappingSub};

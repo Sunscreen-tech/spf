@@ -1,14 +1,15 @@
 use std::sync::Arc;
 
 use concurrency::AtomicRefCell;
-use mux_circuits::{bitshift::bitshift, MuxCircuit};
+use mux_circuits::{MuxCircuit, bitshift::bitshift};
 use parasol_runtime::{FheCircuit, L1GlweCiphertext};
 
 use crate::{
+    Ciphertext, Error, FheProcessor, Register, Result,
     proc::DispatchIsaOp,
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, Error, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 use super::make_parent_op;

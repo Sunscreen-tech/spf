@@ -3,10 +3,10 @@ use std::{marker::PhantomData, sync::Arc};
 use concurrency::AtomicRefCell;
 use serde::{Deserialize, Serialize};
 
-use super::{uint::UIntGraphNodes, CiphertextOps, FheCircuitCtx};
+use super::{CiphertextOps, FheCircuitCtx, uint::UIntGraphNodes};
 use crate::{
-    insert_ciphertext_conversion, safe_bincode::GetSize, Encryption, Evaluation, FheEdge, FheOp,
-    L1GgswCiphertext, L1GlweCiphertext, SecretKey,
+    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey,
+    insert_ciphertext_conversion, safe_bincode::GetSize,
 };
 
 use petgraph::stable_graph::NodeIndex;
@@ -218,9 +218,9 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::{
+        DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1LweCiphertext,
         fluent::CiphertextOps,
         test_utils::{get_encryption_128, get_secret_keys_128},
-        L0LweCiphertext, L1GlevCiphertext, L1LweCiphertext, DEFAULT_128,
     };
 
     use super::*;

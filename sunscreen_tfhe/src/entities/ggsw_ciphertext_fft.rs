@@ -2,9 +2,9 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
     entities::GgswCiphertextRef,
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
 };
 
 use super::{GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, GlevCiphertextFftRef};

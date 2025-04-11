@@ -1,4 +1,4 @@
-use aligned_vec::{avec_rt, AVec, RuntimeAlign};
+use aligned_vec::{AVec, RuntimeAlign, avec_rt};
 use num::{Complex, Float};
 use rustfft::FftNum;
 use std::{

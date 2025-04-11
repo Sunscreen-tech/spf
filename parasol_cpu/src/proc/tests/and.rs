@@ -1,8 +1,8 @@
-use rand::{thread_rng, RngCore};
+use rand::{RngCore, thread_rng};
 
 use crate::{
     proc::IsaOp,
-    proc::{program::FheProgram, Buffer},
+    proc::{Buffer, program::FheProgram},
     test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };

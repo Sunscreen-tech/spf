@@ -1,6 +1,7 @@
 use num::Complex;
 use serde::{Deserialize, Serialize};
 use std::mem::size_of;
+use sunscreen_tfhe::OverlaySize;
 use sunscreen_tfhe::entities::{
     BootstrapKey, BootstrapKeyFft, BootstrapKeyRef, CircuitBootstrappingKeyswitchKeys,
     CircuitBootstrappingKeyswitchKeysRef, GlweSecretKey, GlweSecretKeyRef, LweKeyswitchKey,
@@ -10,7 +11,6 @@ use sunscreen_tfhe::entities::{
 use sunscreen_tfhe::high_level::{fft, keygen};
 use sunscreen_tfhe::ops::bootstrapping::generate_scheme_switch_key;
 use sunscreen_tfhe::ops::encryption::rlwe_generate_public_key;
-use sunscreen_tfhe::OverlaySize;
 
 use crate::params::Params;
 use crate::safe_bincode::GetSize;
@@ -46,7 +46,10 @@ impl PublicKey {
     /// Additionally, the params must feature a level-1 GLWE polynomial count of 1. I.e.
     /// `params.l1_params.dim.count.0 == 1`. [`crate::DEFAULT_128`] have this property.
     pub fn generate(params: &Params, sk: &SecretKey) -> Self {
-        assert_eq!(params.l1_params.dim.size.0, 1, "Unfortunately, public keys currently require a GLWE size of 1. This restriction will likely be eased in the future.");
+        assert_eq!(
+            params.l1_params.dim.size.0, 1,
+            "Unfortunately, public keys currently require a GLWE size of 1. This restriction will likely be eased in the future."
+        );
 
         let mut pk = RlwePublicKey::new(&params.l1_params);
 

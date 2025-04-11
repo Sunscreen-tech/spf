@@ -1,4 +1,5 @@
 use crate::{
+    GlweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
         GlevCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, PolynomialRef, RlwePublicKeyRef,
@@ -6,7 +7,6 @@ use crate::{
     ops::encryption::rlwe_encrypt_public,
     polynomial::polynomial_scalar_mul,
     scratch::allocate_scratch_ref,
-    GlweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
 };
 
 use super::{

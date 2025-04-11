@@ -1,7 +1,7 @@
 use std::{collections::HashSet, ops::Deref};
 
 use petgraph::{
-    prelude::StableGraph, stable_graph::NodeIndex, visit::IntoNodeIdentifiers, Direction,
+    Direction, prelude::StableGraph, stable_graph::NodeIndex, visit::IntoNodeIdentifiers,
 };
 
 use crate::opt::GraphQuery;
@@ -76,7 +76,7 @@ where
     T: TransformList<N, E>,
 {
     // The one unsafe line in the function...
-    let graph = &mut *graph;
+    let graph = unsafe { &mut *graph };
     let mut ready: HashSet<NodeIndex> = HashSet::new();
     let mut visited: HashSet<NodeIndex> = HashSet::new();
     let prev_direction = if forward {

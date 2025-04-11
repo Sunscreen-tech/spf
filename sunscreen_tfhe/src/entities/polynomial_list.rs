@@ -1,8 +1,8 @@
 use num::Zero;
 
 use crate::{
-    dst::{NoWrapper, OverlaySize},
     PolynomialDegree,
+    dst::{NoWrapper, OverlaySize},
 };
 
 use super::{PolynomialIterator, PolynomialIteratorMut, PolynomialRef};

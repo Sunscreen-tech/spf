@@ -29,9 +29,9 @@ pub fn deserialize<'a, T: GetSize + Deserialize<'a>>(data: &'a [u8], params: &Pa
 #[cfg(test)]
 mod tests {
     use crate::{
+        ComputeKey, ComputeKeyNonFft, DEFAULT_80, DEFAULT_128, Encryption, L0LweCiphertext,
+        L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey,
         test_utils::{get_compute_key_80, get_secret_keys_80},
-        ComputeKey, ComputeKeyNonFft, Encryption, L0LweCiphertext, L1GlevCiphertext,
-        L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, DEFAULT_128, DEFAULT_80,
     };
 
     use super::*;

@@ -1,7 +1,8 @@
 use crate::{
+    Ciphertext, FheProcessor, Register, Result,
     proc::DispatchIsaOp,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 impl FheProcessor {

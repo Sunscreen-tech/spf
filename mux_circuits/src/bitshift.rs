@@ -33,7 +33,10 @@ pub fn bitshift(inputs: u16, shift_size: u16, right: bool, zeros: bool) -> MuxCi
 
     assert!(
         shift_size >= used_shift_bits,
-        "Shift size must be at least the number of bits needed to represent the input size. Got {} shift bits, needed {} shift bits for input size {}.", shift_size, used_shift_bits, inputs
+        "Shift size must be at least the number of bits needed to represent the input size. Got {} shift bits, needed {} shift bits for input size {}.",
+        shift_size,
+        used_shift_bits,
+        inputs
     );
 
     // To handle this case we would need a modulus circuit, which is

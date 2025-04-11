@@ -2,8 +2,8 @@ use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::{NoWrapper, OverlaySize},
     GlweDef, GlweDimension, RadixCount, TorusOps,
+    dst::{NoWrapper, OverlaySize},
 };
 
 use super::{
@@ -26,7 +26,7 @@ impl OverlaySize for GlevCiphertextFftRef<Complex<f64>> {
     type Inputs = (GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GlweCiphertextFftRef::<Complex<f64>>::size(t.0) * t.1 .0
+        GlweCiphertextFftRef::<Complex<f64>>::size(t.0) * t.1.0
     }
 }
 

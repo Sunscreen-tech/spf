@@ -1,8 +1,8 @@
-use std::sync::{mpsc::Receiver, Arc, Mutex, OnceLock};
+use std::sync::{Arc, Mutex, OnceLock, mpsc::Receiver};
 
 use crate::{
-    crypto::PublicKey, params::DEFAULT_80, ComputeKey, ComputeKeyNonFft, Encryption, Evaluation,
-    SecretKey, UOpProcessor, DEFAULT_128,
+    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, SecretKey, UOpProcessor,
+    crypto::PublicKey, params::DEFAULT_80,
 };
 
 static SECRET_KEYS_80: OnceLock<Arc<SecretKey>> = OnceLock::new();

@@ -1,8 +1,8 @@
-use rand::{thread_rng, Rng};
+use rand::{RngCore, thread_rng};
 
 use crate::{
-    proc::program::FheProgram,
     proc::IsaOp,
+    proc::program::FheProgram,
     test_utils::{buffer_from_value_80, make_computer_80, read_result},
     tomasulo::registers::RegisterName,
 };
@@ -43,8 +43,8 @@ fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
 #[test]
 fn can_xor_plaintext_inputs() {
     for _ in 0..10 {
-        let val1 = thread_rng().gen();
-        let val2 = thread_rng().gen();
+        let val1 = thread_rng().next_u32();
+        let val2 = thread_rng().next_u32();
         can_xor(val1, val2, false, false);
     }
 }
@@ -52,8 +52,8 @@ fn can_xor_plaintext_inputs() {
 #[test]
 fn can_xor_ciphertext_left() {
     for _ in 0..5 {
-        let val1 = thread_rng().gen();
-        let val2 = thread_rng().gen();
+        let val1 = thread_rng().next_u32();
+        let val2 = thread_rng().next_u32();
         can_xor(val1, val2, true, false);
     }
 }
@@ -61,8 +61,8 @@ fn can_xor_ciphertext_left() {
 #[test]
 fn can_xor_ciphertext_right() {
     for _ in 0..5 {
-        let val1 = thread_rng().gen();
-        let val2 = thread_rng().gen();
+        let val1 = thread_rng().next_u32();
+        let val2 = thread_rng().next_u32();
         can_xor(val1, val2, false, true);
     }
 }
@@ -70,8 +70,8 @@ fn can_xor_ciphertext_right() {
 #[test]
 fn can_xor_ciphertext_both() {
     for _ in 0..5 {
-        let val1 = thread_rng().gen();
-        let val2 = thread_rng().gen();
+        let val1 = thread_rng().next_u32();
+        let val2 = thread_rng().next_u32();
         can_xor(val1, val2, true, true);
     }
 }

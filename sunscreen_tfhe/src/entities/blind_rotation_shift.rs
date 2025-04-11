@@ -2,12 +2,12 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
     entities::{
         GgswCiphertextFftIterator, GgswCiphertextFftIteratorMut, GgswCiphertextFftRef,
         GgswCiphertextIterator, GgswCiphertextIteratorMut, GgswCiphertextRef,
     },
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
 };
 
 dst! {

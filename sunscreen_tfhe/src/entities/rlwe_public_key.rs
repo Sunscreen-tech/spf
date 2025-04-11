@@ -1,9 +1,9 @@
 use serde::{Deserialize, Serialize};
 use sunscreen_math::Zero;
 
-use crate::dst::{FromMutSlice, FromSlice};
 use crate::GlweDef;
-use crate::{dst::OverlaySize, GlweDimension, Torus, TorusOps};
+use crate::dst::{FromMutSlice, FromSlice};
+use crate::{GlweDimension, Torus, TorusOps, dst::OverlaySize};
 
 use crate::entities::GlweCiphertextRef;
 

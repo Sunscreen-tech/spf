@@ -187,7 +187,7 @@ fn unsigned_comparison_impl(
 mod tests {
     use std::fmt::{Display, Formatter};
 
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::convert_value_to_bits;
 

@@ -66,7 +66,9 @@ pub enum Error {
     },
 
     /// Encountered multiple bind instructions with the same buffer index.
-    #[error("(inst_id:{inst_id}, pc:0x{pc:x}) Buffer {buffer_id} is already declared as an input or output.")]
+    #[error(
+        "(inst_id:{inst_id}, pc:0x{pc:x}) Buffer {buffer_id} is already declared as an input or output."
+    )]
     AliasingViolation {
         /// The faulting instruction's id.
         inst_id: usize,

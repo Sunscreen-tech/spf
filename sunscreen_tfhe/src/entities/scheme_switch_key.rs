@@ -2,7 +2,7 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::OverlaySize, GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
 };
 
 use super::{
@@ -50,7 +50,7 @@ where
         // A scheme switch key is a collection of GLEVs encrypting the secret
         // key polynomials multiplied by each other.
         let number_polynomials = t.0.size.0;
-        let radix_count = t.1 .0;
+        let radix_count = t.1.0;
         let number_key_combinations = triangular_number_entries(number_polynomials);
         let glwe_encryption_size = GlweCiphertextRef::<S>::size(t.0);
 

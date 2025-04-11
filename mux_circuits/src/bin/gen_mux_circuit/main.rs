@@ -1,5 +1,5 @@
 use clap::{Parser, ValueEnum};
-use mux_circuits::mul::{gradeschool_reduce_impl, multiplier_impl, MultiplierParams};
+use mux_circuits::mul::{MultiplierParams, gradeschool_reduce_impl, multiplier_impl};
 use std::{fs, path::PathBuf};
 
 #[derive(ValueEnum, Clone)]

@@ -1,8 +1,8 @@
 use std::{collections::HashSet, sync::Arc};
 
 use crate::{
-    tomasulo::registers::RobEntryRef, unwrap_registers, Buffer, CiphertextPtr, Error,
-    FheProcessorConstantPool, PlainOffsetCtPtr, PlaintextPtr, PtrRegister, Result,
+    Buffer, CiphertextPtr, Error, FheProcessorConstantPool, PlainOffsetCtPtr, PlaintextPtr,
+    PtrRegister, Result, tomasulo::registers::RobEntryRef, unwrap_registers,
 };
 
 #[allow(clippy::too_many_arguments)]

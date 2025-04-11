@@ -2,9 +2,9 @@ use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    LweDef, LweDimension, Torus, TorusOps,
     dst::OverlaySize,
     macros::{impl_binary_op, impl_unary_op},
-    LweDef, LweDimension, Torus, TorusOps,
 };
 
 dst! {
@@ -96,7 +96,7 @@ impl<S: TorusOps> LweCiphertextRef<S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{high_level::*, PlaintextBits, LWE_512_80};
+    use crate::{LWE_512_80, PlaintextBits, high_level::*};
     use proptest::prelude::*;
 
     // Test that the negation of a ciphertext is the same as the negation of the

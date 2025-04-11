@@ -2,14 +2,14 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
     entities::SchemeSwitchKeyRef,
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
 };
 
 use super::{
-    get_linear_index, triangular_number_entries, GlevCiphertextFftIterator,
-    GlevCiphertextFftIteratorMut, GlevCiphertextFftRef, GlweCiphertextFftRef,
+    GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, GlevCiphertextFftRef,
+    GlweCiphertextFftRef, get_linear_index, triangular_number_entries,
 };
 
 dst! {
@@ -31,7 +31,7 @@ impl OverlaySize for SchemeSwitchKeyFftRef<Complex<f64>> {
         // A scheme switch key is a collection of GLEVs encrypting the secret
         // key polynomials multiplied by each other.
         let number_polynomials = t.0.size.0;
-        let radix_count = t.1 .0;
+        let radix_count = t.1.0;
         let number_key_combinations = triangular_number_entries(number_polynomials);
         let glwe_encryption_size = GlweCiphertextFftRef::size(t.0);
 

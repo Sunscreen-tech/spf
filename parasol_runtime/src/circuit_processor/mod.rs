@@ -1,28 +1,28 @@
 use std::{
     collections::HashMap,
     sync::{
-        atomic::{AtomicUsize, Ordering},
-        mpsc::{self, sync_channel, Receiver, SyncSender},
         Arc,
+        atomic::{AtomicUsize, Ordering},
+        mpsc::{self, Receiver, SyncSender, sync_channel},
     },
 };
 
 use concurrency::{AtomicRefCell, Spinlock};
 use log::trace;
 use petgraph::{
+    Direction,
     graph::NodeIndex,
     visit::{EdgeRef, Topo},
-    Direction,
 };
-use rayon::{spawn, ThreadPool};
+use rayon::{ThreadPool, spawn};
 
 use crate::{
+    Encryption, Evaluation,
     crypto::{
-        ciphertext::Ciphertext, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext,
-        L1GlweCiphertext,
+        L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
+        ciphertext::Ciphertext,
     },
     fhe_circuit::{FheCircuit, FheEdge, FheOp},
-    Encryption, Evaluation,
 };
 
 #[cfg(test)]

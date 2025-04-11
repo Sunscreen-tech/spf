@@ -6,14 +6,14 @@
 use std::{collections::HashMap, convert::Infallible, mem::size_of};
 
 use biodivine_lib_bdd::Bdd;
-use graph_ops::forward_traverse;
 pub use graph_ops::Bit;
-use opt::{common_subexpression_elimination, EdgeOps, Operation};
+use graph_ops::forward_traverse;
+use opt::{EdgeOps, Operation, common_subexpression_elimination};
 use petgraph::{
+    Direction,
     graph::NodeIndex,
     stable_graph::{EdgeReference, StableGraph},
     visit::{EdgeRef, NodeRef},
-    Direction,
 };
 use serde::{Deserialize, Serialize};
 

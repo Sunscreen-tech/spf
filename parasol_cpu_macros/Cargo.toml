@@ -1,11 +1,16 @@
 [package]
 name = "parasol_cpu_macros"
 version = "0.9.0"
-edition = "2021"
+edition = "2024"
+authors = ["Sunscreen"]
+rust-version = "1.85.0"
 license = "AGPL-3.0-only"
-description = "Macros for deriving types for use with the Parasol processor."
-readme = "crates-io.md"
-
+description = "This crate supports the Parasol CPU."
+homepage = "https://sunscreen.tech"
+repository = "https://github.com/Sunscreen-tech/hpu"
+documentation = "https://docs.sunscreen.tech"
+keywords = ["FHE", "TFHE", "lattice", "cryptography"]
+categories = ["cryptography"]
 [lib]
 proc-macro = true
 

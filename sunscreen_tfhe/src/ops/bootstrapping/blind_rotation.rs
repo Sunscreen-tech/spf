@@ -1,11 +1,11 @@
 use num::Complex;
 
 use crate::{
+    GlweDef, PlaintextBits, RadixDecomposition, TorusOps,
     dst::FromMutSlice,
     entities::{BlindRotationShiftFftRef, GgswCiphertext, GlweCiphertextRef, GlweSecretKeyRef},
     ops::{encryption::encrypt_ggsw_ciphertext_scalar, fft_ops::cmux},
     scratch::allocate_scratch_ref,
-    GlweDef, PlaintextBits, RadixDecomposition, TorusOps,
 };
 
 /// Rotate the given ciphertext message polynomial by the given amount as if it
@@ -262,6 +262,7 @@ mod tests {
     use blind_rotation::generate_blind_rotation_shift;
 
     use crate::{
+        GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, Torus,
         entities::{
             BlindRotationShiftFft, GgswCiphertext, GlweCiphertext, GlweSecretKey, Polynomial,
         },
@@ -271,7 +272,6 @@ mod tests {
             encryption::decrypt_ggsw_ciphertext,
         },
         polynomial::polynomial_external_mad,
-        GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, Torus,
     };
 
     #[test]

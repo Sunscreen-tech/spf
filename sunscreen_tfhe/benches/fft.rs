@@ -1,6 +1,6 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use num::Complex;
-use sunscreen_tfhe::{math::fft::negacyclic::TwistedFft, FrequencyTransform};
+use sunscreen_tfhe::{FrequencyTransform, math::fft::negacyclic::TwistedFft};
 
 fn negacyclic_fft(c: &mut Criterion) {
     let n = 2048;

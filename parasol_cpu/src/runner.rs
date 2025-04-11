@@ -2,7 +2,7 @@ use std::{ffi::CString, sync::Arc};
 
 use parasol_runtime::{ComputeKey, Encryption, Evaluation};
 
-use crate::{error::Result, Buffer, Error, FheApplication, FheComputer, Symbol};
+use crate::{Buffer, Error, FheApplication, FheComputer, Symbol, error::Result};
 
 /// Runs a program by generating a new [`FheComputer`]. This function is meant
 /// for simple testing of a program; for full applications see the
@@ -37,8 +37,8 @@ mod tests {
     use super::*;
     use crate::test_utils::buffer_from_value_128;
     use parasol_runtime::{
-        test_utils::{get_compute_key_128, get_secret_keys_128},
         Encryption,
+        test_utils::{get_compute_key_128, get_secret_keys_128},
     };
 
     const CMUX_ELF: &[u8] = include_bytes!("../tests/test_data/cmux.o");

@@ -2,7 +2,7 @@ use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::OverlaySize, GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
 };
 
 use super::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef};

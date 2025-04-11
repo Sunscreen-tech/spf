@@ -1,8 +1,8 @@
 use crate::{
+    RadixCount, RadixDecomposition, RadixLog,
     entities::{PolynomialIterator, PolynomialRef},
     math::{Torus, TorusOps},
     polynomial::polynomial_scalar_mad,
-    RadixCount, RadixDecomposition, RadixLog,
 };
 
 // Needed by allow_scratch_ref
@@ -166,13 +166,13 @@ fn round<S: TorusOps>(x: Torus<S>, radix: &RadixDecomposition) -> S {
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
+        PlaintextBits, PolynomialDegree,
         entities::{Polynomial, PolynomialList},
         rand::uniform_torus,
         scratch::allocate_scratch_ref,
-        PlaintextBits, PolynomialDegree,
     };
 
     use super::*;

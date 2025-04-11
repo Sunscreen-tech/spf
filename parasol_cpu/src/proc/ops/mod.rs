@@ -1,15 +1,15 @@
 use std::sync::Arc;
 
 use crate::{
-    proc::DispatchIsaOp, tomasulo::tomasulo_processor::RetirementInfo, Ciphertext, Error,
-    FheProcessor, Result,
+    Ciphertext, Error, FheProcessor, Result, proc::DispatchIsaOp,
+    tomasulo::tomasulo_processor::RetirementInfo,
 };
 
 use concurrency::AtomicRefCell;
 use mux_circuits::convert_value_to_bits;
 use parasol_runtime::{
-    insert_ciphertext_conversion, CiphertextType, CompletionHandler, FheCircuit, FheOp,
-    L1GlweCiphertext,
+    CiphertextType, CompletionHandler, FheCircuit, FheOp, L1GlweCiphertext,
+    insert_ciphertext_conversion,
 };
 use petgraph::stable_graph::NodeIndex;
 

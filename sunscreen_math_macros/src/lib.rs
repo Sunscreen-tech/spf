@@ -4,8 +4,8 @@ use proc_macro::TokenStream;
 use proc_macro2::TokenStream as TokenStream2;
 use quote::{quote, quote_spanned};
 use syn::{
-    parse_macro_input, punctuated::Punctuated, spanned::Spanned, DeriveInput, GenericArgument,
-    ImplItem, ItemImpl, Path, PathArguments, PathSegment, Type,
+    DeriveInput, GenericArgument, ImplItem, ItemImpl, Path, PathArguments, PathSegment, Type,
+    parse_macro_input, punctuated::Punctuated, spanned::Spanned,
 };
 
 #[derive(FromDeriveInput, Debug)]
@@ -93,7 +93,9 @@ pub fn derive_barrett_config(input: proc_macro::TokenStream) -> TokenStream {
     let max_modulus = BigInt::from_slice(num::bigint::Sign::Plus, bytemuck::cast_slice(&max_limbs));
 
     if modulus > max_modulus {
-        let err = format!("Chosen modulus {modulus} exceeds maximum ({max_modulus}) for given limb count {num_limbs}. Either increase the limb count or use a different backend for Fq.");
+        let err = format!(
+            "Chosen modulus {modulus} exceeds maximum ({max_modulus}) for given limb count {num_limbs}. Either increase the limb count or use a different backend for Fq."
+        );
 
         return quote! { compile_error!(#err) }.into();
     }
@@ -254,7 +256,10 @@ pub fn refify_binary_op(
                 if let (None, None) = (&t.lifetime, t.mutability) {
                     *t.elem.clone()
                 } else {
-                    return make_error(t, "refify_binary_op doesn't allow mutable or bounded lifetime references as trait arguments.");
+                    return make_error(
+                        t,
+                        "refify_binary_op doesn't allow mutable or bounded lifetime references as trait arguments.",
+                    );
                 }
             } else {
                 return make_error(

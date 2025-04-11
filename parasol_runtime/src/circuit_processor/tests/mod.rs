@@ -1,6 +1,6 @@
 use std::sync::{
-    atomic::{AtomicBool, Ordering},
     Arc,
+    atomic::{AtomicBool, Ordering},
 };
 
 use concurrency::AtomicRefCell;
@@ -8,11 +8,11 @@ use mux_circuits::and::make_and_circuit;
 use sunscreen_tfhe::entities::Polynomial;
 
 use crate::{
+    Encryption, FheEdge,
     crypto::{L0LweCiphertext, L1GlweCiphertext},
     fhe_circuit::{FheCircuit, FheOp},
     params::DEFAULT_80,
     test_utils::{get_secret_keys_80, make_uproc_80, make_uproc_with_flow_control_len_80},
-    Encryption, FheEdge,
 };
 
 use super::CompletionHandler;

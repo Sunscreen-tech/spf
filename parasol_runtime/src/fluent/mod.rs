@@ -4,16 +4,16 @@ use bumpalo::Bump;
 use concurrency::AtomicRefCell;
 use petgraph::stable_graph::NodeIndex;
 use sunscreen_tfhe::{
-    entities::{GlevCiphertext, Polynomial, PolynomialRef},
     PolynomialDegree,
+    entities::{GlevCiphertext, Polynomial, PolynomialRef},
 };
 
 use crate::{
+    CiphertextType, Encryption, Evaluation, FheCircuit, FheOp, L0LweCiphertext, L1GgswCiphertext,
+    L1GlweCiphertext, L1LweCiphertext, Params, SecretKey,
     crypto::{L1GlevCiphertext, PublicKey},
     fhe_circuit::MuxMode,
     safe_bincode::GetSize,
-    CiphertextType, Encryption, Evaluation, FheCircuit, FheOp, L0LweCiphertext, L1GgswCiphertext,
-    L1GlweCiphertext, L1LweCiphertext, Params, SecretKey,
 };
 
 mod bit;
@@ -360,15 +360,15 @@ impl Muxable for L1GlevCiphertext {
 #[cfg(test)]
 mod tests {
     use bit::Bit;
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
     use uint::UInt;
 
     use crate::{
-        test_utils::{
-            get_encryption_128, get_encryption_80, get_evaluation_80, get_secret_keys_128,
-            get_secret_keys_80, make_uproc_128, make_uproc_80,
-        },
         DEFAULT_80,
+        test_utils::{
+            get_encryption_80, get_encryption_128, get_evaluation_80, get_secret_keys_80,
+            get_secret_keys_128, make_uproc_80, make_uproc_128,
+        },
     };
 
     use super::*;

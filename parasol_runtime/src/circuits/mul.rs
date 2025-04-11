@@ -8,7 +8,7 @@ use petgraph::stable_graph::NodeIndex;
 
 use crate::{
     crypto::ciphertext::CiphertextType,
-    fhe_circuit::{insert_ciphertext_conversion, FheCircuit},
+    fhe_circuit::{FheCircuit, insert_ciphertext_conversion},
     fluent::Muxable,
 };
 

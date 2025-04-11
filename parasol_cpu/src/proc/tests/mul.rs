@@ -1,8 +1,8 @@
-use rand::{thread_rng, RngCore};
+use rand::{RngCore, thread_rng};
 
 use crate::{
-    proc::program::FheProgram, proc::IsaOp, test_utils::make_computer_80,
-    tomasulo::registers::RegisterName, Buffer,
+    Buffer, proc::IsaOp, proc::program::FheProgram, test_utils::make_computer_80,
+    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;

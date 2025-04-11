@@ -2,6 +2,7 @@ use num::Complex;
 use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
 
 use crate::{
+    CarryBits, GlweDef, LweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
         BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GlweCiphertextRef,
@@ -18,7 +19,6 @@ use crate::{
         fft_ops::cmux,
     },
     scratch::allocate_scratch_ref,
-    CarryBits, GlweDef, LweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus, TorusOps,
 };
 
 use super::rotate_glwe_negative_monomial_negacyclic;
@@ -91,7 +91,12 @@ fn generate_negacyclic_lut<S, F>(
         let j = j as u64;
 
         let p_i = map(p_i_unmapped);
-        assert!(p_i < p, "The map function must produce a value less than p. Map produced the relation ({} -> {})", p_i_unmapped, p_i);
+        assert!(
+            p_i < p,
+            "The map function must produce a value less than p. Map produced the relation ({} -> {})",
+            p_i_unmapped,
+            p_i
+        );
 
         let p_i = p_i << delta;
 
@@ -621,16 +626,16 @@ pub fn programmable_bootstrap_bivariate<S>(
 mod tests {
 
     use crate::{
+        GLWE_1_1024_80, LWE_512_80, RoundedDiv,
         entities::{
             BivariateLookupTable, BootstrapKey, BootstrapKeyFft, GlweCiphertext, LweCiphertext,
             LweKeyswitchKey, UnivariateLookupTable,
         },
-        high_level::{encryption, fft, keygen, TEST_GLWE_DEF_1, TEST_LWE_DEF_1, TEST_RADIX},
+        high_level::{TEST_GLWE_DEF_1, TEST_LWE_DEF_1, TEST_RADIX, encryption, fft, keygen},
         ops::{
             encryption::{decrypt_ggsw_ciphertext, encrypt_lwe_ciphertext},
             keyswitch::lwe_keyswitch_key::generate_keyswitch_key_lwe,
         },
-        RoundedDiv, GLWE_1_1024_80, LWE_512_80,
     };
 
     use super::*;
@@ -886,9 +891,9 @@ mod tests {
         }
         if !failed.is_empty() {
             panic!(
-                    "Failed to decrypt the following messages and decrypted values (as ((left input, right_input), expected, decrypted)): {:?}. However, the following messages and decrypted values succeeded: {:?}",
-                    failed, succeeded
-                );
+                "Failed to decrypt the following messages and decrypted values (as ((left input, right_input), expected, decrypted)): {:?}. However, the following messages and decrypted values succeeded: {:?}",
+                failed, succeeded
+            );
         }
     }
 

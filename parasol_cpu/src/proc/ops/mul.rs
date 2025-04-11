@@ -2,16 +2,16 @@ use std::sync::Arc;
 
 use concurrency::AtomicRefCell;
 use parasol_runtime::{
-    circuits::mul::append_uint_multiply, prune, CiphertextType, FheCircuit, FheEdge, FheOp,
-    L1GlweCiphertext,
+    CiphertextType, FheCircuit, FheEdge, FheOp, L1GlweCiphertext,
+    circuits::mul::append_uint_multiply, prune,
 };
 
 use crate::{
-    check_register_width,
-    proc::ops::{insert_ciphertext_inputs, make_parent_op},
+    Ciphertext, FheProcessor, Register, Result, check_register_width,
     proc::DispatchIsaOp,
+    proc::ops::{insert_ciphertext_inputs, make_parent_op},
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 use super::trivially_encrypt_value_l1glwe;

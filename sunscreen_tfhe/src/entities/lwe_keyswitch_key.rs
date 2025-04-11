@@ -2,7 +2,7 @@ use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::OverlaySize, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
 };
 
 use super::{LevCiphertextIterator, LevCiphertextIteratorMut, LevCiphertextRef};
@@ -26,7 +26,7 @@ where
 
     fn size(t: Self::Inputs) -> usize {
         // Number of rows should be equal to the number of elements in the original key
-        let num_rows = t.0 .0;
+        let num_rows = t.0.0;
 
         // Each row is made up of encryptions under the new key
         let len_row = LevCiphertextRef::<S>::size((t.1, t.2));
@@ -85,15 +85,15 @@ where
 #[cfg(test)]
 mod tests {
 
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
+        PlaintextBits,
         entities::{LweCiphertext, LweKeyswitchKey},
         high_level::*,
         ops::keyswitch::{
             lwe_keyswitch::keyswitch_lwe_to_lwe, lwe_keyswitch_key::generate_keyswitch_key_lwe,
         },
-        PlaintextBits,
     };
 
     #[test]

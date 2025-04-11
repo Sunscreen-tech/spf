@@ -1,4 +1,5 @@
 use crate::{
+    GlweDef, RadixDecomposition, TorusOps,
     dst::FromMutSlice,
     entities::{GlweCiphertext, GlweCiphertextRef, GlweKeyswitchKeyRef, PolynomialRef},
     ops::{
@@ -7,7 +8,6 @@ use crate::{
     },
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
-    GlweDef, RadixDecomposition, TorusOps,
 };
 
 /// Switches a ciphertext under the original key to a ciphertext under the new
@@ -58,12 +58,12 @@ pub fn keyswitch_glwe_to_glwe<S>(
 mod tests {
 
     use crate::{
+        PlaintextBits,
         entities::{GlweCiphertext, GlweKeyswitchKey, Polynomial},
         high_level::*,
         ops::keyswitch::{
             glwe_keyswitch::keyswitch_glwe_to_glwe, glwe_keyswitch_key::generate_keyswitch_key_glwe,
         },
-        PlaintextBits,
     };
 
     #[test]

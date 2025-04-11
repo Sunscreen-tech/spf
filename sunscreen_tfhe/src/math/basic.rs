@@ -16,11 +16,7 @@ macro_rules! div_rounded {
                 // inputs in half before overflow.
                 let q = self / divisor;
                 let r = self % divisor;
-                if r >= divisor / 2 {
-                    q + 1
-                } else {
-                    q
-                }
+                if r >= divisor / 2 { q + 1 } else { q }
             }
         }
     };
@@ -41,7 +37,7 @@ div_rounded!(isize);
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use super::*;
 

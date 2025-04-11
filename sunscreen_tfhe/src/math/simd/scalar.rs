@@ -8,7 +8,7 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 
 #[cfg(test)]
 mod test {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use super::*;
 

@@ -1,11 +1,11 @@
 use sunscreen_math::Zero;
 
 use crate::{
+    LweDef, OverlaySize, PlaintextBits,
     dst::AsSlice,
     entities::{LweCiphertextRef, LweSecretKeyRef},
     math::{Torus, TorusOps},
     rand::{normal_torus, uniform_torus},
-    LweDef, OverlaySize, PlaintextBits,
 };
 
 /// Generate a trivial GLWE encryption. Note that the caller will need to scale
@@ -78,7 +78,7 @@ where
 #[cfg(test)]
 mod tests {
 
-    use crate::{high_level::*, ops::encryption::encode_and_encrypt_lwe_ciphertext, PlaintextBits};
+    use crate::{PlaintextBits, high_level::*, ops::encryption::encode_and_encrypt_lwe_ciphertext};
 
     #[test]
     fn can_encrypt_decrypt() {

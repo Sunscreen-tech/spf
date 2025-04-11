@@ -14,7 +14,7 @@ mod or;
 mod sub;
 mod xor;
 
-use parasol_runtime::{Encryption, DEFAULT_80};
+use parasol_runtime::{DEFAULT_80, Encryption};
 
 use crate::Buffer;
 use parasol_runtime::test_utils::get_secret_keys_80;

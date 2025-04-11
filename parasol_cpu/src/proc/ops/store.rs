@@ -3,12 +3,12 @@ use std::ops::DerefMut;
 use concurrency::AtomicRefCell;
 
 use crate::{
+    CiphertextPtr, Error, FheProcessor, MemHazards, PtrRegister, Register, Result,
     proc::DispatchIsaOp,
     tomasulo::{
         registers::RobEntryRef, scoreboard::ScoreboardEntryRef, tomasulo_processor::RetirementInfo,
     },
-    unwrap_registers, CiphertextPtr, Error, FheProcessor, MemHazards, PtrRegister, Register,
-    Result,
+    unwrap_registers,
 };
 
 use super::{check_offset, read_write_mask};

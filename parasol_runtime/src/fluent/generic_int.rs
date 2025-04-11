@@ -1,20 +1,20 @@
 use std::{marker::PhantomData, mem::size_of, sync::Arc};
 
 use crate::{
-    crypto::PublicKey, safe_bincode::GetSize, Encryption, Evaluation, FheEdge, FheOp,
-    L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext, SecretKey,
+    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
+    SecretKey, crypto::PublicKey, safe_bincode::GetSize,
 };
 
-use super::{bit::BitNode, CiphertextOps, FheCircuitCtx, Muxable, PolynomialCiphertextOps};
+use super::{CiphertextOps, FheCircuitCtx, Muxable, PolynomialCiphertextOps, bit::BitNode};
 
 use bumpalo::Bump;
 use concurrency::AtomicRefCell;
 use mux_circuits::{
+    MuxCircuit,
     add::ripple_carry_adder,
     and::make_and_circuit,
     comparisons::{compare_equal, compare_not_equal},
     sub::full_subtractor,
-    MuxCircuit,
 };
 use petgraph::stable_graph::NodeIndex;
 use serde::{Deserialize, Serialize};

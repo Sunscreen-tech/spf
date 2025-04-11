@@ -1,6 +1,7 @@
 use num::Complex;
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
+    OverlaySize, PlaintextBits, Torus,
     entities::{
         GgswCiphertext, GgswCiphertextFft, GgswCiphertextFftRef, GgswCiphertextRef, GlevCiphertext,
         GlevCiphertextRef, GlweCiphertext, GlweCiphertextRef, LweCiphertext, LweCiphertextRef,
@@ -11,7 +12,6 @@ use sunscreen_tfhe::{
         encrypt_binary_msg_secret_glev, trivial_binary_glev, trivial_glwe, trivial_lwe,
     },
     ops::encryption::{decrypt_glev_ciphertext, rlwe_encode_encrypt_public},
-    OverlaySize, PlaintextBits, Torus,
 };
 
 use crate::{error::Result, fluent::CiphertextOps, params::Params, safe_bincode::GetSize};

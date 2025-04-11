@@ -51,7 +51,7 @@ pub fn full_subtractor(n: usize, bin: bool) -> MuxCircuit {
 mod tests {
     use std::fmt::{Display, Formatter};
 
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
         convert_value_to_bits, graph_ops::Bit, test_mux_circuit,

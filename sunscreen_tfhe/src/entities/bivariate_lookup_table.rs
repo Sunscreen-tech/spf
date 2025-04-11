@@ -2,11 +2,11 @@ use serde::{Deserialize, Serialize};
 use sunscreen_math::Zero;
 
 use crate::{
+    CarryBits, GlweDef, GlweDimension, PlaintextBits, Torus, TorusOps,
     dst::{FromMutSlice, FromSlice, OverlaySize},
     entities::PolynomialRef,
     ops::{bootstrapping::generate_bivariate_lut, encryption::trivially_encrypt_glwe_ciphertext},
     scratch::allocate_scratch_ref,
-    CarryBits, GlweDef, GlweDimension, PlaintextBits, Torus, TorusOps,
 };
 
 use super::{GlweCiphertextRef, UnivariateLookupTableRef};

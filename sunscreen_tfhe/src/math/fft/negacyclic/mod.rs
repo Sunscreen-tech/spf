@@ -7,7 +7,7 @@ use num::{Complex, Float, One};
 use realfft::FftNum;
 use rustfft::{Fft, FftPlanner};
 
-use crate::{scratch::allocate_scratch, FrequencyTransform};
+use crate::{FrequencyTransform, scratch::allocate_scratch};
 
 static FFT_CACHE: OnceLock<Vec<TwistedFft<f64>>> = OnceLock::new();
 

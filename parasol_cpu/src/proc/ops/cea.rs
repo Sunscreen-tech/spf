@@ -1,10 +1,11 @@
 use crate::{
+    CiphertextPtr, Error, FheProcessor, PlainOffsetCtPtr, PlaintextPtr, PtrRegister, Register,
+    Result,
     proc::DispatchIsaOp,
     tomasulo::{
         registers::RobEntryRef, scoreboard::ScoreboardEntryRef, tomasulo_processor::RetirementInfo,
     },
-    unwrap_registers, CiphertextPtr, Error, FheProcessor, PlainOffsetCtPtr, PlaintextPtr,
-    PtrRegister, Register, Result,
+    unwrap_registers,
 };
 
 impl FheProcessor {

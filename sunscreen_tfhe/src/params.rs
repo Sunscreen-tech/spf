@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 
-use crate::rand::Stddev;
 use crate::TorusOps;
+use crate::rand::Stddev;
 
 use sunscreen_math::security::lwe_std_to_security_level;
 

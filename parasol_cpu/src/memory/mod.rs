@@ -5,7 +5,7 @@ use std::sync::{Arc, Mutex};
 
 use crate::{Error, Result};
 use concurrency::AtomicRefCell;
-use elf::{endian::LittleEndian, file::Class, ElfBytes};
+use elf::{ElfBytes, endian::LittleEndian, file::Class};
 use parasol_runtime::L1GlweCiphertext;
 
 /// log2(bytes_per_page)

@@ -1,6 +1,7 @@
 use num::Complex;
 
 use crate::{
+    GlweDef, RadixDecomposition, TorusOps,
     dst::{FromMutSlice, OverlaySize},
     entities::{
         GgswCiphertextFftRef, GlevCiphertextFftRef, GlevCiphertextRef, GlweCiphertextFftRef,
@@ -9,7 +10,6 @@ use crate::{
     ops::ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts},
     radix::PolynomialRadixIterator,
     scratch::{allocate_scratch, allocate_scratch_ref},
-    GlweDef, RadixDecomposition, TorusOps,
 };
 
 /// Compute `c += a \[*] b`` where
@@ -442,9 +442,10 @@ mod tests {
     use std::time::Duration;
 
     use encryption::{decrypt_glwe, encrypt_glwe};
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
+        GLWE_1_1024_80, PlaintextBits, RadixCount, RadixLog, Torus,
         entities::{
             GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, GlweCiphertextFft,
             GlweSecretKey, Polynomial, SchemeSwitchKey, SchemeSwitchKeyFft,
@@ -458,7 +459,6 @@ mod tests {
             },
         },
         polynomial::polynomial_external_mad,
-        PlaintextBits, RadixCount, RadixLog, Torus, GLWE_1_1024_80,
     };
 
     use super::*;

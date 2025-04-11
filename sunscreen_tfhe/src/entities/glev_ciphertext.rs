@@ -2,7 +2,7 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::OverlaySize, GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
 };
 
 use super::{
@@ -27,7 +27,7 @@ where
     type Inputs = (GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GlweCiphertextRef::<S>::size(t.0) * t.1 .0
+        GlweCiphertextRef::<S>::size(t.0) * t.1.0
     }
 }
 

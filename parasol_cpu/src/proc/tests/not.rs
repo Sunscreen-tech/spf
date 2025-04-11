@@ -1,8 +1,8 @@
-use rand::{thread_rng, Rng};
+use rand::{RngCore, thread_rng};
 
 use crate::{
-    proc::program::FheProgram,
     proc::IsaOp,
+    proc::program::FheProgram,
     test_utils::{buffer_from_value_80, make_computer_80, read_result},
     tomasulo::registers::RegisterName,
 };
@@ -34,7 +34,7 @@ fn can_not(val: u32, encrypted_computation: bool) {
 #[test]
 fn can_not_plaintext_inputs() {
     for _ in 0..10 {
-        let val = thread_rng().gen();
+        let val = thread_rng().next_u32();
         can_not(val, false);
     }
 }
@@ -42,7 +42,7 @@ fn can_not_plaintext_inputs() {
 #[test]
 fn can_not_ciphertext_inputs() {
     for _ in 0..10 {
-        let val = thread_rng().gen();
+        let val = thread_rng().next_u32();
         can_not(val, true);
     }
 }

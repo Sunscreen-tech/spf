@@ -1,10 +1,10 @@
 use crate::{
+    GlweDef, RadixDecomposition, Torus, TorusOps,
     entities::{
         GlweCiphertextRef, GlweKeyswitchKeyRef, GlweSecretKeyRef, Polynomial, PolynomialRef,
     },
     ops::encryption::encrypt_glwe_ciphertext_secret_generic,
     polynomial::polynomial_scalar_mul,
-    GlweDef, RadixDecomposition, Torus, TorusOps,
 };
 
 fn encrypt_glwe_ciphertext_secret_with_keyswitch_noise<S>(
@@ -94,10 +94,10 @@ pub fn generate_keyswitch_key_glwe<S>(
 mod tests {
 
     use crate::{
+        Torus,
         dst::{AsSlice, FromSlice},
         entities::{GlweKeyswitchKey, GlweKeyswitchKeyRef},
         high_level::{TEST_GLWE_DEF_1, TEST_RADIX},
-        Torus,
     };
 
     #[test]

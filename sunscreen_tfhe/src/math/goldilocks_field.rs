@@ -1,7 +1,7 @@
 use std::ops::{Add, Mul, Neg, Sub};
 
 use num::traits::{WrappingAdd, WrappingMul, WrappingNeg, WrappingSub};
-use sunscreen_math::{refify_binary_op, One, Zero};
+use sunscreen_math::{One, Zero, refify_binary_op};
 
 use crate::{Inverse, Pow, RootOfUnity};
 
@@ -271,7 +271,7 @@ impl From<u128> for Fg159 {
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use super::*;
 

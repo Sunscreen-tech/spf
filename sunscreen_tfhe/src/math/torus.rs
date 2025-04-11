@@ -9,12 +9,12 @@ use std::{
     num::Wrapping,
     ops::{Add, AddAssign, BitAnd, Deref, Mul, Neg, Shl, Shr, Sub, SubAssign},
 };
-use sunscreen_math::{refify_binary_op, Zero};
+use sunscreen_math::{Zero, refify_binary_op};
 
 use crate::{
+    PlaintextBits,
     math::{ReinterpretAsSigned, ReinterpretAsUnsigned},
     scratch::Pod,
-    PlaintextBits,
 };
 
 /// Number of bits used in the representation of a type.
@@ -478,7 +478,7 @@ impl<S: TorusOps> MulAdd<S, Self> for Torus<S> {
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use super::*;
 

@@ -1,10 +1,10 @@
 use crate::{
+    GlweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial, PolynomialRef},
     ops::encryption::encrypt_secret_glev_ciphertext_generic,
     polynomial::polynomial_external_mad,
     scratch::allocate_scratch_ref,
-    GlweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus, TorusOps,
 };
 
 use super::{

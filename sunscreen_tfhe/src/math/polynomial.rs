@@ -6,10 +6,10 @@ use std::{
 use num::traits::MulAdd;
 
 use crate::{
+    ToF64, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, FromMutSlice},
     entities::PolynomialRef,
     scratch::allocate_scratch,
-    ToF64, Torus, TorusOps,
 };
 
 /// Polynomial subtraction in place. This is equivalent to `a -= b` for each
@@ -207,17 +207,18 @@ mod tests {
     pub type Zq64 = Zq<2, BarrettBackend<2, U64Config>>;
 
     use crate::{
+        ReinterpretAsSigned, ReinterpretAsUnsigned,
         entities::{Polynomial, PolynomialFft},
-        normalized_torus_distance, ReinterpretAsSigned, ReinterpretAsUnsigned,
+        normalized_torus_distance,
     };
 
     use super::*;
     use num::{Complex, Zero};
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
     use sunscreen_math::{
+        BarrettConfig, One,
         poly::Polynomial as BasePolynomial,
         ring::{BarrettBackend, Zq},
-        BarrettConfig, One,
     };
 
     #[test]

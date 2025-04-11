@@ -1,8 +1,8 @@
 #![allow(dead_code)]
 
 use crate::{
-    rand::Stddev, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PolynomialDegree,
-    RadixCount, RadixDecomposition, RadixLog,
+    GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PolynomialDegree, RadixCount,
+    RadixDecomposition, RadixLog, rand::Stddev,
 };
 
 #[doc(hidden)]
@@ -59,6 +59,7 @@ pub const TEST_LWE_DEF_3: LweDef = LweDef {
 /// TFHE functionality related to key generation.
 pub mod keygen {
     use crate::{
+        GlweDef, LweDef, RadixDecomposition,
         entities::{
             BootstrapKey, CircuitBootstrappingKeyswitchKeys, GlweSecretKey, GlweSecretKeyRef,
             LweKeyswitchKey, LwePublicKey, LweSecretKey, LweSecretKeyRef, RlwePublicKey,
@@ -71,7 +72,6 @@ pub mod keygen {
                 private_functional_keyswitch::generate_circuit_bootstrapping_pfks_keys,
             },
         },
-        GlweDef, LweDef, RadixDecomposition,
     };
 
     /// Generate a new binary [`LweSecretKey`] under the given LWE parameters.
@@ -330,6 +330,7 @@ pub mod keygen {
 /// TFHE functionality related to encryption.
 pub mod encryption {
     use crate::{
+        CarryBits, GlweDef, LweDef, PlaintextBits, RadixDecomposition, Torus,
         entities::{
             GgswCiphertext, GgswCiphertextRef, GlevCiphertext, GlweCiphertext, GlweCiphertextRef,
             GlweSecretKeyRef, LweCiphertext, LweCiphertextRef, LwePublicKeyRef, LweSecretKeyRef,
@@ -340,7 +341,6 @@ pub mod encryption {
             encrypt_secret_glev_ciphertext, trivially_encrypt_glev_ciphertext,
             trivially_encrypt_lwe_ciphertext,
         },
-        CarryBits, GlweDef, LweDef, PlaintextBits, RadixDecomposition, Torus,
     };
 
     /// Create an [`LweCiphertext`] encryption of `val` under
@@ -780,11 +780,11 @@ pub mod fft {
     use num::Complex;
 
     use crate::{
+        GlweDef, LweDef, RadixDecomposition,
         entities::{
             BootstrapKeyFft, BootstrapKeyRef, GgswCiphertextFft, GgswCiphertextRef,
             GlweCiphertextFft, GlweCiphertextRef,
         },
-        GlweDef, LweDef, RadixDecomposition,
     };
 
     /// Take the fourier transform of a [`GlweCiphertext`](crate::entities::GlweCiphertext).
@@ -861,13 +861,13 @@ pub mod evaluation {
     use num::Complex;
 
     use crate::{
+        GlweDef, LweDef, RadixDecomposition,
         entities::{
             BootstrapKeyFft, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
             GgswCiphertext, GgswCiphertextFftRef, GlevCiphertext, GlevCiphertextRef,
             GlweCiphertext, GlweCiphertextRef, LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef,
             UnivariateLookupTableRef,
         },
-        GlweDef, LweDef, RadixDecomposition,
     };
 
     /// Perform a multiplexing operation. When `b_fft` encrypts a zero polynomial,

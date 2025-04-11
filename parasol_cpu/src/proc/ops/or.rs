@@ -2,11 +2,11 @@ use mux_circuits::or::make_or_circuit;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
-    check_register_width,
+    Ciphertext, FheProcessor, Register, Result, check_register_width,
     proc::DispatchIsaOp,
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 use super::make_parent_op;

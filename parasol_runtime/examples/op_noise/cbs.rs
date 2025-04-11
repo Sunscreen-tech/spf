@@ -3,11 +3,11 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
+    GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree,
+    RadixCount, RadixDecomposition, RadixLog,
     entities::{GlweSecretKey, LweSecretKey},
     high_level::{self, keygen},
     rand::Stddev,
-    GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree,
-    RadixCount, RadixDecomposition, RadixLog,
 };
 
 use crate::Result;

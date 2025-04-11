@@ -2,10 +2,10 @@ use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    LweDef, LweDimension, PlaintextBits, Torus, TorusOps,
     dst::OverlaySize,
     ops::encryption::encode_and_encrypt_lwe_ciphertext,
     rand::{binary, normal_torus},
-    LweDef, LweDimension, PlaintextBits, Torus, TorusOps,
 };
 
 use super::{
@@ -134,8 +134,8 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{
-        high_level::{encryption, keygen, TEST_LWE_DEF_1},
         PlaintextBits,
+        high_level::{TEST_LWE_DEF_1, encryption, keygen},
     };
 
     #[test]

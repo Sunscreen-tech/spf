@@ -2,15 +2,15 @@ use std::{array, collections::HashSet, ops::Deref, sync::Arc};
 
 use concurrency::AtomicRefCell;
 use parasol_runtime::{
-    fluent::UInt, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
-    L1LweCiphertext, SecretKey, TrivialOne, TrivialZero, UOpProcessor,
+    Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
+    SecretKey, TrivialOne, TrivialZero, UOpProcessor, fluent::UInt,
 };
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::entities::Polynomial;
 
 use crate::{
-    impl_tomasulo,
+    Error, Result, impl_tomasulo,
     proc::ops::assign_io,
     tomasulo::{
         scoreboard::ScoreboardEntryRef,
@@ -18,7 +18,6 @@ use crate::{
     },
     unwrap_registers,
     util::FheBuffer,
-    Error, Result,
 };
 
 use self::ops::trivially_encrypt_value_l1glwe;
@@ -876,7 +875,7 @@ mod buffer_uint_tests {
     use parasol_runtime::test_utils::{
         get_encryption_128, get_evaluation_128, get_secret_keys_128,
     };
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     #[test]
     fn test_uint_buffer_roundtrip() {

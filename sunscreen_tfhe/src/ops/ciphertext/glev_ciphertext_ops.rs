@@ -1,7 +1,7 @@
 use crate::{
+    GlweDef, TorusOps,
     entities::{GlevCiphertextRef, GlweCiphertextRef, Polynomial},
     radix::{PolynomialRadixIterator, ScalarRadixIterator},
-    GlweDef, TorusOps,
 };
 
 use super::{glwe_polynomial_mad, glwe_scalar_mad};

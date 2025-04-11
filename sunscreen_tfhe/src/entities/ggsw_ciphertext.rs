@@ -2,8 +2,8 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::OverlaySize, ops::ciphertext::external_product_ggsw_glwe, GlweDef, GlweDimension,
-    RadixCount, RadixDecomposition, Torus, TorusOps,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
+    ops::ciphertext::external_product_ggsw_glwe,
 };
 
 use super::{

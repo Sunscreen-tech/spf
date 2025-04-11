@@ -6,6 +6,7 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
+    GlweDef, GlweDimension, GlweSize, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
     entities::{
         GgswCiphertext, GgswCiphertextFft, GlweSecretKey, GlweSecretKeyRef, Polynomial,
         PolynomialRef, SchemeSwitchKey, SchemeSwitchKeyFft,
@@ -16,13 +17,12 @@ use sunscreen_tfhe::{
         fft_ops::scheme_switch_fft,
     },
     rand::Stddev,
-    GlweDef, GlweDimension, GlweSize, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
 };
 
 use crate::{
+    Error, Result,
     args::{AnalyzeSchemeSwitch, SearchSchemeSwitchCommand},
     noise::measure_noise_ggsw,
-    Error, Result,
 };
 
 #[derive(Debug, Serialize, Deserialize)]

@@ -1,4 +1,4 @@
-use crate::{entities::PolynomialRef, PlaintextBits, Torus, TorusOps};
+use crate::{PlaintextBits, Torus, TorusOps, entities::PolynomialRef};
 
 /// Encode a polynomial for encryption.
 ///

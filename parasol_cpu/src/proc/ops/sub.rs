@@ -2,12 +2,12 @@ use mux_circuits::util::arbitrary_width_borrowing_sub;
 use parasol_runtime::circuits::sub_circuit;
 
 use crate::{
-    check_register_width,
-    proc::ops::make_parent_op,
+    Ciphertext, Error, FheProcessor, Register, Result, check_register_width,
     proc::DispatchIsaOp,
+    proc::ops::make_parent_op,
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, Error, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 impl FheProcessor {

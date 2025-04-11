@@ -1,6 +1,6 @@
 use crate::{
     proc::IsaOp,
-    proc::{program::FheProgram, Buffer},
+    proc::{Buffer, program::FheProgram},
     test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };

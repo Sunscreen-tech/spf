@@ -13,10 +13,10 @@ use sunscreen_tfhe::{
 use crate::params::Params;
 
 use super::{
+    ComputeKey, L1GlevCiphertext, TrivialOne, TrivialZero,
     encryption::{
         Encryption, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
     },
-    ComputeKey, L1GlevCiphertext, TrivialOne, TrivialZero,
 };
 
 #[derive(Clone)]
@@ -269,7 +269,7 @@ impl Evaluation {
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
     use sunscreen_tfhe::entities::Polynomial;
 
     use crate::{

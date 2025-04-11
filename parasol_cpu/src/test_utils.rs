@@ -1,10 +1,10 @@
 use std::sync::{Arc, OnceLock};
 
 use parasol_runtime::{
+    DEFAULT_80, DEFAULT_128, Encryption, Evaluation, SecretKey,
     test_utils::{
-        get_compute_key_128, get_compute_key_80, get_secret_keys_128, get_secret_keys_80,
+        get_compute_key_80, get_compute_key_128, get_secret_keys_80, get_secret_keys_128,
     },
-    Encryption, Evaluation, SecretKey, DEFAULT_128, DEFAULT_80,
 };
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use sunscreen_tfhe::entities::Polynomial;

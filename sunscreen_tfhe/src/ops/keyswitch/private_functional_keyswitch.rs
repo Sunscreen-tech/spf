@@ -2,6 +2,8 @@ use rayon::iter::{IndexedParallelIterator, ParallelIterator};
 use sunscreen_math::Zero;
 
 use crate::{
+    GlweDef, LweDef, OverlaySize, PrivateFunctionalKeyswitchLweCount, RadixDecomposition, Torus,
+    TorusOps,
     dst::{AsSlice, FromMutSlice},
     entities::{
         CircuitBootstrappingKeyswitchKeysRef, GlweCiphertextRef, GlweSecretKeyRef,
@@ -11,10 +13,8 @@ use crate::{
         ciphertext::{decomposed_scalar_glev_mad, glwe_negate_inplace},
         encryption::encrypt_glwe_ciphertext_secret,
     },
-    radix::{scale_by_decomposition_factor, ScalarRadixIterator},
+    radix::{ScalarRadixIterator, scale_by_decomposition_factor},
     scratch::allocate_scratch_ref,
-    GlweDef, LweDef, OverlaySize, PrivateFunctionalKeyswitchLweCount, RadixDecomposition, Torus,
-    TorusOps,
 };
 
 /// Initialize `output`, a
@@ -197,12 +197,12 @@ pub fn generate_circuit_bootstrapping_pfks_keys<S: TorusOps>(
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
-        entities::{GlweCiphertext, PrivateFunctionalKeyswitchKey},
-        high_level::{keygen, TEST_GLWE_DEF_1, TEST_LWE_DEF_1, TEST_RADIX},
         PlaintextBits,
+        entities::{GlweCiphertext, PrivateFunctionalKeyswitchKey},
+        high_level::{TEST_GLWE_DEF_1, TEST_LWE_DEF_1, TEST_RADIX, keygen},
     };
 
     use super::*;

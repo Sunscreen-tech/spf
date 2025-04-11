@@ -1,7 +1,7 @@
 use crate::{
+    LweDef, TorusOps,
     entities::{LevCiphertextRef, LweCiphertextRef, Polynomial},
     radix::PolynomialRadixIterator,
-    LweDef, TorusOps,
 };
 
 use super::scalar_mul_ciphertext_mad;

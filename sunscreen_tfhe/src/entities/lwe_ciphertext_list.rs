@@ -2,8 +2,8 @@ use serde::{Deserialize, Serialize};
 use sunscreen_math::Zero;
 
 use crate::{
-    dst::{AsMutSlice, AsSlice, OverlaySize},
     LweDef, LweDimension, Torus, TorusOps,
+    dst::{AsMutSlice, AsSlice, OverlaySize},
 };
 
 use super::{LweCiphertextIterator, LweCiphertextIteratorMut, LweCiphertextRef};

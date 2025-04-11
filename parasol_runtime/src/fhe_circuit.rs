@@ -7,11 +7,11 @@ use std::{
 
 use concurrency::AtomicRefCell;
 use mux_circuits::{MuxCircuit, MuxEdgeInfo, MuxOp};
-use petgraph::{prelude::StableGraph, stable_graph::NodeIndex, visit::EdgeRef, Direction};
+use petgraph::{Direction, prelude::StableGraph, stable_graph::NodeIndex, visit::EdgeRef};
 
 use crate::crypto::{
-    ciphertext::CiphertextType, Encryption, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext,
-    L1GlweCiphertext, L1LweCiphertext,
+    Encryption, L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
+    L1LweCiphertext, ciphertext::CiphertextType,
 };
 
 /// An [`L0LweCiphertext`] that can be shared across threads.

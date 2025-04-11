@@ -4,10 +4,10 @@ use std::{
 };
 
 use petgraph::{
+    Directed, Direction,
     prelude::StableGraph,
     stable_graph::{EdgeReference, Edges, Neighbors, NodeIndex},
     visit::{EdgeRef, IntoNodeIdentifiers},
-    Directed, Direction,
 };
 
 /**
@@ -444,7 +444,7 @@ where
     T: TransformList<N, E>,
 {
     // The one unsafe line in the function...
-    let graph = &mut *graph;
+    let graph = unsafe { &mut *graph };
     let mut ready: HashSet<NodeIndex> = HashSet::new();
     let mut visited: HashSet<NodeIndex> = HashSet::new();
     let prev_direction = if forward {

@@ -1,10 +1,10 @@
 use itertools::Itertools;
-use rand::{thread_rng, RngCore};
+use rand::{RngCore, thread_rng};
 
 use crate::test_utils::read_result;
 use crate::{
-    proc::program::FheProgram,
     proc::IsaOp,
+    proc::program::FheProgram,
     test_utils::{buffer_from_value_80, make_computer_80},
     tomasulo::registers::RegisterName,
 };

@@ -1,8 +1,8 @@
 use std::{marker::PhantomData, ops::Not};
 
 use crypto_bigint::{
-    subtle::{ConditionallySelectable, ConstantTimeLess},
     Uint,
+    subtle::{ConditionallySelectable, ConstantTimeLess},
 };
 
 use crate::field::FieldConfig;
@@ -119,7 +119,7 @@ mod tests_one_limb {
     use sunscreen_math_macros::BarrettConfig as DeriveBarrettConfig;
 
     // Work around derive macro using sunscreen_math path
-    use crate::{self as sunscreen_math, field::Field, ring::Zq, One};
+    use crate::{self as sunscreen_math, One, field::Field, ring::Zq};
 
     use super::*;
 

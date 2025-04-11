@@ -1,15 +1,15 @@
 use mux_circuits::{
-    comparisons::{compare_equal, compare_or_maybe_equal},
     MuxCircuit,
+    comparisons::{compare_equal, compare_or_maybe_equal},
 };
 use parasol_runtime::FheCircuit;
 
 use crate::{
-    check_register_width,
+    Ciphertext, Error, FheProcessor, Register, Result, check_register_width,
     proc::DispatchIsaOp,
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, Error, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 use super::make_parent_op;

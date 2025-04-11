@@ -4,10 +4,10 @@ use std::{
     ops::Index,
 };
 
-use crate::{proc::IsaOp, tomasulo::registers::RegisterName, Error, Result};
+use crate::{Error, Result, proc::IsaOp, tomasulo::registers::RegisterName};
 use thiserror::Error;
 
-use elf::{abi::STT_FUNC, endian::LittleEndian, ElfBytes};
+use elf::{ElfBytes, abi::STT_FUNC, endian::LittleEndian};
 
 // ABI version changes:
 // 1:
@@ -223,7 +223,9 @@ impl FheApplication {
                 IsaOp::Add(dst, src1, src2)
             }
             OpCode::AddC => {
-                unimplemented!("Not implemented in the Parasol compiler. This operation should never be generated.");
+                unimplemented!(
+                    "Not implemented in the Parasol compiler. This operation should never be generated."
+                );
             }
             OpCode::Sub => {
                 let dst = RegisterName::named(Self::get_dst(encoded));
@@ -233,7 +235,9 @@ impl FheApplication {
                 IsaOp::Sub(dst, src1, src2)
             }
             OpCode::SubB => {
-                unimplemented!("Not implemented in the Parasol compiler. This operation should never be generated.");
+                unimplemented!(
+                    "Not implemented in the Parasol compiler. This operation should never be generated."
+                );
             }
             OpCode::Mul => {
                 let dst = RegisterName::named(Self::get_dst(encoded));

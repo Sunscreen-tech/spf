@@ -1,10 +1,10 @@
-use std::sync::{mpsc::Receiver, Arc, OnceLock};
+use std::sync::{Arc, OnceLock, mpsc::Receiver};
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
+    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, L0LweCiphertext,
+    L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey, UOpProcessor,
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
-    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
-    L1GlevCiphertext, L1GlweCiphertext, SecretKey, UOpProcessor, DEFAULT_128,
 };
 
 fn make_computer() -> (

@@ -2,13 +2,13 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
+    GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
     entities::{
         GgswCiphertextFftIterator, GgswCiphertextFftIteratorMut, GgswCiphertextFftRef,
         GgswCiphertextIterator, GgswCiphertextIteratorMut, GgswCiphertextRef,
         ParallelGgswCiphertextIterator, ParallelGgswCiphertextIteratorMut,
     },
-    GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
 };
 
 dst! {
@@ -26,7 +26,7 @@ impl<S: TorusOps> OverlaySize for BootstrapKeyRef<S> {
     type Inputs = (LweDimension, GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GgswCiphertextRef::<S>::size((t.1, t.2)) * t.0 .0
+        GgswCiphertextRef::<S>::size((t.1, t.2)) * t.0.0
     }
 }
 
@@ -120,7 +120,7 @@ impl OverlaySize for BootstrapKeyFftRef<Complex<f64>> {
     type Inputs = (LweDimension, GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GgswCiphertextFftRef::<Complex<f64>>::size((t.1, t.2)) * t.0 .0
+        GgswCiphertextFftRef::<Complex<f64>>::size((t.1, t.2)) * t.0.0
     }
 }
 

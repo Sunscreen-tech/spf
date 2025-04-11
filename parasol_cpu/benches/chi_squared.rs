@@ -1,4 +1,4 @@
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::test_utils::{buffer_from_value_80, make_computer_80};
 
 mod programs;

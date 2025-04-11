@@ -78,13 +78,14 @@ pub mod test_utils;
 
 pub use circuit_processor::{CompletionHandler, UOpProcessor};
 pub use crypto::{
-    ciphertext::CiphertextType, ComputeKey, ComputeKeyNonFft, Encryption, Evaluation,
-    L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
-    PublicKey, SecretKey, TrivialOne, TrivialZero,
+    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
+    L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, TrivialOne,
+    TrivialZero, ciphertext::CiphertextType,
 };
 pub use fhe_circuit::{
-    insert_ciphertext_conversion, prune, FheCircuit, FheEdge, FheOp, SharedL0LweCiphertext,
-    SharedL1GgswCiphertext, SharedL1GlevCiphertext, SharedL1GlweCiphertext, SharedL1LweCiphertext,
+    FheCircuit, FheEdge, FheOp, SharedL0LweCiphertext, SharedL1GgswCiphertext,
+    SharedL1GlevCiphertext, SharedL1GlweCiphertext, SharedL1LweCiphertext,
+    insert_ciphertext_conversion, prune,
 };
 pub use params::*;
 

@@ -1,10 +1,11 @@
 use num::Complex;
 
 use crate::{
+    FrequencyTransform, FromF64, NumBits, PolynomialDegree,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
     fft::negacyclic::get_fft,
     scratch::allocate_scratch,
-    simd, FrequencyTransform, FromF64, NumBits, PolynomialDegree,
+    simd,
 };
 
 use super::PolynomialRef;

@@ -1,6 +1,6 @@
 use std::fmt::Debug;
 
-use rand::{thread_rng, Rng, RngCore};
+use rand::{Rng, RngCore, thread_rng};
 use rand_distr::Normal;
 use serde::{Deserialize, Serialize};
 

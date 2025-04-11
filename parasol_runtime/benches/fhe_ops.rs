@@ -1,8 +1,8 @@
 use std::sync::{Arc, OnceLock};
 
-use criterion::{criterion_group, criterion_main, Criterion};
+use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
-    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, SecretKey, DEFAULT_128,
+    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, SecretKey,
 };
 use sunscreen_tfhe::entities::Polynomial;
 

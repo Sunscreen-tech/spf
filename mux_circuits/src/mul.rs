@@ -588,7 +588,7 @@ pub fn gradeschool_reduce_impl(params: MultiplierParams) -> MuxCircuit {
 #[cfg(test)]
 mod tests {
     use biodivine_lib_bdd::BddValuation;
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{graph_ops::Bit, test_mux_circuit, util::try_to_bits};
 

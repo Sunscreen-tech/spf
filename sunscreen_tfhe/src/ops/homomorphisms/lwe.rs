@@ -1,4 +1,4 @@
-use crate::{entities::LweCiphertextRef, LweDef, OverlaySize, Torus, TorusOps};
+use crate::{LweDef, OverlaySize, Torus, TorusOps, entities::LweCiphertextRef};
 
 /// Add `amount` to each torus element (mod q) in the ciphertext.
 /// This shifts where messages lie on the torus and adds no noise.
@@ -22,9 +22,9 @@ pub fn rotate<S: TorusOps>(
 #[cfg(test)]
 mod tests {
     use crate::{
-        entities::LweCiphertext,
-        high_level::{keygen, TEST_LWE_DEF_1},
         PlaintextBits, Torus,
+        entities::LweCiphertext,
+        high_level::{TEST_LWE_DEF_1, keygen},
     };
 
     use super::rotate;

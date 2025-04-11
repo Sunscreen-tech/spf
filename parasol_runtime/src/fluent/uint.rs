@@ -1,9 +1,9 @@
-use crate::{circuits::mul::append_uint_multiply, L1GgswCiphertext};
+use crate::{L1GgswCiphertext, circuits::mul::append_uint_multiply};
 
 use super::{
+    CiphertextOps, FheCircuitCtx, GeneratesCompareCircuit, Muxable, PackedGenericInt,
     bit::BitNode,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
-    CiphertextOps, FheCircuitCtx, GeneratesCompareCircuit, Muxable, PackedGenericInt,
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
@@ -83,9 +83,9 @@ pub type PackedUInt<const N: usize, T> = PackedGenericInt<N, T, Unsigned>;
 #[cfg(test)]
 mod tests {
     use crate::{
+        DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         crypto::PublicKey,
         test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
-        L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, DEFAULT_128,
     };
     use serde::{Deserialize, Serialize};
 

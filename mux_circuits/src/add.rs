@@ -57,7 +57,7 @@ pub fn ripple_carry_adder(n: usize, m: usize, cin: bool) -> MuxCircuit {
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{convert_value_to_bits, graph_ops::Bit, test_mux_circuit};
 

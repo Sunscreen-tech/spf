@@ -360,13 +360,13 @@ mod tests {
 
                 let diff = (recovered_security_level - security_level as f64).abs();
                 assert!(
-                            diff < tolerance,
-                            "Security level tolerance violated. Dimension: {}, std: {}, security_level: {}, recovered_level: {}",
-                            dimension,
-                            std,
-                            security_level,
-                            recovered_security_level
-                        );
+                    diff < tolerance,
+                    "Security level tolerance violated. Dimension: {}, std: {}, security_level: {}, recovered_level: {}",
+                    dimension,
+                    std,
+                    security_level,
+                    recovered_security_level
+                );
             }
         }
     }

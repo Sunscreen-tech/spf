@@ -4,10 +4,11 @@ use concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
-    proc::ops::make_parent_op,
+    Ciphertext, Error, FheProcessor, Register, Result,
     proc::DispatchIsaOp,
+    proc::ops::make_parent_op,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
-    unwrap_registers, Ciphertext, Error, FheProcessor, Register, Result,
+    unwrap_registers,
 };
 
 impl FheProcessor {

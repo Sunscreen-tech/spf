@@ -1,4 +1,5 @@
 use crate::{
+    GlweDef, OverlaySize, RadixDecomposition, TorusOps,
     dst::FromMutSlice,
     entities::{
         GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, LweCiphertextRef, PolynomialRef,
@@ -10,7 +11,6 @@ use crate::{
     },
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
-    GlweDef, OverlaySize, RadixDecomposition, TorusOps,
 };
 
 /**
@@ -242,6 +242,7 @@ where
 #[cfg(test)]
 mod tests {
     use crate::{
+        PlaintextBits, Torus,
         entities::{GgswCiphertext, LweCiphertext, Polynomial},
         high_level::*,
         ops::encryption::{
@@ -249,11 +250,10 @@ mod tests {
             trivially_encrypt_glwe_ciphertext,
         },
         polynomial::polynomial_mad,
-        PlaintextBits, Torus,
     };
 
     use super::*;
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     #[test]
     fn polynomial_iteration_mut() {

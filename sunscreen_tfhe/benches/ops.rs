@@ -1,10 +1,12 @@
 use std::borrow::Borrow;
 
 use criterion::{
-    criterion_group, criterion_main, measurement::WallTime, BenchmarkGroup, Criterion,
+    BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
 
 use sunscreen_tfhe::{
+    GLWE_1_1024_80, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80, LweDef,
+    LweDimension, PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus,
     entities::{
         GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial,
         PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft,
@@ -20,8 +22,6 @@ use sunscreen_tfhe::{
         },
     },
     rand::Stddev,
-    GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree,
-    RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_1024_80, GLWE_5_256_80, LWE_512_80,
 };
 
 fn cmux(c: &mut Criterion) {

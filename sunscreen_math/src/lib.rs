@@ -31,4 +31,4 @@ pub mod poly;
 mod misc_traits;
 pub use misc_traits::*;
 
-pub use sunscreen_math_macros::{refify_binary_op, BarrettConfig};
+pub use sunscreen_math_macros::{BarrettConfig, refify_binary_op};

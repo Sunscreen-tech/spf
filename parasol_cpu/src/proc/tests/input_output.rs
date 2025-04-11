@@ -1,9 +1,9 @@
 use crate::{
+    Error,
     proc::IsaOp,
-    proc::{program::FheProgram, Buffer},
+    proc::{Buffer, program::FheProgram},
     test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
-    Error,
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;

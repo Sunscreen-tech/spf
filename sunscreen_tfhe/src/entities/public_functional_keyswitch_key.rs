@@ -2,9 +2,9 @@ use serde::{Deserialize, Serialize};
 use sunscreen_math::Zero;
 
 use crate::{
+    GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, OverlaySize},
     entities::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef},
-    GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
 };
 
 use super::GlweCiphertextRef;
@@ -24,7 +24,7 @@ impl<S: TorusOps> OverlaySize for PublicFunctionalKeyswitchKeyRef<S> {
     type Inputs = (LweDimension, GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GlweCiphertextRef::<S>::size(t.1) * t.0 .0 * t.2 .0
+        GlweCiphertextRef::<S>::size(t.1) * t.0.0 * t.2.0
     }
 }
 

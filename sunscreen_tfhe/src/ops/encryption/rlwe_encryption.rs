@@ -1,4 +1,5 @@
 use crate::{
+    GlweDef, OverlaySize, PlaintextBits, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
         GlweCiphertext, GlweCiphertextRef, GlweSecretKeyRef, Polynomial, PolynomialRef,
@@ -8,7 +9,6 @@ use crate::{
     polynomial::{polynomial_add_assign, polynomial_external_mad},
     rand::{binary_torus_polynomial, normal_torus_polynomial},
     scratch::allocate_scratch_ref,
-    GlweDef, OverlaySize, PlaintextBits, Torus, TorusOps,
 };
 
 /// The randomness used to generate a public-key RLWE encryption of a message.
@@ -164,8 +164,8 @@ where
 mod tests {
     use super::*;
     use crate::{
-        entities::{GlweSecretKey, RlwePublicKey},
         GLWE_1_1024_128,
+        entities::{GlweSecretKey, RlwePublicKey},
     };
 
     #[test]

@@ -1,7 +1,7 @@
 use crate::{
+    LweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
     entities::{LweKeyswitchKeyRef, LweSecretKeyRef},
     ops::encryption::encrypt_lwe_ciphertext,
-    LweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
 };
 
 /// Generates a keyswitch key from an original LWE key to a new LWE key. The

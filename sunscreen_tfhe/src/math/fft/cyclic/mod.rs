@@ -1,7 +1,7 @@
 use std::ops::{Add, Mul, Neg};
 use std::sync::Arc;
 
-use num::{complex::Complex, Float};
+use num::{Float, complex::Complex};
 use realfft::{ComplexToReal, FftNum, RealFftPlanner, RealToComplex};
 use sunscreen_math::{One, Zero as SunscreenZero};
 

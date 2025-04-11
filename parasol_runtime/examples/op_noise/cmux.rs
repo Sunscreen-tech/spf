@@ -3,6 +3,8 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
+    GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, RadixCount,
+    RadixDecomposition, RadixLog,
     entities::{GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, Polynomial},
     high_level::{self},
     ops::{
@@ -10,11 +12,9 @@ use sunscreen_tfhe::{
         polynomial::encode_polynomial,
     },
     rand::Stddev,
-    GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, RadixCount,
-    RadixDecomposition, RadixLog,
 };
 
-use crate::{args::AnalyzeCMux, noise::measure_noise_glwe, Result};
+use crate::{Result, args::AnalyzeCMux, noise::measure_noise_glwe};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CMuxSample {
@@ -147,11 +147,7 @@ pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
 fn next_sigma(cur: f64, start: f64, inc: f64) -> f64 {
     assert_ne!(start, 0.0);
 
-    if cur == 0.0 {
-        start
-    } else {
-        cur * inc
-    }
+    if cur == 0.0 { start } else { cur * inc }
 }
 
 fn cmux_ntt(

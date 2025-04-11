@@ -24,7 +24,7 @@ pub fn make_and_circuit(inputs: u16) -> MuxCircuit {
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{graph_ops::Bit, test_mux_circuit};
 

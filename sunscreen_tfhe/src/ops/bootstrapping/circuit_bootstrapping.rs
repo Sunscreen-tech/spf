@@ -2,6 +2,8 @@ use num::Complex;
 use sunscreen_math::Zero;
 
 use crate::{
+    GlweDef, LweDef, OverlaySize, PlaintextBits, PrivateFunctionalKeyswitchLweCount,
+    RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
         BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef, GgswCiphertextRef,
@@ -13,8 +15,6 @@ use crate::{
         keyswitch::private_functional_keyswitch::private_functional_keyswitch,
     },
     scratch::allocate_scratch_ref,
-    GlweDef, LweDef, OverlaySize, PlaintextBits, PrivateFunctionalKeyswitchLweCount,
-    RadixDecomposition, Torus, TorusOps,
 };
 
 /// Bootstraps a LWE ciphertext to a GGSW ciphertext.
@@ -347,13 +347,13 @@ pub fn level_2_to_level1<S: TorusOps>(
 
 #[cfg(test)]
 mod tests {
-    use rand::{thread_rng, RngCore};
+    use rand::{RngCore, thread_rng};
 
     use crate::{
+        GLWE_1_1024_80, GLWE_5_256_80, LWE_512_80, PlaintextBits, RadixCount, RadixDecomposition,
+        RadixLog,
         entities::{GgswCiphertext, LweCiphertextList},
-        high_level::{self, encryption, fft, keygen, TEST_LWE_DEF_1},
-        PlaintextBits, RadixCount, RadixDecomposition, RadixLog, GLWE_1_1024_80, GLWE_5_256_80,
-        LWE_512_80,
+        high_level::{self, TEST_LWE_DEF_1, encryption, fft, keygen},
     };
 
     use super::{circuit_bootstrap, level_0_to_level_2};
