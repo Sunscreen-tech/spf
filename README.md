@@ -1,5 +1,5 @@
-# Parasol CPU
-This repository contains Sunscreen's Parasol CPU, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Its out-of-order processor design automatically extracts parallelism from user-provided programs to run them efficiently on modern architectures. Additionally, its processor design that can crunch numbers over a mix of plaintext and encrypted data provides more flexibility than the traditional circuits used in FHE.
+# Parasol Processor
+This repository contains Sunscreen's virtual processor, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Its out-of-order processor design automatically extracts parallelism from user-provided programs to run them efficiently on modern architectures. Additionally, its design provides more flexibility than the traditional circuits used in FHE.
 
 # Prereqs
 While the contained `parasol_cpu` crate contains everything you need to *run* programs, to write them you'll need the Parasol-llvm compiler. You can get that [here](https://github.com/Sunscreen-tech/testnet-starter/tree/main/compiler).
@@ -9,9 +9,9 @@ While the contained `parasol_cpu` crate contains everything you need to *run* pr
 * Optionally an environment variable to the untarred location's contained bin directory.
 
 # Basic example
-Let's build a basic program where an end user can encrypt two values, send them to a server which will compute and respond with their sum, after which the user finally decrypts the result. For simplicity, we'll describe both parties in a single program.
+Let's build a basic program where an end user can encrypt two values and send them to a server which will compute and respond with their encrypted sum. After that, the user decrypts the result. For simplicity, we'll describe both parties in a single program.
 
-Program that will run on the Parasol processor:
+Program that will run on our virtual processor:
 
 `add.c`:
 ```C
@@ -48,7 +48,7 @@ fn main() {
         SecretKey::generate_with_default_params();
 
     // Generate a compute key for the user. These keys are used for
-    // operations and do not give access to the plaintext data;
+    // FHE operations and do not give access to the plaintext data;
     // therefore, this key can safely be shared with another party.
     let compute_key =
         ComputeKey::generate_with_default_params(
