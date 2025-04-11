@@ -1,5 +1,5 @@
 # Parasol Runtime
-This crate contains the Sunscreen Parasol runtime, which supports running programs over encrypted data with the [`parasol_cpu`](https://crates.io/parasol_cpu) crate. This crate provides key generation, encryption, and decryption functionality. Additionally, you can use the `fluent` module to directly compose and run TFHE circuit bootstrapping circuits:
+This crate contains the Sunscreen Parasol runtime, which supports running programs over encrypted data with the [`Parasol processor`](https://crates.io/parasol_cpu). This crate provides key generation, encryption, and decryption functionality. Additionally, you can use the `fluent` module to directly compose and run TFHE circuit bootstrapping circuits:
 
 ```rust
 use crate::{
