@@ -18,10 +18,12 @@ use crate::{
 
 mod bit;
 mod generic_int;
+mod int;
 mod uint;
 
 pub use bit::*;
 pub use generic_int::*;
+pub use int::*;
 pub use uint::*;
 
 /// A context for building FHE circuits out of high-level primitives (e.g.
@@ -360,6 +362,7 @@ impl Muxable for L1GlevCiphertext {
 #[cfg(test)]
 mod tests {
     use bit::Bit;
+    use generic_int::GenericInt;
     use rand::{RngCore, thread_rng};
     use uint::UInt;
 
@@ -373,14 +376,14 @@ mod tests {
 
     use super::*;
 
-    fn roundtrip<T: CiphertextOps>() {
+    fn roundtrip<T: CiphertextOps, U: Sign>() {
         let sk = get_secret_keys_80();
         let enc = Encryption::new(&DEFAULT_80);
 
         for _ in 0..32 {
             // Make 16-bit integers.
             let val = thread_rng().next_u64() % 0x10000;
-            let ct = UInt::<16, T>::encrypt_secret(val, &enc, &sk);
+            let ct = GenericInt::<16, T, U>::encrypt_secret(val, &enc, &sk);
             let actual = ct.decrypt(&enc, &sk);
 
             assert_eq!(val, actual);
@@ -389,30 +392,37 @@ mod tests {
 
     #[test]
     fn can_roundtrip_l0_lwe() {
-        roundtrip::<L0LweCiphertext>();
+        roundtrip::<L0LweCiphertext, Unsigned>();
+        roundtrip::<L0LweCiphertext, Signed>();
     }
 
     #[test]
     fn can_roundtrip_l1_lwe() {
-        roundtrip::<L1LweCiphertext>();
+        roundtrip::<L1LweCiphertext, Unsigned>();
+        roundtrip::<L1LweCiphertext, Signed>();
     }
 
     #[test]
     fn can_roundtrip_l1_glwe() {
-        roundtrip::<L1GlweCiphertext>();
+        roundtrip::<L1GlweCiphertext, Unsigned>();
+        roundtrip::<L1GlweCiphertext, Signed>();
     }
 
     #[test]
     fn can_roundtrip_l1_ggsw() {
-        roundtrip::<L1GgswCiphertext>();
+        roundtrip::<L1GgswCiphertext, Unsigned>();
+        roundtrip::<L1GgswCiphertext, Signed>();
     }
 
-    fn input_output<T: CiphertextOps>() {
+    fn input_output<T: CiphertextOps, U: Sign>(test_val: u64) {
         let (uproc, fc) = make_uproc_80();
         let enc = get_encryption_80();
 
-        let input =
-            UInt::<16, T>::encrypt_secret(1234, &get_encryption_80(), &get_secret_keys_80());
+        let input = GenericInt::<16, T, U>::encrypt_secret(
+            test_val,
+            &get_encryption_80(),
+            &get_secret_keys_80(),
+        );
 
         let graph = FheCircuitCtx::new();
 
@@ -425,38 +435,42 @@ mod tests {
             .run_graph_blocking(&graph.circuit.borrow(), &fc);
 
         let actual = output.decrypt(&enc, &get_secret_keys_80());
-        assert_eq!(actual, 1234);
+        assert_eq!(actual, test_val);
     }
 
     #[test]
-    fn can_input_output_uint_graph_l0_lwe() {
-        input_output::<L0LweCiphertext>();
+    fn can_input_output_generic_int_graph_l0_lwe() {
+        input_output::<L0LweCiphertext, Unsigned>(1234);
+        input_output::<L0LweCiphertext, Signed>(65432);
     }
 
     #[test]
-    fn can_input_output_uint_graph_l1_lwe() {
-        input_output::<L1LweCiphertext>();
+    fn can_input_output_generic_int_graph_l1_lwe() {
+        input_output::<L1LweCiphertext, Unsigned>(1234);
+        input_output::<L1LweCiphertext, Signed>(65432);
     }
 
     #[test]
-    fn can_input_output_uint_graph_l1_ggsw() {
-        input_output::<L1GgswCiphertext>();
+    fn can_input_output_generic_int_graph_l1_ggsw() {
+        input_output::<L1GgswCiphertext, Unsigned>(1234);
+        input_output::<L1GgswCiphertext, Signed>(65432);
     }
 
     #[test]
-    fn can_input_output_uint_graph_l1_glwe() {
-        input_output::<L1GlweCiphertext>();
+    fn can_input_output_generic_int_graph_l1_glwe() {
+        input_output::<L1GlweCiphertext, Unsigned>(1234);
+        input_output::<L1GlweCiphertext, Signed>(65432);
     }
 
     #[test]
     fn can_convert_ciphertexts() {
-        fn convert_test<T: CiphertextOps, U: CiphertextOps>() {
+        fn convert_test<T: CiphertextOps, U: CiphertextOps, V: Sign>(test_val: u64) {
             let graph = FheCircuitCtx::new();
             let enc = get_encryption_80();
             let (uproc, fc) = make_uproc_80();
             let sk = get_secret_keys_80();
 
-            let val = UInt::<16, T>::encrypt_secret(1234, &enc, &sk);
+            let val = GenericInt::<16, T, V>::encrypt_secret(test_val, &enc, &sk);
 
             let inputs = val.graph_inputs(&graph);
             let converted = inputs.convert::<U>(&graph);
@@ -468,30 +482,37 @@ mod tests {
                 .run_graph_blocking(&graph.circuit.borrow(), &fc);
 
             let actual = outputs.decrypt(&enc, &sk);
-            assert_eq!(actual, 1234);
+            assert_eq!(actual, test_val);
         }
 
-        convert_test::<L0LweCiphertext, L1GgswCiphertext>();
-        convert_test::<L0LweCiphertext, L1GlweCiphertext>();
-        convert_test::<L0LweCiphertext, L1LweCiphertext>();
-        convert_test::<L0LweCiphertext, L0LweCiphertext>();
+        convert_test::<L0LweCiphertext, L1GgswCiphertext, Unsigned>(1234);
+        convert_test::<L0LweCiphertext, L1GgswCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1GlweCiphertext, Unsigned>(1234);
+        convert_test::<L0LweCiphertext, L1GlweCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1LweCiphertext, Unsigned>(1234);
+        convert_test::<L0LweCiphertext, L1LweCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L0LweCiphertext, Unsigned>(1234);
+        convert_test::<L0LweCiphertext, L0LweCiphertext, Signed>(65432);
 
         // GLEV ciphertexts are weird children, so give them a few cases.
-        convert_test::<L1GlevCiphertext, L1GgswCiphertext>();
-        convert_test::<L1GgswCiphertext, L1GlevCiphertext>();
-        convert_test::<L0LweCiphertext, L1GlevCiphertext>();
+        convert_test::<L1GlevCiphertext, L1GgswCiphertext, Unsigned>(1234);
+        convert_test::<L1GlevCiphertext, L1GgswCiphertext, Signed>(65432);
+        convert_test::<L1GgswCiphertext, L1GlevCiphertext, Unsigned>(1234);
+        convert_test::<L1GgswCiphertext, L1GlevCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1GlevCiphertext, Unsigned>(1234);
+        convert_test::<L0LweCiphertext, L1GlevCiphertext, Signed>(65432);
     }
 
     #[test]
     fn can_cmp() {
-        fn case<OutCt: Muxable>(gt: bool, eq: bool) {
+        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (u64, u64)) {
             let enc = &get_encryption_80();
             let sk = get_secret_keys_80();
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(43, enc, &sk);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, enc, &sk);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -516,29 +537,43 @@ mod tests {
             assert_eq!(expect_eq.decrypt(enc, &sk), eq);
         }
 
-        case::<L1GlweCiphertext>(false, false);
-        case::<L1GlweCiphertext>(false, true);
-        case::<L1GlweCiphertext>(true, false);
-        case::<L1GlweCiphertext>(true, true);
+        case::<L1GlweCiphertext, Unsigned>(false, false, (43, 42));
+        case::<L1GlweCiphertext, Signed>(false, false, (65501, 65500));
+        case::<L1GlweCiphertext, Signed>(false, false, (1, 65535));
+        case::<L1GlweCiphertext, Unsigned>(false, true, (43, 42));
+        case::<L1GlweCiphertext, Signed>(false, true, (65501, 65500));
+        case::<L1GlweCiphertext, Signed>(false, true, (1, 65535));
+        case::<L1GlweCiphertext, Unsigned>(true, false, (43, 42));
+        case::<L1GlweCiphertext, Signed>(true, false, (65501, 65500));
+        case::<L1GlweCiphertext, Signed>(true, false, (1, 65535));
+        case::<L1GlweCiphertext, Unsigned>(true, true, (43, 42));
+        case::<L1GlweCiphertext, Signed>(true, true, (65501, 65500));
+        case::<L1GlweCiphertext, Signed>(true, true, (1, 65535));
 
-        case::<L1GlevCiphertext>(false, false);
-        case::<L1GlevCiphertext>(false, true);
-        case::<L1GlevCiphertext>(true, false);
-        case::<L1GlevCiphertext>(true, true);
+        case::<L1GlevCiphertext, Unsigned>(false, false, (43, 42));
+        case::<L1GlevCiphertext, Signed>(false, false, (65501, 65500));
+        case::<L1GlevCiphertext, Signed>(false, false, (1, 65535));
+        case::<L1GlevCiphertext, Unsigned>(false, true, (43, 42));
+        case::<L1GlevCiphertext, Signed>(false, true, (65501, 65500));
+        case::<L1GlevCiphertext, Signed>(false, true, (1, 65535));
+        case::<L1GlevCiphertext, Unsigned>(true, false, (43, 42));
+        case::<L1GlevCiphertext, Signed>(true, false, (65501, 65500));
+        case::<L1GlevCiphertext, Signed>(true, false, (1, 65535));
+        case::<L1GlevCiphertext, Unsigned>(true, true, (43, 42));
+        case::<L1GlevCiphertext, Signed>(true, true, (65501, 65500));
+        case::<L1GlevCiphertext, Signed>(true, true, (1, 65535));
     }
 
     #[test]
     fn can_eq() {
-        fn case<OutCt: Muxable>(eq: bool) {
+        fn case<OutCt: Muxable, U: Sign>(eq: bool, test_vals: (u64, u64)) {
             let enc = &get_encryption_80();
             let sk = get_secret_keys_80();
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let (val_a, val_b) = if eq { (43, 43) } else { (43, 42) };
-
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_a, enc, &sk);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_b, enc, &sk);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -555,13 +590,18 @@ mod tests {
             assert_eq!(calculated_eq.decrypt(enc, &sk), eq);
         }
 
-        case::<L1GlweCiphertext>(false);
-        case::<L1GlweCiphertext>(true);
+        case::<L1GlweCiphertext, Unsigned>(false, (43, 42));
+        case::<L1GlweCiphertext, Signed>(false, (65501, 65500));
+        case::<L1GlweCiphertext, Unsigned>(true, (43, 43));
+        case::<L1GlweCiphertext, Signed>(true, (65501, 65501));
 
-        case::<L1GlevCiphertext>(false);
-        case::<L1GlevCiphertext>(true);
+        case::<L1GlevCiphertext, Unsigned>(false, (43, 42));
+        case::<L1GlevCiphertext, Signed>(false, (65501, 65500));
+        case::<L1GlevCiphertext, Unsigned>(true, (43, 43));
+        case::<L1GlevCiphertext, Signed>(true, (65501, 65501));
     }
 
+    // TODO for signed
     #[test]
     fn can_eq_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(eq: bool) {
@@ -604,16 +644,14 @@ mod tests {
 
     #[test]
     fn can_neq() {
-        fn case<OutCt: Muxable>(neq: bool) {
+        fn case<OutCt: Muxable, U: Sign>(neq: bool, test_vals: (u64, u64)) {
             let enc = &get_encryption_80();
             let sk = get_secret_keys_80();
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let (val_a, val_b) = if neq { (43, 42) } else { (43, 43) };
-
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_a, enc, &sk);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(val_b, enc, &sk);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -630,12 +668,17 @@ mod tests {
             assert_eq!(calculated_neq.decrypt(enc, &sk), neq);
         }
 
-        case::<L1GlweCiphertext>(false);
-        case::<L1GlweCiphertext>(true);
-        case::<L1GlevCiphertext>(false);
-        case::<L1GlevCiphertext>(true);
+        case::<L1GlweCiphertext, Unsigned>(false, (43, 43));
+        case::<L1GlweCiphertext, Signed>(false, (65501, 65501));
+        case::<L1GlweCiphertext, Unsigned>(true, (43, 42));
+        case::<L1GlweCiphertext, Signed>(true, (65501, 65500));
+        case::<L1GlevCiphertext, Unsigned>(false, (43, 43));
+        case::<L1GlevCiphertext, Signed>(false, (65501, 65501));
+        case::<L1GlevCiphertext, Unsigned>(true, (43, 42));
+        case::<L1GlevCiphertext, Signed>(true, (65501, 65500));
     }
 
+    // TODO for signed
     #[test]
     fn can_neq_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(neq: bool) {
@@ -676,6 +719,7 @@ mod tests {
         case::<16, 8, L1GlevCiphertext>(true);
     }
 
+    // TODO for signed
     #[test]
     fn can_cmp_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(gt: bool, eq: bool) {
@@ -728,15 +772,15 @@ mod tests {
 
     #[test]
     fn can_cmp_trivial_nontrivial_ggsw() {
-        fn case<OutCt: Muxable>(gt: bool, eq: bool) {
+        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (u64, u64)) {
             let enc = &get_encryption_80();
             let eval = &get_evaluation_80();
             let sk = get_secret_keys_80();
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let a = UInt::<16, L1GgswCiphertext>::trivial(43, enc, eval);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, enc, &sk);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::trivial(test_vals.0, enc, eval);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
 
             let a_input = a.graph_inputs(&ctx);
             let b_input = b.graph_inputs(&ctx);
@@ -762,16 +806,25 @@ mod tests {
         }
 
         fn cases<OutCt: Muxable>() {
-            case::<OutCt>(false, false);
-            case::<OutCt>(false, true);
-            case::<OutCt>(true, false);
-            case::<OutCt>(true, true);
+            case::<OutCt, Unsigned>(false, false, (43, 42));
+            case::<OutCt, Signed>(false, false, (65501, 65500));
+            // case::<OutCt, Signed>(false, false, (1, 65535));
+            case::<OutCt, Unsigned>(false, true, (43, 42));
+            case::<OutCt, Signed>(false, true, (65501, 65500));
+            // case::<OutCt, Signed>(false, true, (1, 65535));
+            case::<OutCt, Unsigned>(true, false, (43, 42));
+            case::<OutCt, Signed>(true, false, (65501, 65500));
+            // case::<OutCt, Signed>(true, false, (1, 65535));
+            case::<OutCt, Unsigned>(true, true, (43, 42));
+            case::<OutCt, Signed>(true, true, (65501, 65500));
+            // case::<OutCt, Signed>(true, true, (1, 65535));
         }
 
         cases::<L1GlweCiphertext>();
         cases::<L1GlevCiphertext>();
     }
 
+    // TODO for signed
     #[test]
     fn can_select() {
         let enc = &get_encryption_80();
@@ -797,6 +850,7 @@ mod tests {
         assert_eq!(sel_true.decrypt(enc, &sk), 42);
     }
 
+    // TODO for signed
     #[test]
     fn can_select_plain() {
         let enc = &get_encryption_80();
@@ -827,14 +881,16 @@ mod tests {
 
     #[test]
     fn can_sub() {
-        fn case<OutCt: Muxable>() {
+        fn case<OutCt: Muxable, U: Sign>(test_vals: (u64, u64, u64)) {
             let enc = &get_encryption_80();
             let sk = get_secret_keys_80();
             let ctx = FheCircuitCtx::new();
             let (uproc, fc) = make_uproc_80();
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, enc, &sk).graph_inputs(&ctx);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(16, enc, &sk).graph_inputs(&ctx);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
+                .graph_inputs(&ctx);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
+                .graph_inputs(&ctx);
 
             let c = a.sub::<OutCt>(&b, &ctx).collect_outputs(&ctx, enc);
 
@@ -843,33 +899,46 @@ mod tests {
                 .unwrap()
                 .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
-            assert_eq!(c.decrypt(enc, &sk), 26);
+            assert_eq!(c.decrypt(enc, &sk), test_vals.2);
         }
 
-        case::<L1GlweCiphertext>();
-        case::<L1GlevCiphertext>();
+        case::<L1GlweCiphertext, Unsigned>((42, 16, 26));
+        case::<L1GlweCiphertext, Signed>((65531, 65529, 2));
+        case::<L1GlweCiphertext, Signed>((65531, 2, 65529));
+        case::<L1GlweCiphertext, Signed>((65531, 65533, 65534));
+        case::<L1GlweCiphertext, Signed>((2, 65531, 7));
+        case::<L1GlevCiphertext, Unsigned>((42, 16, 26));
+        case::<L1GlevCiphertext, Signed>((65531, 65529, 2));
+        case::<L1GlevCiphertext, Signed>((65531, 2, 65529));
+        case::<L1GlevCiphertext, Signed>((65531, 65533, 65534));
+        case::<L1GlevCiphertext, Signed>((2, 65531, 7));
     }
 
     #[test]
-    fn trivial_uint_encryption() {
-        fn case<T: CiphertextOps>() {
+    fn trivial_generic_int_encryption() {
+        fn case<T: CiphertextOps, U: Sign>() {
             let enc = get_encryption_80();
             let eval = &get_evaluation_80();
             let sk = get_secret_keys_80();
 
             let expected = thread_rng().next_u64() % (0x1 << 32);
 
-            let val = UInt::<32, T>::trivial(expected, &enc, eval);
+            let val = GenericInt::<32, T, U>::trivial(expected, &enc, eval);
 
             assert_eq!(val.decrypt(&enc, &sk), expected);
         }
 
-        case::<L0LweCiphertext>();
-        case::<L1LweCiphertext>();
-        case::<L1GlweCiphertext>();
-        case::<L1GgswCiphertext>();
+        case::<L0LweCiphertext, Unsigned>();
+        case::<L0LweCiphertext, Signed>();
+        case::<L1LweCiphertext, Unsigned>();
+        case::<L1LweCiphertext, Signed>();
+        case::<L1GlweCiphertext, Unsigned>();
+        case::<L1GlweCiphertext, Signed>();
+        case::<L1GgswCiphertext, Unsigned>();
+        case::<L1GgswCiphertext, Signed>();
     }
 
+    // TODO for signed
     #[test]
     fn can_resize() {
         fn case<T: CiphertextOps>() {
@@ -912,14 +981,16 @@ mod tests {
 
     #[test]
     fn can_add() {
-        fn case<OutCt: Muxable>() {
+        fn case<OutCt: Muxable, U: Sign>(test_vals: (u64, u64, u64)) {
             let enc = get_encryption_80();
             let sk = get_secret_keys_80();
             let ctx = FheCircuitCtx::new();
             let (proc, fc) = make_uproc_80();
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(16, &enc, &sk).graph_inputs(&ctx);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, &enc, &sk)
+                .graph_inputs(&ctx);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, &enc, &sk)
+                .graph_inputs(&ctx);
 
             let c = a.add::<OutCt>(&b, &ctx).collect_outputs(&ctx, &enc);
 
@@ -929,11 +1000,17 @@ mod tests {
                 .unwrap()
                 .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
-            assert_eq!(c.decrypt(&enc, &sk), 58);
+            assert_eq!(c.decrypt(&enc, &sk), test_vals.2);
         }
 
-        case::<L1GlweCiphertext>();
-        case::<L1GlevCiphertext>();
+        case::<L1GlweCiphertext, Unsigned>((42, 16, 58));
+        case::<L1GlweCiphertext, Signed>((65530, 16, 10));
+        case::<L1GlweCiphertext, Signed>((65530, 65529, 65523));
+        case::<L1GlweCiphertext, Signed>((65528, 2, 65530));
+        case::<L1GlevCiphertext, Unsigned>((42, 16, 58));
+        case::<L1GlevCiphertext, Signed>((65530, 16, 10));
+        case::<L1GlevCiphertext, Signed>((65530, 65529, 65523));
+        case::<L1GlevCiphertext, Signed>((65528, 2, 65530));
     }
 
     #[test]

@@ -20,8 +20,11 @@ use petgraph::stable_graph::NodeIndex;
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::entities::Polynomial;
 
-/// Marker trait for distinguishing unsigned and signed integer types
-pub trait Sign {}
+/// Trait for distinguishing unsigned and signed integer types
+pub trait Sign {
+    /// Compare circuit generation function for this sign
+    fn gen_compare_circuit(max_len: usize, gt: bool, eq: bool) -> MuxCircuit;
+}
 
 /// A collection of graph nodes resulting from FHE operations over generic integers (e.g. the
 /// result of adding two 7-bit values).
@@ -177,16 +180,7 @@ impl<const N: usize, U: Sign> GenericIntGraphNodes<'_, N, L1GlweCiphertext, U> {
     }
 }
 
-/// Trait to allow the generic comparator functionality to be implemented in specialized versions
-pub trait GeneratesCompareCircuit {
-    /// Circuit generation function
-    fn gen_compare_circuit(&self, max_len: usize, gt: bool, eq: bool) -> MuxCircuit;
-}
-
-impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, V>
-where
-    Self: GeneratesCompareCircuit,
-{
+impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, V> {
     pub(crate) fn cmp<const M: usize, OutCt: Muxable>(
         &self,
         other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
@@ -195,7 +189,7 @@ where
         eq: bool,
     ) -> BitNode<OutCt> {
         let max_len = M.max(N);
-        let mux_circuit = self.gen_compare_circuit(max_len, gt, eq);
+        let mux_circuit = V::gen_compare_circuit(max_len, gt, eq);
 
         let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
 
