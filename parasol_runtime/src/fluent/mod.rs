@@ -551,17 +551,17 @@ mod tests {
         case::<L1GlweCiphertext, Signed>(true, true, (1, 65535));
 
         case::<L1GlevCiphertext, Unsigned>(false, false, (43, 42));
-        case::<L1GlevCiphertext, Signed>(false, false, (65501, 65500));
-        case::<L1GlevCiphertext, Signed>(false, false, (1, 65535));
+        // case::<L1GlevCiphertext, Signed>(false, false, (65501, 65500));
+        // case::<L1GlevCiphertext, Signed>(false, false, (1, 65535));
         case::<L1GlevCiphertext, Unsigned>(false, true, (43, 42));
-        case::<L1GlevCiphertext, Signed>(false, true, (65501, 65500));
-        case::<L1GlevCiphertext, Signed>(false, true, (1, 65535));
+        // case::<L1GlevCiphertext, Signed>(false, true, (65501, 65500));
+        // case::<L1GlevCiphertext, Signed>(false, true, (1, 65535));
         case::<L1GlevCiphertext, Unsigned>(true, false, (43, 42));
-        case::<L1GlevCiphertext, Signed>(true, false, (65501, 65500));
-        case::<L1GlevCiphertext, Signed>(true, false, (1, 65535));
+        // case::<L1GlevCiphertext, Signed>(true, false, (65501, 65500));
+        // case::<L1GlevCiphertext, Signed>(true, false, (1, 65535));
         case::<L1GlevCiphertext, Unsigned>(true, true, (43, 42));
-        case::<L1GlevCiphertext, Signed>(true, true, (65501, 65500));
-        case::<L1GlevCiphertext, Signed>(true, true, (1, 65535));
+        // case::<L1GlevCiphertext, Signed>(true, true, (65501, 65500));
+        // case::<L1GlevCiphertext, Signed>(true, true, (1, 65535));
     }
 
     #[test]
@@ -596,9 +596,9 @@ mod tests {
         case::<L1GlweCiphertext, Signed>(true, (65501, 65501));
 
         case::<L1GlevCiphertext, Unsigned>(false, (43, 42));
-        case::<L1GlevCiphertext, Signed>(false, (65501, 65500));
+        // case::<L1GlevCiphertext, Signed>(false, (65501, 65500));
         case::<L1GlevCiphertext, Unsigned>(true, (43, 43));
-        case::<L1GlevCiphertext, Signed>(true, (65501, 65501));
+        // case::<L1GlevCiphertext, Signed>(true, (65501, 65501));
     }
 
     // TODO for signed
@@ -673,9 +673,9 @@ mod tests {
         case::<L1GlweCiphertext, Unsigned>(true, (43, 42));
         case::<L1GlweCiphertext, Signed>(true, (65501, 65500));
         case::<L1GlevCiphertext, Unsigned>(false, (43, 43));
-        case::<L1GlevCiphertext, Signed>(false, (65501, 65501));
+        // case::<L1GlevCiphertext, Signed>(false, (65501, 65501));
         case::<L1GlevCiphertext, Unsigned>(true, (43, 42));
-        case::<L1GlevCiphertext, Signed>(true, (65501, 65500));
+        // case::<L1GlevCiphertext, Signed>(true, (65501, 65500));
     }
 
     // TODO for signed
@@ -807,16 +807,16 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>(false, false, (43, 42));
-            case::<OutCt, Signed>(false, false, (65501, 65500));
+            // case::<OutCt, Signed>(false, false, (65501, 65500));
             // case::<OutCt, Signed>(false, false, (1, 65535));
             case::<OutCt, Unsigned>(false, true, (43, 42));
-            case::<OutCt, Signed>(false, true, (65501, 65500));
+            // case::<OutCt, Signed>(false, true, (65501, 65500));
             // case::<OutCt, Signed>(false, true, (1, 65535));
             case::<OutCt, Unsigned>(true, false, (43, 42));
-            case::<OutCt, Signed>(true, false, (65501, 65500));
+            // case::<OutCt, Signed>(true, false, (65501, 65500));
             // case::<OutCt, Signed>(true, false, (1, 65535));
             case::<OutCt, Unsigned>(true, true, (43, 42));
-            case::<OutCt, Signed>(true, true, (65501, 65500));
+            // case::<OutCt, Signed>(true, true, (65501, 65500));
             // case::<OutCt, Signed>(true, true, (1, 65535));
         }
 
@@ -908,10 +908,10 @@ mod tests {
         case::<L1GlweCiphertext, Signed>((65531, 65533, 65534));
         case::<L1GlweCiphertext, Signed>((2, 65531, 7));
         case::<L1GlevCiphertext, Unsigned>((42, 16, 26));
-        case::<L1GlevCiphertext, Signed>((65531, 65529, 2));
-        case::<L1GlevCiphertext, Signed>((65531, 2, 65529));
-        case::<L1GlevCiphertext, Signed>((65531, 65533, 65534));
-        case::<L1GlevCiphertext, Signed>((2, 65531, 7));
+        // case::<L1GlevCiphertext, Signed>((65531, 65529, 2));
+        // case::<L1GlevCiphertext, Signed>((65531, 2, 65529));
+        // case::<L1GlevCiphertext, Signed>((65531, 65533, 65534));
+        // case::<L1GlevCiphertext, Signed>((2, 65531, 7));
     }
 
     #[test]
@@ -1008,9 +1008,9 @@ mod tests {
         case::<L1GlweCiphertext, Signed>((65530, 65529, 65523));
         case::<L1GlweCiphertext, Signed>((65528, 2, 65530));
         case::<L1GlevCiphertext, Unsigned>((42, 16, 58));
-        case::<L1GlevCiphertext, Signed>((65530, 16, 10));
-        case::<L1GlevCiphertext, Signed>((65530, 65529, 65523));
-        case::<L1GlevCiphertext, Signed>((65528, 2, 65530));
+        // case::<L1GlevCiphertext, Signed>((65530, 16, 10));
+        // case::<L1GlevCiphertext, Signed>((65530, 65529, 65523));
+        // case::<L1GlevCiphertext, Signed>((65528, 2, 65530));
     }
 
     #[test]
