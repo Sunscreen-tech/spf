@@ -11,9 +11,9 @@ const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
 fn main() {
     println!("Running with {} threads", rayon::current_num_threads());
 
-    // Load or generate keys. Note that
-    // they only need to be generated once. In an actual application you would
-    // want to be careful to keep the secret key secure.
+    // Load or generate keys. Note that they only need to be generated once. In
+    // an actual application you would want to be careful to keep the secret key
+    // secure.
     let (secret_key, compute_key) =
         load_or_generate_keys("default-params").expect("Failed to load or generate keys");
 

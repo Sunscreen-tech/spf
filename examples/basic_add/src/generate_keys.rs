@@ -15,17 +15,6 @@ fn generate_keys() -> (SecretKey, ComputeKey) {
     (secret_key, compute_key)
 }
 
-/// Find the `target `directory. Used to cache the generated keys.
-fn find_target_dir() -> Option<PathBuf> {
-    let mut current_dir = std::env::current_exe().ok()?;
-    while current_dir.pop() {
-        if current_dir.ends_with("target") {
-            return Some(current_dir);
-        }
-    }
-    None
-}
-
 /// Loads up the secret and compute keys from disk, or generates new ones if
 /// they don't exist.
 ///
@@ -95,4 +84,15 @@ fn serialize_key<T: Serialize>(key: &T, path: &PathBuf) -> std::io::Result<()> {
     let mut file = File::create(path)?;
     file.write_all(&bytes)?;
     Ok(())
+}
+
+/// Find the `target `directory. Used to cache the generated keys.
+fn find_target_dir() -> Option<PathBuf> {
+    let mut current_dir = std::env::current_exe().ok()?;
+    while current_dir.pop() {
+        if current_dir.ends_with("target") {
+            return Some(current_dir);
+        }
+    }
+    None
 }
