@@ -1,5 +1,9 @@
 use parasol_cpu::{Buffer, run_program};
-use parasol_runtime::{ComputeKey, Encryption, SecretKey};
+use parasol_runtime::Encryption;
+use std::time::Instant;
+
+mod generate_keys;
+use generate_keys::load_or_generate_keys;
 
 // Embed the compiled Parasol add program into a constant.
 const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
@@ -7,14 +11,11 @@ const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
 fn main() {
     println!("Running with {} threads", rayon::current_num_threads());
 
-    // Generate a secret key for the user. By default this ensures
-    // 128-bit security.
-    let secret_key = SecretKey::generate_with_default_params();
-
-    // Generate a compute key for the user. These keys are used for
-    // operations and do not give access to the plaintext data;
-    // therefore, this key can safely be shared with another party.
-    let compute_key = ComputeKey::generate_with_default_params(&secret_key);
+    // Load or generate keys. Note that they only need to be generated once. In
+    // an actual application you would want to be careful to keep the secret key
+    // secure.
+    let (secret_key, compute_key) =
+        load_or_generate_keys("default-params").expect("Failed to load or generate keys");
 
     // Define the values we want to add. The sizes of the values'
     // sizes must match the values' sizes defined in the
@@ -29,7 +30,10 @@ fn main() {
         [a, b, 0u8].map(|x| Buffer::cipher_from_value(&x, &Encryption::default(), &secret_key));
 
     // Run the program.
+    let now = Instant::now();
     let encrypted_result = run_program(compute_key.clone(), FHE_FILE, "add", &arguments).unwrap();
+    let elapsed = now.elapsed();
+    println!("Time to run the program: {:?}", elapsed);
 
     // Decrypt the result. Note that we have to choose the index
     // to decrypt from all the arguments passed to the C function;

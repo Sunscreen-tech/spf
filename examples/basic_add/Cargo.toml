@@ -4,6 +4,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-parasol_runtime = { path = "../../parasol_runtime" }
+bincode = { workspace = true }
 parasol_cpu = { path = "../../parasol_cpu" }
+parasol_runtime = { path = "../../parasol_runtime" }
 rayon = { workspace = true }
+serde = { workspace = true }
