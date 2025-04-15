@@ -5,6 +5,8 @@ use parasol_runtime::{ComputeKey, Encryption, SecretKey};
 const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
 
 fn main() {
+    println!("Running with {} threads", rayon::current_num_threads());
+
     // Generate a secret key for the user. By default this ensures
     // 128-bit security.
     let secret_key = SecretKey::generate_with_default_params();
