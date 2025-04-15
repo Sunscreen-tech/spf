@@ -730,7 +730,7 @@ impl<const N: usize> TryFrom<&Buffer> for UInt<N, L1GlweCiphertext> {
 
     fn try_from(value: &Buffer) -> Result<Self> {
         let bits = value.try_ciphertext()?;
-        Ok(UInt::from_bits(bits))
+        Ok(UInt::from_bits_deep(bits))
     }
 }
 

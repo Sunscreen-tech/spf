@@ -81,14 +81,8 @@ pub enum Error {
     },
 
     /// A load or store occured out of a memory's bounds.
-    #[error("(inst:{inst_id}, pc:0x{pc:x}) Attempted to access data out of bounds")]
-    AccessViolation {
-        /// The faulting instruction's id.
-        inst_id: usize,
-
-        /// The program counter at time of error.
-        pc: usize,
-    },
+    #[error("Attempted to access address 0x{0:8x}, which was not mapped.")]
+    AccessViolation(u32),
 
     /// Cannot load or store a value of the requested width (> 128 bits).
     #[error("(inst:{inst_id}, pc:0x{pc:x}) Attempted load or store with zero or > 128 width.")]
@@ -179,6 +173,10 @@ pub enum Error {
     #[error("The ELF file does not contain the specified symbol: {0}")]
     ElfSymbolNotFound(String),
 
+    /// When parsing the ELF file, encountered an out-of-bounds file offset.
+    #[error("The given ELF byte offset {0} exceeds the file's length.")]
+    ElfByteOutofBounds(u32),
+
     /// Attempted to allocate a virtual address that's already mapped.
     #[error("Failed to allocate virtual address space. Already in use.")]
     VirtualAddressInUse,
@@ -186,6 +184,19 @@ pub enum Error {
     /// Failed to create a [`std::ffi::CString`]`
     #[error("Failed to create CString: {0}")]
     CStringCreationError(#[from] std::ffi::NulError),
+
+    /// Cannot fulfil the given mmap request as no contiguous address region exists of the
+    /// requested length
+    #[error("Failed to mmap {0} bytes")]
+    NoContiguousChunk(u32),
+
+    /// Attempted to mmap zero bytes.
+    #[error("Cannot mmap zero bytes")]
+    ZeroAllocation,
+
+    /// Attempted an operation that resulted in pointer overflow.
+    #[error("32-bit Pointer overflow")]
+    PointerOverflow,
 }
 
 // Stupid ParseError isn't Clone, so we gotta stringify it
