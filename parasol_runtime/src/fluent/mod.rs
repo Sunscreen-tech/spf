@@ -1010,14 +1010,16 @@ mod tests {
 
     #[test]
     fn can_mul() {
-        fn case<OutCt: Muxable>() {
+        fn case<OutCt: Muxable, U: Sign>(test_vals: (u64, u64, u64)) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
             let (proc, fc) = make_uproc_128();
 
-            let a = UInt::<16, L1GgswCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
-            let b = UInt::<16, L1GgswCiphertext>::encrypt_secret(16, &enc, &sk).graph_inputs(&ctx);
+            let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, &enc, &sk)
+                .graph_inputs(&ctx);
+            let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, &enc, &sk)
+                .graph_inputs(&ctx);
 
             let c = a.mul::<OutCt>(&b, &ctx).collect_outputs(&ctx, &enc);
 
@@ -1025,10 +1027,12 @@ mod tests {
                 .unwrap()
                 .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
-            assert_eq!(c.decrypt(&enc, &sk), 672);
+            assert_eq!(c.decrypt(&enc, &sk), test_vals.2);
         }
 
-        case::<L1GlweCiphertext>();
-        //case::<L1GlevCiphertext>();
+        case::<L1GlweCiphertext, Unsigned>((42, 16, 672));
+        case::<L1GlweCiphertext, Signed>((42, 16, 672));
+        case::<L1GlweCiphertext, Signed>((42, 65520 /* -16 */, 64864 /* -672 */));
+        case::<L1GlweCiphertext, Signed>((65494 /* -42 */, 65520 /* -16 */, 672));
     }
 }

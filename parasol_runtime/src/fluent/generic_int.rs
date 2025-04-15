@@ -5,7 +5,9 @@ use crate::{
     SecretKey, crypto::PublicKey, safe_bincode::GetSize,
 };
 
-use super::{CiphertextOps, FheCircuitCtx, Muxable, PolynomialCiphertextOps, bit::BitNode};
+use super::{
+    CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PolynomialCiphertextOps, bit::BitNode,
+};
 
 use bumpalo::Bump;
 use mux_circuits::{
@@ -24,6 +26,13 @@ use sunscreen_tfhe::entities::Polynomial;
 pub trait Sign {
     /// Compare circuit generation function for this sign
     fn gen_compare_circuit(max_len: usize, gt: bool, eq: bool) -> MuxCircuit;
+
+    /// Multiplication function for this sign
+    fn append_multiply<OutCt: Muxable>(
+        uop_graph: &mut FheCircuit,
+        a: &[NodeIndex],
+        b: &[NodeIndex],
+    ) -> (Vec<NodeIndex>, Vec<NodeIndex>);
 }
 
 /// A collection of graph nodes resulting from FHE operations over generic integers (e.g. the
@@ -426,6 +435,27 @@ impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, 
                 .take(N),
             &ctx.allocator,
         )
+    }
+
+    /// Compute `self * other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn mul<OutCt: Muxable>(
+        &self,
+        other: &Self,
+        ctx: &'a FheCircuitCtx,
+    ) -> GenericIntGraphNodes<'a, N, OutCt, V> {
+        let a = self.bits.iter().map(|x| x.node).collect::<Vec<_>>();
+
+        let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
+
+        let (lo, _hi) = V::append_multiply::<OutCt>(&mut ctx.circuit.borrow_mut(), &a, &b);
+
+        // TODO: prune the high bits somehow?
+
+        GenericIntGraphNodes::from_nodes(lo.into_iter(), &ctx.allocator)
     }
 }
 
