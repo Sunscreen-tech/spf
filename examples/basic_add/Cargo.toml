@@ -7,3 +7,5 @@ edition = "2024"
 parasol_runtime = { path = "../../parasol_runtime" }
 parasol_cpu = { path = "../../parasol_cpu" }
 rayon = { workspace = true }
+serde = { workspace = true }
+bincode = { workspace = true }
