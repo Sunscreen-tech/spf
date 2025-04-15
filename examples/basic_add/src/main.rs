@@ -72,8 +72,8 @@ fn load_or_generate_keys(params_name: &str) -> std::io::Result<(SecretKey, Compu
     let keys_dir = target_dir.join("keys").join(params_name);
     fs::create_dir_all(&keys_dir)?;
 
-    let secret_key_path = keys_dir.join(format!("secret_key_{}.bin", params_name));
-    let compute_key_path = keys_dir.join(format!("compute_key_{}.bin", params_name));
+    let secret_key_path = keys_dir.join("secret_key.bin");
+    let compute_key_path = keys_dir.join("compute_key.bin");
 
     if secret_key_path.exists() && compute_key_path.exists() {
         // Load keys from disk.
