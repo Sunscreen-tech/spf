@@ -5,7 +5,10 @@ use crate::{
     GlweDef, GlweDimension, LweDef, LweDimension, PrivateFunctionalKeyswitchLweCount, RadixCount,
     RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, OverlaySize},
-    entities::{GlevCiphertextIterator, GlevCiphertextIteratorMut, ParallelGlevCiphertextIterator, ParallelGlevCiphertextIteratorMut, GlevCiphertextRef},
+    entities::{
+        GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef,
+        ParallelGlevCiphertextIterator, ParallelGlevCiphertextIteratorMut,
+    },
 };
 
 use super::LweSecretKeyRef;
