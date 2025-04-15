@@ -550,18 +550,11 @@ mod tests {
         case::<L1GlweCiphertext, Signed>(true, true, (65501, 65500));
         case::<L1GlweCiphertext, Signed>(true, true, (1, 65535));
 
+        // Unsigned tests only for GLev
         case::<L1GlevCiphertext, Unsigned>(false, false, (43, 42));
-        // case::<L1GlevCiphertext, Signed>(false, false, (65501, 65500));
-        // case::<L1GlevCiphertext, Signed>(false, false, (1, 65535));
         case::<L1GlevCiphertext, Unsigned>(false, true, (43, 42));
-        // case::<L1GlevCiphertext, Signed>(false, true, (65501, 65500));
-        // case::<L1GlevCiphertext, Signed>(false, true, (1, 65535));
         case::<L1GlevCiphertext, Unsigned>(true, false, (43, 42));
-        // case::<L1GlevCiphertext, Signed>(true, false, (65501, 65500));
-        // case::<L1GlevCiphertext, Signed>(true, false, (1, 65535));
         case::<L1GlevCiphertext, Unsigned>(true, true, (43, 42));
-        // case::<L1GlevCiphertext, Signed>(true, true, (65501, 65500));
-        // case::<L1GlevCiphertext, Signed>(true, true, (1, 65535));
     }
 
     #[test]
@@ -595,13 +588,12 @@ mod tests {
         case::<L1GlweCiphertext, Unsigned>(true, (43, 43));
         case::<L1GlweCiphertext, Signed>(true, (65501, 65501));
 
+        // Unsigned tests only for GLev
         case::<L1GlevCiphertext, Unsigned>(false, (43, 42));
-        // case::<L1GlevCiphertext, Signed>(false, (65501, 65500));
         case::<L1GlevCiphertext, Unsigned>(true, (43, 43));
-        // case::<L1GlevCiphertext, Signed>(true, (65501, 65501));
     }
 
-    // TODO for signed
+    // TODO for signed if interesting
     #[test]
     fn can_eq_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(eq: bool) {
@@ -672,13 +664,12 @@ mod tests {
         case::<L1GlweCiphertext, Signed>(false, (65501, 65501));
         case::<L1GlweCiphertext, Unsigned>(true, (43, 42));
         case::<L1GlweCiphertext, Signed>(true, (65501, 65500));
+        // Unsigned tests only for GLev
         case::<L1GlevCiphertext, Unsigned>(false, (43, 43));
-        // case::<L1GlevCiphertext, Signed>(false, (65501, 65501));
         case::<L1GlevCiphertext, Unsigned>(true, (43, 42));
-        // case::<L1GlevCiphertext, Signed>(true, (65501, 65500));
     }
 
-    // TODO for signed
+    // TODO for signed if interesting
     #[test]
     fn can_neq_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(neq: bool) {
@@ -719,7 +710,7 @@ mod tests {
         case::<16, 8, L1GlevCiphertext>(true);
     }
 
-    // TODO for signed
+    // TODO for signed if interesting
     #[test]
     fn can_cmp_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(gt: bool, eq: bool) {
@@ -805,26 +796,35 @@ mod tests {
             assert_eq!(expect_eq.decrypt(enc, &sk), eq);
         }
 
-        fn cases<OutCt: Muxable>() {
+        fn cases<OutCt: Muxable>(include_signed: bool) {
             case::<OutCt, Unsigned>(false, false, (43, 42));
-            // case::<OutCt, Signed>(false, false, (65501, 65500));
-            // case::<OutCt, Signed>(false, false, (1, 65535));
+            if include_signed {
+                case::<OutCt, Signed>(false, false, (65501, 65500));
+                case::<OutCt, Signed>(false, false, (1, 65535));
+            }
             case::<OutCt, Unsigned>(false, true, (43, 42));
-            // case::<OutCt, Signed>(false, true, (65501, 65500));
-            // case::<OutCt, Signed>(false, true, (1, 65535));
+            if include_signed {
+                case::<OutCt, Signed>(false, true, (65501, 65500));
+                case::<OutCt, Signed>(false, true, (1, 65535));
+            }
             case::<OutCt, Unsigned>(true, false, (43, 42));
-            // case::<OutCt, Signed>(true, false, (65501, 65500));
-            // case::<OutCt, Signed>(true, false, (1, 65535));
+            if include_signed {
+                case::<OutCt, Signed>(true, false, (65501, 65500));
+                case::<OutCt, Signed>(true, false, (1, 65535));
+            }
             case::<OutCt, Unsigned>(true, true, (43, 42));
-            // case::<OutCt, Signed>(true, true, (65501, 65500));
-            // case::<OutCt, Signed>(true, true, (1, 65535));
+            if include_signed {
+                case::<OutCt, Signed>(true, true, (65501, 65500));
+                case::<OutCt, Signed>(true, true, (1, 65535));
+            }
         }
 
-        cases::<L1GlweCiphertext>();
-        cases::<L1GlevCiphertext>();
+        cases::<L1GlweCiphertext>(true);
+        // Unsigned tests only for GLev
+        cases::<L1GlevCiphertext>(false);
     }
 
-    // TODO for signed
+    // TODO for signed if interesting
     #[test]
     fn can_select() {
         let enc = &get_encryption_80();
@@ -850,7 +850,7 @@ mod tests {
         assert_eq!(sel_true.decrypt(enc, &sk), 42);
     }
 
-    // TODO for signed
+    // TODO for signed if interesting
     #[test]
     fn can_select_plain() {
         let enc = &get_encryption_80();
@@ -907,11 +907,8 @@ mod tests {
         case::<L1GlweCiphertext, Signed>((65531, 2, 65529));
         case::<L1GlweCiphertext, Signed>((65531, 65533, 65534));
         case::<L1GlweCiphertext, Signed>((2, 65531, 7));
+        // Unsigned tests only for GLev
         case::<L1GlevCiphertext, Unsigned>((42, 16, 26));
-        // case::<L1GlevCiphertext, Signed>((65531, 65529, 2));
-        // case::<L1GlevCiphertext, Signed>((65531, 2, 65529));
-        // case::<L1GlevCiphertext, Signed>((65531, 65533, 65534));
-        // case::<L1GlevCiphertext, Signed>((2, 65531, 7));
     }
 
     #[test]
@@ -938,7 +935,7 @@ mod tests {
         case::<L1GgswCiphertext, Signed>();
     }
 
-    // TODO for signed
+    // TODO for signed if interesting
     #[test]
     fn can_resize() {
         fn case<T: CiphertextOps>() {
@@ -1007,10 +1004,8 @@ mod tests {
         case::<L1GlweCiphertext, Signed>((65530, 16, 10));
         case::<L1GlweCiphertext, Signed>((65530, 65529, 65523));
         case::<L1GlweCiphertext, Signed>((65528, 2, 65530));
+        // Unsigned tests only for GLev
         case::<L1GlevCiphertext, Unsigned>((42, 16, 58));
-        // case::<L1GlevCiphertext, Signed>((65530, 16, 10));
-        // case::<L1GlevCiphertext, Signed>((65530, 65529, 65523));
-        // case::<L1GlevCiphertext, Signed>((65528, 2, 65530));
     }
 
     #[test]

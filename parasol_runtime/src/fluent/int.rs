@@ -30,6 +30,7 @@ impl<'a, const N: usize, T: CiphertextOps> IntGraphNodes<'a, N, T> {
     ///
     /// This operation is "free" in that it adds no computation to the graph.
     pub fn resize<const M: usize>(&self, ctx: &'a FheCircuitCtx) -> IntGraphNodes<'a, M, T> {
+        // add 1 for the sign bit that gets removed in `take`, note the minus 1 in min_len
         let extend = 1 + if M > N { M - N } else { 0 };
 
         let min_len = M.min(N) - 1;
