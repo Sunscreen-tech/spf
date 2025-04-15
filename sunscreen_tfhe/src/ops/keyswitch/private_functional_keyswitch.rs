@@ -1,4 +1,6 @@
-use rayon::iter::{IndexedParallelIterator, ParallelIterator};
+use rayon::iter::{
+    IndexedParallelIterator, IntoParallelIterator, IntoParallelRefIterator, ParallelIterator,
+};
 use sunscreen_math::Zero;
 
 use crate::{
@@ -50,7 +52,7 @@ pub fn generate_private_functional_keyswitch_key<S, F>(
     lwe_count: &PrivateFunctionalKeyswitchLweCount,
 ) where
     S: TorusOps,
-    F: Fn(&mut PolynomialRef<Torus<S>>, &[Torus<S>]),
+    F: Fn(&mut PolynomialRef<Torus<S>>, &[Torus<S>]) + Sync + Send,
 {
     output.assert_is_valid((from_lwe.dim, to_glwe.dim, radix.count, *lwe_count));
     radix.assert_valid::<S>();
@@ -60,34 +62,43 @@ pub fn generate_private_functional_keyswitch_key<S, F>(
     from_lwe.assert_valid();
     lwe_count.assert_valid();
 
-    allocate_scratch_ref!(
-        pt_poly,
-        PolynomialRef<Torus<S>>,
-        (to_glwe.dim.polynomial_degree)
-    );
-    allocate_scratch_ref!(pt_touri, [Torus<S>], lwe_count.0);
+    let minus_one = [<S as Zero>::zero().wrapping_sub(&<S as num::One>::one())];
 
-    let mut glevs = output.glevs_mut(to_glwe, radix);
-    let minus_one = <S as Zero>::zero().wrapping_sub(&<S as num::One>::one());
+    (0..lwe_count.0)
+        .into_par_iter()
+        .zip(
+            output
+                .glevs_par_mut(to_glwe, radix)
+                .chunks(from_lwe.dim.0 + 1),
+        )
+        .for_each(|(z, glevs)| {
+            from_key
+                .s()
+                .par_iter()
+                .chain(minus_one.par_iter())
+                .zip(glevs)
+                .for_each(|(s_i, glev)| {
+                    allocate_scratch_ref!(
+                        pt_poly,
+                        PolynomialRef<Torus<S>>,
+                        (to_glwe.dim.polynomial_degree)
+                    );
+                    allocate_scratch_ref!(pt_touri, [Torus<S>], lwe_count.0);
 
-    for z in 0..lwe_count.0 {
-        for s_i in from_key.s().iter().chain([minus_one].iter()) {
-            let glev = glevs.next().unwrap();
+                    for (j, glwe) in glev.glwe_ciphertexts_mut(to_glwe).enumerate() {
+                        let scaled_s_i = scale_by_decomposition_factor(*s_i, j, radix);
 
-            for (j, glwe) in glev.glwe_ciphertexts_mut(to_glwe).enumerate() {
-                let scaled_s_i = scale_by_decomposition_factor(*s_i, j, radix);
+                        pt_poly.clear();
+                        pt_touri.iter_mut().for_each(|x| *x = Torus::zero());
 
-                pt_poly.clear();
-                pt_touri.iter_mut().for_each(|x| *x = Torus::zero());
+                        pt_touri[z] = Torus::from(scaled_s_i);
 
-                pt_touri[z] = Torus::from(scaled_s_i);
+                        map(pt_poly, pt_touri);
 
-                map(pt_poly, pt_touri);
-
-                encrypt_glwe_ciphertext_secret(glwe, pt_poly, to_key, to_glwe);
-            }
-        }
-    }
+                        encrypt_glwe_ciphertext_secret(glwe, pt_poly, to_key, to_glwe);
+                    }
+                });
+        });
 }
 
 /// Perform a private functional keyswitch. See

@@ -5,7 +5,10 @@ use crate::{
     GlweDef, GlweDimension, LweDef, LweDimension, PrivateFunctionalKeyswitchLweCount, RadixCount,
     RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, OverlaySize},
-    entities::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef},
+    entities::{
+        GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef,
+        ParallelGlevCiphertextIterator, ParallelGlevCiphertextIteratorMut,
+    },
 };
 
 use super::LweSecretKeyRef;
@@ -97,7 +100,7 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKeyRef<S> {
         )
     }
 
-    /// Returns a muitable iterator over the
+    /// Returns a mutable iterator over the
     /// [`GlevCiphertext`](crate::entities::GlevCiphertext)s that compose this
     /// key.
     ///
@@ -109,6 +112,40 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKeyRef<S> {
         radix: &RadixDecomposition,
     ) -> GlevCiphertextIteratorMut<S> {
         GlevCiphertextIteratorMut::new(
+            self.as_mut_slice(),
+            GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
+        )
+    }
+
+    /// Returns a parallel iterator over the
+    /// [`GlevCiphertext`](crate::entities::GlevCiphertext)s that compose this
+    /// key.
+    ///
+    /// # See also
+    /// To make sense of the layout, see also [`PrivateFunctionalKeyswitchKey::new()`](./struct.PrivateFunctionalKeyswitchKey.html#remarks).
+    pub fn glevs_par(
+        &mut self,
+        to_glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> ParallelGlevCiphertextIterator<S> {
+        ParallelGlevCiphertextIterator::new(
+            self.as_slice(),
+            GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
+        )
+    }
+
+    /// Returns a parallel mutable iterator over the
+    /// [`GlevCiphertext`](crate::entities::GlevCiphertext)s that compose this
+    /// key.
+    ///
+    /// # See also
+    /// To make sense of the layout, see also [`PrivateFunctionalKeyswitchKey::new()`](./struct.PrivateFunctionalKeyswitchKey.html#remarks).
+    pub fn glevs_par_mut(
+        &mut self,
+        to_glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> ParallelGlevCiphertextIteratorMut<S> {
+        ParallelGlevCiphertextIteratorMut::new(
             self.as_mut_slice(),
             GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
         )
