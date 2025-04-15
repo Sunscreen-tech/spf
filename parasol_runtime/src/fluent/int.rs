@@ -1,52 +1,54 @@
-use crate::{L1GgswCiphertext, circuits::mul::append_uint_multiply};
+use crate::{L1GgswCiphertext, circuits::mul::append_int_multiply};
 
 use super::{
     CiphertextOps, FheCircuitCtx, Muxable, PackedGenericInt,
-    bit::BitNode,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
 };
 
-use mux_circuits::comparisons::compare_or_maybe_equal;
+use mux_circuits::comparisons::compare_or_maybe_equal_signed;
 
 /// Marker struct
 #[derive(Clone)]
-pub struct Unsigned;
+pub struct Signed;
 
-impl Sign for Unsigned {
+impl Sign for Signed {
     fn gen_compare_circuit(max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
-        compare_or_maybe_equal(max_len, gt, eq)
+        compare_or_maybe_equal_signed(max_len, gt, eq)
     }
 }
 
-/// Unsigned variant for [`GenericIntGraphNodes`]
-pub type UIntGraphNodes<'a, const N: usize, T> = GenericIntGraphNodes<'a, N, T, Unsigned>;
+/// Signed variant for [`GenericIntGraphNodes`]
+pub type IntGraphNodes<'a, const N: usize, T> = GenericIntGraphNodes<'a, N, T, Signed>;
 
-impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
+impl<'a, const N: usize, T: CiphertextOps> IntGraphNodes<'a, N, T> {
     /// Convert this `N`-bit integer to an `M`-bit integer of the same ciphertext type.
     ///
     /// # Remarks
-    /// If M > N, this will zero extend the integer with trivial encryptions.
-    /// If M < N, this will truncate the high-order bits.
+    /// If M > N, this will sign extend the integer.
+    /// If M < N, this will truncate the high-order bits with sign bit preserved.
     /// If M == N, why did you call this? In any case, the returned nodes will equal the input nodes.
     ///
     /// This operation is "free" in that it adds no computation to the graph.
-    pub fn resize<const M: usize>(&self, ctx: &'a FheCircuitCtx) -> UIntGraphNodes<'a, M, T> {
-        let extend = if M > N { M - N } else { 0 };
+    pub fn resize<const M: usize>(&self, ctx: &'a FheCircuitCtx) -> IntGraphNodes<'a, M, T> {
+        // add 1 for the sign bit that gets removed in `take`, note the minus 1 in min_len
+        let extend = 1 + if M > N { M - N } else { 0 };
 
-        let min_len = M.min(N);
+        let min_len = M.min(N) - 1;
+
+        let sign_bit = self.bits.last().unwrap();
 
         let iter = self
             .bits
             .iter()
             .copied()
             .take(min_len)
-            .chain((0..extend).map(|_| BitNode::zero(ctx)));
+            .chain((0..extend).map(|_| sign_bit.to_owned()));
 
-        UIntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
+        IntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
     }
 }
 
-impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
+impl<'a, const N: usize> IntGraphNodes<'a, N, L1GgswCiphertext> {
     /// Compute `self * other`.
     ///
     /// # Remarks
@@ -56,27 +58,27 @@ impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
         &self,
         other: &Self,
         ctx: &'a FheCircuitCtx,
-    ) -> UIntGraphNodes<'a, N, OutCt> {
+    ) -> IntGraphNodes<'a, N, OutCt> {
         let a = self.bits.iter().map(|x| x.node).collect::<Vec<_>>();
 
         let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
 
-        let (lo, _hi) = append_uint_multiply::<OutCt>(&mut ctx.circuit.borrow_mut(), &a, &b);
+        let (lo, _hi) = append_int_multiply::<OutCt>(&mut ctx.circuit.borrow_mut(), &a, &b);
 
         // TODO: prune the high bits somehow?
 
-        UIntGraphNodes::from_nodes(lo.into_iter(), &ctx.allocator)
+        IntGraphNodes::from_nodes(lo.into_iter(), &ctx.allocator)
     }
 }
 
-/// Unsigned variant for [`PackedGenericIntGraphNode`]
-pub type PackedUIntGraphNode<const N: usize, T> = PackedGenericIntGraphNode<N, T, Unsigned>;
+/// Signed variant for [`PackedGenericIntGraphNode`]
+pub type PackedIntGraphNode<const N: usize, T> = PackedGenericIntGraphNode<N, T, Signed>;
 
-/// Unsigned variant for [`GenericInt`]
-pub type UInt<const N: usize, T> = GenericInt<N, T, Unsigned>;
+/// Ssigned variant for [`GenericInt`]
+pub type Int<const N: usize, T> = GenericInt<N, T, Signed>;
 
-/// Unsigned variant for [`PackedGenericInt`]
-pub type PackedUInt<const N: usize, T> = PackedGenericInt<N, T, Unsigned>;
+/// Signed variant for [`PackedGenericInt`]
+pub type PackedInt<const N: usize, T> = PackedGenericInt<N, T, Signed>;
 
 #[cfg(test)]
 mod tests {
@@ -90,26 +92,26 @@ mod tests {
     use super::*;
 
     #[test]
-    fn can_roundtrip_packed_uint() {
+    fn can_roundtrip_packed_int() {
         let enc = get_encryption_128();
 
         let sk = get_secret_keys_128();
         let pk = get_public_key_128();
 
-        let val = PackedUInt::<16, L1GlweCiphertext>::encrypt(42, &enc, &pk);
+        let val = PackedInt::<16, L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk);
 
-        assert_eq!(val.decrypt(&enc, &sk), 42);
+        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(16) - 42);
     }
 
     #[test]
-    fn can_unpack_uint() {
+    fn can_unpack_int() {
         let enc = get_encryption_128();
 
         let sk = get_secret_keys_128();
         let pk = get_public_key_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = PackedUInt::<16, L1GlweCiphertext>::encrypt(42, &enc, &pk);
+        let val = PackedInt::<16, L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk);
 
         let ctx = FheCircuitCtx::new();
 
@@ -123,16 +125,16 @@ mod tests {
             .unwrap()
             .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
-        assert_eq!(as_unpacked.decrypt(&enc, &sk), 42);
+        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u64.pow(16) - 42);
     }
 
     #[test]
-    fn can_pack_uint() {
+    fn can_pack_int() {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = UInt::<15, L1GlweCiphertext>::encrypt_secret(42, &enc, &sk);
+        let val = Int::<15, L1GlweCiphertext>::encrypt_secret(2u64.pow(15) - 42, &enc, &sk);
 
         let ctx = FheCircuitCtx::new();
 
@@ -146,19 +148,19 @@ mod tests {
             .unwrap()
             .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
-        assert_eq!(actual.decrypt(&enc, &sk), 42);
+        assert_eq!(actual.decrypt(&enc, &sk), 2u64.pow(15) - 42);
     }
 
     #[test]
-    fn can_safe_deserialize_uint() {
+    fn can_safe_deserialize_int() {
         fn case<T: CiphertextOps + for<'a> Deserialize<'a> + Serialize>() {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
 
-            let val = UInt::<15, T>::encrypt_secret(42, &enc, &sk);
+            let val = Int::<15, T>::encrypt_secret(2u64.pow(15) - 42, &enc, &sk);
 
             let ser = bincode::serialize(&val).unwrap();
-            crate::safe_bincode::deserialize::<UInt<15, T>>(&ser, &DEFAULT_128).unwrap();
+            crate::safe_bincode::deserialize::<Int<15, T>>(&ser, &DEFAULT_128).unwrap();
         }
 
         case::<L0LweCiphertext>();
@@ -168,25 +170,25 @@ mod tests {
     }
 
     #[test]
-    fn can_safe_deserialize_packed_uint() {
+    fn can_safe_deserialize_packed_int() {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
         let pk = PublicKey::generate(&DEFAULT_128, &sk);
 
-        let val = PackedUInt::<15, L1GlweCiphertext>::encrypt(42, &enc, &pk);
+        let val = PackedInt::<15, L1GlweCiphertext>::encrypt(2u64.pow(15) - 42, &enc, &pk);
 
         let ser = bincode::serialize(&val).unwrap();
-        crate::safe_bincode::deserialize::<PackedUInt<15, L1GlweCiphertext>>(&ser, &DEFAULT_128)
+        crate::safe_bincode::deserialize::<PackedInt<15, L1GlweCiphertext>>(&ser, &DEFAULT_128)
             .unwrap();
     }
 
     #[test]
-    fn can_trivial_encrypt_packed_uint() {
+    fn can_trivial_encrypt_packed_int() {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
 
-        let val = PackedUInt::<15, L1GlweCiphertext>::trivial_encrypt(42, &enc);
+        let val = PackedInt::<15, L1GlweCiphertext>::trivial_encrypt(2u64.pow(15) - 42, &enc);
 
-        assert_eq!(val.decrypt(&enc, &sk), 42);
+        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(15) - 42);
     }
 }

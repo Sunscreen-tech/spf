@@ -13,6 +13,15 @@ use crate::{
 };
 
 /// Compute the product of 2 N-bit unsigned values a and b.
+pub fn append_int_multiply<OutCt: Muxable>(
+    uop_graph: &mut FheCircuit,
+    a: &[NodeIndex],
+    b: &[NodeIndex],
+) -> (Vec<NodeIndex>, Vec<NodeIndex>) {
+    todo!("append_int_multiply ({:#?}, {:#?}, {:#?})", uop_graph, a, b);
+}
+
+/// Compute the product of 2 N-bit unsigned values a and b.
 pub fn append_uint_multiply<OutCt: Muxable>(
     uop_graph: &mut FheCircuit,
     a: &[NodeIndex],
