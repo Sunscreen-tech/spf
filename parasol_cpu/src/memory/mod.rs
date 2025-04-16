@@ -112,7 +112,7 @@ impl Memory {
             {
                 let byte = elf_data
                     .get(f as usize)
-                    .ok_or(Error::ElfByteOutofBounds(f))?;
+                    .ok_or(Error::ElfByteOutOfBounds(f))?;
 
                 memory.try_store(m.into(), Byte::Plaintext(*byte))?;
             }
@@ -137,9 +137,7 @@ impl Memory {
         let mut pages = self.pages.lock().unwrap();
 
         for i in start_page_id..=end_page_id {
-            if pages[i].is_none() {
-                pages[i] = Some(Page::allocate())
-            }
+            let _ = pages[i].get_or_insert(Page::allocate());
         }
 
         Ok(())
@@ -168,10 +166,8 @@ impl Memory {
         match &mut pages[page_id] {
             Some(p) => {
                 let page_offset = Page::offset_from_pointer(virtual_address);
+                p.store_byte(page_offset as usize, data);
 
-                {
-                    p.store_byte(page_offset as usize, data);
-                };
                 Ok(())
             }
             None => Err(Error::AccessViolation(virtual_address.0)),
@@ -357,8 +353,7 @@ mod tests {
     #[test]
     fn page_id() {
         let addr = 0x12345678;
-        let mask = PAGE_SIZE - 1;
-        let mask = !mask;
+        let mask = !(PAGE_SIZE - 1);
 
         let id = Page::page_id_from_pointer(addr.into());
 

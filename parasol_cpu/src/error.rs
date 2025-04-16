@@ -67,7 +67,7 @@ pub enum Error {
 
     /// Encountered multiple bind instructions with the same buffer index.
     #[error(
-        "(inst_id:{inst_id}, pc:0x{pc:x}) Buffer {buffer_id} is already declared as an input or output."
+        "(inst_id:{inst_id}, pc:0x{pc:x}) Buffer {buffer_id} is already declared as an input or output"
     )]
     AliasingViolation {
         /// The faulting instruction's id.
@@ -81,11 +81,11 @@ pub enum Error {
     },
 
     /// A load or store occured out of a memory's bounds.
-    #[error("Attempted to access address 0x{0:8x}, which was not mapped.")]
+    #[error("Attempted to access unmapped address 0x{0:8x}")]
     AccessViolation(u32),
 
     /// Cannot load or store a value of the requested width (> 128 bits).
-    #[error("(inst:{inst_id}, pc:0x{pc:x}) Attempted load or store with zero or > 128 width.")]
+    #[error("(inst:{inst_id}, pc:0x{pc:x}) Attempted load or store with zero or > 128 width")]
     UnsupportedWidth {
         /// The faulting instruction's id.
         inst_id: usize,
@@ -122,7 +122,7 @@ pub enum Error {
     RegisterCiphertextMismatch,
 
     /// Encountered an illegal micro-op. This is a bug.
-    #[error("The processor executed an illegal uop.")]
+    #[error("The processor executed an illegal uop")]
     IllegalUop,
 
     /// A micro-op encountered an unexpected ciphertext type. This is a bug.
@@ -130,7 +130,7 @@ pub enum Error {
     UopCiphertextMismatch,
 
     /// Attempted to branch on an encrypted value.
-    #[error("Branch condition is not a plaintext value.")]
+    #[error("Branch condition is not a plaintext value")]
     BranchConditionNotPlaintext,
 
     /// Internally used to signal a program halting. Should never be encountered.
@@ -174,18 +174,18 @@ pub enum Error {
     ElfSymbolNotFound(String),
 
     /// When parsing the ELF file, encountered an out-of-bounds file offset.
-    #[error("The given ELF byte offset {0} exceeds the file's length.")]
-    ElfByteOutofBounds(u32),
+    #[error("The given ELF byte offset {0} exceeds the file's length")]
+    ElfByteOutOfBounds(u32),
 
     /// Attempted to allocate a virtual address that's already mapped.
-    #[error("Failed to allocate virtual address space. Already in use.")]
+    #[error("Failed to allocate virtual address space. Already in use")]
     VirtualAddressInUse,
 
     /// Failed to create a [`std::ffi::CString`]`
     #[error("Failed to create CString: {0}")]
     CStringCreationError(#[from] std::ffi::NulError),
 
-    /// Cannot fulfil the given mmap request as no contiguous address region exists of the
+    /// Cannot fulfill the given mmap request as no contiguous address region exists of the
     /// requested length
     #[error("Failed to mmap {0} bytes")]
     NoContiguousChunk(u32),
