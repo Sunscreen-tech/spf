@@ -271,7 +271,7 @@ mod tests {
             let file_end = file_start + s.p_memsz as u32;
 
             for (i, (ptr, fileloc)) in (memory_start..memory_end)
-                .zip((file_start..file_end))
+                .zip(file_start..file_end)
                 .enumerate()
             {
                 if i < s.p_filesz as usize {
