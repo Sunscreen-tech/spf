@@ -103,7 +103,7 @@ impl Memory {
             // The ELF specification allows p_memsz > p_filesz, which should be filled with zeros.
             // However, page allocation zeros the full region, so this case is already handled
             // for us.
-            memory.try_allocate_at(mem_start.into(), len)?;
+            memory.try_allocate_at(mem_start, len)?;
 
             // Copy the bytes from the ELF file into memory
             for (i, (f, m)) in (file_start.0..file_end.0)
@@ -169,7 +169,10 @@ impl Memory {
             Some(p) => {
                 let page_offset = Page::offset_from_pointer(virtual_address);
 
-                Ok(p.store_byte(page_offset as usize, data).clone())
+                {
+                    p.store_byte(page_offset as usize, data);
+                };
+                Ok(())
             }
             None => Err(Error::AccessViolation(virtual_address.0)),
         }
@@ -194,12 +197,10 @@ impl Memory {
         // the address space?
         //
         // See https://www.sobyte.net/post/2022-03/mmap/ for more some ideas on how to do this.
-        'outer: while base_id + num_pages < TOTAL_PAGES {
-            for i in base_id..base_id + num_pages {
-                if pages[i as usize].is_some() {
-                    base_id = i + 1;
-                    continue 'outer;
-                }
+        while base_id + num_pages < TOTAL_PAGES {
+            if let Some(i) = (base_id..base_id + num_pages).find(|i| pages[*i as usize].is_some()) {
+                base_id = i + 1;
+                continue;
             }
 
             for i in base_id..base_id + num_pages {
