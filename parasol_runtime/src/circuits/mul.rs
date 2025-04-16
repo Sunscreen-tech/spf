@@ -193,6 +193,8 @@ fn mul_impl<OutCt: Muxable>(
 }
 
 /// Helper function for signed integer multiplication: turn a number into its negation
+///
+/// # Remarks
 /// Implementation uses MUX circuits to avoid bootstrapping, thus, input is GGSW and output is GLWE
 fn neg(uop_graph: &mut FheCircuit, input: &[NodeIndex]) -> Vec<NodeIndex> {
     let neg_circuit = negator(input.len());
@@ -201,6 +203,8 @@ fn neg(uop_graph: &mut FheCircuit, input: &[NodeIndex]) -> Vec<NodeIndex> {
 }
 
 /// Helper function for signed integer multiplication: turn a number into its absolute value
+///
+/// # Remarks
 /// Input and output are both GGSW
 fn abs(uop_graph: &mut FheCircuit, input: &[NodeIndex]) -> Vec<NodeIndex> {
     let input_glwe = input
