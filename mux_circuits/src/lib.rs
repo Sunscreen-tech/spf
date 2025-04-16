@@ -38,6 +38,9 @@ mod graph_ops;
 /// Integer multipliers
 pub mod mul;
 
+/// Integer negator
+pub mod neg;
+
 /// Circuit optimizations.
 pub mod opt;
 

@@ -1,12 +1,13 @@
-use crate::{L1GgswCiphertext, circuits::mul::append_uint_multiply};
+use crate::circuits::mul::append_uint_multiply;
 
 use super::{
-    CiphertextOps, FheCircuitCtx, Muxable, PackedGenericInt,
+    CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PackedGenericInt,
     bit::BitNode,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
+use petgraph::stable_graph::NodeIndex;
 
 /// Marker struct
 #[derive(Clone)]
@@ -15,6 +16,14 @@ pub struct Unsigned;
 impl Sign for Unsigned {
     fn gen_compare_circuit(max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
         compare_or_maybe_equal(max_len, gt, eq)
+    }
+
+    fn append_multiply<OutCt: Muxable>(
+        uop_graph: &mut FheCircuit,
+        a: &[NodeIndex],
+        b: &[NodeIndex],
+    ) -> (Vec<NodeIndex>, Vec<NodeIndex>) {
+        append_uint_multiply::<OutCt>(uop_graph, a, b)
     }
 }
 
@@ -43,29 +52,6 @@ impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
             .chain((0..extend).map(|_| BitNode::zero(ctx)));
 
         UIntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
-    }
-}
-
-impl<'a, const N: usize> UIntGraphNodes<'a, N, L1GgswCiphertext> {
-    /// Compute `self * other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn mul<OutCt: Muxable>(
-        &self,
-        other: &Self,
-        ctx: &'a FheCircuitCtx,
-    ) -> UIntGraphNodes<'a, N, OutCt> {
-        let a = self.bits.iter().map(|x| x.node).collect::<Vec<_>>();
-
-        let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
-
-        let (lo, _hi) = append_uint_multiply::<OutCt>(&mut ctx.circuit.borrow_mut(), &a, &b);
-
-        // TODO: prune the high bits somehow?
-
-        UIntGraphNodes::from_nodes(lo.into_iter(), &ctx.allocator)
     }
 }
 
