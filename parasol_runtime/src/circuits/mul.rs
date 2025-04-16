@@ -3,6 +3,7 @@ use mux_circuits::{
     mul::{
         encode_gradeschool_reduction, gradeschool_reduce, partition_integer, unsigned_multiplier,
     },
+    neg::negator,
 };
 use petgraph::stable_graph::NodeIndex;
 
@@ -23,8 +24,18 @@ pub fn append_int_multiply<OutCt: Muxable>(
     let abs_b = abs(uop_graph, b);
 
     let pos_product = mul_impl::<L1GlweCiphertext>(uop_graph, &abs_a, &abs_b);
-    let neg_product = neg(uop_graph, &pos_product);
-
+    let pos_product_ggsw = pos_product
+        .iter()
+        .map(|&x| {
+            insert_ciphertext_conversion(
+                uop_graph,
+                x,
+                CiphertextType::L1GlweCiphertext,
+                CiphertextType::L1GgswCiphertext,
+            )
+        })
+        .collect::<Vec<_>>();
+    let neg_product = neg(uop_graph, &pos_product_ggsw);
     let s1 = *a.last().unwrap();
     let s2 = *b.last().unwrap();
 
@@ -182,35 +193,11 @@ fn mul_impl<OutCt: Muxable>(
 }
 
 /// Helper function for signed integer multiplication: turn a number into its negation
-/// Input and output are both GLWE
+/// Implementation uses MUX circuits to avoid bootstrapping, thus, input is GGSW and output is GLWE
 fn neg(uop_graph: &mut FheCircuit, input: &[NodeIndex]) -> Vec<NodeIndex> {
-    // flip every bit
-    let flipped = input
-        .iter()
-        .map(|&input_node| {
-            let not_node = uop_graph.add_node(FheOp::Not);
-            uop_graph.add_edge(input_node, not_node, FheEdge::Unary);
-            insert_ciphertext_conversion(
-                uop_graph,
-                not_node,
-                CiphertextType::L1GlweCiphertext,
-                CiphertextType::L1GgswCiphertext,
-            )
-        })
-        .collect::<Vec<_>>();
+    let neg_circuit = negator(input.len());
 
-    // add one
-    let add_circuit = ripple_carry_adder(input.len(), 1, false);
-    let one = uop_graph.add_node(FheOp::OneGgsw1);
-    uop_graph
-        .insert_mux_circuit(
-            &add_circuit,
-            &std::iter::once(one).chain(flipped).collect::<Vec<_>>(),
-            MuxMode::Glwe,
-        )
-        .into_iter()
-        .take(input.len()) // we don't need to output carry bit
-        .collect()
+    uop_graph.insert_mux_circuit(&neg_circuit, input, MuxMode::Glwe)
 }
 
 /// Helper function for signed integer multiplication: turn a number into its absolute value
@@ -228,7 +215,7 @@ fn abs(uop_graph: &mut FheCircuit, input: &[NodeIndex]) -> Vec<NodeIndex> {
         })
         .collect::<Vec<_>>();
 
-    let neg_input_glwe = neg(uop_graph, &input_glwe);
+    let neg_input_glwe = neg(uop_graph, input);
 
     let sel = *input.last().unwrap();
 
