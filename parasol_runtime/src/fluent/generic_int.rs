@@ -547,7 +547,7 @@ where
     }
 
     /// Create a [`GenericInt`] from The inner ref-counted set of `T` ciphertexts.
-    /// 
+    ///
     /// # Remarks
     /// `bits` are ordered from least to most significant.
     ///
@@ -555,7 +555,7 @@ where
     pub fn from_bits_shallow(bits: Vec<Arc<AtomicRefCell<T>>>) -> Self {
         Self {
             bits,
-            _phantom: PhantomData
+            _phantom: PhantomData,
         }
     }
 
