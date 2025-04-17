@@ -1,7 +1,7 @@
 use crate::circuits::mul::append_int_multiply;
 
 use super::{
-    CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PackedGenericInt,
+    BitNode, CiphertextOps, FheCircuit, Muxable, PackedGenericInt,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
 };
 
@@ -24,38 +24,38 @@ impl Sign for Signed {
     ) -> (Vec<NodeIndex>, Vec<NodeIndex>) {
         append_int_multiply::<OutCt>(uop_graph, a, b)
     }
+
+    /// Convert this `old_size`-bit integer to an `new_size`-bit integer of the same ciphertext type.
+    ///
+    /// # Remarks
+    /// If new_size > old_size, this will sign extend the integer.
+    /// If new_size < old_size, this will truncate the high-order bits with sign bit preserved.
+    /// If new_size == old_size, why did you call this? In any case, the returned nodes will equal the input nodes.
+    ///
+    /// This operation is "free" in that it adds no computation to the graph.
+    fn resize<T: CiphertextOps>(
+        input: &[BitNode<T>],
+        _zero: &BitNode<T>,
+        old_size: usize,
+        new_size: usize,
+    ) -> impl Iterator<Item = BitNode<T>> {
+        // add 1 for the sign bit that gets removed in `take`, note the minus 1 in min_len
+        let extend = new_size.saturating_sub(old_size) + 1;
+
+        let min_len = new_size.min(old_size) - 1;
+
+        let sign_bit = input.last().unwrap();
+
+        input
+            .iter()
+            .copied()
+            .take(min_len)
+            .chain((0..extend).map(|_| sign_bit.to_owned()))
+    }
 }
 
 /// Signed variant for [`GenericIntGraphNodes`]
 pub type IntGraphNodes<'a, const N: usize, T> = GenericIntGraphNodes<'a, N, T, Signed>;
-
-impl<'a, const N: usize, T: CiphertextOps> IntGraphNodes<'a, N, T> {
-    /// Convert this `N`-bit integer to an `M`-bit integer of the same ciphertext type.
-    ///
-    /// # Remarks
-    /// If M > N, this will sign extend the integer.
-    /// If M < N, this will truncate the high-order bits with sign bit preserved.
-    /// If M == N, why did you call this? In any case, the returned nodes will equal the input nodes.
-    ///
-    /// This operation is "free" in that it adds no computation to the graph.
-    pub fn resize<const M: usize>(&self, ctx: &'a FheCircuitCtx) -> IntGraphNodes<'a, M, T> {
-        // add 1 for the sign bit that gets removed in `take`, note the minus 1 in min_len
-        let extend = 1 + if M > N { M - N } else { 0 };
-
-        let min_len = M.min(N) - 1;
-
-        let sign_bit = self.bits.last().unwrap();
-
-        let iter = self
-            .bits
-            .iter()
-            .copied()
-            .take(min_len)
-            .chain((0..extend).map(|_| sign_bit.to_owned()));
-
-        IntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
-    }
-}
 
 /// Signed variant for [`PackedGenericIntGraphNode`]
 pub type PackedIntGraphNode<const N: usize, T> = PackedGenericIntGraphNode<N, T, Signed>;
@@ -71,6 +71,7 @@ mod tests {
     use crate::{
         DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         crypto::PublicKey,
+        fluent::FheCircuitCtx,
         test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
     };
     use serde::{Deserialize, Serialize};

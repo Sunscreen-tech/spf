@@ -1,7 +1,7 @@
 use crate::circuits::mul::append_uint_multiply;
 
 use super::{
-    CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PackedGenericInt,
+    CiphertextOps, FheCircuit, Muxable, PackedGenericInt,
     bit::BitNode,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
 };
@@ -25,35 +25,35 @@ impl Sign for Unsigned {
     ) -> (Vec<NodeIndex>, Vec<NodeIndex>) {
         append_uint_multiply::<OutCt>(uop_graph, a, b)
     }
+
+    /// Convert this `old_size`-bit integer to an `new_size`-bit integer of the same ciphertext type.
+    ///
+    /// # Remarks
+    /// If new_size > old_size, this will zero extend the integer with trivial encryptions.
+    /// If new_size < old_size, this will truncate the high-order bits.
+    /// If new_size == old_size, why did you call this? In any case, the returned nodes will equal the input nodes.
+    ///
+    /// This operation is "free" in that it adds no computation to the graph.
+    fn resize<T: CiphertextOps>(
+        input: &[BitNode<T>],
+        zero: &BitNode<T>,
+        old_size: usize,
+        new_size: usize,
+    ) -> impl Iterator<Item = BitNode<T>> {
+        let extend = new_size.saturating_sub(old_size);
+
+        let min_len = new_size.min(old_size);
+
+        input
+            .iter()
+            .copied()
+            .take(min_len)
+            .chain((0..extend).map(|_| zero.to_owned()))
+    }
 }
 
 /// Unsigned variant for [`GenericIntGraphNodes`]
 pub type UIntGraphNodes<'a, const N: usize, T> = GenericIntGraphNodes<'a, N, T, Unsigned>;
-
-impl<'a, const N: usize, T: CiphertextOps> UIntGraphNodes<'a, N, T> {
-    /// Convert this `N`-bit integer to an `M`-bit integer of the same ciphertext type.
-    ///
-    /// # Remarks
-    /// If M > N, this will zero extend the integer with trivial encryptions.
-    /// If M < N, this will truncate the high-order bits.
-    /// If M == N, why did you call this? In any case, the returned nodes will equal the input nodes.
-    ///
-    /// This operation is "free" in that it adds no computation to the graph.
-    pub fn resize<const M: usize>(&self, ctx: &'a FheCircuitCtx) -> UIntGraphNodes<'a, M, T> {
-        let extend = if M > N { M - N } else { 0 };
-
-        let min_len = M.min(N);
-
-        let iter = self
-            .bits
-            .iter()
-            .copied()
-            .take(min_len)
-            .chain((0..extend).map(|_| BitNode::zero(ctx)));
-
-        UIntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
-    }
-}
 
 /// Unsigned variant for [`PackedGenericIntGraphNode`]
 pub type PackedUIntGraphNode<const N: usize, T> = PackedGenericIntGraphNode<N, T, Unsigned>;
@@ -69,6 +69,7 @@ mod tests {
     use crate::{
         DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         crypto::PublicKey,
+        fluent::FheCircuitCtx,
         test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
     };
     use serde::{Deserialize, Serialize};
