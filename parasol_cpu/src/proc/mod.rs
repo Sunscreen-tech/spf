@@ -402,6 +402,12 @@ impl Tomasulo for FheProcessor {
             Shl(dst, src, shift) => {
                 self.shl(retirement_info, dst, src, shift, instruction_id, pc);
             }
+            Shra(dst, src, shift) => {
+                self.shra(retirement_info, dst, src, shift, instruction_id, pc);
+            }
+            Shla(dst, src, shift) => {
+                self.shla(retirement_info, dst, src, shift, instruction_id, pc);
+            }
             Rotr(dst, src, shift) => {
                 self.rotr(retirement_info, dst, src, shift, instruction_id, pc);
             }

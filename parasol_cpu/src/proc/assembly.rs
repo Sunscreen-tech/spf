@@ -195,6 +195,12 @@ define_op! {
     // Bitshift left
     [Shl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
 
+    // Arithmetic shift right
+    [Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
+    // Arithmetic shift left
+    [Shla (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
     // Rotate right
     [Rotr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
 
