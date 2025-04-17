@@ -33,6 +33,10 @@ pub trait Sign {
         a: &[NodeIndex],
         b: &[NodeIndex],
     ) -> (Vec<NodeIndex>, Vec<NodeIndex>);
+
+    /// Resize configuration function for this sign
+    /// Returned tuple includes min_len, extend_len, whether_to_extend_msb
+    fn resize_config(old_size: usize, new_size: usize) -> (usize, usize, bool);
 }
 
 /// A collection of graph nodes resulting from FHE operations over generic integers (e.g. the
@@ -114,6 +118,30 @@ impl<'a, const N: usize, T: CiphertextOps, U: Sign> GenericIntGraphNodes<'a, N, 
         }
 
         result
+    }
+
+    /// Resize skeleton that uses the method provided by the sign
+    pub fn resize<const M: usize>(
+        &self,
+        ctx: &'a FheCircuitCtx,
+    ) -> GenericIntGraphNodes<'a, M, T, U> {
+        let (min_len, extend, use_msb) = U::resize_config(N, M);
+
+        let input = self.bits;
+
+        let extend_bit = if use_msb {
+            input.last().unwrap()
+        } else {
+            &BitNode::zero(ctx)
+        };
+
+        let iter = input
+            .iter()
+            .copied()
+            .take(min_len)
+            .chain((0..extend).map(|_| extend_bit.to_owned()));
+
+        GenericIntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
     }
 }
 

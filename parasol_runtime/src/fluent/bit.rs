@@ -3,7 +3,7 @@ use std::{marker::PhantomData, sync::Arc};
 use parasol_concurrency::AtomicRefCell;
 use serde::{Deserialize, Serialize};
 
-use super::{CiphertextOps, FheCircuitCtx, uint::UIntGraphNodes};
+use super::{CiphertextOps, FheCircuitCtx, Sign, generic_int::GenericIntGraphNodes};
 use crate::{
     Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey,
     insert_ciphertext_conversion, safe_bincode::GetSize,
@@ -94,12 +94,12 @@ impl BitNode<L1GgswCiphertext> {
     /// # Remarks
     /// This operations requires this bit be an [`L1GgswCiphertext`]. You can use [`Self::convert`]
     /// to convert other ciphertext types to this.
-    pub fn select<'a, const N: usize>(
+    pub fn select<'a, const N: usize, U: Sign>(
         &self,
-        if_true: &UIntGraphNodes<'a, N, L1GlweCiphertext>,
-        if_false: &UIntGraphNodes<'a, N, L1GlweCiphertext>,
+        if_true: &GenericIntGraphNodes<'a, N, L1GlweCiphertext, U>,
+        if_false: &GenericIntGraphNodes<'a, N, L1GlweCiphertext, U>,
         ctx: &'a FheCircuitCtx,
-    ) -> UIntGraphNodes<'a, N, L1GlweCiphertext> {
+    ) -> GenericIntGraphNodes<'a, N, L1GlweCiphertext, U> {
         let iter = if_true
             .bits
             .iter()
@@ -115,7 +115,7 @@ impl BitNode<L1GgswCiphertext> {
                 mux
             });
 
-        UIntGraphNodes::from_nodes(iter, &ctx.allocator)
+        GenericIntGraphNodes::from_nodes(iter, &ctx.allocator)
     }
 }
 
