@@ -1,8 +1,7 @@
 use crate::circuits::mul::append_uint_multiply;
 
 use super::{
-    CiphertextOps, FheCircuit, Muxable, PackedGenericInt,
-    bit::BitNode,
+    FheCircuit, Muxable, PackedGenericInt,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
 };
 
@@ -26,29 +25,15 @@ impl Sign for Unsigned {
         append_uint_multiply::<OutCt>(uop_graph, a, b)
     }
 
-    /// Convert this `old_size`-bit integer to an `new_size`-bit integer of the same ciphertext type.
-    ///
-    /// # Remarks
-    /// If new_size > old_size, this will zero extend the integer with trivial encryptions.
-    /// If new_size < old_size, this will truncate the high-order bits.
-    /// If new_size == old_size, why did you call this? In any case, the returned nodes will equal the input nodes.
-    ///
-    /// This operation is "free" in that it adds no computation to the graph.
-    fn resize<T: CiphertextOps>(
-        input: &[BitNode<T>],
-        zero: &BitNode<T>,
-        old_size: usize,
-        new_size: usize,
-    ) -> impl Iterator<Item = BitNode<T>> {
-        let extend = new_size.saturating_sub(old_size);
-
-        let min_len = new_size.min(old_size);
-
-        input
-            .iter()
-            .copied()
-            .take(min_len)
-            .chain((0..extend).map(|_| zero.to_owned()))
+    fn resize_config(old_size: usize, new_size: usize) -> (usize, usize, bool) {
+        (
+            // minimal length to keep is the smaller of the two
+            new_size.min(old_size),
+            // extend length is the difference between the two if new is larger
+            new_size.saturating_sub(old_size),
+            // zero extend
+            false,
+        )
     }
 }
 
@@ -69,7 +54,7 @@ mod tests {
     use crate::{
         DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         crypto::PublicKey,
-        fluent::FheCircuitCtx,
+        fluent::{CiphertextOps, FheCircuitCtx},
         test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
     };
     use serde::{Deserialize, Serialize};

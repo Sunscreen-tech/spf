@@ -1,7 +1,7 @@
 use crate::circuits::mul::append_int_multiply;
 
 use super::{
-    BitNode, CiphertextOps, FheCircuit, Muxable, PackedGenericInt,
+    FheCircuit, Muxable, PackedGenericInt,
     generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
 };
 
@@ -25,32 +25,15 @@ impl Sign for Signed {
         append_int_multiply::<OutCt>(uop_graph, a, b)
     }
 
-    /// Convert this `old_size`-bit integer to an `new_size`-bit integer of the same ciphertext type.
-    ///
-    /// # Remarks
-    /// If new_size > old_size, this will sign extend the integer.
-    /// If new_size < old_size, this will truncate the high-order bits with sign bit preserved.
-    /// If new_size == old_size, why did you call this? In any case, the returned nodes will equal the input nodes.
-    ///
-    /// This operation is "free" in that it adds no computation to the graph.
-    fn resize<T: CiphertextOps>(
-        input: &[BitNode<T>],
-        _zero: &BitNode<T>,
-        old_size: usize,
-        new_size: usize,
-    ) -> impl Iterator<Item = BitNode<T>> {
-        // add 1 for the sign bit that gets removed in `take`, note the minus 1 in min_len
-        let extend = new_size.saturating_sub(old_size) + 1;
-
-        let min_len = new_size.min(old_size) - 1;
-
-        let sign_bit = input.last().unwrap();
-
-        input
-            .iter()
-            .copied()
-            .take(min_len)
-            .chain((0..extend).map(|_| sign_bit.to_owned()))
+    fn resize_config(old_size: usize, new_size: usize) -> (usize, usize, bool) {
+        (
+            // minimal length to keep is the smaller of the two minus 1 to exclude the sign bit
+            new_size.min(old_size) - 1,
+            // extend length is the difference between the two if new is larger plus 1 to include the sign bit
+            new_size.saturating_sub(old_size) + 1,
+            // sign extend
+            true,
+        )
     }
 }
 
@@ -71,7 +54,7 @@ mod tests {
     use crate::{
         DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         crypto::PublicKey,
-        fluent::FheCircuitCtx,
+        fluent::{CiphertextOps, FheCircuitCtx},
         test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
     };
     use serde::{Deserialize, Serialize};
