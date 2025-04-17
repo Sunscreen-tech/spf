@@ -99,10 +99,7 @@ impl FheProcessor {
                     todo!();
                 }
                 (_, PtrRegister::Uninit) => {
-                    return Err(Error::AccessViolation {
-                        inst_id: instruction_id,
-                        pc,
-                    });
+                    return Err(Error::AccessViolation(0));
                 }
                 _ => {
                     return Err(Error::IllegalOperands {

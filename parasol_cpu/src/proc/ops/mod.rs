@@ -142,10 +142,7 @@ fn check_offset(
     }
 
     if offset + num_bytes > len as u32 {
-        return Err(Error::AccessViolation {
-            inst_id: instruction_id,
-            pc,
-        });
+        return Err(Error::AccessViolation(offset + num_bytes));
     }
 
     Ok(num_bytes)

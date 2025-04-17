@@ -564,12 +564,27 @@ where
     ///
     /// # Remarks
     /// `bits` are ordered from least to most significant.
-    pub fn from_bits(bits: Vec<T>) -> Self {
+    ///
+    /// This performs a deep copy of the underlying data.
+    pub fn from_bits_deep(bits: Vec<T>) -> Self {
         Self {
             bits: bits
                 .into_iter()
                 .map(|x| Arc::new(AtomicRefCell::new(x)))
                 .collect(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Create a [`GenericInt`] from The inner ref-counted set of `T` ciphertexts.
+    ///
+    /// # Remarks
+    /// `bits` are ordered from least to most significant.
+    ///
+    /// This performs a shallow copy of the underlying data.
+    pub fn from_bits_shallow(bits: Vec<Arc<AtomicRefCell<T>>>) -> Self {
+        Self {
+            bits,
             _phantom: PhantomData,
         }
     }
