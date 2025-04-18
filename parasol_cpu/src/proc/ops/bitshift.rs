@@ -183,6 +183,28 @@ impl FheProcessor {
         )
     }
 
+    pub fn shra(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        src: RobEntryRef<Register>,
+        shift: RobEntryRef<Register>,
+        instruction_id: usize,
+        pc: usize,
+    ) {
+        self.shift_operation(
+            retirement_info,
+            dst,
+            src,
+            shift,
+            instruction_id,
+            pc,
+            |val, shift, _| val >> shift,
+            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, true, true),
+            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, true, false, true),
+        )
+    }
+
     pub fn shl(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
@@ -202,50 +224,6 @@ impl FheProcessor {
             |val, shift, _| val << shift,
             |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, false, true),
             |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, false, true, false),
-        )
-    }
-
-    pub fn shra(
-        &mut self,
-        retirement_info: RetirementInfo<DispatchIsaOp>,
-        dst: RobEntryRef<Register>,
-        src: RobEntryRef<Register>,
-        shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
-    ) {
-        self.shift_operation(
-            retirement_info,
-            dst,
-            src,
-            shift,
-            instruction_id,
-            pc,
-            |val, shift, _| val >> shift,
-            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, true, true),
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, true, true, true),
-        )
-    }
-
-    pub fn shla(
-        &mut self,
-        retirement_info: RetirementInfo<DispatchIsaOp>,
-        dst: RobEntryRef<Register>,
-        src: RobEntryRef<Register>,
-        shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
-    ) {
-        self.shift_operation(
-            retirement_info,
-            dst,
-            src,
-            shift,
-            instruction_id,
-            pc,
-            |val, shift, _| val << shift,
-            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, false, true),
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, false, true, true),
         )
     }
 
