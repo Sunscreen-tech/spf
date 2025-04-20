@@ -1,6 +1,9 @@
 use std::sync::Arc;
 
-use mux_circuits::{MuxCircuit, bitshift::bitshift};
+use mux_circuits::{
+    MuxCircuit,
+    bitshift::{ShiftMode, bitshift},
+};
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, L1GlweCiphertext};
 
@@ -13,6 +16,18 @@ use crate::{
 };
 
 use super::make_parent_op;
+
+fn arithmetic_shift_right_arbitrary_width(val: u128, shift: u128, width: u32) -> u128 {
+    let right = val >> shift;
+
+    // check if the number if positive
+    if (0x1 << (width - 1)) & val == 0 {
+        right
+    } else {
+        let signs = ((0x1 << (shift + 1)) - 1) << (width as u128 - shift);
+        signs | right
+    }
+}
 
 fn rotate_right_arbitrary_width(val: u128, shift: u128, width: u32) -> u128 {
     let mask = (0x1 << width) - 1;
@@ -37,9 +52,11 @@ fn encrypted_value_plain_shift(
     shift: u32,
     l1glwe_zero: &L1GlweCiphertext,
     right: bool,
-    zero: bool,
+    mode: ShiftMode,
 ) -> Vec<Arc<AtomicRefCell<L1GlweCiphertext>>> {
     let mut result = c.to_owned();
+
+    let old_msb = result.last().unwrap().clone();
 
     // The processor is little endian, so a right shift is a left rotation.
     if right {
@@ -47,10 +64,20 @@ fn encrypted_value_plain_shift(
     } else {
         result.rotate_right(shift as usize);
     }
-    if zero {
-        for i in 0..shift as usize {
-            let ix = if right { result.len() - i - 1 } else { i };
-            result[ix] = Arc::new(AtomicRefCell::new(l1glwe_zero.clone()));
+    match mode {
+        ShiftMode::Logical => {
+            for i in 0..shift as usize {
+                let ix = if right { result.len() - i - 1 } else { i };
+                result[ix] = Arc::new(AtomicRefCell::new(l1glwe_zero.clone()));
+            }
+        }
+        ShiftMode::Rotation => {}
+        ShiftMode::Arithmetic => {
+            assert!(right);
+            for i in 0..shift as usize {
+                let ix = result.len() - i - 1;
+                result[ix] = old_msb.clone();
+            }
         }
     }
     result
@@ -178,8 +205,12 @@ impl FheProcessor {
             instruction_id,
             pc,
             |val, shift, _| val >> shift,
-            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, true, true),
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, true, true, false),
+            |c, shift, l1glwe_zero| {
+                encrypted_value_plain_shift(c, shift, l1glwe_zero, true, ShiftMode::Logical)
+            },
+            |inputs, shift_size| {
+                bitshift(inputs as u16, shift_size as u16, true, ShiftMode::Logical)
+            },
         )
     }
 
@@ -199,9 +230,18 @@ impl FheProcessor {
             shift,
             instruction_id,
             pc,
-            |val, shift, _| val >> shift,
-            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, true, true),
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, true, false, true),
+            arithmetic_shift_right_arbitrary_width,
+            |c, shift, l1glwe_zero| {
+                encrypted_value_plain_shift(c, shift, l1glwe_zero, true, ShiftMode::Arithmetic)
+            },
+            |inputs, shift_size| {
+                bitshift(
+                    inputs as u16,
+                    shift_size as u16,
+                    true,
+                    ShiftMode::Arithmetic,
+                )
+            },
         )
     }
 
@@ -222,8 +262,12 @@ impl FheProcessor {
             instruction_id,
             pc,
             |val, shift, _| val << shift,
-            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, false, true),
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, false, true, false),
+            |c, shift, l1glwe_zero| {
+                encrypted_value_plain_shift(c, shift, l1glwe_zero, false, ShiftMode::Logical)
+            },
+            |inputs, shift_size| {
+                bitshift(inputs as u16, shift_size as u16, false, ShiftMode::Logical)
+            },
         )
     }
 
@@ -244,8 +288,12 @@ impl FheProcessor {
             instruction_id,
             pc,
             rotate_right_arbitrary_width,
-            |c, shift, l1glwe_zero| encrypted_value_plain_shift(c, shift, l1glwe_zero, true, false),
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, true, false, false),
+            |c, shift, l1glwe_zero| {
+                encrypted_value_plain_shift(c, shift, l1glwe_zero, true, ShiftMode::Rotation)
+            },
+            |inputs, shift_size| {
+                bitshift(inputs as u16, shift_size as u16, true, ShiftMode::Rotation)
+            },
         )
     }
 
@@ -267,9 +315,11 @@ impl FheProcessor {
             pc,
             rotate_left_arbitrary_width,
             |c, shift, l1glwe_zero| {
-                encrypted_value_plain_shift(c, shift, l1glwe_zero, false, false)
+                encrypted_value_plain_shift(c, shift, l1glwe_zero, false, ShiftMode::Rotation)
             },
-            |inputs, shift_size| bitshift(inputs as u16, shift_size as u16, false, false, false),
+            |inputs, shift_size| {
+                bitshift(inputs as u16, shift_size as u16, false, ShiftMode::Rotation)
+            },
         )
     }
 }
