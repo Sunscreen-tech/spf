@@ -132,6 +132,61 @@ fn can_shift_right_encrypted_value_encrypted_shift() {
         true,
     );
 }
+#[test]
+fn can_arith_shift_right_plain_value_plain_shift() {
+    run_shift_test(
+        |value, shift| ((value as i8) >> shift) as u8,
+        IsaOp::Shra(
+            RegisterName::named(2),
+            RegisterName::named(0),
+            RegisterName::named(1),
+        ),
+        false,
+        false,
+    );
+}
+
+#[test]
+fn can_arith_shift_right_encrypted_value_plain_shift() {
+    run_shift_test(
+        |value, shift| ((value as i8) >> shift) as u8,
+        IsaOp::Shra(
+            RegisterName::named(2),
+            RegisterName::named(0),
+            RegisterName::named(1),
+        ),
+        true,
+        false,
+    );
+}
+
+#[test]
+fn can_arith_shift_right_plain_value_encrypted_shift() {
+    run_shift_test(
+        |value, shift| ((value as i8) >> shift) as u8,
+        IsaOp::Shra(
+            RegisterName::named(2),
+            RegisterName::named(0),
+            RegisterName::named(1),
+        ),
+        false,
+        true,
+    );
+}
+
+#[test]
+fn can_arith_shift_right_encrypted_value_encrypted_shift() {
+    run_shift_test(
+        |value, shift| ((value as i8) >> shift) as u8,
+        IsaOp::Shra(
+            RegisterName::named(2),
+            RegisterName::named(0),
+            RegisterName::named(1),
+        ),
+        true,
+        true,
+    );
+}
 
 #[test]
 fn can_shift_left_plain_value_plain_shift() {
