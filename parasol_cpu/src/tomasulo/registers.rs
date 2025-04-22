@@ -264,6 +264,15 @@ pub struct RobEntry<T: Default> {
     reg: T,
 }
 
+impl<T> Default for RobEntry<T>
+where
+    T: Default,
+{
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl<T> RobEntry<T>
 where
     T: Default,

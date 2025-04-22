@@ -127,16 +127,12 @@ impl std::fmt::Debug for CiphertextPtr {
 }
 
 #[doc(hidden)]
+#[derive(Default)]
 pub enum PtrRegister {
+    #[default]
     Uninit,
     Plaintext(PlaintextPtr),
     Ciphertext(CiphertextPtr),
-}
-
-impl Default for PtrRegister {
-    fn default() -> Self {
-        PtrRegister::Uninit
-    }
 }
 
 #[doc(hidden)]
