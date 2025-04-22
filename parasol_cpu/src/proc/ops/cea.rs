@@ -21,7 +21,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let cea_impl = |_scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>| -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (base) (offset));
+            unwrap_registers!((mut dst) (base) (offset));
 
             match (base, offset) {
                 (

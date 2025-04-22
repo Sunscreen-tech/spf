@@ -27,8 +27,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let mut mul_impl = || -> Result<()> {
-            let constant_pool = self.constant_pool.clone();
-            unwrap_registers!([constant_pool] (mut dst) (a) (b));
+            unwrap_registers!((mut dst) (a) (b));
             check_register_width(a, b, instruction_id, pc)?;
 
             let mask = (0x1u128 << a.width()) - 1;

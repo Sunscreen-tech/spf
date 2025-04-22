@@ -45,11 +45,12 @@ macro_rules! define_op {
 
                 impl $inst_name {
                     pub fn validate(&self, inst_id: usize, pc: usize) -> Result<()> {
+                        // TODO: Validate register names are in bounds.
                         #[allow(unused)]
                         match self {
                             $(
                                 Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
-                                    $(if !matches!($dst_name, RegisterName::Named(..)) {
+                                    $(if !matches!($dst_name, _) {
                                         return Err(Error::IllegalOperands { inst_id, pc });
                                     })*
                                 },

@@ -16,11 +16,11 @@ fn can_not(val: u32, encrypted_computation: bool) {
     let output_buffer = buffer_from_value_80(0u32, &enc, encrypted_computation);
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, encrypted_computation),
-        IsaOp::BindReadWrite(RegisterName::named(1), 1, encrypted_computation),
-        IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 32),
-        IsaOp::Not(RegisterName::named(1), RegisterName::named(0)),
-        IsaOp::Store(RegisterName::named(1), RegisterName::named(1), 32),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted_computation),
+        IsaOp::BindReadWrite(RegisterName::new(1), 1, encrypted_computation),
+        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
+        IsaOp::Not(RegisterName::new(1), RegisterName::new(0)),
+        IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 32),
     ]);
 
     let params = vec![buffer_0, output_buffer];

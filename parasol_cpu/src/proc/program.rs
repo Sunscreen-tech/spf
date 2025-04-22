@@ -160,28 +160,28 @@ impl FheApplication {
         match Self::get_opcode(encoded) {
             // Types and loading
             OpCode::BindReadOnly => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
                 let buffer_id = Self::get_bind_buffer_id(encoded);
                 let is_encrypted = Self::get_bind_is_encrypted(encoded);
 
                 IsaOp::BindReadOnly(dst, buffer_id, is_encrypted)
             }
             OpCode::BindReadWrite => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
                 let buffer_id = Self::get_bind_buffer_id(encoded);
                 let is_encrypted = Self::get_bind_is_encrypted(encoded);
 
                 IsaOp::BindReadWrite(dst, buffer_id, is_encrypted)
             }
             OpCode::Load => {
-                let register = RegisterName::named(Self::get_dst(encoded));
-                let memory_pointer = RegisterName::named(Self::get_src1(encoded));
+                let register = RegisterName::new(Self::get_dst(encoded));
+                let memory_pointer = RegisterName::new(Self::get_src1(encoded));
                 let width = Self::get_casting_width(encoded);
 
                 IsaOp::Load(register, memory_pointer, width)
             }
             OpCode::LoadI => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
                 let imm = Self::get_immediate(encoded);
                 let width = Self::get_immediate_width(encoded);
 
@@ -193,22 +193,22 @@ impl FheApplication {
                 IsaOp::LoadI(dst, imm, width)
             }
             OpCode::Store => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src = RegisterName::named(Self::get_src1(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src = RegisterName::new(Self::get_src1(encoded));
                 let width = Self::get_casting_width(encoded);
 
                 IsaOp::Store(dst, src, width)
             }
             OpCode::Zext => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src = RegisterName::named(Self::get_src1(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src = RegisterName::new(Self::get_src1(encoded));
                 let width = Self::get_casting_width(encoded);
 
                 IsaOp::Zext(dst, src, width)
             }
             OpCode::Trunc => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src = RegisterName::named(Self::get_src1(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src = RegisterName::new(Self::get_src1(encoded));
                 let width = Self::get_casting_width(encoded);
 
                 IsaOp::Trunc(dst, src, width)
@@ -216,9 +216,9 @@ impl FheApplication {
 
             // Arithmetic
             OpCode::Add => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Add(dst, src1, src2)
             }
@@ -228,9 +228,9 @@ impl FheApplication {
                 );
             }
             OpCode::Sub => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Sub(dst, src1, src2)
             }
@@ -240,119 +240,119 @@ impl FheApplication {
                 );
             }
             OpCode::Mul => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Mul(dst, src1, src2)
             }
 
             // Shifts
             OpCode::Shl => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Shl(dst, src1, src2)
             }
             OpCode::Rotl => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Rotl(dst, src1, src2)
             }
             OpCode::Shr => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Shr(dst, src1, src2)
             }
             OpCode::Rotr => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Rotr(dst, src1, src2)
             }
 
             // Logic
             OpCode::And => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::And(dst, src1, src2)
             }
             OpCode::Or => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Or(dst, src1, src2)
             }
             OpCode::Xor => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::Xor(dst, src1, src2)
             }
             OpCode::Not => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src = RegisterName::named(Self::get_src1(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src = RegisterName::new(Self::get_src1(encoded));
 
                 IsaOp::Not(dst, src)
             }
             OpCode::Neg => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src = RegisterName::named(Self::get_src1(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src = RegisterName::new(Self::get_src1(encoded));
 
                 IsaOp::Neg(dst, src)
             }
 
             // Comparison
             OpCode::Gt => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::CmpGt(dst, src1, src2)
             }
             OpCode::Ge => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::CmpGe(dst, src1, src2)
             }
             OpCode::Lt => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::CmpLt(dst, src1, src2)
             }
             OpCode::Le => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::CmpLe(dst, src1, src2)
             }
             OpCode::Eq => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let src1 = RegisterName::named(Self::get_src1(encoded));
-                let src2 = RegisterName::named(Self::get_src2(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let src1 = RegisterName::new(Self::get_src1(encoded));
+                let src2 = RegisterName::new(Self::get_src2(encoded));
 
                 IsaOp::CmpEq(dst, src1, src2)
             }
             OpCode::Cmux => {
-                let dst = RegisterName::named(Self::get_dst(encoded));
-                let select = RegisterName::named(Self::get_src1(encoded));
-                let a = RegisterName::named(Self::get_src2(encoded));
-                let b = RegisterName::named(Self::get_src3(encoded));
+                let dst = RegisterName::new(Self::get_dst(encoded));
+                let select = RegisterName::new(Self::get_src1(encoded));
+                let a = RegisterName::new(Self::get_src2(encoded));
+                let b = RegisterName::new(Self::get_src3(encoded));
 
                 IsaOp::Cmux(dst, select, a, b)
             }
@@ -582,7 +582,9 @@ impl FheProgram {
         // Single pass through instructions
         for op in &self.instructions {
             match op {
-                IsaOp::BindReadOnly(RegisterName::Named(reg_num, _), id, encrypted) => {
+                IsaOp::BindReadOnly(reg_name, id, encrypted) => {
+                    let reg_num = &reg_name.name;
+
                     if reg_num != id {
                         return Err(BufferInfoError::MismatchedBinding(*reg_num, *id));
                     }
@@ -591,7 +593,9 @@ impl FheProgram {
                     }
                     bindings.insert(*reg_num, (*id, true, *encrypted));
                 }
-                IsaOp::BindReadWrite(RegisterName::Named(reg_num, _), id, encrypted) => {
+                IsaOp::BindReadWrite(reg_name, id, encrypted) => {
+                    let reg_num = &reg_name.name;
+
                     if reg_num != id {
                         return Err(BufferInfoError::MismatchedBinding(*reg_num, *id));
                     }
@@ -600,7 +604,9 @@ impl FheProgram {
                     }
                     bindings.insert(*reg_num, (*id, false, *encrypted));
                 }
-                IsaOp::Load(_, RegisterName::Named(reg_num, _), width) => {
+                IsaOp::Load(_, reg_name, width) => {
+                    let reg_num = &reg_name.name;
+
                     if let Some(&(id, is_read_only, encrypted)) = bindings.get(reg_num) {
                         if is_read_only {
                             verified_buffers.insert(
@@ -616,7 +622,9 @@ impl FheProgram {
                         }
                     }
                 }
-                IsaOp::Store(RegisterName::Named(reg_num, _), _, width) => {
+                IsaOp::Store(reg_name, _, width) => {
+                    let reg_num = &reg_name.name;
+
                     if let Some(&(id, is_read_only, encrypted)) = bindings.get(reg_num) {
                         if !is_read_only {
                             verified_buffers.insert(

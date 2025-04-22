@@ -27,9 +27,10 @@ impl FheProcessor {
         pc: usize,
     ) {
         let store_impl = |scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>| -> Result<()> {
-            let mut dst = self.constant_pool.register_force_mut(&dst)?;
-            let dst = dst.deref_mut();
-            unwrap_registers!([self.constant_pool](src));
+            let mut dst = dst.entry_force_mut();
+            let dst: &mut PtrRegister = dst.deref_mut();
+
+            unwrap_registers!((src));
 
             let mask = read_write_mask(width);
             let num_bytes = width.next_multiple_of(8) as usize / 8;

@@ -5,33 +5,29 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use parasol_runtime::{Encryption, TrivialOne, TrivialZero};
+use crate::{Error, Result};
 
 use super::scoreboard::ScoreboardEntryRef;
 
 pub struct RegisterFile<T, I>
 where
-    T: TrivialOne + TrivialZero + 'static,
+    T: Default + 'static,
     I: 'static + Clone,
 {
     pub rename: Vec<RefCell<Rename<T, I>>>,
-    enc: Encryption,
 }
 
 impl<T, I> RegisterFile<T, I>
 where
-    T: TrivialOne + TrivialZero + 'static,
+    T: Default + 'static,
     I: 'static + Clone,
 {
-    pub fn new(num_registers: usize, enc: &Encryption) -> Self {
+    pub fn new(num_registers: usize) -> Self {
         let rename = (0..num_registers)
             .map(|_| RefCell::<Rename<T, I>>::new(Rename::new()))
             .collect::<Vec<_>>();
 
-        Self {
-            rename,
-            enc: enc.to_owned(),
-        }
+        Self { rename }
     }
 
     /// Rename a register through an immutable reference.
@@ -43,17 +39,19 @@ where
     /// # Safety
     /// The entry referred to by the passed [`ScoreboardEntryRef`] must outlive
     /// this object.
+    ///
+    /// # Panics
+    /// If the given `register_name` exceeds the total number of registers.
     pub fn rename(
         &self,
         register_name: RegisterName<T>,
         scoreboard_entry: &ScoreboardEntryRef<I>,
     ) -> RobEntryRef<T> where {
         // Explicitly drop the current RobEntryRef, as it may go into the free list.
-        let mut rename = self.rename[register_name.unwrap_named()].borrow_mut();
+        let mut rename = self.rename[register_name.name].borrow_mut();
         rename.rob_ref = None;
 
-        let rob_entry_ref =
-            RobEntryRef::new_mut(&Arc::new(RwLock::new(RobEntry::<T>::new(&self.enc))));
+        let rob_entry_ref = RobEntryRef::new_mut(&Arc::new(RwLock::new(RobEntry::<T>::new())));
 
         // Since the entry points to a location in this object, we can store it
         // indefinitely
@@ -63,36 +61,35 @@ where
         rob_entry_ref
     }
 
+    /// Returns the current ROB entry (if any for this register. See [`RobEntry`] for more details.
+    ///
+    /// # Panics
+    /// If the given `register_name` exceeds the total number of registers
     pub fn map_entry(&self, register_name: RegisterName<T>) -> Option<RobEntryRef<T>> {
-        match register_name {
-            RegisterName::<T>::Named(name, _) => {
-                let rename = self.rename[name].borrow_mut();
-
-                rename.rob_ref.clone()
-            }
-            RegisterName::<T>::One => Some(RobEntryRef::One),
-            RegisterName::<T>::Zero => Some(RobEntryRef::Zero),
-        }
+        let rename = self.rename[register_name.name].borrow_mut();
+        rename.rob_ref.clone()
     }
 
+    /// Returns the [`ScoreboardEntryRef`] for the last instruction to write to the register
+    /// with the given `register_name`.
+    ///
+    /// # Panics
+    /// If the given `register_name` exceeds the total number of registers.
     pub fn get_instruction(&self, register_name: RegisterName<T>) -> Option<ScoreboardEntryRef<I>> {
-        match register_name {
-            RegisterName::Named(x, _) => self.rename[x].borrow().producer_id.clone(),
-            _ => None,
-        }
+        self.rename[register_name.name].borrow().producer_id.clone()
     }
 }
 
 pub struct IdRobEntry<T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     register: Arc<RwLock<RobEntry<T>>>,
 }
 
 impl<T> IdRobEntry<T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     /// Get a reference to the underlying register.
     ///
@@ -113,17 +110,15 @@ where
 
 pub enum RobEntryRef<T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     Id(IdRobEntry<T>),
     IdMut(IdRobEntry<T>),
-    One,
-    Zero,
 }
 
 impl<T> RobEntryRef<T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     fn new_mut(register: &Arc<RwLock<RobEntry<T>>>) -> Self {
         Self::IdMut(IdRobEntry {
@@ -140,23 +135,34 @@ where
             Self::IdMut(entry) => Self::Id(IdRobEntry {
                 register: entry.register.clone(),
             }),
-            Self::One => Self::One,
-            Self::Zero => Self::Zero,
         }
     }
 
-    pub fn unwrap_id(&self) -> &IdRobEntry<T> {
+    pub fn entry(&self) -> RwLockReadGuard<RobEntry<T>> {
         match self {
-            Self::Id(entry) => entry,
-            Self::IdMut(entry) => entry,
-            _ => panic!("RobEntryRef was not Id"),
+            Self::Id(entry) => entry.entry(),
+            Self::IdMut(entry) => entry.entry(),
+        }
+    }
+
+    pub fn entry_mut(&self) -> Result<RwLockWriteGuard<RobEntry<T>>> {
+        match self {
+            Self::Id(_) => Err(Error::RegisterMutabilityViolation),
+            Self::IdMut(entry) => Ok(entry.entry_mut()),
+        }
+    }
+
+    pub fn entry_force_mut(&self) -> RwLockWriteGuard<RobEntry<T>> {
+        match self {
+            Self::Id(entry) => entry.entry_mut(),
+            Self::IdMut(entry) => entry.entry_mut(),
         }
     }
 }
 
 impl<T> Clone for RobEntryRef<T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     fn clone(&self) -> Self {
         match self {
@@ -166,38 +172,27 @@ where
             Self::IdMut(entry) => Self::IdMut(IdRobEntry {
                 register: entry.register.clone(),
             }),
-            Self::One => Self::One,
-            Self::Zero => Self::Zero,
         }
     }
 }
 
 #[derive(PartialEq, Eq)]
-pub enum RegisterName<T> {
-    Named(usize, PhantomData<T>),
-    One,
-    Zero,
+pub struct RegisterName<T> {
+    pub name: usize,
+    _phantom: PhantomData<T>,
 }
 
 impl<T> std::fmt::Debug for RegisterName<T> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        match self {
-            Self::Named(x, _) => write!(f, "RegisterName::Named({x})"),
-            Self::One => write!(f, "RegisterName::One"),
-            Self::Zero => write!(f, "RegisterName::Zero"),
-        }
+        write!(f, "RegisterName {{ {} }}", self.name)
     }
 }
 
 impl<T> RegisterName<T> {
-    pub fn named(name: usize) -> Self {
-        Self::Named(name, PhantomData)
-    }
-
-    pub fn unwrap_named(&self) -> usize {
-        match self {
-            Self::Named(x, _) => *x,
-            _ => panic!("RegisterName was not Named"),
+    pub fn new(name: usize) -> Self {
+        Self {
+            name,
+            _phantom: PhantomData,
         }
     }
 }
@@ -235,7 +230,7 @@ impl<T> RobId<T> {
 
 pub struct Rename<T, I>
 where
-    T: TrivialZero + TrivialOne + 'static,
+    T: Default + 'static,
     I: 'static + Clone,
 {
     pub rob_ref: Option<RobEntryRef<T>>,
@@ -244,7 +239,7 @@ where
 
 impl<T, I> Default for Rename<T, I>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
     I: 'static + Clone,
 {
     fn default() -> Self {
@@ -254,7 +249,7 @@ where
 
 impl<T, I> Rename<T, I>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
     I: 'static + Clone,
 {
     pub fn new() -> Self {
@@ -265,22 +260,20 @@ where
     }
 }
 
-pub struct RobEntry<T: TrivialZero> {
+pub struct RobEntry<T: Default> {
     reg: T,
 }
 
 impl<T> RobEntry<T>
 where
-    T: TrivialZero,
+    T: Default,
 {
-    pub fn new(enc: &Encryption) -> Self {
-        Self {
-            reg: T::trivial_zero(enc),
-        }
+    pub fn new() -> Self {
+        Self { reg: T::default() }
     }
 }
 
-impl<T: TrivialZero> Deref for RobEntry<T> {
+impl<T: Default> Deref for RobEntry<T> {
     type Target = T;
 
     fn deref(&self) -> &Self::Target {
@@ -288,7 +281,7 @@ impl<T: TrivialZero> Deref for RobEntry<T> {
     }
 }
 
-impl<T: TrivialZero> DerefMut for RobEntry<T> {
+impl<T: Default> DerefMut for RobEntry<T> {
     fn deref_mut(&mut self) -> &mut Self::Target {
         &mut self.reg
     }

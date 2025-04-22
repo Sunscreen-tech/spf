@@ -23,23 +23,23 @@ fn can_branch_zero() {
     // }
     // a
     let program = FheProgram::from_instructions(vec![
-        IsaOp::LoadI(RegisterName::named(0), 0, 32),
-        IsaOp::LoadI(RegisterName::named(1), 1, 32),
-        IsaOp::LoadI(RegisterName::named(2), 5, 32),
-        IsaOp::BindReadWrite(RegisterName::named(3), 0, false),
+        IsaOp::LoadI(RegisterName::new(0), 0, 32),
+        IsaOp::LoadI(RegisterName::new(1), 1, 32),
+        IsaOp::LoadI(RegisterName::new(2), 5, 32),
+        IsaOp::BindReadWrite(RegisterName::new(3), 0, false),
         IsaOp::Add(
-            RegisterName::named(0),
-            RegisterName::named(0),
-            RegisterName::named(1),
+            RegisterName::new(0),
+            RegisterName::new(0),
+            RegisterName::new(1),
         ),
         // Have we hit RegisterName::named(2)?
         IsaOp::CmpEq(
-            RegisterName::named(4),
-            RegisterName::named(0),
-            RegisterName::named(2),
+            RegisterName::new(4),
+            RegisterName::new(0),
+            RegisterName::new(2),
         ),
-        IsaOp::BranchZero(RegisterName::named(4), 4),
-        IsaOp::Store(RegisterName::named(3), RegisterName::named(0), 32),
+        IsaOp::BranchZero(RegisterName::new(4), 4),
+        IsaOp::Store(RegisterName::new(3), RegisterName::new(0), 32),
     ]);
 
     let params = vec![output_buffer];
@@ -67,16 +67,16 @@ fn can_branch_nonzero() {
     // }
     // a
     let program = FheProgram::from_instructions(vec![
-        IsaOp::LoadI(RegisterName::named(0), 5, 32),
-        IsaOp::LoadI(RegisterName::named(1), 1, 32),
-        IsaOp::BindReadWrite(RegisterName::named(3), 0, false),
+        IsaOp::LoadI(RegisterName::new(0), 5, 32),
+        IsaOp::LoadI(RegisterName::new(1), 1, 32),
+        IsaOp::BindReadWrite(RegisterName::new(3), 0, false),
         IsaOp::Sub(
-            RegisterName::named(0),
-            RegisterName::named(0),
-            RegisterName::named(1),
+            RegisterName::new(0),
+            RegisterName::new(0),
+            RegisterName::new(1),
         ),
-        IsaOp::BranchNonZero(RegisterName::named(0), 3),
-        IsaOp::Store(RegisterName::named(3), RegisterName::named(0), 32),
+        IsaOp::BranchNonZero(RegisterName::new(0), 3),
+        IsaOp::Store(RegisterName::new(3), RegisterName::new(0), 32),
     ]);
 
     let params = vec![output_buffer];

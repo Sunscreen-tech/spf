@@ -16,8 +16,8 @@ fn can_assign_inputs() {
     let buffer_1 = Buffer::cipher_from_value(&16, &enc, &get_secret_keys_80());
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-        IsaOp::BindReadOnly(RegisterName::named(1), 1, true),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+        IsaOp::BindReadOnly(RegisterName::new(1), 1, true),
     ]);
 
     let params = vec![buffer_0, buffer_1];
@@ -33,8 +33,8 @@ fn can_assign_outputs() {
     let buffer_1 = Buffer::cipher_from_value(&16, &enc, &get_secret_keys_80());
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadWrite(RegisterName::named(0), 0, false),
-        IsaOp::BindReadWrite(RegisterName::named(1), 1, true),
+        IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
+        IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
     ]);
 
     let params = vec![buffer_0, buffer_1];
@@ -50,8 +50,8 @@ fn cant_alias_inputs() {
     let buffer_1 = Buffer::cipher_from_value(&8u32, &enc, &get_secret_keys_80());
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-        IsaOp::BindReadOnly(RegisterName::named(1), 0, false),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+        IsaOp::BindReadOnly(RegisterName::new(1), 0, false),
     ]);
 
     let params = vec![buffer_0, buffer_1];
@@ -76,8 +76,8 @@ fn cant_alias_outputs() {
     let buffer_1 = Buffer::cipher_from_value(&16, &enc, &get_secret_keys_80());
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-        IsaOp::BindReadOnly(RegisterName::named(1), 0, false),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+        IsaOp::BindReadOnly(RegisterName::new(1), 0, false),
     ]);
 
     let params = vec![buffer_0, buffer_1];
@@ -101,7 +101,7 @@ fn input_ptr_register_pt_ct_mismatch() {
     let buffer_0 = Buffer::plain_from_value(&16);
 
     let program =
-        FheProgram::from_instructions(vec![IsaOp::BindReadOnly(RegisterName::named(0), 0, true)]);
+        FheProgram::from_instructions(vec![IsaOp::BindReadOnly(RegisterName::new(0), 0, true)]);
 
     let params = vec![buffer_0];
 
@@ -120,7 +120,7 @@ fn output_ptr_register_pt_ct_mismatch() {
     let buffer_0 = Buffer::plain_from_value(&16);
 
     let program =
-        FheProgram::from_instructions(vec![IsaOp::BindReadWrite(RegisterName::named(0), 0, true)]);
+        FheProgram::from_instructions(vec![IsaOp::BindReadWrite(RegisterName::new(0), 0, true)]);
 
     let params = vec![buffer_0];
 
@@ -137,7 +137,7 @@ fn missing_input() {
     let (mut proc, _) = make_computer_80();
 
     let program =
-        FheProgram::from_instructions(vec![IsaOp::BindReadOnly(RegisterName::named(0), 0, true)]);
+        FheProgram::from_instructions(vec![IsaOp::BindReadOnly(RegisterName::new(0), 0, true)]);
 
     let result = proc.run_program(&program, &[]);
 
@@ -149,7 +149,7 @@ fn missing_output() {
     let (mut proc, _) = make_computer_80();
 
     let program =
-        FheProgram::from_instructions(vec![IsaOp::BindReadWrite(RegisterName::named(0), 0, true)]);
+        FheProgram::from_instructions(vec![IsaOp::BindReadWrite(RegisterName::new(0), 0, true)]);
 
     let result = proc.run_program(&program, &[]);
 

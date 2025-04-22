@@ -3,8 +3,6 @@ use std::{
     sync::{RwLockReadGuard, RwLockWriteGuard, mpsc::Sender},
 };
 
-use parasol_runtime::{TrivialOne, TrivialZero};
-
 use super::{registers::RobEntry, scoreboard::ScoreboardEntryRef};
 use crate::Result;
 
@@ -18,14 +16,13 @@ macro_rules! impl_tomasulo {
                     tomasulo::{
                         registers::{
                             RegisterFile,
-                            RobEntryRef,
                         },
                         scoreboard::{
                             ScoreboardEntryId,
                             ScoreboardEntryRef,
                             ScoreboardEntry,
                         },
-                        tomasulo_processor::{RegRef, Tomasulo, SelectConstant, RetirementInfo, InstructionOperation},
+                        tomasulo_processor::{Tomasulo, RetirementInfo, InstructionOperation},
                     },
                     Result
                 };
@@ -40,60 +37,6 @@ macro_rules! impl_tomasulo {
                     mpsc::{self, Sender, Receiver},
                 };
 
-                pub(crate) struct [<$name ConstantPool>] {
-                    zero: ($($reg_type,)*),
-                    one: ($($reg_type,)*)
-                }
-
-                impl [<$name ConstantPool>] {
-                    pub fn new(enc: &Encryption) -> Self {
-                        Self {
-                            zero: ($($reg_type::trivial_zero(enc),)*),
-                            one: ($($reg_type::trivial_one(enc),)*),
-                        }
-                    }
-
-                    pub fn register<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> RegRef<'a, T>
-                    where
-                        T: TrivialZero + TrivialOne,
-                        Self: SelectConstant<T>,
-                    {
-                        use $crate::tomasulo::tomasulo_processor::SelectConstant;
-
-                        match reg_entry {
-                            RobEntryRef::Id(x) => x.entry().into(),
-                            RobEntryRef::IdMut(x) => x.entry().into(),
-                            RobEntryRef::Zero => self.select_constant_zero().into(),
-                            RobEntryRef::One => self.select_constant_one().into(),
-                        }
-                    }
-
-                    pub fn register_mut<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> Result<RegRef<'a, T>>
-                    where
-                        T: TrivialZero + TrivialOne,
-                        Self: $crate::tomasulo::tomasulo_processor::SelectConstant<T>,
-                    {
-                        match reg_entry {
-                            RobEntryRef::IdMut(x) => Ok(x.entry_mut().into()),
-                            _ => Err(Error::RegisterMutabilityViolation),
-                        }
-                    }
-
-                    pub fn register_force_mut<'a, T>(&'a self, reg_entry: &'a RobEntryRef<T>) -> Result<RegRef<'a, T>>
-                    where
-                        T: TrivialZero + TrivialOne,
-                        Self: $crate::tomasulo::tomasulo_processor::SelectConstant<T>,
-                    {
-                        match reg_entry {
-                            RobEntryRef::IdMut(x) => Ok(x.entry_mut().into()),
-                            RobEntryRef::Id(x) => Ok(x.entry_mut().into()),
-                            _ => Err(Error::RegisterMutabilityViolation),
-                        }
-                    }
-                }
-
-                $($crate::impl_select_constant!{[<$name ConstantPool>], $reg_type, $reg_index})*
-
                 pub(crate) struct $name where Self: Tomasulo {
                     /// The register file.
                     $($reg_name: RegisterFile<$reg_type, $dispatch>,)*
@@ -101,10 +44,6 @@ macro_rules! impl_tomasulo {
                     /// Extensible data specific to a particular
                     /// processor
                     pub aux_data: <Self as Tomasulo>::AuxiliaryData,
-
-                    /// The set of values used for mapping constant
-                    /// registers.
-                    pub constant_pool: Arc<[<$name ConstantPool>]>,
 
                     /// The total number of instructions dispatched
                     current_instruction: usize,
@@ -125,16 +64,14 @@ macro_rules! impl_tomasulo {
 
                 impl $name {
                     pub fn new(
-                        enc: &Encryption,
                         register_config: &[<$name RegisterConfig>],
                         aux_data: <Self as Tomasulo>::AuxiliaryData,
                     ) -> Self {
-                        $(let $reg_name = RegisterFile::<$reg_type, $dispatch>::new(register_config.[<$reg_name _num_registers>], enc);)*
+                        $(let $reg_name = RegisterFile::<$reg_type, $dispatch>::new(register_config.[<$reg_name _num_registers>]);)*
 
                         Self {
                             $($reg_name,)*
                             aux_data,
-                            constant_pool: Arc::new([<$name ConstantPool>]::new(enc)),
                             current_instruction: 0usize,
                             instructions_inflight: 0usize,
                             ready_instructions: mpsc::channel(),
@@ -324,7 +261,6 @@ pub struct RetirementInfo<I: Clone> {
 
 pub trait Tomasulo {
     type DispatchInstruction: Clone;
-    type ConstantPool;
     type AuxiliaryData;
 
     /// Runs the given instruction.
@@ -354,7 +290,7 @@ pub enum InstructionOperation<I: Clone> {
 
 pub enum RegRef<'a, T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     Read(RwLockReadGuard<'a, RobEntry<T>>),
     Write(RwLockWriteGuard<'a, RobEntry<T>>),
@@ -363,7 +299,7 @@ where
 
 impl<'a, T> From<RwLockReadGuard<'a, RobEntry<T>>> for RegRef<'a, T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     fn from(value: RwLockReadGuard<'a, RobEntry<T>>) -> Self {
         Self::Read(value)
@@ -372,7 +308,7 @@ where
 
 impl<'a, T> From<RwLockWriteGuard<'a, RobEntry<T>>> for RegRef<'a, T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     fn from(value: RwLockWriteGuard<'a, RobEntry<T>>) -> Self {
         Self::Write(value)
@@ -381,7 +317,7 @@ where
 
 impl<'a, T> From<&'a T> for RegRef<'a, T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     fn from(value: &'a T) -> Self {
         Self::Imm(value)
@@ -390,7 +326,7 @@ where
 
 impl<T> Deref for RegRef<'_, T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     type Target = T;
 
@@ -405,7 +341,7 @@ where
 
 impl<T> DerefMut for RegRef<'_, T>
 where
-    T: TrivialZero + TrivialOne,
+    T: Default,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         match self {

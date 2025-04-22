@@ -35,26 +35,26 @@ use crate::{
 // where ber is BindReadOnly, ldr is Load, ldi is LoadImmediate, gt is GreaterThan, berw is BindReadWrite, str is Store, and ret is Return
 fn cmux_test_program(encrypted: bool) -> [IsaOp; 11] {
     [
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, encrypted),
-        IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 32),
-        IsaOp::LoadI(RegisterName::named(1), 10, 32),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted),
+        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
+        IsaOp::LoadI(RegisterName::new(1), 10, 32),
         IsaOp::CmpGt(
-            RegisterName::named(0),
-            RegisterName::named(0),
-            RegisterName::named(1),
+            RegisterName::new(0),
+            RegisterName::new(0),
+            RegisterName::new(1),
         ),
-        IsaOp::BindReadOnly(RegisterName::named(2), 2, encrypted),
-        IsaOp::Load(RegisterName::named(1), RegisterName::named(2), 32),
-        IsaOp::BindReadOnly(RegisterName::named(1), 1, encrypted),
-        IsaOp::Load(RegisterName::named(2), RegisterName::named(1), 32),
+        IsaOp::BindReadOnly(RegisterName::new(2), 2, encrypted),
+        IsaOp::Load(RegisterName::new(1), RegisterName::new(2), 32),
+        IsaOp::BindReadOnly(RegisterName::new(1), 1, encrypted),
+        IsaOp::Load(RegisterName::new(2), RegisterName::new(1), 32),
         IsaOp::Cmux(
-            RegisterName::named(0),
-            RegisterName::named(0),
-            RegisterName::named(2),
-            RegisterName::named(1),
+            RegisterName::new(0),
+            RegisterName::new(0),
+            RegisterName::new(2),
+            RegisterName::new(1),
         ),
-        IsaOp::BindReadWrite(RegisterName::named(3), 3, encrypted),
-        IsaOp::Store(RegisterName::named(3), RegisterName::named(0), 32),
+        IsaOp::BindReadWrite(RegisterName::new(3), 3, encrypted),
+        IsaOp::Store(RegisterName::new(3), RegisterName::new(0), 32),
     ]
 }
 

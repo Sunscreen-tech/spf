@@ -16,11 +16,11 @@ fn can_neg_plaintext_inputs() {
     let output_buffer = Buffer::plain_from_value(&0u8);
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-        IsaOp::BindReadWrite(RegisterName::named(1), 1, false),
-        IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 8),
-        IsaOp::Neg(RegisterName::named(1), RegisterName::named(0)),
-        IsaOp::Store(RegisterName::named(1), RegisterName::named(1), 8),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+        IsaOp::BindReadWrite(RegisterName::new(1), 1, false),
+        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 8),
+        IsaOp::Neg(RegisterName::new(1), RegisterName::new(0)),
+        IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 8),
     ]);
 
     let params = vec![buffer_0, output_buffer];

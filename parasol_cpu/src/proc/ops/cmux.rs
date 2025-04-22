@@ -27,7 +27,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let mut cmux_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (select) (a) (b));
+            unwrap_registers!((mut dst) (select) (a) (b));
 
             check_register_width(a, b, instruction_id, pc)?;
 

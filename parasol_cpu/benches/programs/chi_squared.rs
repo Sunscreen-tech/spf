@@ -14,27 +14,27 @@ use parasol_cpu::{
 /// b_3: 2(2n_2 + n_1)^2
 #[allow(unused)]
 pub fn chi_squared_naive_program(bit_width: u32, encrypted_computation: bool) -> Vec<IsaOp> {
-    let n_0_ptr_register = RegisterName::named(0);
-    let n_0_register = RegisterName::named(0);
-    let n_1_ptr_register = RegisterName::named(1);
-    let n_1_register = RegisterName::named(1);
-    let n_2_ptr_register = RegisterName::named(2);
-    let n_2_register = RegisterName::named(2);
+    let n_0_ptr_register = RegisterName::new(0);
+    let n_0_register = RegisterName::new(0);
+    let n_1_ptr_register = RegisterName::new(1);
+    let n_1_register = RegisterName::new(1);
+    let n_2_ptr_register = RegisterName::new(2);
+    let n_2_register = RegisterName::new(2);
 
-    let two_register = RegisterName::named(3);
-    let four_register = RegisterName::named(4);
+    let two_register = RegisterName::new(3);
+    let four_register = RegisterName::new(4);
 
-    let alpha_ptr_register = RegisterName::named(5);
-    let alpha_register = RegisterName::named(5);
-    let b_1_ptr_register = RegisterName::named(6);
-    let b_1_register = RegisterName::<Register>::named(6);
-    let b_2_ptr_register = RegisterName::named(7);
-    let b_2_register = RegisterName::<Register>::named(7);
-    let b_3_ptr_register = RegisterName::named(8);
-    let b_3_register = RegisterName::<Register>::named(8);
+    let alpha_ptr_register = RegisterName::new(5);
+    let alpha_register = RegisterName::new(5);
+    let b_1_ptr_register = RegisterName::new(6);
+    let b_1_register = RegisterName::<Register>::new(6);
+    let b_2_ptr_register = RegisterName::new(7);
+    let b_2_register = RegisterName::<Register>::new(7);
+    let b_3_ptr_register = RegisterName::new(8);
+    let b_3_register = RegisterName::<Register>::new(8);
 
-    let n_1_sq_register = RegisterName::named(9);
-    let two_n_0_plus_n_1_register = RegisterName::named(10);
+    let n_1_sq_register = RegisterName::new(9);
+    let two_n_0_plus_n_1_register = RegisterName::new(10);
 
     vec![
         IsaOp::BindReadOnly(n_0_ptr_register, 0, encrypted_computation),
@@ -125,29 +125,29 @@ pub fn chi_squared_naive_program(bit_width: u32, encrypted_computation: bool) ->
 ///
 /// The constants are implemented as repeated additions.
 pub fn chi_squared_optimised_program(bit_width: u32, encrypted_computation: bool) -> Vec<IsaOp> {
-    let n_0_ptr_register = RegisterName::named(0);
-    let n_0_register = RegisterName::named(0);
-    let n_1_ptr_register = RegisterName::named(1);
-    let n_1_register = RegisterName::named(1);
-    let n_2_ptr_register = RegisterName::named(2);
-    let n_2_register = RegisterName::named(2);
+    let n_0_ptr_register = RegisterName::new(0);
+    let n_0_register = RegisterName::new(0);
+    let n_1_ptr_register = RegisterName::new(1);
+    let n_1_register = RegisterName::new(1);
+    let n_2_ptr_register = RegisterName::new(2);
+    let n_2_register = RegisterName::new(2);
 
-    let two_register = RegisterName::named(3);
-    let four_register = RegisterName::named(4);
+    let two_register = RegisterName::new(3);
+    let four_register = RegisterName::new(4);
 
-    let alpha_ptr_register = RegisterName::named(5);
-    let alpha_register = RegisterName::named(5);
-    let b_1_ptr_register = RegisterName::named(6);
-    let b_1_register = RegisterName::<Register>::named(6);
-    let b_2_ptr_register = RegisterName::named(7);
-    let b_2_register = RegisterName::<Register>::named(7);
-    let b_3_ptr_register = RegisterName::named(8);
-    let b_3_register = RegisterName::<Register>::named(8);
+    let alpha_ptr_register = RegisterName::new(5);
+    let alpha_register = RegisterName::new(5);
+    let b_1_ptr_register = RegisterName::new(6);
+    let b_1_register = RegisterName::<Register>::new(6);
+    let b_2_ptr_register = RegisterName::new(7);
+    let b_2_register = RegisterName::<Register>::new(7);
+    let b_3_ptr_register = RegisterName::new(8);
+    let b_3_register = RegisterName::<Register>::new(8);
 
-    let x_register = RegisterName::named(9);
-    let y_register = RegisterName::named(10);
-    let n_0_n_2_register = RegisterName::named(11);
-    let n_1_sq_register = RegisterName::named(12);
+    let x_register = RegisterName::new(9);
+    let y_register = RegisterName::new(10);
+    let n_0_n_2_register = RegisterName::new(11);
+    let n_1_sq_register = RegisterName::new(12);
 
     vec![
         IsaOp::BindReadOnly(n_0_ptr_register, 0, encrypted_computation),

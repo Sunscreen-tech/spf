@@ -18,17 +18,17 @@ fn can_unsigned_mul_plain_plain() {
         let c_buf = Buffer::plain_from_value(&0u128);
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-            IsaOp::BindReadOnly(RegisterName::named(1), 1, false),
-            IsaOp::BindReadWrite(RegisterName::named(2), 2, false),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), width),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(1), width),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+            IsaOp::BindReadOnly(RegisterName::new(1), 1, false),
+            IsaOp::BindReadWrite(RegisterName::new(2), 2, false),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), width),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), width),
             IsaOp::Mul(
-                RegisterName::named(2),
-                RegisterName::named(0),
-                RegisterName::named(1),
+                RegisterName::new(2),
+                RegisterName::new(0),
+                RegisterName::new(1),
             ),
-            IsaOp::Store(RegisterName::named(2), RegisterName::named(2), width),
+            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), width),
         ]);
 
         let params = vec![a_buf, b_buf, c_buf];
@@ -70,17 +70,17 @@ fn can_unsigned_mul_cipher_cipher() {
         let c_buf = Buffer::cipher_from_value(&0u128, &enc, &sk);
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-            IsaOp::BindReadOnly(RegisterName::named(1), 1, true),
-            IsaOp::BindReadWrite(RegisterName::named(2), 2, true),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), width),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(1), width),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+            IsaOp::BindReadOnly(RegisterName::new(1), 1, true),
+            IsaOp::BindReadWrite(RegisterName::new(2), 2, true),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), width),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), width),
             IsaOp::Mul(
-                RegisterName::named(2),
-                RegisterName::named(0),
-                RegisterName::named(1),
+                RegisterName::new(2),
+                RegisterName::new(0),
+                RegisterName::new(1),
             ),
-            IsaOp::Store(RegisterName::named(2), RegisterName::named(2), width),
+            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), width),
         ]);
 
         let params = vec![a_buf, b_buf, c_buf];
@@ -122,17 +122,17 @@ fn can_multiply_cipher_plain() {
         let c_buf = Buffer::cipher_from_value(&0u128, &enc, &sk);
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-            IsaOp::BindReadOnly(RegisterName::named(1), 1, false),
-            IsaOp::BindReadWrite(RegisterName::named(2), 2, true),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), width),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(1), width),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+            IsaOp::BindReadOnly(RegisterName::new(1), 1, false),
+            IsaOp::BindReadWrite(RegisterName::new(2), 2, true),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), width),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), width),
             IsaOp::Mul(
-                RegisterName::named(2),
-                RegisterName::named(0),
-                RegisterName::named(1),
+                RegisterName::new(2),
+                RegisterName::new(0),
+                RegisterName::new(1),
             ),
-            IsaOp::Store(RegisterName::named(2), RegisterName::named(2), width),
+            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), width),
         ]);
 
         let params = vec![a_buf, b_buf, c_buf];

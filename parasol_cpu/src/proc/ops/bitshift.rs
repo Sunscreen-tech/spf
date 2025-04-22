@@ -111,7 +111,7 @@ impl FheProcessor {
         circuit_gen: fn(usize, usize) -> MuxCircuit,
     ) {
         let mut shift_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (src) (shift));
+            unwrap_registers!((mut dst) (src) (shift));
 
             match (src, shift) {
                 (

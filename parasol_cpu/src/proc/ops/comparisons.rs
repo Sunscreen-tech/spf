@@ -28,13 +28,9 @@ impl FheProcessor {
         circuit_gen: fn(usize) -> MuxCircuit,
     ) {
         let mut comparison_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (a) (b));
+            unwrap_registers!((mut dst) (a) (b));
 
             check_register_width(a, b, instruction_id, pc)?;
-
-            if dst.width() != 1 {
-                return Err(Error::unsupported_width(instruction_id, pc));
-            }
 
             if let (
                 Register::Plaintext {

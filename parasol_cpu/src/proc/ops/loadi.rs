@@ -16,7 +16,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let loadi_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst));
+            unwrap_registers!((mut dst));
 
             if imm >= 0x1 << width {
                 return Err(Error::out_of_range(instruction_id, pc));

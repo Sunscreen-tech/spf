@@ -164,17 +164,17 @@ pub fn make_parent_op(retirement_info: &RetirementInfo<DispatchIsaOp>) -> Arc<Co
 #[macro_export]
 #[doc(hidden)]
 macro_rules! unwrap_registers {
-    ([$const_pool:expr] (mut $reg:ident) $($rest:tt)*) => {
-        let mut $reg = $const_pool.register_mut(&$reg)?;
-        let $reg = std::ops::DerefMut::deref_mut(&mut $reg);
-        unwrap_registers!([$const_pool] $($rest)*);
+    ((mut $reg:ident) $($rest:tt)*) => {
+        let mut $reg = $reg.entry_mut()?;
+        let $reg = std::ops::DerefMut::deref_mut(&mut *$reg);
+        unwrap_registers!($($rest)*);
     };
-    ([$const_pool:expr] ($reg:ident) $($rest:tt)*) => {
-        let $reg = $const_pool.register(&$reg);
-        let $reg = std::ops::Deref::deref(&$reg);
-        unwrap_registers!([$const_pool] $($rest)*);
+    (($reg:ident) $($rest:tt)*) => {
+        let $reg = $reg.entry();
+        let $reg = std::ops::Deref::deref(&*$reg);
+        unwrap_registers!($($rest)*);
     };
-    ([$const_pool:expr]) => {
+    () => {
 
     };
 }

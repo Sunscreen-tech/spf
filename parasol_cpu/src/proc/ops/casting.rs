@@ -22,7 +22,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let zext_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (src));
+            unwrap_registers!((mut dst) (src));
 
             if (new_width as usize) < src.width() {
                 return Err(crate::Error::WidthMismatch {
@@ -87,7 +87,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let trunc_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (src));
+            unwrap_registers!((mut dst) (src));
 
             if (new_width as usize) > src.width() {
                 return Err(crate::Error::WidthMismatch {
