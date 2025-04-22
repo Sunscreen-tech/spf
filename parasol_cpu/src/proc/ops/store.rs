@@ -1,5 +1,3 @@
-use std::ops::DerefMut;
-
 use parasol_concurrency::AtomicRefCell;
 
 use crate::{
@@ -28,14 +26,14 @@ impl FheProcessor {
     ) {
         let store_impl = |scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>| -> Result<()> {
             let mut dst = dst.entry_force_mut();
-            let dst: &mut PtrRegister = dst.deref_mut();
+            let dst = &mut **dst;
 
             unwrap_registers!((src));
 
             let mask = read_write_mask(width);
             let num_bytes = width.next_multiple_of(8) as usize / 8;
 
-            match (src, &mut *dst) {
+            match (src, dst) {
                 (
                     Register::Plaintext {
                         val,
