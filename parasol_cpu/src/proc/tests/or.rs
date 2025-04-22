@@ -22,17 +22,17 @@ fn can_or_plaintext_inputs() {
     let output_buffer = Buffer::plain_from_value(&0u32);
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-        IsaOp::BindReadOnly(RegisterName::named(1), 1, false),
-        IsaOp::BindReadWrite(RegisterName::named(2), 2, false),
-        IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 32),
-        IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 32),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+        IsaOp::BindReadOnly(RegisterName::new(1), 1, false),
+        IsaOp::BindReadWrite(RegisterName::new(2), 2, false),
+        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
+        IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
         IsaOp::Or(
-            RegisterName::named(2),
-            RegisterName::named(0),
-            RegisterName::named(1),
+            RegisterName::new(2),
+            RegisterName::new(0),
+            RegisterName::new(1),
         ),
-        IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 32),
+        IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 32),
     ]);
 
     let params = vec![buffer_0, buffer_1, output_buffer];
@@ -54,17 +54,17 @@ fn can_or_ciphertext_inputs() {
         let output_buffer = Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_80());
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-            IsaOp::BindReadOnly(RegisterName::named(1), 1, true),
-            IsaOp::BindReadWrite(RegisterName::named(2), 2, true),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 4),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 4),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+            IsaOp::BindReadOnly(RegisterName::new(1), 1, true),
+            IsaOp::BindReadWrite(RegisterName::new(2), 2, true),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 4),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 4),
             IsaOp::Or(
-                RegisterName::named(2),
-                RegisterName::named(0),
-                RegisterName::named(1),
+                RegisterName::new(2),
+                RegisterName::new(0),
+                RegisterName::new(1),
             ),
-            IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 4),
+            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 4),
         ]);
 
         let params = vec![buffer_0, buffer_1, output_buffer];

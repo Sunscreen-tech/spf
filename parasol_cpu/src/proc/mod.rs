@@ -127,22 +127,12 @@ impl std::fmt::Debug for CiphertextPtr {
 }
 
 #[doc(hidden)]
+#[derive(Default)]
 pub enum PtrRegister {
+    #[default]
     Uninit,
     Plaintext(PlaintextPtr),
     Ciphertext(CiphertextPtr),
-}
-
-impl TrivialZero for PtrRegister {
-    fn trivial_zero(_enc: &Encryption) -> Self {
-        PtrRegister::Uninit
-    }
-}
-
-impl TrivialOne for PtrRegister {
-    fn trivial_one(_enc: &Encryption) -> Self {
-        PtrRegister::Uninit
-    }
 }
 
 #[doc(hidden)]
@@ -244,15 +234,9 @@ impl Register {
     }
 }
 
-impl TrivialZero for Register {
-    fn trivial_zero(_enc: &Encryption) -> Self {
-        Register::Plaintext { val: 0, width: 1 }
-    }
-}
-
-impl TrivialOne for Register {
-    fn trivial_one(_enc: &Encryption) -> Self {
-        Register::Plaintext { val: 1, width: 1 }
+impl Default for Register {
+    fn default() -> Self {
+        Register::Plaintext { val: 0, width: 32 }
     }
 }
 
@@ -308,7 +292,6 @@ impl_tomasulo! {
 
 impl Tomasulo for FheProcessor {
     type AuxiliaryData = FheProcessorAuxData;
-    type ConstantPool = FheProcessorConstantPool;
     type DispatchInstruction = DispatchIsaOp;
 
     fn exec_instruction(
@@ -332,7 +315,6 @@ impl Tomasulo for FheProcessor {
         match instruction {
             BindReadOnly(ptr, id, enc) => {
                 let res = assign_io(
-                    &self.constant_pool,
                     ptr,
                     &self.aux_data.data,
                     enc,
@@ -346,7 +328,6 @@ impl Tomasulo for FheProcessor {
             }
             BindReadWrite(ptr, id, enc) => {
                 let res = assign_io(
-                    &self.constant_pool,
                     ptr,
                     &self.aux_data.data,
                     enc,
@@ -507,7 +488,7 @@ impl Tomasulo for FheProcessor {
     ) -> Result<usize> {
         match dispatched_op {
             DispatchIsaOp::BranchNonZero(cond, target) => {
-                unwrap_registers!([self.constant_pool](cond));
+                unwrap_registers!((cond));
                 if let Register::Plaintext { val, width: _ } = cond {
                     if *val != 0 {
                         Ok(target as usize)
@@ -519,7 +500,7 @@ impl Tomasulo for FheProcessor {
                 }
             }
             DispatchIsaOp::BranchZero(cond, target) => {
-                unwrap_registers!([self.constant_pool](cond));
+                unwrap_registers!((cond));
                 if let Register::Plaintext { val, width: _ } = cond {
                     if *val == 0 {
                         Ok(target as usize)
@@ -755,7 +736,7 @@ impl FheComputer {
 
         let aux_data = FheProcessorAuxData::new(enc, eval, None);
 
-        let processor = FheProcessor::new(enc, &config, aux_data);
+        let processor = FheProcessor::new(&config, aux_data);
 
         Self { processor }
     }
@@ -773,7 +754,7 @@ impl FheComputer {
 
         let aux_data = FheProcessorAuxData::new(enc, eval, Some(thread_pool));
 
-        let processor = FheProcessor::new(enc, &config, aux_data);
+        let processor = FheProcessor::new(&config, aux_data);
 
         Self { processor }
     }
@@ -943,17 +924,17 @@ mod buffer_uint_tests {
 
             // Create and run program
             let program = FheProgram::from_instructions(vec![
-                IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-                IsaOp::BindReadOnly(RegisterName::named(1), 1, true),
-                IsaOp::BindReadWrite(RegisterName::named(2), 2, true),
-                IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 8),
-                IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 8),
+                IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+                IsaOp::BindReadOnly(RegisterName::new(1), 1, true),
+                IsaOp::BindReadWrite(RegisterName::new(2), 2, true),
+                IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 8),
+                IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 8),
                 IsaOp::Add(
-                    RegisterName::named(2),
-                    RegisterName::named(0),
-                    RegisterName::named(1),
+                    RegisterName::new(2),
+                    RegisterName::new(0),
+                    RegisterName::new(1),
                 ),
-                IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 8),
+                IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 8),
             ]);
 
             let params = vec![buffer1, buffer2, output_buffer];
@@ -992,17 +973,17 @@ mod buffer_uint_tests {
 
             let add_program = &FheProgram {
                 instructions: vec![
-                    IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-                    IsaOp::BindReadOnly(RegisterName::named(1), 1, true),
-                    IsaOp::BindReadWrite(RegisterName::named(2), 2, true),
-                    IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 8),
-                    IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 8),
+                    IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+                    IsaOp::BindReadOnly(RegisterName::new(1), 1, true),
+                    IsaOp::BindReadWrite(RegisterName::new(2), 2, true),
+                    IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 8),
+                    IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 8),
                     IsaOp::Add(
-                        RegisterName::named(2),
-                        RegisterName::named(0),
-                        RegisterName::named(1),
+                        RegisterName::new(2),
+                        RegisterName::new(0),
+                        RegisterName::new(1),
                     ),
-                    IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 8),
+                    IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 8),
                 ],
             };
 

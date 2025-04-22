@@ -1,14 +1,13 @@
-use std::{collections::HashSet, sync::Arc};
+use std::collections::HashSet;
 
 use crate::{
-    Buffer, CiphertextPtr, Error, FheProcessorConstantPool, PlainOffsetCtPtr, PlaintextPtr,
-    PtrRegister, Result, tomasulo::registers::RobEntryRef, unwrap_registers,
+    Buffer, CiphertextPtr, Error, PlainOffsetCtPtr, PlaintextPtr, PtrRegister, Result,
+    tomasulo::registers::RobEntryRef, unwrap_registers,
 };
 
 #[allow(clippy::too_many_arguments)]
 /// Creates a PtrRegister to the buffer at the given index.
 pub fn assign_io(
-    constant_pool: &Arc<FheProcessorConstantPool>,
     dst: RobEntryRef<PtrRegister>,
     buffers: &[Buffer],
     is_encrypted: bool,
@@ -27,7 +26,7 @@ pub fn assign_io(
 
     in_use.insert(buffer_id);
 
-    unwrap_registers!([constant_pool] (mut dst));
+    unwrap_registers!((mut dst));
 
     let buffer = buffers
         .get(buffer_id)

@@ -23,7 +23,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let mut or_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (a) (b));
+            unwrap_registers!((mut dst) (a) (b));
 
             check_register_width(a, b, instruction_id, pc)?;
 

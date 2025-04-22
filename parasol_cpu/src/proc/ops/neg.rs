@@ -16,7 +16,7 @@ impl FheProcessor {
         _pc: usize,
     ) {
         let neg_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (src));
+            unwrap_registers!((mut dst) (src));
 
             match src {
                 Register::Plaintext {

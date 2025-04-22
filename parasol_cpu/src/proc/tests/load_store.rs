@@ -20,10 +20,10 @@ fn can_load_store_plain_byte_width() {
         let buffer_1 = Buffer::plain_from_value(&vec![0u8; 16]);
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-            IsaOp::BindReadWrite(RegisterName::named(1), 1, false),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), bytes * 8),
-            IsaOp::Store(RegisterName::named(1), RegisterName::named(0), bytes * 8),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+            IsaOp::BindReadWrite(RegisterName::new(1), 1, false),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), bytes * 8),
+            IsaOp::Store(RegisterName::new(1), RegisterName::new(0), bytes * 8),
         ]);
 
         let params = vec![buffer_0, buffer_1];
@@ -59,10 +59,10 @@ fn can_load_store_ciphertext_byte_width() {
 
         proc.run_program(
             &FheProgram::from_instructions(vec![
-                IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-                IsaOp::BindReadWrite(RegisterName::named(1), 1, true),
-                IsaOp::Load(RegisterName::named(0), RegisterName::named(0), width),
-                IsaOp::Store(RegisterName::named(1), RegisterName::named(0), width),
+                IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+                IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
+                IsaOp::Load(RegisterName::new(0), RegisterName::new(0), width),
+                IsaOp::Store(RegisterName::new(1), RegisterName::new(0), width),
             ]),
             &params,
         )
@@ -117,9 +117,9 @@ fn can_load_immediate() {
 
     proc.run_program(
         &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::named(0), 0, false),
-            IsaOp::LoadI(RegisterName::named(0), 1234, 15),
-            IsaOp::Store(RegisterName::named(0), RegisterName::named(0), 15),
+            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
+            IsaOp::LoadI(RegisterName::new(0), 1234, 15),
+            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 15),
         ]),
         &params,
     )
@@ -140,9 +140,9 @@ fn load_immediate_fails_out_of_range() {
 
     let result = proc.run_program(
         &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::named(0), 0, false),
-            IsaOp::LoadI(RegisterName::named(0), 1234, 4),
-            IsaOp::Store(RegisterName::named(0), RegisterName::named(0), 15),
+            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
+            IsaOp::LoadI(RegisterName::new(0), 1234, 4),
+            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 15),
         ]),
         &params,
     );
@@ -164,16 +164,16 @@ fn can_compute_effective_address_plain_ptr() {
 
     proc.run_program(
         &FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, false),
-            IsaOp::BindReadWrite(RegisterName::named(1), 1, false),
-            IsaOp::LoadI(RegisterName::named(0), 2, 16),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
+            IsaOp::BindReadWrite(RegisterName::new(1), 1, false),
+            IsaOp::LoadI(RegisterName::new(0), 2, 16),
             IsaOp::Cea(
-                RegisterName::named(0),
-                RegisterName::named(0),
-                RegisterName::named(0),
+                RegisterName::new(0),
+                RegisterName::new(0),
+                RegisterName::new(0),
             ),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(0), 16),
-            IsaOp::Store(RegisterName::named(1), RegisterName::named(1), 16),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(0), 16),
+            IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 16),
         ]),
         &params,
     )
@@ -195,16 +195,16 @@ fn can_compute_effective_address_encrypted_ptr_plain_offset() {
 
     proc.run_program(
         &FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, true),
-            IsaOp::BindReadWrite(RegisterName::named(1), 1, true),
-            IsaOp::LoadI(RegisterName::named(0), 2, 16),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+            IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
+            IsaOp::LoadI(RegisterName::new(0), 2, 16),
             IsaOp::Cea(
-                RegisterName::named(0),
-                RegisterName::named(0),
-                RegisterName::named(0),
+                RegisterName::new(0),
+                RegisterName::new(0),
+                RegisterName::new(0),
             ),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(0), 16),
-            IsaOp::Store(RegisterName::named(1), RegisterName::named(1), 16),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(0), 16),
+            IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 16),
         ]),
         &params,
     )

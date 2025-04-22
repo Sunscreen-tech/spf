@@ -48,15 +48,15 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
         let output_buffer = buffer_from_value_80(0u32, enc, encrypted_computation);
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, encrypted_computation),
-            IsaOp::BindReadWrite(RegisterName::named(1), 1, encrypted_computation),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), input_width),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted_computation),
+            IsaOp::BindReadWrite(RegisterName::new(1), 1, encrypted_computation),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), input_width),
             if zero_extend {
-                IsaOp::Zext(RegisterName::named(1), RegisterName::named(0), output_width)
+                IsaOp::Zext(RegisterName::new(1), RegisterName::new(0), output_width)
             } else {
-                IsaOp::Trunc(RegisterName::named(1), RegisterName::named(0), output_width)
+                IsaOp::Trunc(RegisterName::new(1), RegisterName::new(0), output_width)
             },
-            IsaOp::Store(RegisterName::named(1), RegisterName::named(1), output_width),
+            IsaOp::Store(RegisterName::new(1), RegisterName::new(1), output_width),
         ]);
 
         let params = vec![buffer_0, output_buffer];

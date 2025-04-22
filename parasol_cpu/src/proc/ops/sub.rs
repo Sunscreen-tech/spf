@@ -22,7 +22,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let mut sub_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (a) (b));
+            unwrap_registers!((mut dst) (a) (b));
 
             check_register_width(a, b, instruction_id, pc)?;
 
@@ -94,7 +94,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let mut sub_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (mut borrow_out) (a) (b) (borrow_in));
+            unwrap_registers!((mut dst) (mut borrow_out) (a) (b) (borrow_in));
 
             check_register_width(a, b, instruction_id, pc)?;
 

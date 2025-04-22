@@ -19,17 +19,17 @@ fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
     let output_buffer = buffer_from_value_80(0u32, &enc, encrypted_computation);
 
     let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::named(0), 0, encrypted_val1),
-        IsaOp::BindReadOnly(RegisterName::named(1), 1, encrypted_val2),
-        IsaOp::BindReadWrite(RegisterName::named(2), 2, encrypted_computation),
-        IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 32),
-        IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 32),
+        IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted_val1),
+        IsaOp::BindReadOnly(RegisterName::new(1), 1, encrypted_val2),
+        IsaOp::BindReadWrite(RegisterName::new(2), 2, encrypted_computation),
+        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
+        IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
         IsaOp::Xor(
-            RegisterName::named(2),
-            RegisterName::named(0),
-            RegisterName::named(1),
+            RegisterName::new(2),
+            RegisterName::new(0),
+            RegisterName::new(1),
         ),
-        IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 32),
+        IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 32),
     ]);
 
     let params = vec![buffer_0, buffer_1, output_buffer];

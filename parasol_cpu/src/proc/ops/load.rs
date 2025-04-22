@@ -27,7 +27,7 @@ impl FheProcessor {
         pc: usize,
     ) {
         let load_impl = |scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>| -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (src));
+            unwrap_registers!((mut dst) (src));
 
             let num_bytes = width.next_multiple_of(8) as usize / 8;
             let mask = read_write_mask(width);

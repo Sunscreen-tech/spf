@@ -22,7 +22,7 @@ impl FheProcessor {
         _pc: usize,
     ) {
         let mut add_impl = || -> Result<()> {
-            unwrap_registers!([self.constant_pool] (mut dst) (src) );
+            unwrap_registers!((mut dst) (src) );
 
             match src {
                 Register::Plaintext { val, width } => {

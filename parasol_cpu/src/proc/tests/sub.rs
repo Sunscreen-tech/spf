@@ -32,17 +32,17 @@ fn can_sub_inputs() {
         };
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, enc1),
-            IsaOp::BindReadOnly(RegisterName::named(1), 1, enc2),
-            IsaOp::BindReadWrite(RegisterName::named(2), 2, encrypted_computation),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 32),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 32),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, enc1),
+            IsaOp::BindReadOnly(RegisterName::new(1), 1, enc2),
+            IsaOp::BindReadWrite(RegisterName::new(2), 2, encrypted_computation),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
             IsaOp::Sub(
-                RegisterName::named(2),
-                RegisterName::named(0),
-                RegisterName::named(1),
+                RegisterName::new(2),
+                RegisterName::new(0),
+                RegisterName::new(1),
             ),
-            IsaOp::Store(RegisterName::named(2), RegisterName::named(2), 32),
+            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 32),
         ]);
 
         let params = vec![buffer_0, buffer_1, output_buffer0];
@@ -120,23 +120,23 @@ fn can_sub_borrow_inputs() {
         };
 
         let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::named(0), 0, enc1),
-            IsaOp::BindReadOnly(RegisterName::named(1), 1, enc2),
-            IsaOp::BindReadOnly(RegisterName::named(2), 2, enc_input_borrow),
-            IsaOp::BindReadWrite(RegisterName::named(3), 3, encrypted_computation),
-            IsaOp::BindReadWrite(RegisterName::named(4), 4, encrypted_computation),
-            IsaOp::Load(RegisterName::named(0), RegisterName::named(0), 32),
-            IsaOp::Load(RegisterName::named(1), RegisterName::named(1), 32),
-            IsaOp::Load(RegisterName::named(2), RegisterName::named(2), 1),
+            IsaOp::BindReadOnly(RegisterName::new(0), 0, enc1),
+            IsaOp::BindReadOnly(RegisterName::new(1), 1, enc2),
+            IsaOp::BindReadOnly(RegisterName::new(2), 2, enc_input_borrow),
+            IsaOp::BindReadWrite(RegisterName::new(3), 3, encrypted_computation),
+            IsaOp::BindReadWrite(RegisterName::new(4), 4, encrypted_computation),
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
+            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
+            IsaOp::Load(RegisterName::new(2), RegisterName::new(2), 1),
             IsaOp::SubB(
-                RegisterName::named(3),
-                RegisterName::named(4),
-                RegisterName::named(0),
-                RegisterName::named(1),
-                RegisterName::named(2),
+                RegisterName::new(3),
+                RegisterName::new(4),
+                RegisterName::new(0),
+                RegisterName::new(1),
+                RegisterName::new(2),
             ),
-            IsaOp::Store(RegisterName::named(3), RegisterName::named(3), 32),
-            IsaOp::Store(RegisterName::named(4), RegisterName::named(4), 1),
+            IsaOp::Store(RegisterName::new(3), RegisterName::new(3), 32),
+            IsaOp::Store(RegisterName::new(4), RegisterName::new(4), 1),
         ]);
 
         let params = vec![buffer_0, buffer_1, buffer_2, output_buffer0, output_buffer1];
@@ -244,14 +244,14 @@ fn sub_use_same_dst_and_src() {
 
     proc.run_program(
         &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::named(0), 0, false),
-            IsaOp::LoadI(RegisterName::named(0), 10, 16),
+            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
+            IsaOp::LoadI(RegisterName::new(0), 10, 16),
             IsaOp::Sub(
-                RegisterName::named(0),
-                RegisterName::named(0),
-                RegisterName::named(0),
+                RegisterName::new(0),
+                RegisterName::new(0),
+                RegisterName::new(0),
             ),
-            IsaOp::Store(RegisterName::named(0), RegisterName::named(0), 16),
+            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 16),
         ]),
         &output,
     )
