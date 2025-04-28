@@ -531,13 +531,18 @@ impl FheProcessor {
         self.reset_io(data)?;
 
         let mut pc = 0;
+        let mut gas = 0;
 
         while let Some(inst) = program.get(pc) {
             let pc_result = self.dispatch_instruction(inst.clone(), pc);
 
             if let Err(Error::Halt) = pc_result {
                 break;
-            } else if let Ok(next_pc) = pc_result {
+            } else if let Ok((next_pc, used_gas)) = pc_result {
+                gas += used_gas;
+                if gas > self.get_gas_limit() {
+                    return Err(Error::OutOfGas(gas, self.get_gas_limit()));
+                }
                 pc = next_pc;
             } else {
                 pc_result?;
@@ -547,6 +552,11 @@ impl FheProcessor {
         self.wait()?;
 
         Ok(())
+    }
+
+    fn get_gas_limit(&self) -> u32 {
+        // TODO: make this somehow configurable
+        100_000_000
     }
 }
 

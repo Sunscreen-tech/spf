@@ -82,7 +82,7 @@ macro_rules! impl_tomasulo {
                         &mut self,
                         inst: $inst,
                         pc: usize
-                    ) -> Result<usize> {
+                    ) -> Result<(usize, u32)> {
                         use $crate::tomasulo::{ToDispatchedOp, GetDeps};
 
                         inst.validate(self.current_instruction, pc)?;
@@ -151,7 +151,7 @@ macro_rules! impl_tomasulo {
 
                         let next_pc = self.next_program_counter(disp_inst, pc)?;
 
-                        Ok(next_pc)
+                        Ok((next_pc, *inst.get_gas_config().last().unwrap_or(&1)))
                     }
 
                     fn execute_ready_instructions(&mut self, blocking: bool) -> Result<()> {

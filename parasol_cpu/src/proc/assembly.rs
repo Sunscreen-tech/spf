@@ -12,6 +12,7 @@ macro_rules! define_op {
             $((dst $dst_name:ident, $dst_type_id:tt, $dst_type:ty))*
             $((src $src_name:ident, $src_type_id:tt, $src_type:ty))*
             $((meta $meta_name:ident $meta_type:ty))*
+            $((gas $gas_val:tt))*
         ]),* $(,)?
     ) => {
         paste::paste! {
@@ -58,6 +59,19 @@ macro_rules! define_op {
                         }
 
                         Ok(())
+                    }
+                }
+
+                impl $inst_name {
+                    pub fn get_gas_config(&self) -> Vec<u32> {
+                        #[allow(unused)]
+                        match self {
+                            $(
+                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
+                                    vec![$($gas_val,)*]
+                                },
+                            )*
+                        }
                     }
                 }
 
@@ -173,81 +187,81 @@ define_op! {
     [Store (src dst, 1, PtrRegister) (src src, 0, Register) (meta width u32)],
 
     // And
-    [And (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [And (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Or
-    [Or (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [Or (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Multiply a * b and produce the low word of the product.
-    [Mul (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [Mul (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 500_000)],
 
     // Add
-    [Add (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [Add (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Not
-    [Not (dst dst, 0, Register) (src src, 0, Register)],
+    [Not (dst dst, 0, Register) (src src, 0, Register) (gas 1) (gas 100_000)],
 
     // Xor
-    [Xor (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [Xor (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Bitshift right
-    [Shr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+    [Shr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register) (gas 1) (gas 100_000)],
 
     // Arithmetic shift right
-    [Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+    [Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register) (gas 1) (gas 100_000)],
 
     // Bitshift left
-    [Shl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+    [Shl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register) (gas 1) (gas 100_000)],
 
     // Rotate right
-    [Rotr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+    [Rotr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register) (gas 1) (gas 100_000)],
 
     // Rotate left
-    [Rotl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+    [Rotl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register) (gas 1) (gas 100_000)],
 
     // Add with carry
-    [AddC (dst dst, 0, Register) (dst carry_out, 0, Register) (src a, 0, Register) (src b, 0, Register) (src carry_in, 0, Register)],
+    [AddC (dst dst, 0, Register) (dst carry_out, 0, Register) (src a, 0, Register) (src b, 0, Register) (src carry_in, 0, Register) (gas 1) (gas 100_000)],
 
     // Compute effective address
-    [Cea (dst dst, 1, PtrRegister) (src base, 1, PtrRegister) (src offset, 0, Register)],
+    [Cea (dst dst, 1, PtrRegister) (src base, 1, PtrRegister) (src offset, 0, Register) (gas 1) (gas 100_000)],
 
     // Compute effective address (immediate)
-    [Ceai (dst dst, 1, PtrRegister) (src base, 1, PtrRegister) (meta offset u64)],
+    [Ceai (dst dst, 1, PtrRegister) (src base, 1, PtrRegister) (meta offset u64) (gas 1) (gas 100_000)],
 
     // Subtract
-    [Sub (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [Sub (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Subract and borrow
-    [SubB (dst dst, 0, Register) (dst borrow_out, 0, Register) (src a, 0, Register) (src b, 0, Register) (src borrow_in, 0, Register)],
+    [SubB (dst dst, 0, Register) (dst borrow_out, 0, Register) (src a, 0, Register) (src b, 0, Register) (src borrow_in, 0, Register) (gas 1) (gas 100_000)],
 
     // Negate
-    [Neg (dst dst, 0, Register) (src src, 0, Register)],
+    [Neg (dst dst, 0, Register) (src src, 0, Register) (gas 1) (gas 100_000)],
 
     // Compare equal
-    [CmpEq (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [CmpEq (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Compare greater than
-    [CmpGt (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [CmpGt (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Compare greater than or equal
-    [CmpGe (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [CmpGe (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Compare less than
-    [CmpLt (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [CmpLt (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Compare less than or equal
-    [CmpLe (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [CmpLe (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Casting operations
-    [Zext (dst dst, 0, Register) (src src, 0, Register) (meta width u32)],
-    [Trunc (dst dst, 0, Register) (src src, 0, Register) (meta width u32)],
+    [Zext (dst dst, 0, Register) (src src, 0, Register) (meta width u32) (gas 1) (gas 100_000)],
+    [Trunc (dst dst, 0, Register) (src src, 0, Register) (meta width u32) (gas 1) (gas 100_000)],
 
     // Branch
     [BranchNonZero (src cond, 0, Register) (meta target u64)],
     [BranchZero (src cond, 0, Register) (meta target u64)],
 
     // Raw cmux
-    [Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    [Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register) (gas 1) (gas 100_000)],
 
     // Return
     [Ret]
