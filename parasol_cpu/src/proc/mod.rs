@@ -1105,12 +1105,22 @@ mod buffer_uint_tests {
         case(false);
         case(true);
     }
+}
+
+#[cfg(test)]
+mod runner_tests {
+    use crate::tomasulo::registers::RegisterName;
+
+    use super::*;
+    use parasol_runtime::test_utils::{
+        get_encryption_128, get_evaluation_128, get_secret_keys_128,
+    };
 
     #[test]
     fn gas_limit_works() {
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
-        let mut cpu = FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool());
+        let mut cpu = FheComputer::new(&enc, &eval);
 
         let buffers: Vec<Buffer> = vec![
             Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
