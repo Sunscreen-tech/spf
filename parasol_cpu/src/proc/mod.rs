@@ -13,6 +13,7 @@ use crate::{
     Error, Result, impl_tomasulo,
     proc::ops::assign_io,
     tomasulo::{
+        registers::RobEntryRef,
         scoreboard::ScoreboardEntryRef,
         tomasulo_processor::{RetirementInfo, Tomasulo},
     },
@@ -513,6 +514,90 @@ impl Tomasulo for FheProcessor {
             }
             DispatchIsaOp::Ret() => Err(Error::Halt),
             _ => Ok(pc + 1),
+        }
+    }
+
+    fn compute_gas(&self, dispatched_op: &crate::proc::DispatchIsaOp) -> u32 {
+        fn is_register_ciphertext(reg: &RobEntryRef<Register>) -> bool {
+            match reg {
+                RobEntryRef::Id(e) | RobEntryRef::IdMut(e) => e.entry().is_ciphertext(),
+            }
+        }
+
+        use DispatchIsaOp::*;
+
+        match dispatched_op {
+            // instructions that do not compute anything are assigned trivial gas cost
+            BindReadOnly(..) | BindReadWrite(..) | Load(..) | LoadI(..) | Store(..)
+            | BranchNonZero(..) | BranchZero(..) | Cea(..) | Ceai(..) => 1,
+
+            // instructions that compute on one input source, but gas does not rely on it
+            Zext(..) | Trunc(..) => 1,
+
+            // instructions that compute on one input source
+            Not(_, input) | Neg(_, input) => {
+                if is_register_ciphertext(input) {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            // instructions that compute on two input sources that are interchangeable, and gas relies on either of them
+            And(_, input1, input2)
+            | Or(_, input1, input2)
+            | Xor(_, input1, input2)
+            | Add(_, input1, input2)
+            | Sub(_, input1, input2)
+            | CmpEq(_, input1, input2)
+            | CmpGt(_, input1, input2)
+            | CmpGe(_, input1, input2)
+            | CmpLt(_, input1, input2)
+            | CmpLe(_, input1, input2) => {
+                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            Mul(_, input1, input2) => {
+                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
+                    500_000
+                } else {
+                    1
+                }
+            }
+
+            // instructions that compute on two input sources that are not interchangeable, and gas relies on only one of them
+            Shr(_, _, input)
+            | Shra(_, _, input)
+            | Shl(_, _, input)
+            | Rotr(_, _, input)
+            | Rotl(_, _, input) => {
+                if is_register_ciphertext(input) {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            // instructions that compute on three input sources that are interchangeable, and gas relies on either of them
+            AddC(_, _, input1, input2, input3)
+            | SubB(_, _, input1, input2, input3)
+            | Cmux(_, input1, input2, input3) => {
+                if is_register_ciphertext(input1)
+                    || is_register_ciphertext(input2)
+                    || is_register_ciphertext(input3)
+                {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            // return has zero gas cost
+            Ret() => 0,
         }
     }
 }

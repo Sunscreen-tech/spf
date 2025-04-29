@@ -149,9 +149,11 @@ macro_rules! impl_tomasulo {
                         // Execute any ready instructions (possibly including the one we just dispatched)
                         self.execute_ready_instructions(false)?;
 
+                        let gas = self.compute_gas(&disp_inst);
+
                         let next_pc = self.next_program_counter(disp_inst, pc)?;
 
-                        Ok((next_pc, *inst.get_gas_config().last().unwrap_or(&1)))
+                        Ok((next_pc, gas))
                     }
 
                     fn execute_ready_instructions(&mut self, blocking: bool) -> Result<()> {
@@ -276,6 +278,9 @@ pub trait Tomasulo {
         dispatched_op: crate::proc::DispatchIsaOp,
         pc: usize,
     ) -> Result<usize>;
+
+    /// Figures out the gas cost for the given instruction
+    fn compute_gas(&self, dispatched_op: &crate::proc::DispatchIsaOp) -> u32;
 }
 
 pub trait SelectConstant<T> {
