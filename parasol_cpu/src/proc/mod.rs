@@ -631,6 +631,7 @@ impl FheProcessor {
             } else if let Ok((next_pc, used_gas)) = pc_result {
                 gas += used_gas;
                 if gas > gas_limit {
+                    self.wait()?;
                     return Err(Error::OutOfGas(gas, gas_limit));
                 }
                 pc = next_pc;
