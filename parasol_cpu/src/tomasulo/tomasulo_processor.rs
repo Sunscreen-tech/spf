@@ -81,7 +81,8 @@ macro_rules! impl_tomasulo {
                     pub fn dispatch_instruction(
                         &mut self,
                         inst: $inst,
-                        pc: usize
+                        pc: usize,
+                        gas_limit: u32
                     ) -> Result<(usize, u32)> {
                         use $crate::tomasulo::{ToDispatchedOp, GetDeps};
 
@@ -113,6 +114,12 @@ macro_rules! impl_tomasulo {
                             self.current_instruction,
                             pc
                         )?;
+
+                        let gas = self.compute_gas(&disp_inst);
+
+                        if gas > gas_limit {
+                            return Err(Error::OutOfGas(gas, gas_limit));
+                        }
 
                         scoreboard_entry.set_instruction(&disp_inst);
 
@@ -148,8 +155,6 @@ macro_rules! impl_tomasulo {
 
                         // Execute any ready instructions (possibly including the one we just dispatched)
                         self.execute_ready_instructions(false)?;
-
-                        let gas = self.compute_gas(&disp_inst);
 
                         let next_pc = self.next_program_counter(disp_inst, pc)?;
 

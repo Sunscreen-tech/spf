@@ -624,19 +624,21 @@ impl FheProcessor {
         let mut gas = 0;
 
         while let Some(inst) = program.get(pc) {
-            let pc_result = self.dispatch_instruction(inst.clone(), pc);
+            let pc_result = self.dispatch_instruction(inst.clone(), pc, gas_limit - gas);
 
-            if let Err(Error::Halt) = pc_result {
-                break;
-            } else if let Ok((next_pc, used_gas)) = pc_result {
-                gas += used_gas;
-                if gas > gas_limit {
-                    self.wait()?;
-                    return Err(Error::OutOfGas(gas, gas_limit));
+            match pc_result {
+                Ok((next_pc, used_gas)) => {
+                    gas += used_gas;
+                    pc = next_pc;
                 }
-                pc = next_pc;
-            } else {
-                pc_result?;
+                Err(e) => match e {
+                    Error::Halt => break,
+                    Error::OutOfGas(used_gas, _) => {
+                        self.wait()?;
+                        return Err(Error::OutOfGas(gas + used_gas, gas_limit));
+                    }
+                    _ => return Err(e),
+                },
             }
         }
 
