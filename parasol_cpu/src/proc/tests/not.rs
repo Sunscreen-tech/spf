@@ -25,7 +25,12 @@ fn can_not(val: u32, encrypted_computation: bool) {
 
     let params = vec![buffer_0, output_buffer];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(
+        &program,
+        &params,
+        if encrypted_computation { 200_000 } else { 100 },
+    )
+    .unwrap();
 
     let ans = read_result::<u32>(&params[1], &enc, encrypted_computation);
     assert_eq!(expected, ans);

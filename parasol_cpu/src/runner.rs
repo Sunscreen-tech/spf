@@ -12,6 +12,7 @@ pub fn run_program(
     elf_file: &[u8],
     program_name: &str,
     arguments: &[Buffer],
+    gas_limit: u32,
 ) -> Result<Vec<Buffer>> {
     let enc = Encryption::default();
     let eval = Evaluation::with_default_params(Arc::new(compute_key));
@@ -25,7 +26,7 @@ pub fn run_program(
         .get_program(&Symbol::new(c_program_name.as_c_str()))
         .ok_or(Error::ElfSymbolNotFound(program_name.to_string()))?;
 
-    proc.run_program(program, arguments)?;
+    proc.run_program(program, arguments, gas_limit)?;
 
     Ok(arguments.to_owned())
 }
@@ -60,7 +61,8 @@ mod tests {
 
         let arguments = vec![buffer_0, buffer_1, buffer_2, output_buffer];
 
-        let result = run_program(compute_key.clone(), CMUX_ELF, "cmux", &arguments).unwrap();
+        let result =
+            run_program(compute_key.clone(), CMUX_ELF, "cmux", &arguments, 300_000).unwrap();
 
         let output = result[3]
             .cipher_try_into_value::<u8>(&enc, &get_secret_keys_128())

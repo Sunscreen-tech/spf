@@ -37,7 +37,7 @@ fn can_and_plaintext_inputs() {
 
     let params = vec![buffer_0, buffer_1, output_buffer];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(&program, &params, 100).unwrap();
 
     let ans = params[2].plain_try_into_value::<u32>().unwrap();
     assert_eq!(expected, ans);
@@ -69,7 +69,7 @@ fn can_and_ciphertext_inputs() {
 
         let params = vec![buffer_0, buffer_1, output_buffer];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(&program, &params, 200_000).unwrap();
 
         let answer = params[2]
             .cipher_try_into_value::<u8>(&enc, &get_secret_keys_80())

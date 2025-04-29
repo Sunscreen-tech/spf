@@ -44,7 +44,7 @@ fn can_branch_zero() {
 
     let params = vec![output_buffer];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(&program, &params, 100).unwrap();
 
     let ans = params[0].plain_try_into_value::<u32>().unwrap();
     assert_eq!(5, ans);
@@ -81,7 +81,7 @@ fn can_branch_nonzero() {
 
     let params = vec![output_buffer];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(&program, &params, 100).unwrap();
 
     let ans = params[0].plain_try_into_value::<u32>().unwrap();
     assert_eq!(0, ans);

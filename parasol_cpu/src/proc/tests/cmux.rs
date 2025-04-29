@@ -81,7 +81,7 @@ fn can_cmux(encrypted_computation: bool) {
 
         let params = vec![buffer_0, buffer_1, buffer_2, output_buffer];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(&program, &params, 300_000).unwrap();
 
         let ans: u32 = read_result(&params[3], &enc, encrypted_computation);
         assert_eq!(expected, ans);

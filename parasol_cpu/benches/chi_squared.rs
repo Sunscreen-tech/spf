@@ -45,6 +45,7 @@ fn chi_squared(c: &mut Criterion) {
                     output_buffer_2.clone(),
                     output_buffer_3.clone(),
                 ],
+                5_000_000,
             )
             .unwrap();
         });

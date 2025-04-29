@@ -33,7 +33,7 @@ fn can_unsigned_mul_plain_plain() {
 
         let params = vec![a_buf, b_buf, c_buf];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(&program, &params, 100).unwrap();
 
         let mask = (0x1u128 << width) - 1;
 
@@ -85,7 +85,7 @@ fn can_unsigned_mul_cipher_cipher() {
 
         let params = vec![a_buf, b_buf, c_buf];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(&program, &params, 600_000).unwrap();
 
         let mask = (0x1u128 << width) - 1;
 
@@ -137,7 +137,7 @@ fn can_multiply_cipher_plain() {
 
         let params = vec![a_buf, b_buf, c_buf];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(&program, &params, 600_000).unwrap();
 
         let mask = (0x1u128 << width) - 1;
 

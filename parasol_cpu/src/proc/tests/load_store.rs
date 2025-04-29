@@ -28,7 +28,7 @@ fn can_load_store_plain_byte_width() {
 
         let params = vec![buffer_0, buffer_1];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(&program, &params, 100).unwrap();
 
         let ans = params[1].plain_try_into_value::<Vec<u8>>().unwrap();
 
@@ -65,6 +65,7 @@ fn can_load_store_ciphertext_byte_width() {
                 IsaOp::Store(RegisterName::new(1), RegisterName::new(0), width),
             ]),
             &params,
+            100,
         )
         .unwrap();
 
@@ -122,6 +123,7 @@ fn can_load_immediate() {
             IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 15),
         ]),
         &params,
+        100,
     )
     .unwrap();
 
@@ -145,6 +147,7 @@ fn load_immediate_fails_out_of_range() {
             IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 15),
         ]),
         &params,
+        100,
     );
 
     assert!(matches!(
@@ -176,6 +179,7 @@ fn can_compute_effective_address_plain_ptr() {
             IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 16),
         ]),
         &params,
+        100,
     )
     .unwrap();
 
@@ -207,6 +211,7 @@ fn can_compute_effective_address_encrypted_ptr_plain_offset() {
             IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 16),
         ]),
         &params,
+        100,
     )
     .unwrap();
 

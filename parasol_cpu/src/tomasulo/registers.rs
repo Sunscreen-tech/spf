@@ -84,7 +84,7 @@ pub struct IdRobEntry<T>
 where
     T: Default,
 {
-    register: Arc<RwLock<RobEntry<T>>>,
+    pub(crate) register: Arc<RwLock<RobEntry<T>>>,
 }
 
 impl<T> IdRobEntry<T>

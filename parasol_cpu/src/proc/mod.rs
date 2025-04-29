@@ -13,6 +13,7 @@ use crate::{
     Error, Result, impl_tomasulo,
     proc::ops::assign_io,
     tomasulo::{
+        registers::RobEntryRef,
         scoreboard::ScoreboardEntryRef,
         tomasulo_processor::{RetirementInfo, Tomasulo},
     },
@@ -515,6 +516,90 @@ impl Tomasulo for FheProcessor {
             _ => Ok(pc + 1),
         }
     }
+
+    fn compute_gas(&self, dispatched_op: &crate::proc::DispatchIsaOp) -> u32 {
+        fn is_register_ciphertext(reg: &RobEntryRef<Register>) -> bool {
+            match reg {
+                RobEntryRef::Id(e) | RobEntryRef::IdMut(e) => e.entry().is_ciphertext(),
+            }
+        }
+
+        use DispatchIsaOp::*;
+
+        match dispatched_op {
+            // instructions that do not compute anything are assigned trivial gas cost
+            BindReadOnly(..) | BindReadWrite(..) | Load(..) | LoadI(..) | Store(..)
+            | BranchNonZero(..) | BranchZero(..) | Cea(..) | Ceai(..) => 1,
+
+            // instructions that compute on one input source, but gas does not rely on it
+            Zext(..) | Trunc(..) => 1,
+
+            // instructions that compute on one input source
+            Not(_, input) | Neg(_, input) => {
+                if is_register_ciphertext(input) {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            // instructions that compute on two input sources that are interchangeable, and gas relies on either of them
+            And(_, input1, input2)
+            | Or(_, input1, input2)
+            | Xor(_, input1, input2)
+            | Add(_, input1, input2)
+            | Sub(_, input1, input2)
+            | CmpEq(_, input1, input2)
+            | CmpGt(_, input1, input2)
+            | CmpGe(_, input1, input2)
+            | CmpLt(_, input1, input2)
+            | CmpLe(_, input1, input2) => {
+                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            Mul(_, input1, input2) => {
+                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
+                    500_000
+                } else {
+                    1
+                }
+            }
+
+            // instructions that compute on two input sources that are not interchangeable, and gas relies on only one of them
+            Shr(_, _, input)
+            | Shra(_, _, input)
+            | Shl(_, _, input)
+            | Rotr(_, _, input)
+            | Rotl(_, _, input) => {
+                if is_register_ciphertext(input) {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            // instructions that compute on three input sources that are interchangeable, and gas relies on either of them
+            AddC(_, _, input1, input2, input3)
+            | SubB(_, _, input1, input2, input3)
+            | Cmux(_, input1, input2, input3) => {
+                if is_register_ciphertext(input1)
+                    || is_register_ciphertext(input2)
+                    || is_register_ciphertext(input3)
+                {
+                    100_000
+                } else {
+                    1
+                }
+            }
+
+            // return has zero gas cost
+            Ret() => 0,
+        }
+    }
 }
 
 impl FheProcessor {
@@ -527,20 +612,33 @@ impl FheProcessor {
     }
 
     /// Runs the given program using the passed user `data` as arguments.
-    pub fn run_program(&mut self, program: &[IsaOp], data: &[Buffer]) -> Result<()> {
+    pub fn run_program(
+        &mut self,
+        program: &[IsaOp],
+        data: &[Buffer],
+        gas_limit: u32,
+    ) -> Result<()> {
         self.reset_io(data)?;
 
         let mut pc = 0;
+        let mut gas = 0;
 
         while let Some(inst) = program.get(pc) {
-            let pc_result = self.dispatch_instruction(inst.clone(), pc);
+            let pc_result = self.dispatch_instruction(inst.clone(), pc, gas_limit - gas);
 
-            if let Err(Error::Halt) = pc_result {
-                break;
-            } else if let Ok(next_pc) = pc_result {
-                pc = next_pc;
-            } else {
-                pc_result?;
+            match pc_result {
+                Ok((next_pc, used_gas)) => {
+                    gas += used_gas;
+                    pc = next_pc;
+                }
+                Err(e) => match e {
+                    Error::Halt => break,
+                    Error::OutOfGas(used_gas, _) => {
+                        self.wait()?;
+                        return Err(Error::OutOfGas(gas + used_gas, gas_limit));
+                    }
+                    _ => return Err(e),
+                },
             }
         }
 
@@ -760,8 +858,14 @@ impl FheComputer {
     }
 
     /// Run the given FHE program with user specified data.
-    pub fn run_program(&mut self, program: &FheProgram, data: &[Buffer]) -> Result<()> {
-        self.processor.run_program(&program.instructions, data)
+    pub fn run_program(
+        &mut self,
+        program: &FheProgram,
+        data: &[Buffer],
+        gas_limit: u32,
+    ) -> Result<()> {
+        self.processor
+            .run_program(&program.instructions, data, gas_limit)
     }
 
     /// Analyze the program and run it with the provided input buffers. Write
@@ -778,6 +882,7 @@ impl FheComputer {
         &mut self,
         program: &FheProgram,
         input_buffers: &[Buffer],
+        gas_limit: u32,
     ) -> Result<Vec<(Buffer, BufferInfo)>> {
         let buffer_info = program
             .get_buffer_info()
@@ -813,7 +918,8 @@ impl FheComputer {
             }
         }
 
-        self.processor.run_program(&program.instructions, &data)?;
+        self.processor
+            .run_program(&program.instructions, &data, gas_limit)?;
 
         let mut output_buffers = Vec::new();
         for info in buffer_info.iter() {
@@ -838,9 +944,10 @@ impl FheComputer {
         &mut self,
         program: &FheProgram,
         input_buffers: &[Buffer],
+        gas_limit: u32,
     ) -> Result<Vec<Buffer>> {
         let outputs = self
-            .run_programs_with_generated_write_buffers_info(program, input_buffers)?
+            .run_programs_with_generated_write_buffers_info(program, input_buffers, gas_limit)?
             .into_iter()
             .map(|(x, _)| x)
             .collect::<Vec<_>>();
@@ -938,7 +1045,7 @@ mod buffer_uint_tests {
             ]);
 
             let params = vec![buffer1, buffer2, output_buffer];
-            proc.run_program(&program, &params).unwrap();
+            proc.run_program(&program, &params, 200_000).unwrap();
 
             // Convert result back to UInt and verify
             let result_buffer = &params[2];
@@ -987,7 +1094,7 @@ mod buffer_uint_tests {
                 ],
             };
 
-            cpu.run_program(add_program, &buffers).unwrap();
+            cpu.run_program(add_program, &buffers, 200_000).unwrap();
 
             assert_eq!(
                 read_result_sk::<u8>(&buffers[2], &enc, &get_secret_keys_128(), true),
@@ -997,5 +1104,42 @@ mod buffer_uint_tests {
 
         case(false);
         case(true);
+    }
+}
+
+#[cfg(test)]
+mod runner_tests {
+    use crate::tomasulo::registers::RegisterName;
+
+    use super::*;
+    use parasol_runtime::test_utils::{
+        get_encryption_128, get_evaluation_128, get_secret_keys_128,
+    };
+
+    #[test]
+    fn gas_limit_works() {
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
+        let mut cpu = FheComputer::new(&enc, &eval);
+
+        let buffers: Vec<Buffer> = vec![
+            Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
+            Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
+        ];
+
+        let not_program = &FheProgram {
+            instructions: vec![
+                IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+                IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
+                IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 8),
+                IsaOp::Not(RegisterName::new(1), RegisterName::new(0)),
+                IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 8),
+            ],
+        };
+
+        assert_eq!(
+            cpu.run_program(not_program, &buffers, 100).err().unwrap(),
+            Error::OutOfGas(100_003, 100)
+        )
     }
 }

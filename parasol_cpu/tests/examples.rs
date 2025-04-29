@@ -51,7 +51,7 @@ fn can_run_chi_squared_elf_program() {
 
     let now = Instant::now();
 
-    proc.run_program(program, &params).unwrap();
+    proc.run_program(program, &params, 3_000_000).unwrap();
 
     dbg!(now.elapsed().as_secs_f64());
 
@@ -106,7 +106,7 @@ fn can_run_chi_squared_elf_program_with_generated_write_buffers() {
     // Create buffers based on buffer info
     let now = std::time::Instant::now();
     let outputs = proc
-        .run_programs_with_generated_write_buffers(program, &input_values)
+        .run_programs_with_generated_write_buffers(program, &input_values, 3_000_000)
         .unwrap();
     dbg!(now.elapsed().as_secs_f64());
 
@@ -160,7 +160,7 @@ fn can_run_cmux_elf_program() {
 
         let params = vec![buffer_0, buffer_1, buffer_2, output_buffer];
 
-        proc.run_program(program, &params).unwrap();
+        proc.run_program(program, &params, 300_000).unwrap();
 
         let ans = read_result(&params[3], &enc, encrypted_computation);
         assert_eq!(expected, ans);
@@ -251,7 +251,7 @@ fn can_run_cardio_elf_program() {
         .collect::<Vec<_>>();
 
     let now = std::time::Instant::now();
-    proc.run_program(program, &params).unwrap();
+    proc.run_program(program, &params, 2_000_000).unwrap();
     let elapsed = now.elapsed();
     dbg!("Elapsed time for cardio program: ", elapsed);
 
@@ -279,7 +279,7 @@ fn can_vector_add() {
         .collect::<Vec<_>>();
 
     let start = Instant::now();
-    proc.run_program(program, &params).unwrap();
+    proc.run_program(program, &params, 1_000_000).unwrap();
     println!("Runtime: {}s", start.elapsed().as_secs_f64());
 
     let ans = params[16..]

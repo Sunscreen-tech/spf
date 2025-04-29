@@ -197,6 +197,10 @@ pub enum Error {
     /// Attempted an operation that resulted in pointer overflow.
     #[error("32-bit Pointer overflow")]
     PointerOverflow,
+
+    /// Running out of allowed fee quota
+    #[error("Used gas amount {0} is exceeding quota {1}")]
+    OutOfGas(u32, u32),
 }
 
 // Stupid ParseError isn't Clone, so we gotta stringify it

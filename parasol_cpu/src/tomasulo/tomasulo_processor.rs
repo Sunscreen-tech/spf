@@ -81,8 +81,9 @@ macro_rules! impl_tomasulo {
                     pub fn dispatch_instruction(
                         &mut self,
                         inst: $inst,
-                        pc: usize
-                    ) -> Result<usize> {
+                        pc: usize,
+                        gas_limit: u32
+                    ) -> Result<(usize, u32)> {
                         use $crate::tomasulo::{ToDispatchedOp, GetDeps};
 
                         inst.validate(self.current_instruction, pc)?;
@@ -113,6 +114,12 @@ macro_rules! impl_tomasulo {
                             self.current_instruction,
                             pc
                         )?;
+
+                        let gas = self.compute_gas(&disp_inst);
+
+                        if gas > gas_limit {
+                            return Err(Error::OutOfGas(gas, gas_limit));
+                        }
 
                         scoreboard_entry.set_instruction(&disp_inst);
 
@@ -151,7 +158,7 @@ macro_rules! impl_tomasulo {
 
                         let next_pc = self.next_program_counter(disp_inst, pc)?;
 
-                        Ok(next_pc)
+                        Ok((next_pc, gas))
                     }
 
                     fn execute_ready_instructions(&mut self, blocking: bool) -> Result<()> {
@@ -276,6 +283,9 @@ pub trait Tomasulo {
         dispatched_op: crate::proc::DispatchIsaOp,
         pc: usize,
     ) -> Result<usize>;
+
+    /// Figures out the gas cost for the given instruction
+    fn compute_gas(&self, dispatched_op: &crate::proc::DispatchIsaOp) -> u32;
 }
 
 pub trait SelectConstant<T> {
