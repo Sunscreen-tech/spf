@@ -36,7 +36,12 @@ fn run_single_test(
         IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 1),
     ]);
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(
+        &program,
+        &params,
+        if encrypted_computation { 200_000 } else { 100 },
+    )
+    .unwrap();
 
     let ans: u32 = read_result(&params[2], enc, encrypted_computation);
     assert_eq!(expected as u32, ans);

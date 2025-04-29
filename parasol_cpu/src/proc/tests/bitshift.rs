@@ -40,7 +40,12 @@ fn run_single_test(
 
     let params = vec![buffer_value, buffer_shift, output_buffer];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(
+        &program,
+        &params,
+        if encrypted_shift { 200_000 } else { 100 },
+    )
+    .unwrap();
 
     let ans: u8 = read_result(&params[2], enc, output_encrypted);
     assert_eq!(

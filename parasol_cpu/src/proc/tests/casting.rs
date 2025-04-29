@@ -61,7 +61,7 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
 
         let params = vec![buffer_0, output_buffer];
 
-        let result = proc.run_program(&program, &params);
+        let result = proc.run_program(&program, &params, 100);
 
         match (valid, result) {
             (true, Ok(())) => {

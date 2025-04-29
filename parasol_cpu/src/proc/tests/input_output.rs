@@ -22,7 +22,7 @@ fn can_assign_inputs() {
 
     let params = vec![buffer_0, buffer_1];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(&program, &params, 100).unwrap();
 }
 
 #[test]
@@ -39,7 +39,7 @@ fn can_assign_outputs() {
 
     let params = vec![buffer_0, buffer_1];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(&program, &params, 100).unwrap();
 }
 
 #[test]
@@ -56,7 +56,7 @@ fn cant_alias_inputs() {
 
     let params = vec![buffer_0, buffer_1];
 
-    let result = proc.run_program(&program, &params);
+    let result = proc.run_program(&program, &params, 100);
 
     assert_eq!(
         result.err().unwrap(),
@@ -82,7 +82,7 @@ fn cant_alias_outputs() {
 
     let params = vec![buffer_0, buffer_1];
 
-    let result = proc.run_program(&program, &params);
+    let result = proc.run_program(&program, &params, 100);
 
     assert_eq!(
         result.err().unwrap(),
@@ -105,7 +105,7 @@ fn input_ptr_register_pt_ct_mismatch() {
 
     let params = vec![buffer_0];
 
-    let result = proc.run_program(&program, &params);
+    let result = proc.run_program(&program, &params, 100);
 
     assert_eq!(
         result.err().unwrap(),
@@ -124,7 +124,7 @@ fn output_ptr_register_pt_ct_mismatch() {
 
     let params = vec![buffer_0];
 
-    let result = proc.run_program(&program, &params);
+    let result = proc.run_program(&program, &params, 100);
 
     assert_eq!(
         result.err().unwrap(),
@@ -139,7 +139,7 @@ fn missing_input() {
     let program =
         FheProgram::from_instructions(vec![IsaOp::BindReadOnly(RegisterName::new(0), 0, true)]);
 
-    let result = proc.run_program(&program, &[]);
+    let result = proc.run_program(&program, &[], 100);
 
     assert_eq!(result.err().unwrap(), Error::NoBuffer { inst_id: 0, pc: 0 });
 }
@@ -151,7 +151,7 @@ fn missing_output() {
     let program =
         FheProgram::from_instructions(vec![IsaOp::BindReadWrite(RegisterName::new(0), 0, true)]);
 
-    let result = proc.run_program(&program, &[]);
+    let result = proc.run_program(&program, &[], 100);
 
     assert_eq!(result.err().unwrap(), Error::NoBuffer { inst_id: 0, pc: 0 });
 }

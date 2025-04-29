@@ -612,7 +612,12 @@ impl FheProcessor {
     }
 
     /// Runs the given program using the passed user `data` as arguments.
-    pub fn run_program(&mut self, program: &[IsaOp], data: &[Buffer]) -> Result<()> {
+    pub fn run_program(
+        &mut self,
+        program: &[IsaOp],
+        data: &[Buffer],
+        gas_limit: u32,
+    ) -> Result<()> {
         self.reset_io(data)?;
 
         let mut pc = 0;
@@ -625,8 +630,8 @@ impl FheProcessor {
                 break;
             } else if let Ok((next_pc, used_gas)) = pc_result {
                 gas += used_gas;
-                if gas > self.get_gas_limit() {
-                    return Err(Error::OutOfGas(gas, self.get_gas_limit()));
+                if gas > gas_limit {
+                    return Err(Error::OutOfGas(gas, gas_limit));
                 }
                 pc = next_pc;
             } else {
@@ -637,11 +642,6 @@ impl FheProcessor {
         self.wait()?;
 
         Ok(())
-    }
-
-    fn get_gas_limit(&self) -> u32 {
-        // TODO: make this somehow configurable
-        100_000_000
     }
 }
 
@@ -855,8 +855,14 @@ impl FheComputer {
     }
 
     /// Run the given FHE program with user specified data.
-    pub fn run_program(&mut self, program: &FheProgram, data: &[Buffer]) -> Result<()> {
-        self.processor.run_program(&program.instructions, data)
+    pub fn run_program(
+        &mut self,
+        program: &FheProgram,
+        data: &[Buffer],
+        gas_limit: u32,
+    ) -> Result<()> {
+        self.processor
+            .run_program(&program.instructions, data, gas_limit)
     }
 
     /// Analyze the program and run it with the provided input buffers. Write
@@ -873,6 +879,7 @@ impl FheComputer {
         &mut self,
         program: &FheProgram,
         input_buffers: &[Buffer],
+        gas_limit: u32,
     ) -> Result<Vec<(Buffer, BufferInfo)>> {
         let buffer_info = program
             .get_buffer_info()
@@ -908,7 +915,8 @@ impl FheComputer {
             }
         }
 
-        self.processor.run_program(&program.instructions, &data)?;
+        self.processor
+            .run_program(&program.instructions, &data, gas_limit)?;
 
         let mut output_buffers = Vec::new();
         for info in buffer_info.iter() {
@@ -933,9 +941,10 @@ impl FheComputer {
         &mut self,
         program: &FheProgram,
         input_buffers: &[Buffer],
+        gas_limit: u32,
     ) -> Result<Vec<Buffer>> {
         let outputs = self
-            .run_programs_with_generated_write_buffers_info(program, input_buffers)?
+            .run_programs_with_generated_write_buffers_info(program, input_buffers, gas_limit)?
             .into_iter()
             .map(|(x, _)| x)
             .collect::<Vec<_>>();
@@ -1033,7 +1042,7 @@ mod buffer_uint_tests {
             ]);
 
             let params = vec![buffer1, buffer2, output_buffer];
-            proc.run_program(&program, &params).unwrap();
+            proc.run_program(&program, &params, 200_000).unwrap();
 
             // Convert result back to UInt and verify
             let result_buffer = &params[2];
@@ -1082,7 +1091,7 @@ mod buffer_uint_tests {
                 ],
             };
 
-            cpu.run_program(add_program, &buffers).unwrap();
+            cpu.run_program(add_program, &buffers, 200_000).unwrap();
 
             assert_eq!(
                 read_result_sk::<u8>(&buffers[2], &enc, &get_secret_keys_128(), true),

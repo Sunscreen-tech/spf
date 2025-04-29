@@ -31,7 +31,8 @@ fn main() {
 
     // Run the program.
     let now = Instant::now();
-    let encrypted_result = run_program(compute_key.clone(), FHE_FILE, "add", &arguments).unwrap();
+    let encrypted_result =
+        run_program(compute_key.clone(), FHE_FILE, "add", &arguments, 200_000).unwrap();
     let elapsed = now.elapsed();
     println!("Time to run the program: {:?}", elapsed);
 

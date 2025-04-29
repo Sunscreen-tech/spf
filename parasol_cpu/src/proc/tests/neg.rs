@@ -25,7 +25,7 @@ fn can_neg_plaintext_inputs() {
 
     let params = vec![buffer_0, output_buffer];
 
-    proc.run_program(&program, &params).unwrap();
+    proc.run_program(&program, &params, 100).unwrap();
 
     let ans = params[1].plain_try_into_value::<u8>().unwrap();
     assert_eq!(expected, ans);

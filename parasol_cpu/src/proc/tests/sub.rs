@@ -47,7 +47,12 @@ fn can_sub_inputs() {
 
         let params = vec![buffer_0, buffer_1, output_buffer0];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(
+            &program,
+            &params,
+            if encrypted_computation { 200_000 } else { 100 },
+        )
+        .unwrap();
 
         let ans_sum = if encrypted_computation {
             params[2]
@@ -141,7 +146,12 @@ fn can_sub_borrow_inputs() {
 
         let params = vec![buffer_0, buffer_1, buffer_2, output_buffer0, output_buffer1];
 
-        proc.run_program(&program, &params).unwrap();
+        proc.run_program(
+            &program,
+            &params,
+            if encrypted_computation { 200_000 } else { 100 },
+        )
+        .unwrap();
 
         let ans_sum = if encrypted_computation {
             params[3]
@@ -254,6 +264,7 @@ fn sub_use_same_dst_and_src() {
             IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 16),
         ]),
         &output,
+        100,
     )
     .unwrap();
 
