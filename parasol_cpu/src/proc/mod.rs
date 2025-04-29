@@ -1102,4 +1102,31 @@ mod buffer_uint_tests {
         case(false);
         case(true);
     }
+
+    #[test]
+    fn gas_limit_works() {
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
+        let mut cpu = FheComputer::new(&enc, &eval);
+
+        let buffers: Vec<Buffer> = vec![
+            Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
+            Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
+        ];
+
+        let not_program = &FheProgram {
+            instructions: vec![
+                IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
+                IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
+                IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 8),
+                IsaOp::Not(RegisterName::new(1), RegisterName::new(0)),
+                IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 8),
+            ],
+        };
+
+        assert_eq!(
+            cpu.run_program(not_program, &buffers, 100).err().unwrap(),
+            Error::OutOfGas(100_003, 100)
+        )
+    }
 }
