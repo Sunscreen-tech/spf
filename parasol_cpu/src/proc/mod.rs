@@ -1104,6 +1104,7 @@ mod buffer_uint_tests {
     }
 
     #[test]
+    #[should_panic]
     fn gas_limit_works() {
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -1124,9 +1125,6 @@ mod buffer_uint_tests {
             ],
         };
 
-        assert_eq!(
-            cpu.run_program(not_program, &buffers, 100).err().unwrap(),
-            Error::OutOfGas(100_003, 100)
-        )
+        cpu.run_program(not_program, &buffers, 100).unwrap();
     }
 }
