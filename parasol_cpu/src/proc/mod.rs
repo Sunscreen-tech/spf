@@ -1104,11 +1104,10 @@ mod buffer_uint_tests {
     }
 
     #[test]
-    #[should_panic]
     fn gas_limit_works() {
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
-        let mut cpu = FheComputer::new(&enc, &eval);
+        let mut cpu = FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool());
 
         let buffers: Vec<Buffer> = vec![
             Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_128()),
@@ -1125,6 +1124,9 @@ mod buffer_uint_tests {
             ],
         };
 
-        cpu.run_program(not_program, &buffers, 100).unwrap();
+        assert_eq!(
+            cpu.run_program(not_program, &buffers, 100).err().unwrap(),
+            Error::OutOfGas(100_003, 100)
+        )
     }
 }
