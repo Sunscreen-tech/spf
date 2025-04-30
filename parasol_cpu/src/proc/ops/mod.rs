@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    Ciphertext, Error, FheProcessor, Result, proc::DispatchIsaOp,
-    tomasulo::tomasulo_processor::RetirementInfo,
-};
+use crate::{Ciphertext, proc::DispatchIsaOp, tomasulo::tomasulo_processor::RetirementInfo};
 
 use mux_circuits::convert_value_to_bits;
 use parasol_concurrency::AtomicRefCell;
@@ -13,13 +10,12 @@ use parasol_runtime::{
 };
 use petgraph::stable_graph::NodeIndex;
 
-mod input_output;
-pub use input_output::*;
+use super::fhe_processor::FheProcessor;
+
 mod add;
 mod and;
 mod bitshift;
 mod casting;
-mod cea;
 mod cmux;
 mod comparisons;
 mod load;
@@ -115,50 +111,16 @@ pub(crate) fn trivially_encrypt_value_l1glwe(
         .collect()
 }
 
-/// Checks that the given offset is aligned to offset.next_power_of_two(),
-/// it's in bounds, and that the width is sensible.
-fn check_offset(
-    width: u32,
-    offset: u32,
-    len: usize,
-    instruction_id: usize,
-    pc: usize,
-) -> Result<u32> {
-    let num_bytes = width.next_multiple_of(8) / 8;
-
-    if num_bytes == 0 || num_bytes > 16 {
-        return Err(Error::unsupported_width(instruction_id, pc));
-    }
-
-    if offset % num_bytes != 0 {
-        return Err(Error::UnalignedAccess {
-            inst_id: instruction_id,
-            pc,
-        });
-    }
-
-    if len > u32::MAX as usize {
-        return Err(Error::out_of_range(instruction_id, pc));
-    }
-
-    if offset + num_bytes > len as u32 {
-        return Err(Error::AccessViolation(offset + num_bytes));
-    }
-
-    Ok(num_bytes)
-}
-
-fn read_write_mask(bit_width: u32) -> u8 {
-    let shift_amt = bit_width.next_multiple_of(8) - bit_width;
-    0xFF >> shift_amt
-}
-
 pub fn make_parent_op(retirement_info: &RetirementInfo<DispatchIsaOp>) -> Arc<CompletionHandler> {
     let retirement_info = retirement_info.clone();
 
     Arc::new(CompletionHandler::new(move || {
         FheProcessor::retire(&retirement_info, Ok(()))
     }))
+}
+
+pub(crate) fn is_invalid_load_store_alignment(base_addr: u32, width: u32) -> bool {
+    base_addr % width != 0 || width > 16 || !width.is_power_of_two() || width == 0
 }
 
 #[macro_export]

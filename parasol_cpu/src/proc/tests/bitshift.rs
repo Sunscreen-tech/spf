@@ -1,11 +1,12 @@
-use parasol_runtime::Encryption;
+use std::sync::Arc;
+
+use parasol_runtime::{Encryption, test_utils::get_secret_keys_80};
 use rand::{RngCore, thread_rng};
 
 use crate::{
-    FheComputer,
+    ArgsBuilder, FheComputer, Memory,
     proc::IsaOp,
-    proc::program::FheProgram,
-    test_utils::{buffer_from_value_80, make_computer_80, read_result},
+    test_utils::{MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
 
@@ -20,34 +21,38 @@ fn run_single_test(
     value: u8,
     shift: u8,
 ) {
+    let sk = get_secret_keys_80();
     let expected = operation(value, shift);
 
-    let output_encrypted = encrypted_value || encrypted_shift;
+    let memory = Memory::new_default_stack();
 
-    let buffer_value = buffer_from_value_80(value, enc, encrypted_value);
-    let buffer_shift = buffer_from_value_80(shift, enc, encrypted_shift);
-    let output_buffer = buffer_from_value_80(0u8, enc, output_encrypted);
-
-    let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted_value),
-        IsaOp::BindReadOnly(RegisterName::new(1), 1, encrypted_shift),
-        IsaOp::BindReadWrite(RegisterName::new(2), 2, output_encrypted),
-        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 8),
-        IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 8),
+    let program = memory.allocate_program(&[
+        IsaOp::Trunc(RegisterName::new(10), RegisterName::new(10), 8),
+        IsaOp::Trunc(RegisterName::new(11), RegisterName::new(11), 8),
         isa_op,
-        IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 8),
+        IsaOp::Ret(),
     ]);
 
-    let params = vec![buffer_value, buffer_shift, output_buffer];
+    let args = ArgsBuilder::new()
+        .arg(MaybeEncryptedUInt::<8>::new(
+            value as u64,
+            enc,
+            &sk,
+            encrypted_value,
+        ))
+        .arg(MaybeEncryptedUInt::<8>::new(
+            shift as u64,
+            enc,
+            &sk,
+            encrypted_shift,
+        ))
+        .return_value::<MaybeEncryptedUInt<8>>();
 
-    proc.run_program(
-        &program,
-        &params,
-        if encrypted_shift { 200_000 } else { 100 },
-    )
-    .unwrap();
+    let ans = proc
+        .run_program(program, &Arc::new(memory), args, 200_000)
+        .unwrap();
+    let ans = ans.get(enc, &sk);
 
-    let ans: u8 = read_result(&params[2], enc, output_encrypted);
     assert_eq!(
         expected, ans,
         "value: {:#08b}, shift: {}, expected: {:#08b}, actual: {:#08b}",
@@ -73,7 +78,7 @@ fn run_shift_test(
             &mut proc,
             &enc,
             operation,
-            isa_op.clone(),
+            isa_op,
             encrypted_value,
             encrypted_shift,
             value,
@@ -87,9 +92,9 @@ fn can_shift_right_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value >> shift,
         IsaOp::Shr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         false,
@@ -101,9 +106,9 @@ fn can_shift_right_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value >> shift,
         IsaOp::Shr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         false,
@@ -115,9 +120,9 @@ fn can_shift_right_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value >> shift,
         IsaOp::Shr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         true,
@@ -129,9 +134,9 @@ fn can_shift_right_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value >> shift,
         IsaOp::Shr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         true,
@@ -142,9 +147,9 @@ fn can_arith_shift_right_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
         IsaOp::Shra(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         false,
@@ -156,9 +161,9 @@ fn can_arith_shift_right_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
         IsaOp::Shra(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         false,
@@ -170,9 +175,9 @@ fn can_arith_shift_right_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
         IsaOp::Shra(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         true,
@@ -184,9 +189,9 @@ fn can_arith_shift_right_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
         IsaOp::Shra(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         true,
@@ -198,9 +203,9 @@ fn can_shift_left_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value << shift,
         IsaOp::Shl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         false,
@@ -212,9 +217,9 @@ fn can_shift_left_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value << shift,
         IsaOp::Shl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         false,
@@ -226,9 +231,9 @@ fn can_shift_left_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value << shift,
         IsaOp::Shl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         true,
@@ -240,9 +245,9 @@ fn can_shift_left_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value << shift,
         IsaOp::Shl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         true,
@@ -254,9 +259,9 @@ fn can_rotate_right_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
         IsaOp::Rotr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         false,
@@ -268,9 +273,9 @@ fn can_rotate_right_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
         IsaOp::Rotr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         false,
@@ -282,9 +287,9 @@ fn can_rotate_right_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
         IsaOp::Rotr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         true,
@@ -296,9 +301,9 @@ fn can_rotate_right_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
         IsaOp::Rotr(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         true,
@@ -310,9 +315,9 @@ fn can_rotate_left_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
         IsaOp::Rotl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         false,
@@ -324,9 +329,9 @@ fn can_rotate_left_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
         IsaOp::Rotl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         false,
@@ -338,9 +343,9 @@ fn can_rotate_left_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
         IsaOp::Rotl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         false,
         true,
@@ -352,9 +357,9 @@ fn can_rotate_left_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
         IsaOp::Rotl(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         true,
         true,

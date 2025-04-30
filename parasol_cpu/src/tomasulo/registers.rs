@@ -9,7 +9,7 @@ use crate::{Error, Result};
 
 use super::scoreboard::ScoreboardEntryRef;
 
-pub struct RegisterFile<T, I>
+pub(crate) struct RegisterFile<T, I>
 where
     T: Default + 'static,
     I: 'static + Clone,
@@ -45,10 +45,11 @@ where
     pub fn rename(
         &self,
         register_name: RegisterName<T>,
-        scoreboard_entry: &ScoreboardEntryRef<I>,
+        scoreboard_entry: Option<&ScoreboardEntryRef<I>>,
     ) -> RobEntryRef<T> where {
-        // Explicitly drop the current RobEntryRef, as it may go into the free list.
         let mut rename = self.rename[register_name.name].borrow_mut();
+
+        // Explicity drop the existing rob_ref (if any) so it can be ref counted to zero and dropped.
         rename.rob_ref = None;
 
         let rob_entry_ref = RobEntryRef::new_mut(&Arc::new(RwLock::new(RobEntry::<T>::new())));
@@ -56,7 +57,7 @@ where
         // Since the entry points to a location in this object, we can store it
         // indefinitely
         rename.rob_ref = Some(rob_entry_ref.clone());
-        rename.producer_id = Some(scoreboard_entry.clone());
+        rename.producer_id = scoreboard_entry.cloned();
 
         rob_entry_ref
     }
@@ -176,7 +177,6 @@ where
     }
 }
 
-#[derive(PartialEq, Eq)]
 pub struct RegisterName<T> {
     pub name: usize,
     _phantom: PhantomData<T>,
@@ -204,6 +204,14 @@ impl<T> Clone for RegisterName<T> {
 }
 
 impl<T> Copy for RegisterName<T> {}
+
+impl<T> PartialEq for RegisterName<T> {
+    fn eq(&self, other: &Self) -> bool {
+        self.name.eq(&other.name)
+    }
+}
+
+impl<T> Eq for RegisterName<T> {}
 
 #[derive(Debug, PartialEq, Eq)]
 pub struct RobId<T> {

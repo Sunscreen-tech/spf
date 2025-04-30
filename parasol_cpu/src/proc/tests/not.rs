@@ -1,38 +1,41 @@
+use std::sync::Arc;
+
 use rand::{RngCore, thread_rng};
 
+use parasol_runtime::test_utils::get_secret_keys_80;
+
 use crate::{
+    ArgsBuilder, Memory,
     proc::IsaOp,
-    proc::program::FheProgram,
-    test_utils::{buffer_from_value_80, make_computer_80, read_result},
+    test_utils::{MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
 
 fn can_not(val: u32, encrypted_computation: bool) {
     let (mut proc, enc) = make_computer_80();
+    let sk = get_secret_keys_80();
 
     let expected = !val;
 
-    let buffer_0 = buffer_from_value_80(val, &enc, encrypted_computation);
-    let output_buffer = buffer_from_value_80(0u32, &enc, encrypted_computation);
+    let memory = Arc::new(Memory::new_default_stack());
 
-    let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted_computation),
-        IsaOp::BindReadWrite(RegisterName::new(1), 1, encrypted_computation),
-        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
-        IsaOp::Not(RegisterName::new(1), RegisterName::new(0)),
-        IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 32),
+    let args = ArgsBuilder::new()
+        .arg(MaybeEncryptedUInt::<32>::new(
+            val as u64,
+            &enc,
+            &sk,
+            encrypted_computation,
+        ))
+        .return_value::<MaybeEncryptedUInt<32>>();
+
+    let program = memory.allocate_program(&[
+        IsaOp::Not(RegisterName::new(10), RegisterName::new(10)),
+        IsaOp::Ret(),
     ]);
 
-    let params = vec![buffer_0, output_buffer];
+    let ans = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let ans = ans.get(&enc, &sk);
 
-    proc.run_program(
-        &program,
-        &params,
-        if encrypted_computation { 200_000 } else { 100 },
-    )
-    .unwrap();
-
-    let ans = read_result::<u32>(&params[1], &enc, encrypted_computation);
     assert_eq!(expected, ans);
 }
 

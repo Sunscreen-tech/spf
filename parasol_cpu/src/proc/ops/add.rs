@@ -1,8 +1,8 @@
 use parasol_runtime::circuits::add::add_circuit;
 
 use crate::{
-    Ciphertext, Error, FheProcessor, Register, Result, check_register_width,
-    proc::{DispatchIsaOp, ops::make_parent_op},
+    Ciphertext, Error, Register, Result, check_register_width,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::make_parent_op},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
@@ -17,7 +17,7 @@ impl FheProcessor {
         a: RobEntryRef<Register>,
         b: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut add_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (a) (b));
@@ -89,7 +89,7 @@ impl FheProcessor {
         b: RobEntryRef<Register>,
         carry_in: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut add_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (mut carry_out) (a) (b) (carry_in));

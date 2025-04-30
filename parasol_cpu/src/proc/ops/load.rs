@@ -1,17 +1,9 @@
-use std::sync::Arc;
-
-use parasol_concurrency::AtomicRefCell;
-
 use crate::{
-    Ciphertext, CiphertextPtr, Error, FheProcessor, MemHazards, PtrRegister, Register, Result,
-    proc::DispatchIsaOp,
-    tomasulo::{
-        registers::RobEntryRef, scoreboard::ScoreboardEntryRef, tomasulo_processor::RetirementInfo,
-    },
+    Byte, Ciphertext, Error, Memory, Ptr32, Register, Result,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::is_invalid_load_store_alignment},
+    tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
 };
-
-use super::{check_offset, read_write_mask};
 
 impl FheProcessor {
     #[allow(clippy::too_many_arguments)]
@@ -19,73 +11,82 @@ impl FheProcessor {
     pub fn load(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
-        scoreboard_entry: ScoreboardEntryRef<DispatchIsaOp>,
-        src: RobEntryRef<PtrRegister>,
+        memory: &Memory,
+        src: RobEntryRef<Register>,
         dst: RobEntryRef<Register>,
         width: u32,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
-        let load_impl = |scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>| -> Result<()> {
+        let load_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
 
-            let num_bytes = width.next_multiple_of(8) as usize / 8;
-            let mask = read_write_mask(width);
-
             match src {
-                PtrRegister::Plaintext(ptr) => {
-                    check_offset(width, ptr.offset, ptr.base.len(), instruction_id, pc)?;
+                Register::Plaintext { val: ptr, width: _ } => {
+                    let base_addr = *ptr as u32;
 
-                    // Plaintext loads and stores exec immediately, so we don't need to update our deps.
-
-                    let mut result = 0u128;
-
-                    for i in 0..(num_bytes - 1) {
-                        result |= (*ptr.base[ptr.offset as usize + i].borrow() as u128) << (8 * i);
+                    if is_invalid_load_store_alignment(base_addr, width) {
+                        return Err(Error::UnalignedAccess(base_addr));
                     }
 
-                    result |= ((mask & *ptr.base[ptr.offset as usize + num_bytes - 1].borrow())
-                        as u128)
-                        << (8 * (num_bytes - 1));
+                    let base_addr = Ptr32::from(base_addr);
 
-                    *dst = Register::Plaintext { val: result, width };
+                    // Load the first byte and check its type. Then, ensure each subsequent byte
+                    // matches the same time.
+                    match memory.try_load(base_addr)? {
+                        Byte::Plaintext(val) => {
+                            let mut result = val as u128;
+
+                            for i in 1..width {
+                                // We already checked alignment, so pointer can't overflow.
+                                match memory.try_load(base_addr.try_offset(i).unwrap())? {
+                                    Byte::Plaintext(b) => {
+                                        result |= (b as u128) << (8 * i);
+                                    }
+                                    _ => {
+                                        return Err(Error::buffer_not_a_plaintext());
+                                    }
+                                }
+                            }
+
+                            *dst = Register::Plaintext {
+                                val: result,
+                                width: width * 8,
+                            };
+                        }
+                        Byte::Ciphertext(val) => {
+                            let mut result = val.clone();
+
+                            for i in 1..width {
+                                // We already checked alignment, so pointer can't overflow.
+                                match memory.try_load(base_addr.try_offset(i).unwrap())? {
+                                    Byte::Ciphertext(mut b) => {
+                                        result.append(&mut b);
+                                    }
+                                    _ => {
+                                        return Err(Error::buffer_not_a_ciphertext());
+                                    }
+                                }
+                            }
+
+                            *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: result });
+                        }
+                    };
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                PtrRegister::Ciphertext(CiphertextPtr::PlainOffset(ptr)) => {
-                    check_offset(width, ptr.offset, ptr.base.len(), instruction_id, pc)?;
-                    ptr.on_read(scoreboard_entry);
-
-                    let result = (0..width)
-                        .map(|_| Arc::new(AtomicRefCell::new(self.aux_data.enc.allocate_glwe_l1())))
-                        .collect::<Vec<_>>();
-
-                    let range = ptr.offset as usize * 8..ptr.offset as usize * 8 + width as usize;
-
-                    for (input, output) in ptr.base[range].iter().zip(result.iter()) {
-                        let input = AtomicRefCell::borrow(input);
-                        let mut output = AtomicRefCell::borrow_mut(output);
-
-                        output.clone_from(&input);
-                    }
-
-                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: result });
-
-                    FheProcessor::retire(&retirement_info, Ok(()));
-                }
-                PtrRegister::Ciphertext(CiphertextPtr::EncOffset(ptr)) => {
-                    ptr.on_read(scoreboard_entry);
-                    todo!();
-                }
-                PtrRegister::Uninit => {
-                    return Err(Error::AccessViolation(0));
+                _ => {
+                    return Err(Error::IllegalOperands {
+                        inst_id: instruction_id,
+                        pc,
+                    });
                 }
             };
 
             Ok(())
         };
 
-        if let Err(e) = load_impl(&scoreboard_entry) {
+        if let Err(e) = load_impl() {
             FheProcessor::retire(&retirement_info, Err(e));
         }
     }

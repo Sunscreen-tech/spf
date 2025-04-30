@@ -4,9 +4,8 @@ use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
-    Ciphertext, Error, FheProcessor, Register, Result,
-    proc::DispatchIsaOp,
-    proc::ops::make_parent_op,
+    Ciphertext, Error, Register, Result,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::make_parent_op},
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
 };
@@ -19,7 +18,7 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         _instruction_id: usize,
-        _pc: usize,
+        _pc: u32,
     ) {
         let mut add_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src) );
@@ -60,7 +59,7 @@ impl FheProcessor {
                         .uop_processor
                         .spawn_graph(&graph, &self.aux_data.flow, parent_op);
                 }
-                _ => return Err(Error::RegisterCiphertextMismatch),
+                _ => return Err(Error::EncryptionMismatch),
             };
 
             Ok(())

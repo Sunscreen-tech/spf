@@ -3,9 +3,13 @@ use std::ffi::FromBytesUntilNulError;
 use elf::ParseError;
 use thiserror::Error;
 
-#[derive(Debug, Clone, Error, PartialEq, Eq)]
+#[derive(Debug, Clone, Error)]
 /// Errors that can occur in this crate.
 pub enum Error {
+    /// Illegal instruction.
+    #[error("Illegal instruction encountered at 0x{0:8x}")]
+    IllegalInstruction(u32),
+
     /// Illegal operands to an instruction.
     #[error("(inst:{inst_id}, pc:0x{pc:x}) Illegal operands executing instruction at PC")]
     IllegalOperands {
@@ -13,7 +17,7 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
     },
 
     /// Operands have mismatched bit widths.
@@ -23,18 +27,12 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
     },
 
     /// The instruction attempted an unaligned memory operation.
-    #[error("(inst:{inst_id}, pc:0x{pc:x}): Unaligned access")]
-    UnalignedAccess {
-        /// The faulting instruction's id.
-        inst_id: usize,
-
-        /// The program counter at time of error.
-        pc: usize,
-    },
+    #[error("Unaligned access at 0x{0:8x}")]
+    UnalignedAccess(u32),
 
     /// Processor violated a register mutability invariant. This is an internal error and should
     /// be reported as a bug.
@@ -51,7 +49,7 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
     },
 
     /// The user-passed memory array did not have a buffer corresponding to a bind instructions
@@ -62,7 +60,7 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
     },
 
     /// Encountered multiple bind instructions with the same buffer index.
@@ -74,7 +72,7 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
 
         /// The buffer's index in a call to [`crate::FheComputer::run_program`].
         buffer_id: usize,
@@ -91,7 +89,7 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
     },
 
     /// An instruction's immediate value is too large.
@@ -101,7 +99,7 @@ pub enum Error {
         inst_id: usize,
 
         /// The program counter at time of error.
-        pc: usize,
+        pc: u32,
     },
 
     /// The given buffer wasn't a plaintext.
@@ -116,10 +114,13 @@ pub enum Error {
     #[error("The given buffer is the wrong size for the given type")]
     BufferSizeMismatch,
 
-    /// A register was in the wrong ciphertext form when executing an operation. This is an internal
-    /// error and should be reported as a bug.
-    #[error("Encountered an invalid ciphertext type executing an op")]
-    RegisterCiphertextMismatch,
+    /// Attempted to mix plaintext and ciphertext data in a multi-byte type.
+    #[error("The given value has a mix of plaintext and encrypted data")]
+    MixedData,
+
+    /// Encountered a different byte encrypted-ness than expected.
+    #[error("Encountered a different byte encrypted-ness than expected.")]
+    EncryptionMismatch,
 
     /// Encountered an illegal micro-op. This is a bug.
     #[error("The processor executed an illegal uop")]
@@ -201,6 +202,24 @@ pub enum Error {
     /// Running out of allowed fee quota
     #[error("Used gas amount {0} is exceeding quota {1}")]
     OutOfGas(u32, u32),
+
+    /// The given byte should have been a plaintext, but was encrypted
+    #[error(
+        "Byte at address 0x{0:8x} was encrypted. Expected plaintext (was this a CPU instruction?)."
+    )]
+    UnexpectedEncryptedByte(u32),
+
+    /// Too many bytes given to `Word::try_from()`.
+    #[error("When trying to construct a Word, too many bytes were given.")]
+    WordConversionTooManyBytes,
+
+    /// When trying to convert to an encrypted byte, found more or less than 8 bits.
+    #[error("Expected 8 encrypted bits.")]
+    NotAByte,
+
+    /// Attempted to create a value from an incorrect number of bytes.
+    #[error("Attempted to create a value from an incorrect number of bytes.")]
+    TypeSizeMismatch,
 }
 
 // Stupid ParseError isn't Clone, so we gotta stringify it
@@ -212,7 +231,7 @@ impl From<ParseError> for Error {
 
 impl Error {
     /// Create an [`Error::AliasingViolation`].
-    pub fn aliasing_violation(inst_id: usize, pc: usize, buffer_id: usize) -> Self {
+    pub fn aliasing_violation(inst_id: usize, pc: u32, buffer_id: usize) -> Self {
         Self::AliasingViolation {
             inst_id,
             pc,
@@ -221,7 +240,7 @@ impl Error {
     }
 
     /// Create an [`Error::UnsupportedWidth`].
-    pub fn unsupported_width(inst_id: usize, pc: usize) -> Self {
+    pub fn unsupported_width(inst_id: usize, pc: u32) -> Self {
         Self::UnsupportedWidth { inst_id, pc }
     }
 
@@ -246,12 +265,12 @@ impl Error {
     }
 
     /// Create an [`Error::OutOfRange`].
-    pub fn out_of_range(inst_id: usize, pc: usize) -> Self {
+    pub fn out_of_range(inst_id: usize, pc: u32) -> Self {
         Self::OutOfRange { inst_id, pc }
     }
 
     /// Create an [`Error::NoBuffer`].
-    pub fn no_buffer(inst_id: usize, pc: usize) -> Self {
+    pub fn no_buffer(inst_id: usize, pc: u32) -> Self {
         Error::NoBuffer { inst_id, pc }
     }
 }

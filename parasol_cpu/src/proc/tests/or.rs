@@ -1,13 +1,13 @@
+use std::sync::Arc;
+
 use rand::{RngCore, thread_rng};
 
 use crate::{
-    proc::IsaOp,
-    proc::{Buffer, program::FheProgram},
-    test_utils::make_computer_80,
+    ArgsBuilder, Memory, proc::IsaOp, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 
-use parasol_runtime::test_utils::get_secret_keys_80;
+use parasol_runtime::{fluent::UInt, test_utils::get_secret_keys_80};
 
 #[test]
 fn can_or_plaintext_inputs() {
@@ -17,63 +17,51 @@ fn can_or_plaintext_inputs() {
     let val2 = 7u32;
     let expected = val1 | val2;
 
-    let buffer_0 = Buffer::plain_from_value(&val1);
-    let buffer_1 = Buffer::plain_from_value(&val2);
-    let output_buffer = Buffer::plain_from_value(&0u32);
+    let memory = Arc::new(Memory::new_default_stack());
 
-    let program = FheProgram::from_instructions(vec![
-        IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
-        IsaOp::BindReadOnly(RegisterName::new(1), 1, false),
-        IsaOp::BindReadWrite(RegisterName::new(2), 2, false),
-        IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
-        IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
+    let program = memory.allocate_program(&[
         IsaOp::Or(
-            RegisterName::new(2),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
-        IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 32),
+        IsaOp::Ret(),
     ]);
 
-    let params = vec![buffer_0, buffer_1, output_buffer];
+    let args = ArgsBuilder::new().arg(val1).arg(val2).return_value::<u32>();
 
-    proc.run_program(&program, &params, 100).unwrap();
+    let ans = proc.run_program(program, &memory, args, 100).unwrap();
 
-    let ans = params[2].plain_try_into_value::<u32>().unwrap();
     assert_eq!(expected, ans);
 }
 
 #[test]
 fn can_or_ciphertext_inputs() {
     let (mut proc, enc) = make_computer_80();
+    let sk = get_secret_keys_80();
+
     let mut test = |val1: u8, val2: u8| {
         let expected = val1 | val2;
 
-        let buffer_0 = Buffer::cipher_from_value(&val1, &enc, &get_secret_keys_80());
-        let buffer_1 = Buffer::cipher_from_value(&val2, &enc, &get_secret_keys_80());
-        let output_buffer = Buffer::cipher_from_value(&0u8, &enc, &get_secret_keys_80());
+        let memory = Arc::new(Memory::new_default_stack());
 
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
-            IsaOp::BindReadOnly(RegisterName::new(1), 1, true),
-            IsaOp::BindReadWrite(RegisterName::new(2), 2, true),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 4),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 4),
+        let program = memory.allocate_program(&[
             IsaOp::Or(
-                RegisterName::new(2),
-                RegisterName::new(0),
-                RegisterName::new(1),
+                RegisterName::new(10),
+                RegisterName::new(10),
+                RegisterName::new(11),
             ),
-            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 4),
+            IsaOp::Ret(),
         ]);
 
-        let params = vec![buffer_0, buffer_1, output_buffer];
+        let args = ArgsBuilder::new()
+            .arg(UInt::<8, _>::encrypt_secret(val1 as u64, &enc, &sk))
+            .arg(UInt::<8, _>::encrypt_secret(val2 as u64, &enc, &sk))
+            .return_value::<UInt<8, _>>();
 
-        proc.run_program(&program, &params, 200_000).unwrap();
+        let answer = proc.run_program(program, &memory, args, 200_000).unwrap();
 
-        let answer = params[2]
-            .cipher_try_into_value::<u8>(&enc, &get_secret_keys_80())
-            .unwrap();
+        let answer = answer.decrypt(&enc, &sk) as u8;
 
         assert_eq!(expected, answer);
     };

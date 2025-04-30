@@ -7,9 +7,12 @@ use parasol_runtime::{
 };
 
 use crate::{
-    Ciphertext, FheProcessor, Register, Result, check_register_width,
-    proc::DispatchIsaOp,
-    proc::ops::{insert_ciphertext_inputs, make_parent_op},
+    Ciphertext, Register, Result, check_register_width,
+    proc::{
+        DispatchIsaOp,
+        fhe_processor::FheProcessor,
+        ops::{insert_ciphertext_inputs, make_parent_op},
+    },
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
 };
@@ -24,15 +27,19 @@ impl FheProcessor {
         a: RobEntryRef<Register>,
         b: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut mul_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (a) (b));
             check_register_width(a, b, instruction_id, pc)?;
 
-            let mask = (0x1u128 << a.width()) - 1;
-
             let width = a.width();
+
+            let mask = if width < 128 {
+                (0x1u128 << a.width()) - 1
+            } else {
+                u128::MAX
+            };
 
             match (a, b) {
                 (

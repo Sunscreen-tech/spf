@@ -1,110 +1,108 @@
-use sunscreen_tfhe::entities::Polynomial;
+use std::sync::Arc;
 
 use crate::{
-    Error,
-    proc::IsaOp,
-    proc::{Buffer, program::FheProgram},
-    test_utils::make_computer_80,
+    ArgsBuilder, Byte, Error, Memory, proc::IsaOp, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 
-use parasol_runtime::{DEFAULT_80, test_utils::get_secret_keys_80};
+use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_80};
 
 #[test]
 fn can_load_store_plain_byte_width() {
     let (mut proc, _) = make_computer_80();
 
     let mut case = |bytes: u32| {
-        let plaintext = (0u8..16).collect::<Vec<_>>();
-        let buffer_0 = Buffer::plain_from_value(&plaintext);
-        let buffer_1 = Buffer::plain_from_value(&vec![0u8; 16]);
+        let memory = Arc::new(Memory::new_default_stack());
+        let input_ptr = memory.try_allocate(16).unwrap();
+        let output_ptr = memory.try_allocate(16).unwrap();
 
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
-            IsaOp::BindReadWrite(RegisterName::new(1), 1, false),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), bytes * 8),
-            IsaOp::Store(RegisterName::new(1), RegisterName::new(0), bytes * 8),
-        ]);
-
-        let params = vec![buffer_0, buffer_1];
-
-        proc.run_program(&program, &params, 100).unwrap();
-
-        let ans = params[1].plain_try_into_value::<Vec<u8>>().unwrap();
-
-        for (i, x) in ans.iter().enumerate().take(bytes as usize) {
-            assert_eq!(i as u8, *x);
+        for i in 0..16 {
+            memory
+                .try_store(input_ptr.try_offset(i).unwrap(), Byte::from(i as u8))
+                .unwrap();
         }
 
-        for x in ans.iter().skip(bytes as usize) {
-            assert_eq!(*x, 0);
+        let program = memory.allocate_program(&[
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(10), bytes),
+            IsaOp::Store(RegisterName::new(11), RegisterName::new(0), bytes),
+            IsaOp::Ret(),
+        ]);
+
+        let args = ArgsBuilder::new()
+            .arg(input_ptr)
+            .arg(output_ptr)
+            .no_return_value();
+
+        proc.run_program(program, &memory, args, 200_000).unwrap();
+
+        for i in 0..bytes {
+            let byte = memory.try_load(output_ptr.try_offset(i).unwrap()).unwrap();
+
+            assert_eq!(byte.unwrap_plaintext(), i as u8, "bytes={bytes}");
+        }
+
+        for i in bytes..16 {
+            let byte = memory.try_load(output_ptr.try_offset(i).unwrap()).unwrap();
+
+            assert_eq!(byte.unwrap_plaintext(), 0, "bytes={bytes}");
         }
     };
 
-    for i in 1..=16 {
-        case(i);
+    for i in 1..=4 {
+        case(0x1 << i);
     }
 }
 
 #[test]
 fn can_load_store_ciphertext_byte_width() {
     let (mut proc, enc) = make_computer_80();
+    let sk = get_secret_keys_80();
 
     let mut case = |width: u32| {
-        let plain_values = vec![1u8, 2, 3, 4, 5, 6, 7, 8];
-        let buffer_0 = Buffer::cipher_from_value(&plain_values, &enc, &get_secret_keys_80());
-        let output = Buffer::cipher_from_value(&vec![0u8; 8], &enc, &get_secret_keys_80());
+        let plain_values = (1..=16).collect::<Vec<_>>();
 
-        let params = vec![buffer_0.clone(), output];
+        let memory = Arc::new(Memory::new_default_stack());
+        let program = memory.allocate_program(&[
+            IsaOp::Load(RegisterName::new(0), RegisterName::new(10), width),
+            IsaOp::Store(RegisterName::new(11), RegisterName::new(0), width),
+            IsaOp::Ret(),
+        ]);
 
-        proc.run_program(
-            &FheProgram::from_instructions(vec![
-                IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
-                IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
-                IsaOp::Load(RegisterName::new(0), RegisterName::new(0), width),
-                IsaOp::Store(RegisterName::new(1), RegisterName::new(0), width),
-            ]),
-            &params,
-            100,
-        )
-        .unwrap();
-
-        for (a, b) in buffer_0
-            .try_ciphertext()
-            .unwrap()
+        let src: [UInt<8, _>; 16] = plain_values
             .iter()
-            .zip(params[1].try_ciphertext().unwrap())
-            .take(width as usize)
-        {
-            assert_eq!(a.0, b.0);
+            .map(|x| UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|_| unreachable!());
+        let src = memory.try_allocate_type(&src).unwrap();
+
+        let dst: [UInt<8, _>; 16] = (0..16)
+            .map(|_| UInt::<8, L1GlweCiphertext>::encrypt_secret(0, &enc, &sk))
+            .collect::<Vec<_>>()
+            .try_into()
+            .unwrap_or_else(|_| unreachable!());
+        let dst = memory.try_allocate_type(&dst).unwrap();
+
+        let args = ArgsBuilder::new().arg(src).arg(dst).no_return_value();
+
+        proc.run_program(program, &memory, args, 100).unwrap();
+
+        for (i, p) in plain_values.iter().take(width as usize).enumerate() {
+            let actual: UInt<8, L1GlweCiphertext> = memory
+                .try_load_type(dst.try_offset(i as u32).unwrap())
+                .unwrap();
+            assert_eq!(actual.decrypt(&enc, &sk) as u8, *p);
         }
 
-        for (plain, out) in plain_values
-            .iter()
-            .zip(params[1].try_ciphertext().unwrap()[0..width as usize].chunks(8))
-        {
-            for (j, out) in out.iter().enumerate() {
-                let expected = (plain >> j) & 0x1;
-                let actual = enc.decrypt_glwe_l1(out, &get_secret_keys_80()).coeffs()[0];
-                assert_eq!(expected as u64, actual);
-            }
-        }
-
-        for x in params[1]
-            .try_ciphertext()
-            .unwrap()
-            .iter()
-            .skip(width as usize)
-        {
-            assert_eq!(
-                enc.decrypt_glwe_l1(x, &get_secret_keys_80()),
-                Polynomial::zero(DEFAULT_80.l1_poly_degree().0)
-            );
+        for i in width..plain_values.len() as u32 {
+            let actual: UInt<8, L1GlweCiphertext> =
+                memory.try_load_type(dst.try_offset(i).unwrap()).unwrap();
+            assert_eq!(actual.decrypt(&enc, &sk) as u8, 0);
         }
     };
 
-    for i in 1..=8 {
-        case(i);
+    for i in 0..=4 {
+        case(0x1 << i);
     }
 }
 
@@ -112,112 +110,67 @@ fn can_load_store_ciphertext_byte_width() {
 fn can_load_immediate() {
     let (mut proc, _) = make_computer_80();
 
-    let output = Buffer::plain_from_value(&0u32);
+    let memory = Arc::new(Memory::new_default_stack());
 
-    let params = vec![output];
+    let args = ArgsBuilder::new().return_value::<u16>();
 
-    proc.run_program(
-        &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
-            IsaOp::LoadI(RegisterName::new(0), 1234, 15),
-            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 15),
-        ]),
-        &params,
-        100,
-    )
-    .unwrap();
+    let program =
+        memory.allocate_program(&[IsaOp::LoadI(RegisterName::new(10), 1234, 15), IsaOp::Ret()]);
 
-    let acutal = params[0].plain_try_into_value::<u32>().unwrap();
+    let result = proc.run_program(program, &memory, args, 100).unwrap();
 
-    assert_eq!(acutal, 1234u32);
+    assert_eq!(result, 1234u16);
 }
 
 #[test]
 fn load_immediate_fails_out_of_range() {
     let (mut proc, _) = make_computer_80();
 
-    let output = Buffer::plain_from_value(&0u32);
+    let memory = Arc::new(Memory::new_default_stack());
 
-    let params = vec![output];
+    let args = ArgsBuilder::new().return_value::<u16>();
 
     let result = proc.run_program(
-        &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
-            IsaOp::LoadI(RegisterName::new(0), 1234, 4),
-            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 15),
-        ]),
-        &params,
-        100,
+        memory.allocate_program(&[IsaOp::LoadI(RegisterName::new(10), 1234, 4), IsaOp::Ret()]),
+        &memory,
+        args,
+        200_000,
     );
 
     assert!(matches!(
         result,
-        Err(Error::OutOfRange { inst_id: 1, pc: 1 })
+        Err(Error::OutOfRange { inst_id: _, pc: _ })
     ));
 }
 
 #[test]
-fn can_compute_effective_address_plain_ptr() {
+fn can_offset_load() {
     let (mut proc, _) = make_computer_80();
 
-    let input = Buffer::plain_from_value(&0xDEADBEEFu32);
-    let output = Buffer::plain_from_value(&0u16);
-
-    let params = vec![input, output];
-
-    proc.run_program(
-        &FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, false),
-            IsaOp::BindReadWrite(RegisterName::new(1), 1, false),
-            IsaOp::LoadI(RegisterName::new(0), 2, 16),
-            IsaOp::Cea(
-                RegisterName::new(0),
-                RegisterName::new(0),
-                RegisterName::new(0),
-            ),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(0), 16),
-            IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 16),
-        ]),
-        &params,
-        100,
-    )
-    .unwrap();
-
-    let actual = params[1].plain_try_into_value::<u16>().unwrap();
-
-    assert_eq!(actual, 0xDEAD);
-}
-
-#[test]
-fn can_compute_effective_address_encrypted_ptr_plain_offset() {
-    let (mut proc, enc) = make_computer_80();
-
-    let input = Buffer::cipher_from_value(&0xDEADBEEFu32, &enc, &get_secret_keys_80());
-    let output = Buffer::cipher_from_value(&0u16, &enc, &get_secret_keys_80());
-
-    let params = vec![input, output];
-
-    proc.run_program(
-        &FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, true),
-            IsaOp::BindReadWrite(RegisterName::new(1), 1, true),
-            IsaOp::LoadI(RegisterName::new(0), 2, 16),
-            IsaOp::Cea(
-                RegisterName::new(0),
-                RegisterName::new(0),
-                RegisterName::new(0),
-            ),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(0), 16),
-            IsaOp::Store(RegisterName::new(1), RegisterName::new(1), 16),
-        ]),
-        &params,
-        100,
-    )
-    .unwrap();
-
-    let actual = params[1]
-        .cipher_try_into_value::<u16>(&enc, &get_secret_keys_80())
+    let memory = Arc::new(Memory::new_default_stack());
+    let src = memory
+        .try_allocate_type(&[1u8, 2, 3, 4, 5, 6, 7, 8])
         .unwrap();
 
-    assert_eq!(actual, 0xDEAD);
+    let args = ArgsBuilder::new().arg(src).return_value::<u16>();
+
+    let actual = proc
+        .run_program(
+            memory.allocate_program(&[
+                IsaOp::LoadI(RegisterName::new(0), 2, 32),
+                IsaOp::Add(
+                    RegisterName::new(10),
+                    RegisterName::new(10),
+                    RegisterName::new(0),
+                ),
+                IsaOp::Load(RegisterName::new(10), RegisterName::new(10), 2),
+                IsaOp::Ret(),
+            ]),
+            &memory,
+            args,
+            200_000,
+        )
+        .unwrap();
+
+    assert_eq!(actual, 0x0403);
 }

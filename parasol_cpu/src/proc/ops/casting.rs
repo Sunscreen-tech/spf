@@ -3,8 +3,8 @@ use std::sync::Arc;
 use parasol_concurrency::AtomicRefCell;
 
 use crate::{
-    Ciphertext, FheProcessor, Register, Result,
-    proc::DispatchIsaOp,
+    Ciphertext, Register, Result,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor},
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
 };
@@ -19,7 +19,7 @@ impl FheProcessor {
         src: RobEntryRef<Register>,
         new_width: u32,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let zext_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
@@ -63,7 +63,7 @@ impl FheProcessor {
                 // We expect the inputs to an instruction to either be plaintext
                 // or L1 GLWE ciphertexts
                 _ => {
-                    return Err(crate::Error::RegisterCiphertextMismatch);
+                    return Err(crate::Error::EncryptionMismatch);
                 }
             }
 
@@ -84,7 +84,7 @@ impl FheProcessor {
         src: RobEntryRef<Register>,
         new_width: u32,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let trunc_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
@@ -118,7 +118,7 @@ impl FheProcessor {
                 // We expect the inputs to an instruction to either be plaintext
                 // or L1 GLWE ciphertexts
                 _ => {
-                    return Err(crate::Error::RegisterCiphertextMismatch);
+                    return Err(crate::Error::EncryptionMismatch);
                 }
             }
 
