@@ -1,9 +1,10 @@
-use std::{array, collections::HashSet, ops::Deref, sync::Arc};
+use std::{array, borrow::BorrowMut, collections::HashSet, ops::Deref, sync::Arc};
 
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
-    Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
-    SecretKey, TrivialOne, TrivialZero, UOpProcessor, fluent::UInt,
+    Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
+    L1LweCiphertext, SecretKey, TrivialOne, TrivialZero, UOpProcessor,
+    fluent::{FheCircuitCtx, GenericInt, PackedGenericInt, Sign, UInt},
 };
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
@@ -954,6 +955,47 @@ impl FheComputer {
 
         Ok(outputs)
     }
+
+    /// Run a graph in blocking mode.
+    pub(crate) fn run_graph_blocking(&mut self, circuit: &FheCircuit) {
+        let uproc = self.processor.aux_data.uop_processor.borrow_mut();
+        let fc = &self.processor.aux_data.flow;
+
+        uproc.run_graph_blocking(circuit, fc);
+    }
+
+    /// Packs a `GenericInt<N, L1GlweCiphertext, U>` into a `PackedGenericInt<N, L1GlweCiphertext, U>`.
+    pub fn pack_int<const N: usize, U: Sign>(
+        &mut self,
+        input: GenericInt<N, L1GlweCiphertext, U>,
+    ) -> PackedGenericInt<N, L1GlweCiphertext, U> {
+        let ctx = FheCircuitCtx::new();
+
+        let packed_ct = input
+            .graph_inputs(&ctx)
+            .pack(&ctx, &self.processor.aux_data.enc)
+            .collect_output(&ctx, &self.processor.aux_data.enc);
+
+        self.run_graph_blocking(&ctx.circuit.borrow());
+        packed_ct
+    }
+
+    /// Unpacks a `PackedGenericInt<N, L1GlweCiphertext, U>` into a `GenericInt<N, L1GlweCiphertext, U>`.
+    pub fn unpack_int<const N: usize, U: Sign>(
+        &mut self,
+        input: PackedGenericInt<N, L1GlweCiphertext, U>,
+    ) -> GenericInt<N, L1GlweCiphertext, U> {
+        let ctx = FheCircuitCtx::new();
+
+        let unpacked_ct = input
+            .graph_input(&ctx)
+            .unpack(&ctx)
+            .convert(&ctx)
+            .collect_outputs(&ctx, &self.processor.aux_data.enc);
+
+        self.run_graph_blocking(&ctx.circuit.borrow());
+        unpacked_ct
+    }
 }
 
 #[cfg(test)]
@@ -962,9 +1004,9 @@ mod buffer_uint_tests {
     use crate::tomasulo::registers::RegisterName;
 
     use super::*;
-    use parasol_runtime::fluent::UInt;
+    use parasol_runtime::fluent::{PackedUInt, UInt};
     use parasol_runtime::test_utils::{
-        get_encryption_128, get_evaluation_128, get_secret_keys_128,
+        get_encryption_128, get_evaluation_128, get_public_key_128, get_secret_keys_128,
     };
     use rand::{RngCore, thread_rng};
 
@@ -1104,6 +1146,53 @@ mod buffer_uint_tests {
 
         case(false);
         case(true);
+    }
+
+    #[test]
+    fn can_pack_from_proc() {
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
+
+        let sk = get_secret_keys_128();
+
+        let mut proc = FheComputer::new(&enc, &eval);
+
+        let val = 1234;
+
+        let ct: UInt<16, L1GlweCiphertext> = UInt::encrypt_secret(val, &enc, &sk);
+
+        let packed_ct = proc.pack_int(ct);
+
+        // Decrypt the unpacked ciphertext and verify it matches the original value
+        let actual_val = packed_ct.decrypt(&enc, &sk);
+        assert_eq!(
+            actual_val, val,
+            "Unpacked value does not match the original value"
+        );
+    }
+
+    #[test]
+    fn can_unpack_from_proc() {
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
+
+        let sk = get_secret_keys_128();
+        let pk = get_public_key_128();
+
+        let mut proc = FheComputer::new(&enc, &eval);
+
+        let val = 1234;
+
+        let ct: PackedUInt<16, L1GlweCiphertext> = PackedUInt::encrypt(val, &enc, &pk);
+
+        let unpacked_ct = proc.unpack_int(ct);
+
+        // Decrypt the unpacked ciphertext and verify it matches the original value
+        let actual_val = unpacked_ct.decrypt(&enc, &sk);
+        assert_eq!(
+            actual_val, val,
+            "Unpacked value does not match the original value"
+        );
     }
 }
 
