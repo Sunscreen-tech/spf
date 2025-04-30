@@ -1,7 +1,7 @@
+use std::sync::Arc;
+
 use crate::{
-    proc::IsaOp,
-    proc::{Buffer, program::FheProgram},
-    test_utils::make_computer_80,
+    ArgsBuilder, Memory, proc::IsaOp, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 
@@ -9,7 +9,13 @@ use crate::{
 fn can_branch_zero() {
     let (mut proc, _enc) = make_computer_80();
 
-    let output_buffer = Buffer::plain_from_value(&0u32);
+    let args = ArgsBuilder::new()
+        .arg(0u32)
+        .arg(1u32)
+        .arg(5u32)
+        .return_value::<u32>();
+
+    let memory = Memory::new_default_stack();
 
     // Equivalent program:
     // let a = 0;
@@ -22,31 +28,26 @@ fn can_branch_zero() {
     //     }
     // }
     // a
-    let program = FheProgram::from_instructions(vec![
-        IsaOp::LoadI(RegisterName::new(0), 0, 32),
-        IsaOp::LoadI(RegisterName::new(1), 1, 32),
-        IsaOp::LoadI(RegisterName::new(2), 5, 32),
-        IsaOp::BindReadWrite(RegisterName::new(3), 0, false),
+    let program = memory.allocate_program(&[
         IsaOp::Add(
-            RegisterName::new(0),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
         // Have we hit RegisterName::named(2)?
         IsaOp::CmpEq(
             RegisterName::new(4),
-            RegisterName::new(0),
-            RegisterName::new(2),
+            RegisterName::new(10),
+            RegisterName::new(12),
         ),
-        IsaOp::BranchZero(RegisterName::new(4), 4),
-        IsaOp::Store(RegisterName::new(3), RegisterName::new(0), 32),
+        IsaOp::BranchZero(RegisterName::new(4), -16),
+        IsaOp::Ret(),
     ]);
 
-    let params = vec![output_buffer];
+    let ans = proc
+        .run_program(program, &Arc::new(memory), args, 200_000)
+        .unwrap();
 
-    proc.run_program(&program, &params, 100).unwrap();
-
-    let ans = params[0].plain_try_into_value::<u32>().unwrap();
     assert_eq!(5, ans);
 }
 
@@ -54,7 +55,9 @@ fn can_branch_zero() {
 fn can_branch_nonzero() {
     let (mut proc, _enc) = make_computer_80();
 
-    let output_buffer = Buffer::plain_from_value(&0u32);
+    let args = ArgsBuilder::new().arg(5u32).arg(1u32).return_value::<u32>();
+
+    let memory = Memory::new_default_stack();
 
     // Equivalent program:
     // let a = 5;
@@ -66,23 +69,19 @@ fn can_branch_nonzero() {
     //     }
     // }
     // a
-    let program = FheProgram::from_instructions(vec![
-        IsaOp::LoadI(RegisterName::new(0), 5, 32),
-        IsaOp::LoadI(RegisterName::new(1), 1, 32),
-        IsaOp::BindReadWrite(RegisterName::new(3), 0, false),
+    let program = memory.allocate_program(&[
         IsaOp::Sub(
-            RegisterName::new(0),
-            RegisterName::new(0),
-            RegisterName::new(1),
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(11),
         ),
-        IsaOp::BranchNonZero(RegisterName::new(0), 3),
-        IsaOp::Store(RegisterName::new(3), RegisterName::new(0), 32),
+        IsaOp::BranchNonZero(RegisterName::new(10), -8),
+        IsaOp::Ret(),
     ]);
 
-    let params = vec![output_buffer];
+    let ans = proc
+        .run_program(program, &Arc::new(memory), args, 200_000)
+        .unwrap();
 
-    proc.run_program(&program, &params, 100).unwrap();
-
-    let ans = params[0].plain_try_into_value::<u32>().unwrap();
     assert_eq!(0, ans);
 }

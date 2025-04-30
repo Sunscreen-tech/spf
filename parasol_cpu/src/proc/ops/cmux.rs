@@ -4,8 +4,8 @@ use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
-    Ciphertext, Error, FheProcessor, Register, Result, check_register_width,
-    proc::DispatchIsaOp,
+    Ciphertext, Error, Register, Result, check_register_width,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
@@ -24,7 +24,7 @@ impl FheProcessor {
         a: RobEntryRef<Register>,
         b: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut cmux_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (select) (a) (b));
@@ -126,7 +126,7 @@ impl FheProcessor {
 
                     se
                 }
-                _ => return Err(Error::RegisterCiphertextMismatch),
+                _ => return Err(Error::EncryptionMismatch),
             };
 
             // Now use the input select to wire the input to the cmux operation.

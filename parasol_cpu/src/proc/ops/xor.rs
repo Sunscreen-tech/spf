@@ -4,9 +4,8 @@ use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
-    Ciphertext, FheProcessor, Register, Result, check_register_width,
-    proc::DispatchIsaOp,
-    proc::ops::make_parent_op,
+    Ciphertext, Register, Result, check_register_width,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::make_parent_op},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
@@ -21,7 +20,7 @@ impl FheProcessor {
         a: RobEntryRef<Register>,
         b: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut xor_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (a) (b) );

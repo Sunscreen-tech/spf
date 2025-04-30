@@ -19,7 +19,7 @@ where
         srcs: Self::RobEntrySrcs,
         scoreboard_entry: ScoreboardEntryRef<Self::DispatchedOp>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) -> Result<Self::DispatchedOp>;
 }
 

@@ -1,15 +1,9 @@
-use parasol_concurrency::AtomicRefCell;
-
 use crate::{
-    CiphertextPtr, Error, FheProcessor, MemHazards, PtrRegister, Register, Result,
-    proc::DispatchIsaOp,
-    tomasulo::{
-        registers::RobEntryRef, scoreboard::ScoreboardEntryRef, tomasulo_processor::RetirementInfo,
-    },
+    Byte, Error, Memory, Ptr32, Register, Result,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::is_invalid_load_store_alignment},
+    tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
 };
-
-use super::{check_offset, read_write_mask};
 
 impl FheProcessor {
     #[allow(clippy::too_many_arguments)]
@@ -17,101 +11,58 @@ impl FheProcessor {
     pub fn store(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
-        scoreboard_entry: ScoreboardEntryRef<DispatchIsaOp>,
+        memory: &Memory,
         src: RobEntryRef<Register>,
-        dst: RobEntryRef<PtrRegister>,
-        width: u32,
+        dst: RobEntryRef<Register>,
+        num_bytes: u32,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
-        let store_impl = |scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>| -> Result<()> {
+        let store_impl = || -> Result<()> {
             let mut dst = dst.entry_force_mut();
             let dst = &mut **dst;
 
             unwrap_registers!((src));
 
-            let mask = read_write_mask(width);
-            let num_bytes = width.next_multiple_of(8) as usize / 8;
+            match dst {
+                Register::Plaintext { val: ptr, width: _ } => {
+                    let base_addr = *ptr as u32;
 
-            match (src, dst) {
-                (
-                    Register::Plaintext {
-                        val,
-                        width: reg_width,
-                    },
-                    PtrRegister::Plaintext(ptr),
-                ) => {
-                    check_offset(width, ptr.offset, ptr.base.len(), instruction_id, pc)?;
-
-                    if *reg_width != width {
-                        return Err(Error::WidthMismatch {
-                            inst_id: instruction_id,
-                            pc,
-                        });
+                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
+                        return Err(Error::UnalignedAccess(base_addr));
                     }
 
-                    // Plaintext loads and stores exec immediately, so we don't need to update our deps.
+                    let base_addr = Ptr32::from(base_addr);
 
-                    for i in 0..(num_bytes - 1) {
-                        let shift_amt = 8 * i;
-                        *ptr.base[i].borrow_mut() = (val >> shift_amt) as u8;
-                    }
+                    for i in 0..num_bytes {
+                        let byte = match src {
+                            Register::Plaintext { val, width: _ } => {
+                                Byte::from((val >> (8 * i)) as u8)
+                            }
+                            Register::Ciphertext(val) => {
+                                let val = val.try_into_l1glwe()?;
+                                let val = &val[8 * i as usize..8 * i as usize + 8];
 
-                    let shift_amt = 8 * (num_bytes - 1);
-                    *ptr.base[num_bytes - 1].borrow_mut() = mask & (val >> shift_amt) as u8;
+                                Byte::try_from(val.to_owned()).unwrap()
+                            }
+                        };
 
-                    FheProcessor::retire(&retirement_info, Ok(()));
-                }
-                (
-                    Register::Ciphertext(val),
-                    PtrRegister::Ciphertext(CiphertextPtr::PlainOffset(ptr)),
-                ) => {
-                    check_offset(width, ptr.offset, ptr.base.len(), instruction_id, pc)?;
-
-                    if val.len() != width as usize {
-                        return Err(Error::WidthMismatch {
-                            inst_id: instruction_id,
-                            pc,
-                        });
-                    }
-
-                    ptr.on_write(scoreboard_entry);
-
-                    let range = 8 * ptr.offset as usize..8 * ptr.offset as usize + width as usize;
-
-                    for (input, output) in val.try_into_l1glwe()?.iter().zip(ptr.base[range].iter())
-                    {
-                        let input = AtomicRefCell::borrow(input);
-                        let mut output = AtomicRefCell::borrow_mut(output);
-
-                        output.clone_from(&input);
+                        // We've checked that our address is aligned, so overflow can't occur.
+                        memory.try_store(base_addr.try_offset(i).unwrap(), byte)?;
                     }
 
                     FheProcessor::retire(&retirement_info, Ok(()));
-                }
-                (
-                    Register::Ciphertext(_val),
-                    PtrRegister::Ciphertext(CiphertextPtr::EncOffset(ptr)),
-                ) => {
-                    ptr.on_write(scoreboard_entry);
 
-                    todo!();
+                    Ok(())
                 }
-                (_, PtrRegister::Uninit) => {
-                    return Err(Error::AccessViolation(0));
-                }
-                _ => {
-                    return Err(Error::IllegalOperands {
-                        inst_id: instruction_id,
-                        pc,
-                    });
-                }
-            };
-
-            Ok(())
+                _ => Err(Error::IllegalOperands {
+                    inst_id: instruction_id,
+                    pc,
+                }),
+            }
         };
 
-        if let Err(e) = store_impl(&scoreboard_entry) {
+        if let Err(e) = store_impl() {
             FheProcessor::retire(&retirement_info, Err(e));
         }
     }

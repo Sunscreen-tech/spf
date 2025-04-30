@@ -3,17 +3,16 @@
 //! This crate provides the Parasol processor for running programs over encrypted data. The general
 //! workflow for using it is:
 //! * Compile a program using Parasol-clang
-//! * Load the output ELF file using [`FheApplication::parse_elf`].
-//! * Create the [`FheComputer`] to run your program.
-//! * Allocate and fill [`Buffer`]s that will be passed to your program.
-//! * Look up the [`FheProgram`] you want to run by name.
-//! * Call [`FheComputer::run_program`].
-//! * Return or decrypt your program's result buffer(s).
+//! * Load our program into a [`Memory`] object.
+//! * Encrypt our data and create an [`Args`] object.
+//! * Call [`FheComputer::run_program`], passing our memory, the name of
+//!   the program we want to run, and args.
+//! * Return or decrypt your program's result.
 //!
 //! # Example
 //! ```ignore
-//! use parasol_cpu::{run_program, Buffer};
-//! use parasol_runtime::{ComputeKey, Encryption, SecretKey};
+//! use parasol_cpu::{run_program, Memory, ArgsBuilder};
+//! use parasol_runtime::{ComputeKey, Encryption, SecretKey, fluent::Uint};
 //!
 //! // Embed the compiled Parasol add program into a constant.
 //! const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
@@ -31,21 +30,15 @@
 //!         &secret_key,
 //!     );
 //!
-//! // Define the values we want to add. The values'
-//! // sizes must match the Parasol C program's parameters!
-//! let a = 2u8;
-//! let b = 7u8;
+//! // Load up a memory object with our program.
+//! let memory = Memory::new_from_elf(FHE_FILE);
 //!
-//! // To pass arguments into the Parasol C program, we must convert
-//! // them to `Buffer`s. Note that we must provide an output
-//! // buffer as well!
-//! let arguments = [a, b, 0u8].map(|x| {
-//!    Buffer::cipher_from_value(
-//!         &x,
-//!         &Encryption::default(),
-//!         &secret_key,
-//!     )
-//! });
+//! // Define the values we want to add and the return type.
+//! // The values' sizes must match the Parasol C program's parameters!
+//! let args = ArgsBuilder::new()
+//!     .arg(UInt::<8>::encrypt_secret(7, &enc, &sk))
+//!     .arg(UInt::<8>::encrypt_secret(2, &enc, &sk))
+//!     .return_value::<UInt<8>>();
 //!
 //! // Run the program.
 //! let encrypted_result = run_program(
@@ -56,37 +49,28 @@
 //! )
 //! .unwrap();
 //!
-//! // Decrypt the result. Note that we have to choose the index
-//! // to decrypt from all the arguments passed to the C function;
-//! // since the result is written out to the third argument of
-//! // the `add` function in C, we specify that index here.
-//! let result = encrypted_result[2]
-//!     .cipher_try_into_value::<u8>(
-//!         &Encryption::default(),
-//!         &secret_key,
-//!     )
-//!     .unwrap();
+//! // Decrypt the result.
+//! let result = encrypted_result.decrypt(&enc, &sk);
+//!
 //! println!("Encrypted {a} + {b} = {result}");
 //! ```
 
 mod error;
 pub use error::*;
 
-// TODO: finish this V2 memory implementation
-pub(crate) mod memory;
-
-mod runner;
-pub use runner::*;
+mod memory;
+pub use memory::*;
 
 mod proc;
-pub use proc::{Buffer, FheApplication, FheComputer, FheProgram};
+pub use proc::FheComputer;
 
 #[doc(hidden)]
 pub mod test_utils;
 
 #[doc(hidden)]
 pub mod tomasulo;
-pub use proc::*;
-mod util;
 pub use parasol_cpu_macros::IntoBytes;
-pub use util::IntoBytes;
+pub use proc::*;
+
+mod runner;
+pub use runner::*;

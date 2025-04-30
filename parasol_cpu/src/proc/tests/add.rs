@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use crate::{
+    ArgsBuilder, Memory,
     proc::IsaOp,
-    proc::{Buffer, program::FheProgram},
-    test_utils::make_computer_80,
+    test_utils::{MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
 
@@ -11,56 +13,31 @@ use parasol_runtime::test_utils::get_secret_keys_80;
 fn can_add_inputs() {
     let test = |((val1, enc1), (val2, enc2), expected_sum)| {
         let (mut proc, enc) = make_computer_80();
+        let sk = get_secret_keys_80();
 
         let encrypted_computation = enc1 || enc2;
 
-        let buffer_0 = if enc1 {
-            Buffer::cipher_from_value(&val1, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val1)
-        };
-        let buffer_1 = if enc2 {
-            Buffer::cipher_from_value(&val2, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val2)
-        };
+        let memory = Memory::new_default_stack();
 
-        let output_buffer0 = if encrypted_computation {
-            Buffer::cipher_from_value(&0u32, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&0u32)
-        };
-
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, enc1),
-            IsaOp::BindReadOnly(RegisterName::new(1), 1, enc2),
-            IsaOp::BindReadWrite(RegisterName::new(2), 2, encrypted_computation),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
+        let program = memory.allocate_program(&[
             IsaOp::Add(
-                RegisterName::new(2),
-                RegisterName::new(0),
-                RegisterName::new(1),
+                RegisterName::new(10),
+                RegisterName::new(10),
+                RegisterName::new(11),
             ),
-            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 32),
+            IsaOp::Ret(),
         ]);
 
-        let params = vec![buffer_0, buffer_1, output_buffer0];
+        let args = ArgsBuilder::new()
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc2))
+            .return_value::<MaybeEncryptedUInt<32>>();
 
-        proc.run_program(
-            &program,
-            &params,
-            if encrypted_computation { 200_000 } else { 100 },
-        )
-        .unwrap();
+        let result = proc
+            .run_program(program, &Arc::new(memory), args, 200_000)
+            .unwrap();
 
-        let ans_sum = if encrypted_computation {
-            params[2]
-                .cipher_try_into_value::<u32>(&enc, &get_secret_keys_80())
-                .unwrap()
-        } else {
-            params[2].plain_try_into_value::<u32>().unwrap()
-        };
+        let ans_sum = result.get(&enc, &sk);
 
         assert_eq!(
             expected_sum, ans_sum,
@@ -101,80 +78,42 @@ fn can_add_carry_inputs() {
         expected_carry,
     )| {
         let (mut proc, enc) = make_computer_80();
+        let sk = &get_secret_keys_80();
 
         let encrypted_computation = enc1 || enc2 || enc_input_carry;
 
-        let buffer_0 = if enc1 {
-            Buffer::cipher_from_value(&val1, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val1)
-        };
-        let buffer_1 = if enc2 {
-            Buffer::cipher_from_value(&val2, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val2)
-        };
+        let memory = Memory::new_default_stack();
 
-        let buffer_2 = if enc_input_carry {
-            Buffer::cipher_from_value(&input_carry, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&input_carry)
-        };
-
-        let output_buffer0 = if encrypted_computation {
-            Buffer::cipher_from_value(&0u32, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&0u32)
-        };
-        let output_buffer1 = if encrypted_computation {
-            Buffer::cipher_from_value(&0u32, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&0u32)
-        };
-
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, enc1),
-            IsaOp::BindReadOnly(RegisterName::new(1), 1, enc2),
-            IsaOp::BindReadOnly(RegisterName::new(2), 2, enc_input_carry),
-            IsaOp::BindReadWrite(RegisterName::new(3), 3, encrypted_computation),
-            IsaOp::BindReadWrite(RegisterName::new(4), 4, encrypted_computation),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
-            IsaOp::Load(RegisterName::new(2), RegisterName::new(2), 1),
+        let prog_ptr = memory.allocate_program(&[
+            IsaOp::Trunc(RegisterName::new(12), RegisterName::new(12), 1),
             IsaOp::AddC(
-                RegisterName::new(3),
-                RegisterName::new(4),
-                RegisterName::new(0),
+                RegisterName::new(10),
                 RegisterName::new(1),
-                RegisterName::new(2),
+                RegisterName::new(10),
+                RegisterName::new(11),
+                RegisterName::new(12),
             ),
-            IsaOp::Store(RegisterName::new(3), RegisterName::new(3), 32),
-            IsaOp::Store(RegisterName::new(4), RegisterName::new(4), 1),
+            IsaOp::Zext(RegisterName::new(11), RegisterName::new(1), 32),
+            IsaOp::Ret(),
         ]);
 
-        let params = vec![buffer_0, buffer_1, buffer_2, output_buffer0, output_buffer1];
+        let args = ArgsBuilder::new()
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, sk, enc2))
+            .arg(MaybeEncryptedUInt::<8>::new(
+                input_carry as u64,
+                &enc,
+                sk,
+                enc_input_carry,
+            ))
+            .return_value::<[MaybeEncryptedUInt<32>; 2]>();
 
-        proc.run_program(
-            &program,
-            &params,
-            if encrypted_computation { 200_000 } else { 100 },
-        )
-        .unwrap();
+        let [ans_sum, ans_carry] = proc
+            .run_program(prog_ptr, &Arc::new(memory), args, 200_000)
+            .unwrap();
 
-        let ans_sum = if encrypted_computation {
-            params[3]
-                .cipher_try_into_value::<u32>(&enc, &get_secret_keys_80())
-                .unwrap()
-        } else {
-            params[3].plain_try_into_value::<u32>().unwrap()
-        };
-        let ans_carry = if encrypted_computation {
-            params[4]
-                .cipher_try_into_value::<u32>(&enc, &get_secret_keys_80())
-                .unwrap()
-        } else {
-            params[4].plain_try_into_value::<u32>().unwrap()
-        };
+        let ans_sum = ans_sum.get(&enc, sk);
+        let ans_carry = ans_carry.get(&enc, sk);
 
         assert_eq!(
             expected_sum, ans_sum,
@@ -261,27 +200,21 @@ fn can_add_carry_inputs() {
 fn add_use_same_dst_and_src() {
     let (mut proc, _enc) = make_computer_80();
 
-    let output = Buffer::plain_from_value(&0u32);
+    let memory = Memory::new_default_stack();
+    let program_ptr = memory.allocate_program(&[
+        IsaOp::Add(
+            RegisterName::new(10),
+            RegisterName::new(10),
+            RegisterName::new(10),
+        ),
+        IsaOp::Ret(),
+    ]);
 
-    let params = vec![output];
+    let args = ArgsBuilder::new().arg(10u16).return_value::<u16>();
 
-    proc.run_program(
-        &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
-            IsaOp::LoadI(RegisterName::new(0), 10, 16),
-            IsaOp::Add(
-                RegisterName::new(0),
-                RegisterName::new(0),
-                RegisterName::new(0),
-            ),
-            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 16),
-        ]),
-        &params,
-        100,
-    )
-    .unwrap();
-
-    let actual = params[0].plain_try_into_value::<u32>().unwrap();
+    let actual = proc
+        .run_program(program_ptr, &Arc::new(memory), args, 200_000)
+        .unwrap();
 
     assert_eq!(actual, 20);
 }

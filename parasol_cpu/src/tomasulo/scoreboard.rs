@@ -84,14 +84,14 @@ where
     pub deps: AtomicUsize,
     pub dependents: Spinlock<Vec<ScoreboardEntryRef<I>>>,
     pub instruction: AtomicRefCell<Option<I>>,
-    pub pc: usize,
+    pub pc: u32,
 }
 
 impl<I> ScoreboardEntry<I>
 where
     I: Clone,
 {
-    pub fn new(id: ScoreboardEntryId<I>, pc: usize) -> Self {
+    pub fn new(id: ScoreboardEntryId<I>, pc: u32) -> Self {
         Self {
             id,
             deps: AtomicUsize::new(0),

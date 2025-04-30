@@ -1,16 +1,19 @@
+use std::sync::Arc;
+
 use itertools::Itertools;
 use rand::{RngCore, thread_rng};
 
-use crate::test_utils::read_result;
 use crate::{
+    ArgsBuilder, Byte, Memory, ToArg,
     proc::IsaOp,
-    proc::program::FheProgram,
-    test_utils::{buffer_from_value_80, make_computer_80},
+    test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
 
+use parasol_runtime::{Encryption, SecretKey, test_utils::get_secret_keys_80};
+
 fn casting(zero_extend: bool, encrypted_computation: bool) {
-    let supported_sizes = [1, 8, 16, 32];
+    let supported_sizes = [8, 16, 32];
 
     let combinations = supported_sizes
         .iter()
@@ -32,6 +35,7 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
         // processor on failure. In the meantime, we can just create a new
         // processor for each loop.
         let (mut proc, enc) = make_computer_80();
+        let sk = get_secret_keys_80();
         let enc = &enc;
 
         // Get a random 32 bit value
@@ -44,28 +48,74 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
         let mask = (((1u64) << shift_width) - 1) as u32;
         let expected = value & mask;
 
-        let buffer_0 = buffer_from_value_80(value, enc, encrypted_computation);
-        let output_buffer = buffer_from_value_80(0u32, enc, encrypted_computation);
+        let memory = Arc::new(Memory::new_default_stack());
 
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, encrypted_computation),
-            IsaOp::BindReadWrite(RegisterName::new(1), 1, encrypted_computation),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), input_width),
+        let program = memory.allocate_program(&[
+            // Loads use byte widths.
+            IsaOp::Load(
+                RegisterName::new(10),
+                RegisterName::new(10),
+                input_width / 8,
+            ),
             if zero_extend {
-                IsaOp::Zext(RegisterName::new(1), RegisterName::new(0), output_width)
+                IsaOp::Zext(RegisterName::new(10), RegisterName::new(10), output_width)
             } else {
-                IsaOp::Trunc(RegisterName::new(1), RegisterName::new(0), output_width)
+                IsaOp::Trunc(RegisterName::new(10), RegisterName::new(10), output_width)
             },
-            IsaOp::Store(RegisterName::new(1), RegisterName::new(1), output_width),
+            // Stores use byte widths.
+            IsaOp::Store(
+                RegisterName::new(11),
+                RegisterName::new(10),
+                output_width / 8,
+            ),
+            IsaOp::Ret(),
         ]);
 
-        let params = vec![buffer_0, output_buffer];
+        // Use the largest case to store our initial value.
+        let input = MaybeEncryptedUInt::<32>::new(value as u64, enc, &sk, encrypted_computation);
 
-        let result = proc.run_program(&program, &params, 100);
+        let input_ptr = memory.try_allocate(64).unwrap();
+        let output_ptr = memory.try_allocate(64).unwrap();
+
+        for (i, b) in input.to_bytes().into_iter().enumerate() {
+            memory
+                .try_store(input_ptr.try_offset(i as u32).unwrap(), b)
+                .unwrap();
+        }
+
+        let args = ArgsBuilder::new()
+            .arg(input_ptr)
+            .arg(output_ptr)
+            .no_return_value();
+
+        let result = proc.run_program(program, &memory, args, 200_000);
 
         match (valid, result) {
             (true, Ok(())) => {
-                let ans: u32 = read_result(&params[1], enc, encrypted_computation);
+                let ans_bytes = (0..output_width / 8)
+                    .map(|x| memory.try_load(output_ptr.try_offset(x).unwrap()).unwrap())
+                    .collect::<Vec<_>>();
+
+                fn get_ans<const N: usize>(
+                    ans_bytes: Vec<Byte>,
+                    enc: &Encryption,
+                    sk: &SecretKey,
+                ) -> u32
+                where
+                    BitsUnsigned: Bits<N>,
+                {
+                    let ans = MaybeEncryptedUInt::<N>::try_from_bytes(ans_bytes).unwrap();
+                    let ans: u64 = ans.get(enc, sk).into();
+                    ans as u32
+                }
+
+                let ans = match output_width {
+                    8 => get_ans::<8>(ans_bytes, enc, &sk),
+                    16 => get_ans::<16>(ans_bytes, enc, &sk),
+                    32 => get_ans::<32>(ans_bytes, enc, &sk),
+                    _ => unreachable!(),
+                };
+
                 assert_eq!(
                     expected, ans,
                     "input_width: {}, output_width: {}",

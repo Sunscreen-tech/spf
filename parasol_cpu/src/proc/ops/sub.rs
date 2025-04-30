@@ -2,9 +2,8 @@ use mux_circuits::util::arbitrary_width_borrowing_sub;
 use parasol_runtime::circuits::sub_circuit;
 
 use crate::{
-    Ciphertext, Error, FheProcessor, Register, Result, check_register_width,
-    proc::DispatchIsaOp,
-    proc::ops::make_parent_op,
+    Ciphertext, Error, Register, Result, check_register_width,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::make_parent_op},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
@@ -19,7 +18,7 @@ impl FheProcessor {
         a: RobEntryRef<Register>,
         b: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut sub_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (a) (b));
@@ -91,7 +90,7 @@ impl FheProcessor {
         b: RobEntryRef<Register>,
         borrow_in: RobEntryRef<Register>,
         instruction_id: usize,
-        pc: usize,
+        pc: u32,
     ) {
         let mut sub_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (mut borrow_out) (a) (b) (borrow_in));

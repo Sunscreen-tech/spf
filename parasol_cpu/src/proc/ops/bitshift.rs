@@ -8,8 +8,8 @@ use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{FheCircuit, L1GlweCiphertext};
 
 use crate::{
-    Ciphertext, Error, FheProcessor, Register, Result,
-    proc::DispatchIsaOp,
+    Ciphertext, Error, Register, Result,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
@@ -104,8 +104,6 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         shift: RobEntryRef<Register>,
-        _instruction_id: usize,
-        _pc: usize,
         plain_operation: ShiftOperation,
         plain_shift: ShiftOperationCiphertext,
         circuit_gen: fn(usize, usize) -> MuxCircuit,
@@ -179,7 +177,7 @@ impl FheProcessor {
 
                     *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
                 }
-                _ => return Err(Error::RegisterCiphertextMismatch),
+                _ => return Err(Error::EncryptionMismatch),
             }
 
             Ok(())
@@ -197,16 +195,12 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
     ) {
         self.shift_operation(
             retirement_info,
             dst,
             src,
             shift,
-            instruction_id,
-            pc,
             |val, shift, _| val >> shift,
             |c, shift, l1glwe_zero| {
                 encrypted_value_plain_shift(
@@ -234,16 +228,12 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
     ) {
         self.shift_operation(
             retirement_info,
             dst,
             src,
             shift,
-            instruction_id,
-            pc,
             arithmetic_shift_right_arbitrary_width,
             |c, shift, l1glwe_zero| {
                 encrypted_value_plain_shift(
@@ -271,16 +261,12 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
     ) {
         self.shift_operation(
             retirement_info,
             dst,
             src,
             shift,
-            instruction_id,
-            pc,
             |val, shift, _| val << shift,
             |c, shift, l1glwe_zero| {
                 encrypted_value_plain_shift(
@@ -308,16 +294,12 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
     ) {
         self.shift_operation(
             retirement_info,
             dst,
             src,
             shift,
-            instruction_id,
-            pc,
             rotate_right_arbitrary_width,
             |c, shift, l1glwe_zero| {
                 encrypted_value_plain_shift(
@@ -345,16 +327,12 @@ impl FheProcessor {
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
         shift: RobEntryRef<Register>,
-        instruction_id: usize,
-        pc: usize,
     ) {
         self.shift_operation(
             retirement_info,
             dst,
             src,
             shift,
-            instruction_id,
-            pc,
             rotate_left_arbitrary_width,
             |c, shift, l1glwe_zero| {
                 encrypted_value_plain_shift(

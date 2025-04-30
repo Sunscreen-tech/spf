@@ -1,7 +1,9 @@
+use std::sync::Arc;
+
 use crate::{
+    ArgsBuilder, Memory,
     proc::IsaOp,
-    proc::{Buffer, program::FheProgram},
-    test_utils::make_computer_80,
+    test_utils::{MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
 
@@ -11,56 +13,29 @@ use parasol_runtime::test_utils::get_secret_keys_80;
 fn can_sub_inputs() {
     let test = |((val1, enc1), (val2, enc2), expected_sum)| {
         let (mut proc, enc) = make_computer_80();
+        let sk = get_secret_keys_80();
 
         let encrypted_computation = enc1 || enc2;
 
-        let buffer_0 = if enc1 {
-            Buffer::cipher_from_value(&val1, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val1)
-        };
-        let buffer_1 = if enc2 {
-            Buffer::cipher_from_value(&val2, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val2)
-        };
+        let args = ArgsBuilder::new()
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc2))
+            .return_value::<MaybeEncryptedUInt<32>>();
 
-        let output_buffer0 = if encrypted_computation {
-            Buffer::cipher_from_value(&0u32, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&0u32)
-        };
+        let memory = Arc::new(Memory::new_default_stack());
 
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, enc1),
-            IsaOp::BindReadOnly(RegisterName::new(1), 1, enc2),
-            IsaOp::BindReadWrite(RegisterName::new(2), 2, encrypted_computation),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
+        let program = memory.allocate_program(&[
             IsaOp::Sub(
-                RegisterName::new(2),
-                RegisterName::new(0),
-                RegisterName::new(1),
+                RegisterName::new(10),
+                RegisterName::new(10),
+                RegisterName::new(11),
             ),
-            IsaOp::Store(RegisterName::new(2), RegisterName::new(2), 32),
+            IsaOp::Ret(),
         ]);
 
-        let params = vec![buffer_0, buffer_1, output_buffer0];
+        let ans_sum = proc.run_program(program, &memory, args, 200_000).unwrap();
 
-        proc.run_program(
-            &program,
-            &params,
-            if encrypted_computation { 200_000 } else { 100 },
-        )
-        .unwrap();
-
-        let ans_sum = if encrypted_computation {
-            params[2]
-                .cipher_try_into_value::<u32>(&enc, &get_secret_keys_80())
-                .unwrap()
-        } else {
-            params[2].plain_try_into_value::<u32>().unwrap()
-        };
+        let ans_sum = ans_sum.get(&enc, &sk);
 
         assert_eq!(
             expected_sum, ans_sum,
@@ -93,85 +68,55 @@ fn can_sub_borrow_inputs() {
         expected_borrow,
     )| {
         let (mut proc, enc) = make_computer_80();
+        let sk = get_secret_keys_80();
 
         let encrypted_computation = enc1 || enc2 || enc_input_borrow;
 
-        let buffer_0 = if enc1 {
-            Buffer::cipher_from_value(&val1, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val1)
-        };
-        let buffer_1 = if enc2 {
-            Buffer::cipher_from_value(&val2, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&val2)
-        };
+        let memory = Arc::new(Memory::new_default_stack());
 
-        let buffer_2 = if enc_input_borrow {
-            Buffer::cipher_from_value(&input_borrow, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&input_borrow)
-        };
-
-        let output_buffer0 = if encrypted_computation {
-            Buffer::cipher_from_value(&0u32, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&0u32)
-        };
-        let output_buffer1 = if encrypted_computation {
-            Buffer::cipher_from_value(&0u32, &enc, &get_secret_keys_80())
-        } else {
-            Buffer::plain_from_value(&0u32)
-        };
-
-        let program = FheProgram::from_instructions(vec![
-            IsaOp::BindReadOnly(RegisterName::new(0), 0, enc1),
-            IsaOp::BindReadOnly(RegisterName::new(1), 1, enc2),
-            IsaOp::BindReadOnly(RegisterName::new(2), 2, enc_input_borrow),
-            IsaOp::BindReadWrite(RegisterName::new(3), 3, encrypted_computation),
-            IsaOp::BindReadWrite(RegisterName::new(4), 4, encrypted_computation),
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(0), 32),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(1), 32),
-            IsaOp::Load(RegisterName::new(2), RegisterName::new(2), 1),
+        let program = memory.allocate_program(&[
+            IsaOp::Trunc(RegisterName::new(12), RegisterName::new(12), 1),
             IsaOp::SubB(
-                RegisterName::new(3),
-                RegisterName::new(4),
-                RegisterName::new(0),
-                RegisterName::new(1),
-                RegisterName::new(2),
+                RegisterName::new(10),
+                RegisterName::new(11),
+                RegisterName::new(10),
+                RegisterName::new(11),
+                RegisterName::new(12),
             ),
-            IsaOp::Store(RegisterName::new(3), RegisterName::new(3), 32),
-            IsaOp::Store(RegisterName::new(4), RegisterName::new(4), 1),
+            IsaOp::Zext(RegisterName::new(11), RegisterName::new(11), 8),
+            IsaOp::Ret(),
         ]);
 
-        let params = vec![buffer_0, buffer_1, buffer_2, output_buffer0, output_buffer1];
+        let args = ArgsBuilder::new()
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(
+                input_borrow as u64,
+                &enc,
+                &sk,
+                enc_input_borrow,
+            ))
+            .return_value::<[MaybeEncryptedUInt<8>; 5]>();
 
-        proc.run_program(
-            &program,
-            &params,
-            if encrypted_computation { 200_000 } else { 100 },
-        )
-        .unwrap();
+        // Diff || borrow is 5 bytes: 4 for the difference and 1 for the borrow
+        let result = proc.run_program(program, &memory, args, 200_000).unwrap();
 
-        let ans_sum = if encrypted_computation {
-            params[3]
-                .cipher_try_into_value::<u32>(&enc, &get_secret_keys_80())
-                .unwrap()
-        } else {
-            params[3].plain_try_into_value::<u32>().unwrap()
-        };
-        let ans_borrow = if encrypted_computation {
-            params[4]
-                .cipher_try_into_value::<u32>(&enc, &get_secret_keys_80())
-                .unwrap()
-        } else {
-            params[4].plain_try_into_value::<u32>().unwrap()
-        };
+        let ans_diff = u32::from_le_bytes(
+            result
+                .iter()
+                .take(4)
+                .map(|x| x.get(&enc, &sk))
+                .collect::<Vec<_>>()
+                .try_into()
+                .unwrap(),
+        );
+
+        let ans_borrow = result[4].get(&enc, &sk) as u32;
 
         assert_eq!(
-            expected_sum, ans_sum,
+            expected_sum, ans_diff,
             "val1: {:#02x}, val2: {:#02x}, input_borrow: {:#02x}, expected_sum: {:#02x}, ans_sum: {:#02x}, encrypted computation?: {}",
-            val1, val2, input_borrow, expected_sum, ans_sum, encrypted_computation
+            val1, val2, input_borrow, expected_sum, ans_diff, encrypted_computation
         );
 
         assert_eq!(
@@ -248,27 +193,25 @@ fn can_sub_borrow_inputs() {
 fn sub_use_same_dst_and_src() {
     let (mut proc, _enc) = make_computer_80();
 
-    let output = Buffer::plain_from_value(&0u32);
+    let memory = Arc::new(Memory::new_default_stack());
 
-    let output = vec![output];
+    let args = ArgsBuilder::new().arg(10u32).return_value::<u32>();
 
-    proc.run_program(
-        &FheProgram::from_instructions(vec![
-            IsaOp::BindReadWrite(RegisterName::new(0), 0, false),
-            IsaOp::LoadI(RegisterName::new(0), 10, 16),
-            IsaOp::Sub(
-                RegisterName::new(0),
-                RegisterName::new(0),
-                RegisterName::new(0),
-            ),
-            IsaOp::Store(RegisterName::new(0), RegisterName::new(0), 16),
-        ]),
-        &output,
-        100,
-    )
-    .unwrap();
+    let ans = proc
+        .run_program(
+            memory.allocate_program(&[
+                IsaOp::Sub(
+                    RegisterName::new(10),
+                    RegisterName::new(10),
+                    RegisterName::new(10),
+                ),
+                IsaOp::Ret(),
+            ]),
+            &memory,
+            args,
+            100,
+        )
+        .unwrap();
 
-    let actual = output[0].plain_try_into_value::<u32>().unwrap();
-
-    assert_eq!(actual, 0);
+    assert_eq!(ans, 0);
 }
