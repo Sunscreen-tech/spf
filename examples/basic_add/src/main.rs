@@ -31,7 +31,7 @@
 
 //     // Run the program.
 //     let now = Instant::now();
-//     let encrypted_result = run_program(compute_key.clone(), FHE_FILE, "add", &arguments).unwrap();
+//     let (gas, encrypted_result) = run_program(compute_key.clone(), FHE_FILE, "add", &arguments, 200_000).unwrap();
 //     let elapsed = now.elapsed();
 //     println!("Time to run the program: {:?}", elapsed);
 
@@ -42,7 +42,7 @@
 //     let result = encrypted_result[2]
 //         .cipher_try_into_value::<u8>(&Encryption::default(), &secret_key)
 //         .unwrap();
-//     println!("Encrypted {a} + {b} = {result}");
+//     println!("Encrypted {a} + {b} = {result}, using {gas} gas");
 // }
 
 fn main() {}

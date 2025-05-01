@@ -41,18 +41,19 @@
 //!     .return_value::<UInt<8>>();
 //!
 //! // Run the program.
-//! let encrypted_result = run_program(
+//! let (gas, encrypted_result) = run_program(
 //!     compute_key.clone(),
 //!     FHE_FILE,
 //!     "add",
 //!     &arguments,
+//!     200_000,
 //! )
 //! .unwrap();
 //!
 //! // Decrypt the result.
 //! let result = encrypted_result.decrypt(&enc, &sk);
 //!
-//! println!("Encrypted {a} + {b} = {result}");
+//! println!("Encrypted {a} + {b} = {result}, using {gas} gas");
 //! ```
 
 mod error;
