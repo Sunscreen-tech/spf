@@ -13,7 +13,7 @@ pub fn run_program(
     program_name: &str,
     arguments: &[Buffer],
     gas_limit: u32,
-) -> Result<Vec<Buffer>> {
+) -> Result<(u32, Vec<Buffer>)> {
     let enc = Encryption::default();
     let eval = Evaluation::with_default_params(Arc::new(compute_key));
     let mut proc = FheComputer::new(&enc, &eval);
@@ -26,9 +26,9 @@ pub fn run_program(
         .get_program(&Symbol::new(c_program_name.as_c_str()))
         .ok_or(Error::ElfSymbolNotFound(program_name.to_string()))?;
 
-    proc.run_program(program, arguments, gas_limit)?;
+    let gas = proc.run_program(program, arguments, gas_limit)?;
 
-    Ok(arguments.to_owned())
+    Ok((gas, arguments.to_owned()))
 }
 
 #[cfg(test)]
@@ -61,7 +61,7 @@ mod tests {
 
         let arguments = vec![buffer_0, buffer_1, buffer_2, output_buffer];
 
-        let result =
+        let (_gas, result) =
             run_program(compute_key.clone(), CMUX_ELF, "cmux", &arguments, 300_000).unwrap();
 
         let output = result[3]
