@@ -33,7 +33,7 @@ fn can_sub_inputs() {
             IsaOp::Ret(),
         ]);
 
-        let ans_sum = proc.run_program(program, &memory, args, 200_000).unwrap();
+        let (_, ans_sum) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
         let ans_sum = ans_sum.get(&enc, &sk);
 
@@ -99,7 +99,7 @@ fn can_sub_borrow_inputs() {
             .return_value::<[MaybeEncryptedUInt<8>; 5]>();
 
         // Diff || borrow is 5 bytes: 4 for the difference and 1 for the borrow
-        let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+        let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
         let ans_diff = u32::from_le_bytes(
             result
@@ -197,7 +197,7 @@ fn sub_use_same_dst_and_src() {
 
     let args = ArgsBuilder::new().arg(10u32).return_value::<u32>();
 
-    let ans = proc
+    let (_, ans) = proc
         .run_program(
             memory.allocate_program(&[
                 IsaOp::Sub(

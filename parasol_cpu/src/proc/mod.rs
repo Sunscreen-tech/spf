@@ -256,14 +256,14 @@ impl FheComputer {
         Self { processor }
     }
 
-    /// Run the given FHE program with user specified data.
+    /// Run the given FHE program with user specified data and a gas limit, return the used gas and program return value
     pub fn run_program<T: ToArg>(
         &mut self,
         initial_pc: Ptr32,
         memory: &Arc<Memory>,
         args: Args<T>,
         gas_limit: u32,
-    ) -> Result<T> {
+    ) -> Result<(u32, T)> {
         self.processor
             .run_program(memory, initial_pc, &args, gas_limit)
     }
