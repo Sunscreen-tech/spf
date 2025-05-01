@@ -612,13 +612,14 @@ impl FheProcessor {
         Ok(())
     }
 
-    /// Runs the given program using the passed user `data` as arguments.
+    /// Runs the given program using the passed user `data` as arguments with a gas limit
+    /// Returns used gas
     pub fn run_program(
         &mut self,
         program: &[IsaOp],
         data: &[Buffer],
         gas_limit: u32,
-    ) -> Result<()> {
+    ) -> Result<u32> {
         self.reset_io(data)?;
 
         let mut pc = 0;
@@ -645,7 +646,7 @@ impl FheProcessor {
 
         self.wait()?;
 
-        Ok(())
+        Ok(gas)
     }
 }
 
@@ -858,13 +859,13 @@ impl FheComputer {
         Self { processor }
     }
 
-    /// Run the given FHE program with user specified data.
+    /// Run the given FHE program with user specified data and a gas limit, return the used gas
     pub fn run_program(
         &mut self,
         program: &FheProgram,
         data: &[Buffer],
         gas_limit: u32,
-    ) -> Result<()> {
+    ) -> Result<u32> {
         self.processor
             .run_program(&program.instructions, data, gas_limit)
     }
