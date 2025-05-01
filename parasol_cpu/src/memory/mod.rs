@@ -536,10 +536,11 @@ impl Memory {
         Ok(())
     }
 
-    /// Attempt to write `x` to the pre-allocated address given by `ptr`.
+    /// Attempt to allocate and store `x` in this memory.
     ///
     /// # Remarks
-    /// An error occurs if allocation fails.
+    /// Returns an error if allocation fails or the pointer the allocated
+    /// `x` on success.
     pub fn try_allocate_type<T: ToArg>(&self, x: &T) -> Result<Ptr32> {
         let ptr = self.try_allocate(T::SIZE as u32)?;
 
@@ -552,7 +553,7 @@ impl Memory {
 /// An 8-bit encrypted or plaintext value.
 #[derive(Clone)]
 pub enum Byte {
-    /// An un-encrypted 8-bit value.
+    /// A plaintext 8-bit value.
     Plaintext(u8),
 
     /// An encrypted 8-bit value.
@@ -592,9 +593,9 @@ impl Byte {
     ///
     /// # Panics
     /// If the byte contains encrypted data.
-    pub fn unwrap_plaintext(&self) -> u8 {
+    pub fn unwrap_plaintext(self) -> u8 {
         match self {
-            Self::Plaintext(val) => *val,
+            Self::Plaintext(val) => val,
             _ => panic!("Not a plaintext"),
         }
     }
@@ -603,9 +604,9 @@ impl Byte {
     ///
     /// # Panics
     /// If the byte contains plaintext data.
-    pub fn unwrap_ciphertext(&self) -> Vec<Arc<AtomicRefCell<L1GlweCiphertext>>> {
+    pub fn unwrap_ciphertext(self) -> Vec<Arc<AtomicRefCell<L1GlweCiphertext>>> {
         match self {
-            Self::Ciphertext(val) => val.clone(),
+            Self::Ciphertext(val) => val,
             _ => panic!("Not a plaintext"),
         }
     }
@@ -833,11 +834,11 @@ mod tests {
             let actual = Word::try_from_bytes(bytes, Extend::Zero, &enc).unwrap();
 
             for (e, a) in bytes.iter().zip(actual.0.iter()) {
-                assert_eq!(e.unwrap_plaintext(), a.unwrap_plaintext());
+                assert_eq!(e.clone().unwrap_plaintext(), a.clone().unwrap_plaintext());
             }
 
             for a in actual.0.iter().skip(bytes.len()) {
-                assert_eq!(0x0, a.unwrap_plaintext());
+                assert_eq!(0x0, a.clone().unwrap_plaintext());
             }
         };
 
@@ -861,11 +862,11 @@ mod tests {
             let actual = Word::try_from_bytes(bytes, Extend::Signed, &enc).unwrap();
 
             for (e, a) in bytes.iter().zip(actual.0.iter()).take(4) {
-                assert_eq!(e.unwrap_plaintext(), a.unwrap_plaintext());
+                assert_eq!(e.clone().unwrap_plaintext(), a.clone().unwrap_plaintext());
             }
 
             for a in actual.0.iter().skip(bytes.len()) {
-                assert_eq!(expected_ext, a.unwrap_plaintext());
+                assert_eq!(expected_ext, a.clone().unwrap_plaintext());
             }
         };
 
@@ -919,13 +920,13 @@ mod tests {
             let actual = Word::try_from_bytes(&bytes_enc, Extend::Zero, &enc).unwrap();
 
             for (byte, actual) in bytes.iter().zip(actual.0.iter()).take(4) {
-                let b = UInt::<8, _>::from_bits_shallow(actual.unwrap_ciphertext());
+                let b = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = b.decrypt(&enc, &sk) as u8;
                 assert_eq!(*byte, actual);
             }
 
             for actual in actual.0.iter().skip(bytes.len()) {
-                let byte = UInt::<8, _>::from_bits_shallow(actual.unwrap_ciphertext());
+                let byte = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = byte.decrypt(&enc, &sk) as u8;
                 assert_eq!(0, actual);
             }
@@ -956,13 +957,13 @@ mod tests {
             let actual = Word::try_from_bytes(&bytes_enc, Extend::Signed, &enc).unwrap();
 
             for (byte, actual) in bytes.iter().zip(actual.0.iter()).take(4) {
-                let b = UInt::<8, _>::from_bits_shallow(actual.unwrap_ciphertext());
+                let b = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = b.decrypt(&enc, &sk) as u8;
                 assert_eq!(*byte, actual);
             }
 
             for actual in actual.0.iter().skip(bytes.len()) {
-                let byte = UInt::<8, _>::from_bits_shallow(actual.unwrap_ciphertext());
+                let byte = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = byte.decrypt(&enc, &sk) as u8;
                 assert_eq!(0xFF, actual);
             }

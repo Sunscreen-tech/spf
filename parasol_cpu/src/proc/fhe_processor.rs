@@ -65,13 +65,13 @@ impl FheProcessor {
             registers,
             aux_data,
             pc: 0,
-            current_instruction: 0usize,
-            instructions_inflight: 0usize,
+            current_instruction: 0,
+            instructions_inflight: 0,
             ready_instructions: mpsc::channel(),
         }
     }
 
-    // This method requires the assumption that load and store operations have no in-flight
+    // This method requires that load and store operations have no in-flight
     // register dependencies. That is, its src/dst register value must be resolved before we decode
     // this instruction.
     //

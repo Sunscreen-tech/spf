@@ -21,10 +21,8 @@ where
     /// Whether this type needs to be sign extended or not.
     const SIGNED: bool;
 
-    /// Convert a byte array and metadata into a [`Vec<Arg>`].
-    ///
-    /// # Remarks
-    /// This positions arguments
+    /// Convert a byte array and metadata into an [`Arg`] indicating the alignment,
+    /// size, and how to extend the given value.
     fn bytes_to_arg(bytes: Vec<Byte>, is_signed: bool) -> Arg {
         Arg {
             alignment: Self::ALIGNMENT,
@@ -40,7 +38,7 @@ where
     /// methods.
     fn to_bytes(&self) -> Vec<Byte>;
 
-    /// Convert this value into a [`Vec<Arg>`]` for calling with a function.
+    /// Convert this value into an [`Arg`] for calling with a function.
     /// This allows parasol to understand how to pass arguments to a program.
     ///
     /// See [here](https://drive.google.com/file/d/1Ja_Tpp_5Me583CGVD-BIZMlgGBnlKU4R/view?pli=1) for
@@ -51,13 +49,7 @@ where
     fn to_arg(&self) -> Arg {
         let bytes = self.to_bytes();
 
-        assert_eq!(
-            bytes.len(),
-            Self::SIZE,
-            "Byte length mismatch, expected {} got {}",
-            Self::SIZE,
-            bytes.len()
-        );
+        assert_eq!(bytes.len(), Self::SIZE);
 
         Self::bytes_to_arg(bytes, Self::SIGNED)
     }
@@ -81,13 +73,12 @@ where
 }
 
 macro_rules! primitive_impl_to_arg {
-    ($t:ty,$sext:literal) => {
+    ($t:ty,$signed:literal) => {
         paste! {
             impl ToArg for $t {
                 const ALIGNMENT: usize = std::mem::align_of::<$t>();
                 const SIZE: usize = std::mem::size_of::<$t>();
-                const SIGNED: bool = $sext;
-
+                const SIGNED: bool = $signed;
 
                 fn to_bytes(&self) -> Vec<Byte> {
                     self.to_le_bytes().map(|x| Byte::from(x)).into_iter().collect::<Vec<_>>()
@@ -273,24 +264,19 @@ impl ToArg for () {
 /// register while the high word goes on the stack. If no registers remain, they both get pushed onto
 /// the stack, where they will be aligned but not extended.
 ///
-/// 1-4 byte aggregates get packed into a single register (if available) or placed on the stack
-/// according to its alignment requirements.
+/// 1-4 byte aggregates get packed into a single register (if available) or placed
+/// on the stack according to its alignment requirements.
 ///
-/// 5-8 byte aggregate get packed into 2 registers (if available). If only one register is available,
-/// the lo 32-bits go in the register while the high bits go on the stack. If no registers are
-/// available, both words get pushed on the stack.
+/// 5-8 byte aggregate values get packed into 2 registers (if available). If
+/// only one register is available, the lo 32-bits go in the register while the high
+/// bits go on the stack. If no registers are available, both words get pushed on
+/// the stack.
 ///
 /// Scalars or aggregates larger than 64-bits will be transparently allocated on the
 /// Parasol heap and passed by reference (i.e. a 32-bit pointer will be passed for the corresponding
 /// register/stack argument).
 pub struct ArgsBuilder {
     args: Vec<Arg>,
-}
-
-impl Default for ArgsBuilder {
-    fn default() -> Self {
-        Self::new()
-    }
 }
 
 impl ArgsBuilder {

@@ -131,7 +131,7 @@ impl Register {
             let mut val = 0u128;
 
             for (i, b) in word.0.iter().enumerate() {
-                val |= (b.unwrap_plaintext() as u128) << (8 * i)
+                val |= (b.clone().unwrap_plaintext() as u128) << (8 * i)
             }
 
             Self::Plaintext { val, width: 32 }
@@ -139,7 +139,7 @@ impl Register {
             let data = word
                 .0
                 .iter()
-                .flat_map(|x| x.unwrap_ciphertext())
+                .flat_map(|x| x.clone().unwrap_ciphertext())
                 .collect::<Vec<_>>();
 
             Self::Ciphertext(Ciphertext::L1Glwe { data })
