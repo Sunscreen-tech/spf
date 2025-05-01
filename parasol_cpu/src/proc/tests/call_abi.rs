@@ -13,12 +13,12 @@ fn unsigned_values_zero_extend_4_byte() {
     let program = memory.allocate_program(&[IsaOp::Ret()]);
 
     let args = ArgsBuilder::new().arg(0x80u8).return_value::<u32>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 0x0000_0080u32);
 
     let args = ArgsBuilder::new().arg(0x8000u16).return_value::<u32>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 0x0000_8000u32);
 }
@@ -32,12 +32,12 @@ fn signed_values_sign_extend_4_byte() {
     let program = memory.allocate_program(&[IsaOp::Ret()]);
 
     let args = ArgsBuilder::new().arg(i8::MIN).return_value::<i32>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, i8::MIN as i32);
 
     let args = ArgsBuilder::new().arg(i16::MIN).return_value::<i32>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, i16::MIN as i32);
 }
@@ -54,7 +54,7 @@ fn eight_byte_vals_2_registers() {
     let args = ArgsBuilder::new()
         .arg(0xDEADBEEF_FEEDF00Du64)
         .return_value::<u64>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 0xDEADBEEF_FEEDF00Du64);
 }
@@ -115,7 +115,7 @@ fn eight_4_byte_args() {
         .arg(1u32)
         .arg(1u32)
         .return_value::<u32>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 8);
 }
@@ -173,7 +173,7 @@ fn four_8_byte_args() {
         .arg(1u64)
         .arg(1u64)
         .return_value::<u32>();
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 4);
 }
@@ -212,7 +212,7 @@ fn large_return_value() {
 
     let args = ArgsBuilder::new().return_value::<[u32; 4]>();
 
-    let ans = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(ans[0], 0xDEADBEEF);
     assert_eq!(ans[1], 0xFEEDF00D);
@@ -254,7 +254,7 @@ fn two_large_parameters() {
 
     let args = ArgsBuilder::new().arg(x).arg(y).return_value::<u32>();
 
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 0xFFEEDDCC);
 }
@@ -287,7 +287,7 @@ fn pass_on_stack_wide() {
         IsaOp::Ret(),
     ]);
 
-    let result = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
     assert_eq!(result, 0xDEADBEEF_FEEDF00Du64);
 }

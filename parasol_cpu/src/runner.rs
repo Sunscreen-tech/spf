@@ -11,7 +11,7 @@ pub fn run_program<T>(
     _program_name: &str,
     _arguments: Args<T>,
     _gas_limit: u32,
-) -> Result<T> {
+) -> Result<(u32, T)> {
     todo!();
 }
 
@@ -34,7 +34,7 @@ mod tests {
 
     //     let arguments = vec![buffer_0, buffer_1, buffer_2, output_buffer];
 
-    //     let result = run_program(compute_key.clone(), CMUX_ELF, "cmux", &arguments).unwrap();
+    //     let (_gas, result) = run_program(compute_key.clone(), CMUX_ELF, "cmux", &arguments, 300_000).unwrap();
 
     //     let output = result[3]
     //         .cipher_try_into_value::<u8>(&enc, &get_secret_keys_128())

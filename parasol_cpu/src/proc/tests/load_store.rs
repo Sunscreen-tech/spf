@@ -117,7 +117,7 @@ fn can_load_immediate() {
     let program =
         memory.allocate_program(&[IsaOp::LoadI(RegisterName::new(10), 1234, 15), IsaOp::Ret()]);
 
-    let result = proc.run_program(program, &memory, args, 100).unwrap();
+    let (_, result) = proc.run_program(program, &memory, args, 100).unwrap();
 
     assert_eq!(result, 1234u16);
 }
@@ -154,7 +154,7 @@ fn can_offset_load() {
 
     let args = ArgsBuilder::new().arg(src).return_value::<u16>();
 
-    let actual = proc
+    let (_, actual) = proc
         .run_program(
             memory.allocate_program(&[
                 IsaOp::LoadI(RegisterName::new(0), 2, 32),

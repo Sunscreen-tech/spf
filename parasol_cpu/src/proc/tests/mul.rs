@@ -96,7 +96,7 @@ where
             .arg(MaybeEncryptedUInt::<N>::new(b, &enc, &sk, b_enc))
             .return_value::<MaybeEncryptedUInt<N>>();
 
-        let actual = proc.run_program(program, &memory, args, 500_000).unwrap();
+        let (_, actual) = proc.run_program(program, &memory, args, 500_000).unwrap();
 
         let expected = a.wrapping_mul(b) & ((0x1 << N) - 1);
         let actual: u64 = actual.get(&enc, &sk).into();

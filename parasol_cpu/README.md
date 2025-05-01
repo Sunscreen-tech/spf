@@ -72,11 +72,12 @@ fn main() {
     });
 
     // Run the program.
-    let encrypted_result = run_program(
+    let (gas, encrypted_result) = run_program(
         compute_key.clone(),
         FHE_FILE,
         "add",
         &arguments,
+        200_000,
     )
     .unwrap();
 
@@ -90,7 +91,7 @@ fn main() {
             &secret_key,
         )
         .unwrap();
-    println!("Encrypted {a} + {b} = {result}");
+    println!("Encrypted {a} + {b} = {result}, using {gas} gas");
 }
 ```
 

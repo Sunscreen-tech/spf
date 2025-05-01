@@ -93,7 +93,7 @@ fn can_cmux(encrypted_computation: bool) {
 
         let program = memory.allocate_program(&cmux_test_program());
 
-        let ans = proc.run_program(program, &memory, args, 200_000).unwrap();
+        let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
         assert_eq!(expected, ans.get(&enc, &sk));
     }

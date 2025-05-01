@@ -44,7 +44,7 @@ fn can_branch_zero() {
         IsaOp::Ret(),
     ]);
 
-    let ans = proc
+    let (_, ans) = proc
         .run_program(program, &Arc::new(memory), args, 200_000)
         .unwrap();
 
@@ -79,7 +79,7 @@ fn can_branch_nonzero() {
         IsaOp::Ret(),
     ]);
 
-    let ans = proc
+    let (_, ans) = proc
         .run_program(program, &Arc::new(memory), args, 200_000)
         .unwrap();
 

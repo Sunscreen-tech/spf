@@ -30,7 +30,7 @@ fn can_or_plaintext_inputs() {
 
     let args = ArgsBuilder::new().arg(val1).arg(val2).return_value::<u32>();
 
-    let ans = proc.run_program(program, &memory, args, 100).unwrap();
+    let (_, ans) = proc.run_program(program, &memory, args, 100).unwrap();
 
     assert_eq!(expected, ans);
 }
@@ -59,7 +59,7 @@ fn can_or_ciphertext_inputs() {
             .arg(UInt::<8, _>::encrypt_secret(val2 as u64, &enc, &sk))
             .return_value::<UInt<8, _>>();
 
-        let answer = proc.run_program(program, &memory, args, 200_000).unwrap();
+        let (_, answer) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
         let answer = answer.decrypt(&enc, &sk) as u8;
 

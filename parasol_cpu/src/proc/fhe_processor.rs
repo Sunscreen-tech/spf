@@ -667,14 +667,15 @@ impl FheProcessor {
         }
     }
 
-    /// Runs the given program using the passed user `data` as arguments.
+    /// Runs the given program using the passed user `data` as arguments with a gas limit
+    /// Returns used gas a program return value
     pub fn run_program<T: ToArg>(
         &mut self,
         memory: &Arc<Memory>,
         initial_pc: Ptr32,
         args: &Args<T>,
         gas_limit: u32,
-    ) -> Result<T> {
+    ) -> Result<(u32, T)> {
         self.reset()?;
         let return_data = self.set_up_function_call(memory, args)?;
         self.aux_data.memory = Some(memory.clone());
@@ -707,16 +708,17 @@ impl FheProcessor {
 
             self.wait()?;
 
-            Ok::<_, Error>(())
+            Ok::<_, Error>(gas)
         };
 
-        run_program_impl()?;
+        let gas = run_program_impl()?;
 
         // Clear the inflight_memory_ops table so we don't leak memory.
         self.aux_data.inflight_memory_ops.clear();
         self.aux_data.memory = None;
 
         self.try_capture_return_value(memory, args, return_data)
+            .map(|ret_val| (gas, ret_val))
     }
 }
 
