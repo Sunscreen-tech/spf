@@ -279,6 +279,12 @@ pub struct ArgsBuilder {
     args: Vec<Arg>,
 }
 
+impl Default for ArgsBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl ArgsBuilder {
     /// Create a new [`ArgsBuilder`].
     pub fn new() -> Self {
