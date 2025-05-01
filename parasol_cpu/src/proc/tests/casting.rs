@@ -64,7 +64,7 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
         let result = proc.run_program(&program, &params, 100);
 
         match (valid, result) {
-            (true, Ok(())) => {
+            (true, Ok(_)) => {
                 let ans: u32 = read_result(&params[1], enc, encrypted_computation);
                 assert_eq!(
                     expected, ans,
@@ -77,7 +77,7 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
                 continue;
             }
             (true, Err(e)) => panic!("Unexpected error: {:?}", e),
-            (false, Ok(())) => panic!("Expected error"),
+            (false, Ok(_)) => panic!("Expected error"),
         }
     }
 }
