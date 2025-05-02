@@ -52,6 +52,7 @@ impl FheProcessor {
         )
     }
 
+    #[allow(clippy::too_many_arguments)]
     pub fn ext(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
