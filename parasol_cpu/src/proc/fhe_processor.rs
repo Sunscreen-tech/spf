@@ -155,7 +155,7 @@ impl FheProcessor {
             Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) => 1,
 
             // instructions that compute on one input source, but gas does not rely on it
-            Zext(..) | Trunc(..) => 1,
+            Sext(..) | Zext(..) | Trunc(..) => 1,
 
             // instructions that compute on one input source
             Not(_, input) | Neg(_, input) => {
@@ -848,6 +848,9 @@ impl Tomasulo for FheProcessor {
             }
             CmpLe(dst, a, b) => {
                 self.less_than_or_equal(retirement_info, dst, a, b, instruction_id, pc);
+            }
+            Sext(dst, src, width) => {
+                self.sext(retirement_info, dst, src, width, instruction_id, pc);
             }
             Zext(dst, src, width) => {
                 self.zext(retirement_info, dst, src, width, instruction_id, pc);

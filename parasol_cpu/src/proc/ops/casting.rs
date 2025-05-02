@@ -21,7 +21,48 @@ impl FheProcessor {
         instruction_id: usize,
         pc: u32,
     ) {
-        let zext_impl = || -> Result<()> {
+        self.ext(
+            retirement_info,
+            dst,
+            src,
+            new_width,
+            instruction_id,
+            pc,
+            false,
+        )
+    }
+
+    pub fn sext(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        src: RobEntryRef<Register>,
+        new_width: u32,
+        instruction_id: usize,
+        pc: u32,
+    ) {
+        self.ext(
+            retirement_info,
+            dst,
+            src,
+            new_width,
+            instruction_id,
+            pc,
+            true,
+        )
+    }
+
+    pub fn ext(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        src: RobEntryRef<Register>,
+        new_width: u32,
+        instruction_id: usize,
+        pc: u32,
+        signed: bool,
+    ) {
+        let ext_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
 
             if (new_width as usize) < src.width() {
@@ -32,25 +73,38 @@ impl FheProcessor {
             }
 
             match src {
-                Register::Plaintext { val, .. } => {
+                Register::Plaintext { val, width } => {
                     *dst = Register::Plaintext {
-                        val: *val,
+                        val: if signed {
+                            let sign_mask = 1 << (*width - 1);
+                            if (sign_mask & *val) == 0 {
+                                *val
+                            } else {
+                                let abs = (sign_mask << 1) - val;
+                                (1 << new_width) - abs
+                            }
+                        } else {
+                            *val
+                        },
                         width: new_width,
                     };
-
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
                 Register::Ciphertext(Ciphertext::L1Glwe { data }) => {
                     let current_width = data.len() as u32;
 
                     // Get trivial zeros
-                    let zero = Arc::new(AtomicRefCell::new(self.aux_data.l1glwe_zero.clone()));
+                    let pad = if signed {
+                        data.last().unwrap().clone()
+                    } else {
+                        Arc::new(AtomicRefCell::new(self.aux_data.l1glwe_zero.clone()))
+                    };
 
                     // We are little endian so we append zeros to the end
                     let output = data
                         .iter()
                         .chain(std::iter::repeat_n(
-                            &zero,
+                            &pad,
                             (new_width - current_width) as usize,
                         ))
                         .cloned()
@@ -70,7 +124,7 @@ impl FheProcessor {
             Ok(())
         };
 
-        if let Err(e) = zext_impl() {
+        if let Err(e) = ext_impl() {
             FheProcessor::retire(&retirement_info, Err(e));
         }
     }

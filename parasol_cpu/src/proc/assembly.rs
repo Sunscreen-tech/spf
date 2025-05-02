@@ -368,6 +368,7 @@ define_op! {
     // Casting operations
     [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
     [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
+    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
 
     // Branch relative to the current PC if `src` is non-zero.
     [0x46 BranchNonZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
