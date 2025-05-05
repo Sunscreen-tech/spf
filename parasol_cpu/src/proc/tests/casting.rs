@@ -12,8 +12,14 @@ use crate::{
 
 use parasol_runtime::{Encryption, SecretKey, test_utils::get_secret_keys_80};
 
-fn casting(zero_extend: bool, encrypted_computation: bool) {
-    let supported_sizes = [8, 16, 32];
+enum CastType {
+    ZeroExtension,
+    SignExtension,
+    Truncation,
+}
+
+fn casting(cast_type: CastType, encrypted_computation: bool) {
+    let supported_sizes = [8u32, 16, 32];
 
     let combinations = supported_sizes
         .iter()
@@ -21,10 +27,11 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
         .map(|(input_width, output_width)| {
             (
                 (*input_width, *output_width),
-                if zero_extend {
-                    input_width <= output_width
-                } else {
-                    input_width >= output_width
+                match cast_type {
+                    CastType::SignExtension | CastType::ZeroExtension => {
+                        input_width <= output_width
+                    }
+                    CastType::Truncation => input_width >= output_width,
                 },
             )
         });
@@ -40,13 +47,19 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
 
         // Get a random 32 bit value
         let value = thread_rng().next_u32();
-        let shift_width = if zero_extend {
-            input_width
-        } else {
-            output_width
+        let expected = match cast_type {
+            CastType::SignExtension => {
+                let mut sign_bit = value & (1 << (input_width - 1));
+                let mut extended = value & (((1u64 << input_width) - 1) as u32);
+                for _ in 0..output_width.saturating_sub(input_width) {
+                    sign_bit <<= 1;
+                    extended |= sign_bit;
+                }
+                extended
+            }
+            CastType::ZeroExtension => value & (((1u64 << input_width) - 1) as u32),
+            CastType::Truncation => value & (((1u64 << output_width) - 1) as u32),
         };
-        let mask = (((1u64) << shift_width) - 1) as u32;
-        let expected = value & mask;
 
         let memory = Arc::new(Memory::new_default_stack());
 
@@ -57,10 +70,16 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
                 RegisterName::new(10),
                 input_width / 8,
             ),
-            if zero_extend {
-                IsaOp::Zext(RegisterName::new(10), RegisterName::new(10), output_width)
-            } else {
-                IsaOp::Trunc(RegisterName::new(10), RegisterName::new(10), output_width)
+            match cast_type {
+                CastType::SignExtension => {
+                    IsaOp::Sext(RegisterName::new(10), RegisterName::new(10), output_width)
+                }
+                CastType::ZeroExtension => {
+                    IsaOp::Zext(RegisterName::new(10), RegisterName::new(10), output_width)
+                }
+                CastType::Truncation => {
+                    IsaOp::Trunc(RegisterName::new(10), RegisterName::new(10), output_width)
+                }
             },
             // Stores use byte widths.
             IsaOp::Store(
@@ -135,27 +154,41 @@ fn casting(zero_extend: bool, encrypted_computation: bool) {
 #[test]
 fn can_cast_zero_extend_plaintext() {
     for _ in 0..5 {
-        casting(true, false);
+        casting(CastType::ZeroExtension, false);
     }
 }
 
 #[test]
 fn can_cast_zero_extend_ciphertext() {
     for _ in 0..3 {
-        casting(true, true);
+        casting(CastType::ZeroExtension, true);
+    }
+}
+
+#[test]
+fn can_cast_sign_extend_plaintext() {
+    for _ in 0..5 {
+        casting(CastType::SignExtension, false);
+    }
+}
+
+#[test]
+fn can_cast_sign_extend_ciphertext() {
+    for _ in 0..3 {
+        casting(CastType::SignExtension, true);
     }
 }
 
 #[test]
 fn can_cast_truncate_plaintext() {
     for _ in 0..5 {
-        casting(false, false);
+        casting(CastType::Truncation, false);
     }
 }
 
 #[test]
 fn can_cast_truncate_ciphertext() {
     for _ in 3..5 {
-        casting(false, true);
+        casting(CastType::Truncation, true);
     }
 }
