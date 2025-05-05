@@ -177,7 +177,11 @@ impl FheProcessor {
             | CmpGt(_, input1, input2)
             | CmpGe(_, input1, input2)
             | CmpLt(_, input1, input2)
-            | CmpLe(_, input1, input2) => {
+            | CmpLe(_, input1, input2)
+            | CmpGtS(_, input1, input2)
+            | CmpGeS(_, input1, input2)
+            | CmpLtS(_, input1, input2)
+            | CmpLeS(_, input1, input2) => {
                 if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
                     100_000
                 } else {
@@ -849,6 +853,18 @@ impl Tomasulo for FheProcessor {
             }
             CmpLe(dst, a, b) => {
                 self.less_than_or_equal(retirement_info, dst, a, b, instruction_id, pc);
+            }
+            CmpGtS(dst, a, b) => {
+                self.greater_than_signed(retirement_info, dst, a, b, instruction_id, pc);
+            }
+            CmpGeS(dst, a, b) => {
+                self.greater_than_or_equal_signed(retirement_info, dst, a, b, instruction_id, pc);
+            }
+            CmpLtS(dst, a, b) => {
+                self.less_than_signed(retirement_info, dst, a, b, instruction_id, pc);
+            }
+            CmpLeS(dst, a, b) => {
+                self.less_than_or_equal_signed(retirement_info, dst, a, b, instruction_id, pc);
             }
             Sext(dst, src, width) => {
                 self.sext(retirement_info, dst, src, width, instruction_id, pc);

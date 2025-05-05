@@ -7,7 +7,7 @@ use crate::{
     ArgsBuilder, FheComputer, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedInt, MaybeEncryptedUInt, make_computer_80},
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;
@@ -27,20 +27,39 @@ fn run_single_test(
 
     let program = memory.allocate_program(&[isa_op, IsaOp::Zext(A0, A0, 32), IsaOp::Ret()]);
 
-    let args = ArgsBuilder::new()
-        .arg(MaybeEncryptedUInt::<32>::new(
-            val1 as u64,
-            enc,
-            &sk,
-            encrypted_computation,
-        ))
-        .arg(MaybeEncryptedUInt::<32>::new(
-            val2 as u64,
-            enc,
-            &sk,
-            encrypted_computation,
-        ))
-        .return_value::<MaybeEncryptedUInt<32>>();
+    let args = if matches!(
+        isa_op,
+        IsaOp::CmpGtS(..) | IsaOp::CmpGeS(..) | IsaOp::CmpLtS(..) | IsaOp::CmpLeS(..)
+    ) {
+        ArgsBuilder::new()
+            .arg(MaybeEncryptedInt::<32>::new(
+                val1 as u64,
+                enc,
+                &sk,
+                encrypted_computation,
+            ))
+            .arg(MaybeEncryptedInt::<32>::new(
+                val2 as u64,
+                enc,
+                &sk,
+                encrypted_computation,
+            ))
+    } else {
+        ArgsBuilder::new()
+            .arg(MaybeEncryptedUInt::<32>::new(
+                val1 as u64,
+                enc,
+                &sk,
+                encrypted_computation,
+            ))
+            .arg(MaybeEncryptedUInt::<32>::new(
+                val2 as u64,
+                enc,
+                &sk,
+                encrypted_computation,
+            ))
+    };
+    let args = args.return_value::<MaybeEncryptedUInt<32>>();
 
     let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
     assert_eq!(expected as u32, ans.get(enc, &sk));
@@ -130,4 +149,76 @@ fn can_less_than_or_equal_plaintext_inputs() {
 #[test]
 fn can_less_than_or_equal_ciphertext_inputs() {
     run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(A0, A0, A1), true);
+}
+
+#[test]
+fn can_greater_than_signed_plaintext_inputs() {
+    run_comparison_test(
+        |val1, val2| val1 as i32 > val2 as i32,
+        IsaOp::CmpGtS(A0, A0, A1),
+        false,
+    );
+}
+
+#[test]
+fn can_greater_than_signed_ciphertext_inputs() {
+    run_comparison_test(
+        |val1, val2| val1 as i32 > val2 as i32,
+        IsaOp::CmpGtS(A0, A0, A1),
+        true,
+    );
+}
+
+#[test]
+fn can_greater_than_or_equal_signed_plaintext_inputs() {
+    run_comparison_test(
+        |val1, val2| val1 as i32 >= val2 as i32,
+        IsaOp::CmpGeS(A0, A0, A1),
+        false,
+    );
+}
+
+#[test]
+fn can_greater_than_or_equal_signed_ciphertext_inputs() {
+    run_comparison_test(
+        |val1, val2| val1 as i32 >= val2 as i32,
+        IsaOp::CmpGeS(A0, A0, A1),
+        true,
+    );
+}
+
+#[test]
+fn can_less_than_signed_plaintext_inputs() {
+    run_comparison_test(
+        |val1, val2| (val1 as i32) < (val2 as i32),
+        IsaOp::CmpLtS(A0, A0, A1),
+        false,
+    );
+}
+
+#[test]
+fn can_less_than_signed_ciphertext_inputs() {
+    run_comparison_test(
+        |val1, val2| (val1 as i32) < (val2 as i32),
+        IsaOp::CmpLtS(A0, A0, A1),
+        true,
+    );
+}
+
+#[test]
+fn can_less_than_or_equal_signed_plaintext_inputs() {
+    run_comparison_test(
+        |val1, val2| val1 as i32 <= val2 as i32,
+        IsaOp::CmpLeS(A0, A0, A1),
+        false,
+    );
+}
+
+#[test]
+fn can_less_than_or_equal_signed_ciphertext_inputs() {
+    run_comparison_test(
+        |val1, val2| val1 as i32 <= val2 as i32,
+        IsaOp::CmpLeS(A0, A0, A1),
+        true,
+    );
 }
