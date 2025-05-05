@@ -45,20 +45,20 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
         let sk = get_secret_keys_80();
         let enc = &enc;
 
-        // Get a random value with input width
-        let value = thread_rng().next_u32() & ((1 << input_width) - 1);
+        // Get a random 32 bit value
+        let value = thread_rng().next_u32();
         let expected = match cast_type {
             CastType::SignExtension => {
                 let mut sign_bit = value & (1 << (input_width - 1));
-                let mut extended = value;
+                let mut extended = value & (((1u64 << input_width) - 1) as u32);
                 for _ in 0..output_width.saturating_sub(input_width) {
                     sign_bit <<= 1;
                     extended |= sign_bit;
                 }
                 extended
             }
-            CastType::ZeroExtension => value,
-            CastType::Truncation => value & ((1 << output_width) - 1),
+            CastType::ZeroExtension => value & (((1u64 << input_width) - 1) as u32),
+            CastType::Truncation => value & (((1u64 << output_width) - 1) as u32),
         };
 
         let memory = Arc::new(Memory::new_default_stack());
