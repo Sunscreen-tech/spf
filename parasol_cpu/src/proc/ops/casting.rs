@@ -77,12 +77,12 @@ impl FheProcessor {
                 Register::Plaintext { val, width } => {
                     *dst = Register::Plaintext {
                         val: if signed {
-                            let sign_mask = 1 << (*width - 1);
-                            if (sign_mask & *val) == 0 {
+                            if val >> (width - 1) == 0 {
                                 *val
                             } else {
-                                let abs = (sign_mask << 1) - val;
-                                (1 << new_width) - abs
+                                let old_mask = (1 << width) - 1;
+                                let new_mask = (1 << new_width) - 1;
+                                (val | !old_mask) & new_mask
                             }
                         } else {
                             *val
