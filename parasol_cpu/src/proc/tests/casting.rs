@@ -122,6 +122,7 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
                 ) -> u32
                 where
                     BitsUnsigned: Bits<N>,
+                    <BitsUnsigned as Bits<N>>::PlaintextType: Into<u64>,
                 {
                     let ans = MaybeEncryptedUInt::<N>::try_from_bytes(ans_bytes).unwrap();
                     let ans: u64 = ans.get(enc, sk).into();

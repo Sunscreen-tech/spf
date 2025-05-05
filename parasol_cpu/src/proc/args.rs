@@ -2,7 +2,10 @@ use std::marker::PhantomData;
 
 use crate::{Byte, Ptr32};
 use crate::{Error, Result};
-use parasol_runtime::{L1GlweCiphertext, fluent::UInt};
+use parasol_runtime::{
+    L1GlweCiphertext,
+    fluent::{Int, UInt},
+};
 use paste::paste;
 
 // TODO: Should profile some apps, but we can likely avoid a bunch of copying
@@ -172,6 +175,40 @@ impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
             .collect::<Vec<_>>();
 
         Ok(UInt::from_bits_shallow(data))
+    }
+}
+
+impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
+    const ALIGNMENT: usize = N / 8;
+    const SIZE: usize = N / 8;
+    const SIGNED: bool = true;
+
+    fn to_bytes(&self) -> Vec<Byte> {
+        assert!(N.is_power_of_two() && N % 8 == 0);
+
+        self.bits
+            .chunks(8)
+            .map(|x| Byte::try_from(x.to_owned()).unwrap())
+            .collect()
+    }
+
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
+        if data.len() != N / 8 {
+            return Err(Error::TypeSizeMismatch);
+        }
+
+        let data = data
+            .into_iter()
+            .map(|x| match x {
+                Byte::Plaintext(_) => Err(Error::EncryptionMismatch),
+                Byte::Ciphertext(val) => Ok(val),
+            })
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        Ok(Int::from_bits_shallow(data))
     }
 }
 
