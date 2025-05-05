@@ -19,14 +19,14 @@ enum CastType {
 }
 
 fn casting(cast_type: CastType, encrypted_computation: bool) {
-    let supported_sizes = [8, 16, 32];
+    let supported_sizes = [8u32, 16, 32];
 
     let combinations = supported_sizes
         .iter()
         .cartesian_product(supported_sizes.iter())
         .map(|(input_width, output_width)| {
             (
-                (*input_width, *output_width as u32),
+                (*input_width, *output_width),
                 match cast_type {
                     CastType::SignExtension | CastType::ZeroExtension => {
                         input_width <= output_width
