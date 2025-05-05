@@ -75,6 +75,7 @@ fn can_unsigned_mul_plain_plain() {
 fn enc_case<const N: usize>(a_enc: bool, b_enc: bool)
 where
     BitsUnsigned: Bits<N>,
+    <BitsUnsigned as Bits<N>>::PlaintextType: Into<u64>,
 {
     let case = |a: u64, b: u64, width| {
         let (mut proc, enc) = make_computer_128();
