@@ -63,41 +63,20 @@ pub trait TestFrom<T> {
     fn test_from(value: T) -> Self;
 }
 
-impl TestFrom<u64> for u32 {
-    fn test_from(value: u64) -> Self {
-        value as u32
-    }
+macro_rules! impl_test_from {
+    ( $( $x:ty ),* ) => {
+        $(
+            impl TestFrom<u64> for $x {
+                fn test_from(value: u64) -> Self {
+                    value as $x
+                }
+            }
+        )*
+    };
 }
 
-impl TestFrom<u64> for u16 {
-    fn test_from(value: u64) -> Self {
-        value as u16
-    }
-}
-
-impl TestFrom<u64> for u8 {
-    fn test_from(value: u64) -> Self {
-        value as u8
-    }
-}
-
-impl TestFrom<u64> for i32 {
-    fn test_from(value: u64) -> Self {
-        value as i32
-    }
-}
-
-impl TestFrom<u64> for i16 {
-    fn test_from(value: u64) -> Self {
-        value as i16
-    }
-}
-
-impl TestFrom<u64> for i8 {
-    fn test_from(value: u64) -> Self {
-        value as i8
-    }
-}
+impl_test_from!(u32, u16, u8);
+impl_test_from!(i32, i16, i8);
 
 pub trait Bits<const N: usize> {
     type PlaintextType: num::Num + TestFrom<u64> + std::fmt::Debug + Copy + ToArg;
