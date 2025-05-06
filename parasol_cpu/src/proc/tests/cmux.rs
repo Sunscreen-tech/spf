@@ -5,6 +5,7 @@ use rand::{RngCore, thread_rng};
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
+    registers::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
@@ -39,18 +40,9 @@ use parasol_runtime::test_utils::get_secret_keys_80;
 // where ber is BindReadOnly, ldr is Load, ldi is LoadImmediate, gt is GreaterThan, berw is BindReadWrite, str is Store, and ret is Return
 fn cmux_test_program() -> Vec<IsaOp> {
     vec![
-        IsaOp::LoadI(RegisterName::new(1), 10, 32),
-        IsaOp::CmpGt(
-            RegisterName::new(0),
-            RegisterName::new(10),
-            RegisterName::new(1),
-        ),
-        IsaOp::Cmux(
-            RegisterName::new(10),
-            RegisterName::new(0),
-            RegisterName::new(11),
-            RegisterName::new(12),
-        ),
+        IsaOp::LoadI(T0, 10, 32),
+        IsaOp::CmpGt(T0, A0, T0),
+        IsaOp::Cmux(A0, T0, A1, A2),
         IsaOp::Ret(),
     ]
 }

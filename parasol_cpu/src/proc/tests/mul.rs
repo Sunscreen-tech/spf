@@ -5,6 +5,7 @@ use rand::{RngCore, thread_rng};
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
+    registers::*,
     test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80, make_computer_128},
     tomasulo::registers::RegisterName,
 };
@@ -30,14 +31,10 @@ fn can_unsigned_mul_plain_plain() {
         let c_ptr = memory.try_allocate(16).unwrap();
 
         let program = memory.allocate_program(&vec![
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(10), width),
-            IsaOp::Load(RegisterName::new(1), RegisterName::new(11), width),
-            IsaOp::Mul(
-                RegisterName::new(0),
-                RegisterName::new(0),
-                RegisterName::new(1),
-            ),
-            IsaOp::Store(RegisterName::new(12), RegisterName::new(0), width),
+            IsaOp::Load(T0, A0, width),
+            IsaOp::Load(T1, A1, width),
+            IsaOp::Mul(T0, T0, T1),
+            IsaOp::Store(A2, T0, width),
             IsaOp::Ret(),
         ]);
 
@@ -83,14 +80,7 @@ where
 
         let memory = Arc::new(Memory::new_default_stack());
 
-        let program = memory.allocate_program(&[
-            IsaOp::Mul(
-                RegisterName::new(10),
-                RegisterName::new(11),
-                RegisterName::new(10),
-            ),
-            IsaOp::Ret(),
-        ]);
+        let program = memory.allocate_program(&[IsaOp::Mul(A0, A1, A0), IsaOp::Ret()]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<N>::new(a, &enc, &sk, a_enc))

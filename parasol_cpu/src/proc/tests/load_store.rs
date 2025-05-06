@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    ArgsBuilder, Byte, Error, Memory, proc::IsaOp, test_utils::make_computer_80,
+    ArgsBuilder, Byte, Error, Memory, proc::IsaOp, registers::*, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 
@@ -23,8 +23,8 @@ fn can_load_store_plain_byte_width() {
         }
 
         let program = memory.allocate_program(&[
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(10), bytes),
-            IsaOp::Store(RegisterName::new(11), RegisterName::new(0), bytes),
+            IsaOp::Load(T0, A0, bytes),
+            IsaOp::Store(A1, T0, bytes),
             IsaOp::Ret(),
         ]);
 
@@ -63,8 +63,8 @@ fn can_load_store_ciphertext_byte_width() {
 
         let memory = Arc::new(Memory::new_default_stack());
         let program = memory.allocate_program(&[
-            IsaOp::Load(RegisterName::new(0), RegisterName::new(10), width),
-            IsaOp::Store(RegisterName::new(11), RegisterName::new(0), width),
+            IsaOp::Load(T0, A0, width),
+            IsaOp::Store(A1, T0, width),
             IsaOp::Ret(),
         ]);
 
@@ -114,8 +114,7 @@ fn can_load_immediate() {
 
     let args = ArgsBuilder::new().return_value::<u16>();
 
-    let program =
-        memory.allocate_program(&[IsaOp::LoadI(RegisterName::new(10), 1234, 15), IsaOp::Ret()]);
+    let program = memory.allocate_program(&[IsaOp::LoadI(A0, 1234, 15), IsaOp::Ret()]);
 
     let (_, result) = proc.run_program(program, &memory, args, 100).unwrap();
 
@@ -131,7 +130,7 @@ fn load_immediate_fails_out_of_range() {
     let args = ArgsBuilder::new().return_value::<u16>();
 
     let result = proc.run_program(
-        memory.allocate_program(&[IsaOp::LoadI(RegisterName::new(10), 1234, 4), IsaOp::Ret()]),
+        memory.allocate_program(&[IsaOp::LoadI(A0, 1234, 4), IsaOp::Ret()]),
         &memory,
         args,
         200_000,
@@ -157,13 +156,9 @@ fn can_offset_load() {
     let (_, actual) = proc
         .run_program(
             memory.allocate_program(&[
-                IsaOp::LoadI(RegisterName::new(0), 2, 32),
-                IsaOp::Add(
-                    RegisterName::new(10),
-                    RegisterName::new(10),
-                    RegisterName::new(0),
-                ),
-                IsaOp::Load(RegisterName::new(10), RegisterName::new(10), 2),
+                IsaOp::LoadI(T0, 2, 32),
+                IsaOp::Add(A0, A0, T0),
+                IsaOp::Load(A0, A0, 2),
                 IsaOp::Ret(),
             ]),
             &memory,

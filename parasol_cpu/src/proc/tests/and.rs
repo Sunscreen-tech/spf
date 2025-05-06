@@ -3,7 +3,7 @@ use std::sync::Arc;
 use rand::{RngCore, thread_rng};
 
 use crate::{
-    ArgsBuilder, Memory, proc::IsaOp, test_utils::make_computer_80,
+    ArgsBuilder, Memory, proc::IsaOp, registers::*, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 
@@ -18,14 +18,7 @@ fn can_and_plaintext_inputs() {
     let expected = 6u32;
 
     let memory = Memory::new_default_stack();
-    let program_ptr = memory.allocate_program(&[
-        IsaOp::And(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        IsaOp::Ret(),
-    ]);
+    let program_ptr = memory.allocate_program(&[IsaOp::And(A0, A0, A1), IsaOp::Ret()]);
 
     let args = ArgsBuilder::new().arg(val1).arg(val2).return_value::<u32>();
 
@@ -46,14 +39,7 @@ fn can_and_ciphertext_inputs() {
 
         let memory = Memory::new_default_stack();
 
-        let program = memory.allocate_program(&[
-            IsaOp::And(
-                RegisterName::new(10),
-                RegisterName::new(10),
-                RegisterName::new(11),
-            ),
-            IsaOp::Ret(),
-        ]);
+        let program = memory.allocate_program(&[IsaOp::And(A0, A0, A1), IsaOp::Ret()]);
 
         let args = ArgsBuilder::new()
             .arg(UInt::<8, _>::encrypt_secret(val1 as u64, &enc, &sk))

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    ArgsBuilder, Memory, proc::IsaOp, test_utils::make_computer_80,
+    ArgsBuilder, Memory, proc::IsaOp, registers::*, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 
@@ -29,18 +29,10 @@ fn can_branch_zero() {
     // }
     // a
     let program = memory.allocate_program(&[
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
+        IsaOp::Add(A0, A0, A1),
         // Have we hit RegisterName::named(2)?
-        IsaOp::CmpEq(
-            RegisterName::new(4),
-            RegisterName::new(10),
-            RegisterName::new(12),
-        ),
-        IsaOp::BranchZero(RegisterName::new(4), -16),
+        IsaOp::CmpEq(T0, A0, A2),
+        IsaOp::BranchZero(T0, -16),
         IsaOp::Ret(),
     ]);
 
@@ -70,12 +62,8 @@ fn can_branch_nonzero() {
     // }
     // a
     let program = memory.allocate_program(&[
-        IsaOp::Sub(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        IsaOp::BranchNonZero(RegisterName::new(10), -8),
+        IsaOp::Sub(A0, A0, A1),
+        IsaOp::BranchNonZero(A0, -8),
         IsaOp::Ret(),
     ]);
 

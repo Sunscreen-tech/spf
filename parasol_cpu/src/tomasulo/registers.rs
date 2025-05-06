@@ -189,7 +189,7 @@ impl<T> std::fmt::Debug for RegisterName<T> {
 }
 
 impl<T> RegisterName<T> {
-    pub fn new(name: usize) -> Self {
+    pub const fn new(name: usize) -> Self {
         Self {
             name,
             _phantom: PhantomData,

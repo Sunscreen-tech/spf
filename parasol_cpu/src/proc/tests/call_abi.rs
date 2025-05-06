@@ -1,7 +1,8 @@
 use std::sync::Arc;
 
 use crate::{
-    ArgsBuilder, IsaOp, Memory, test_utils::make_computer_80, tomasulo::registers::RegisterName,
+    ArgsBuilder, IsaOp, Memory, registers::*, test_utils::make_computer_80,
+    tomasulo::registers::RegisterName,
 };
 
 #[test]
@@ -67,41 +68,13 @@ fn eight_4_byte_args() {
 
     // Args should be passed in r10-r17. Sum and return in r10.
     let program = memory.allocate_program(&[
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(11),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(12),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(13),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(14),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(15),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(16),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(17),
-            RegisterName::new(10),
-        ),
+        IsaOp::Add(A0, A1, A0),
+        IsaOp::Add(A0, A2, A0),
+        IsaOp::Add(A0, A3, A0),
+        IsaOp::Add(A0, A4, A0),
+        IsaOp::Add(A0, A5, A0),
+        IsaOp::Add(A0, A6, A0),
+        IsaOp::Add(A0, A7, A0),
         IsaOp::Ret(),
     ]);
 
@@ -129,41 +102,13 @@ fn four_8_byte_args() {
     // Args should be passed in r10-r17 in 2-word pairs. Odd registers will
     // be hi words, and thus zero. Sum and return in r10.
     let program = memory.allocate_program(&[
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(11),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(12),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(13),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(14),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(15),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(16),
-            RegisterName::new(10),
-        ),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(17),
-            RegisterName::new(10),
-        ),
+        IsaOp::Add(A0, A1, A0),
+        IsaOp::Add(A0, A2, A0),
+        IsaOp::Add(A0, A3, A0),
+        IsaOp::Add(A0, A4, A0),
+        IsaOp::Add(A0, A5, A0),
+        IsaOp::Add(A0, A6, A0),
+        IsaOp::Add(A0, A7, A0),
         IsaOp::Ret(),
     ]);
 
@@ -185,28 +130,16 @@ fn large_return_value() {
     let memory = Arc::new(Memory::new_default_stack());
 
     let program = memory.allocate_program(&[
-        IsaOp::LoadI(RegisterName::new(5), 0xDEADBEEF, 32),
-        IsaOp::LoadI(RegisterName::new(6), 0xFEEDF00D, 32),
-        IsaOp::LoadI(RegisterName::new(7), 4, 32),
-        IsaOp::Store(RegisterName::new(10), RegisterName::new(5), 4),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(7),
-        ),
-        IsaOp::Store(RegisterName::new(10), RegisterName::new(6), 4),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(7),
-        ),
-        IsaOp::Store(RegisterName::new(10), RegisterName::new(6), 4),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(7),
-        ),
-        IsaOp::Store(RegisterName::new(10), RegisterName::new(5), 4),
+        IsaOp::LoadI(T0, 0xDEADBEEF, 32),
+        IsaOp::LoadI(T1, 0xFEEDF00D, 32),
+        IsaOp::LoadI(T2, 4, 32),
+        IsaOp::Store(A0, T0, 4),
+        IsaOp::Add(A0, A0, T2),
+        IsaOp::Store(A0, T1, 4),
+        IsaOp::Add(A0, A0, T2),
+        IsaOp::Store(A0, T1, 4),
+        IsaOp::Add(A0, A0, T2),
+        IsaOp::Store(A0, T0, 4),
         IsaOp::Ret(),
     ]);
 
@@ -231,24 +164,12 @@ fn two_large_parameters() {
     // Parameters should be passed by reference in x10, x11. Offset by 12 bytes and
     // load 4 bytes from each and or them together.
     let program = memory.allocate_program(&[
-        IsaOp::LoadI(RegisterName::new(7), 12, 32),
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(7),
-        ),
-        IsaOp::Load(RegisterName::new(10), RegisterName::new(10), 4),
-        IsaOp::Add(
-            RegisterName::new(11),
-            RegisterName::new(11),
-            RegisterName::new(7),
-        ),
-        IsaOp::Load(RegisterName::new(11), RegisterName::new(11), 4),
-        IsaOp::Or(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
+        IsaOp::LoadI(T2, 12, 32),
+        IsaOp::Add(A0, A0, T2),
+        IsaOp::Load(A0, A0, 4),
+        IsaOp::Add(A1, A1, T2),
+        IsaOp::Load(A1, A1, 4),
+        IsaOp::Or(A0, A0, A1),
         IsaOp::Ret(),
     ]);
 
@@ -276,14 +197,10 @@ fn pass_on_stack_wide() {
 
     // Read the 8 bytes off the stack pointer
     let program = memory.allocate_program(&[
-        IsaOp::LoadI(RegisterName::new(7), 4, 32),
-        IsaOp::Load(RegisterName::new(10), RegisterName::new(2), 4),
-        IsaOp::Add(
-            RegisterName::new(8),
-            RegisterName::new(2),
-            RegisterName::new(7),
-        ),
-        IsaOp::Load(RegisterName::new(11), RegisterName::new(8), 4),
+        IsaOp::LoadI(T2, 4, 32),
+        IsaOp::Load(A0, SP, 4),
+        IsaOp::Add(T0, SP, T2),
+        IsaOp::Load(A1, T0, 4),
         IsaOp::Ret(),
     ]);
 

@@ -6,6 +6,7 @@ use rand::{RngCore, thread_rng};
 use crate::{
     ArgsBuilder, Byte, Memory, ToArg,
     proc::IsaOp,
+    registers::*,
     test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
@@ -65,28 +66,14 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
 
         let program = memory.allocate_program(&[
             // Loads use byte widths.
-            IsaOp::Load(
-                RegisterName::new(10),
-                RegisterName::new(10),
-                input_width / 8,
-            ),
+            IsaOp::Load(A0, A0, input_width / 8),
             match cast_type {
-                CastType::SignExtension => {
-                    IsaOp::Sext(RegisterName::new(10), RegisterName::new(10), output_width)
-                }
-                CastType::ZeroExtension => {
-                    IsaOp::Zext(RegisterName::new(10), RegisterName::new(10), output_width)
-                }
-                CastType::Truncation => {
-                    IsaOp::Trunc(RegisterName::new(10), RegisterName::new(10), output_width)
-                }
+                CastType::SignExtension => IsaOp::Sext(A0, A0, output_width),
+                CastType::ZeroExtension => IsaOp::Zext(A0, A0, output_width),
+                CastType::Truncation => IsaOp::Trunc(A0, A0, output_width),
             },
             // Stores use byte widths.
-            IsaOp::Store(
-                RegisterName::new(11),
-                RegisterName::new(10),
-                output_width / 8,
-            ),
+            IsaOp::Store(A1, A0, output_width / 8),
             IsaOp::Ret(),
         ]);
 
