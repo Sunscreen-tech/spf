@@ -1,6 +1,6 @@
 use crate::{
     Allocation, Byte, Extend, Memory, Result, Word,
-    registers::*,
+    register_names::*,
     tomasulo::{
         registers::{RegisterFile, RegisterName, RobEntryRef},
         scoreboard::{ScoreboardEntry, ScoreboardEntryId, ScoreboardEntryRef},

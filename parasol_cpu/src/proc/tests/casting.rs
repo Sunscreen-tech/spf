@@ -6,7 +6,7 @@ use rand::{RngCore, thread_rng};
 use crate::{
     ArgsBuilder, Byte, Memory, ToArg,
     proc::IsaOp,
-    registers::*,
+    register_names::*,
     test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };

@@ -64,6 +64,7 @@ pub use memory::*;
 
 mod proc;
 pub use proc::FheComputer;
+pub use proc::assembly::register_names;
 
 #[doc(hidden)]
 pub mod test_utils;

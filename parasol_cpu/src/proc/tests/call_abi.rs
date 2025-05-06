@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    ArgsBuilder, IsaOp, Memory, registers::*, test_utils::make_computer_80,
+    ArgsBuilder, IsaOp, Memory, register_names::*, test_utils::make_computer_80,
     tomasulo::registers::RegisterName,
 };
 

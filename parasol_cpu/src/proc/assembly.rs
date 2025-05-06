@@ -6,7 +6,7 @@ macro_rules! define_op {
     (
         $inst_name:ident,
         $dispatch_name:ident,
-        ($($reg_kind:ty,$num_reg:literal),*),
+        ($($reg_kind:ty,$num_reg:literal,$reg_prefix:ident),*),
         $([
             $op_code:literal
             $op_name:ident
@@ -32,6 +32,18 @@ macro_rules! define_op {
                 use std::sync::mpsc::Receiver;
                 use super::*;
 
+                pub mod register_names {
+                    use super::*;
+
+                    $(
+                        seq_macro::seq!(N in 0..$num_reg {
+                            #(
+                                #[doc = concat!("The `RegisterName` of ", stringify!($reg_prefix~N))]
+                                pub const $reg_prefix ~N: crate::tomasulo::registers::RegisterName<$reg_kind> = crate::tomasulo::registers::RegisterName::new(N);
+                            )*
+                        });
+                    )*
+                }
                 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
                 pub enum $inst_name {
                     $(
@@ -301,7 +313,7 @@ macro_rules! define_op {
 define_op! {
     IsaOp,
     DispatchIsaOp,
-    (Register, 64),
+    (Register, 64, X),
 
     // Load
     [0x02 Load (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
@@ -389,4 +401,35 @@ define_op! {
 
     // Return
     [0xFE Ret]
+}
+
+pub mod register_names {
+    use super::isa_op_internal::register_names;
+    pub use super::isa_op_internal::register_names::*;
+
+    macro_rules! def_alias {
+        ($alias:ident,$id:ident,$doc:literal) => {
+            #[doc = concat!($doc, " Alias of ", stringify!($id))]
+            pub const $alias: crate::tomasulo::registers::RegisterName<super::Register> =
+                register_names::$id;
+        };
+    }
+
+    // Start filling out our RISC-V ISA aliases as we adopt their meaning.
+    def_alias!(SP, X2, "Stack pointer.");
+    def_alias!(T0, X5, "Temporary register.");
+    def_alias!(T1, X6, "Temporary register.");
+    def_alias!(T2, X7, "Temporary register.");
+    def_alias!(A0, X10, "Function argument/return values.");
+    def_alias!(A1, X11, "Function argument/return values.");
+    def_alias!(A2, X12, "Function argument.");
+    def_alias!(A3, X13, "Function argument.");
+    def_alias!(A4, X14, "Function argument.");
+    def_alias!(A5, X15, "Function argument.");
+    def_alias!(A6, X16, "Function argument.");
+    def_alias!(A7, X17, "Function argument.");
+    def_alias!(T3, X28, "Temporary register.");
+    def_alias!(T4, X29, "Temporary register.");
+    def_alias!(T5, X30, "Temporary register.");
+    def_alias!(T6, X31, "Temporary register.");
 }

@@ -7,7 +7,7 @@ use parasol_runtime::test_utils::get_secret_keys_80;
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
-    registers::*,
+    register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
     tomasulo::registers::RegisterName,
 };
