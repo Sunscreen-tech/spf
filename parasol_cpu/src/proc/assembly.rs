@@ -6,7 +6,7 @@ macro_rules! define_op {
     (
         $inst_name:ident,
         $dispatch_name:ident,
-        ($($reg_kind:ty),*),
+        ($($reg_kind:ty,$num_reg:literal),*),
         $([
             $op_code:literal
             $op_name:ident
@@ -48,6 +48,10 @@ macro_rules! define_op {
                     type Error = Error;
 
                     fn try_from(value: u64) -> $crate::Result<Self> {
+                        let reg_counts = [
+                            $(($num_reg as u32).next_power_of_two().ilog2())*
+                        ];
+
                         #[allow(unused_variables)]
                         Ok(match [<$inst_name OpCode>]::try_from((value & 0xFF) as u8)? {
                             $(
@@ -58,13 +62,13 @@ macro_rules! define_op {
                                     $(
                                         let $dst_name = RegisterName::new(value as usize & 0x1F);
                                         #[allow(unused)]
-                                        let value = value >> 5;
+                                        let value = value >> reg_counts[$dst_type_id];
                                     )*
 
                                     $(
                                         let $src_name = RegisterName::new(value as usize & 0x1F);
                                         #[allow(unused)]
-                                        let value = value >> 5;
+                                        let value = value >> reg_counts[$src_type_id];
                                     )*
 
                                     $(
@@ -89,6 +93,10 @@ macro_rules! define_op {
                         let mut encoded = x.op_code() as u64;
                         let mut shift = 8;
 
+                        let reg_counts = [
+                            $(($num_reg as u32).next_power_of_two().ilog2())*
+                        ];
+
                         #[allow(unused_assignments)]
                         match x {
                             $(
@@ -99,11 +107,11 @@ macro_rules! define_op {
                                 ) => {
                                     $(
                                         encoded |= ($dst_name.name as u64) << shift;
-                                        shift += 5;
+                                        shift += reg_counts[$dst_type_id];
                                     )*
                                     $(
                                         encoded |= ($src_name.name as u64) << shift;
-                                        shift += 5;
+                                        shift += reg_counts[$src_type_id];
                                     )*
                                     $(
                                         let encoded = encoded | ($meta_name as u64) << shift;
@@ -293,7 +301,7 @@ macro_rules! define_op {
 define_op! {
     IsaOp,
     DispatchIsaOp,
-    (Register),
+    (Register, 64),
 
     // Load
     [0x02 Load (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
