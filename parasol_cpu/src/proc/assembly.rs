@@ -39,7 +39,7 @@ macro_rules! define_op {
                         seq_macro::seq!(N in 0..$num_reg {
                             #(
                                 #[doc = concat!("The `RegisterName` of ", stringify!($reg_prefix~N))]
-                                pub const $reg_prefix ~N: crate::tomasulo::registers::RegisterName<$reg_kind> = crate::tomasulo::registers::RegisterName::new(N);
+                                pub const $reg_prefix ~N: $crate::tomasulo::registers::RegisterName<$reg_kind> = $crate::tomasulo::registers::RegisterName::new(N);
                             )*
                         });
                     )*

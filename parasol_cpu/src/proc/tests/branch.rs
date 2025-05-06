@@ -27,7 +27,7 @@ fn can_branch_zero() {
     // a
     let program = memory.allocate_program(&[
         IsaOp::Add(A0, A0, A1),
-        // Have we hit RegisterName::named(2)?
+        // Have we hit A2?
         IsaOp::CmpEq(T0, A0, A2),
         IsaOp::BranchZero(T0, -16),
         IsaOp::Ret(),
