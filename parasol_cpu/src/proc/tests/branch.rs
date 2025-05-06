@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80,
-    tomasulo::registers::RegisterName,
-};
+use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
 
 #[test]
 fn can_branch_zero() {

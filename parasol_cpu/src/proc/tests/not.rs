@@ -9,7 +9,6 @@ use crate::{
     proc::IsaOp,
     register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 fn can_not(val: u32, encrypted_computation: bool) {

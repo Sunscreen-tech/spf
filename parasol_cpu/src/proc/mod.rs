@@ -10,10 +10,7 @@ use parasol_runtime::{
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
 
-use crate::{
-    Error, Memory, Ptr32, Result, Word,
-    tomasulo::{registers::RegisterName, scoreboard::ScoreboardEntryRef},
-};
+use crate::{Error, Memory, Ptr32, Result, Word, tomasulo::scoreboard::ScoreboardEntryRef};
 
 use self::ops::trivially_encrypt_value_l1glwe;
 

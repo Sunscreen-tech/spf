@@ -8,7 +8,6 @@ use crate::{
     proc::IsaOp,
     register_names::*,
     test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::{Encryption, SecretKey, test_utils::get_secret_keys_80};

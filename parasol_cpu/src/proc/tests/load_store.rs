@@ -2,7 +2,6 @@ use std::sync::Arc;
 
 use crate::{
     ArgsBuilder, Byte, Error, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80,
-    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_80};

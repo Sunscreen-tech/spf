@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    ArgsBuilder, IsaOp, Memory, register_names::*, test_utils::make_computer_80,
-    tomasulo::registers::RegisterName,
-};
+use crate::{ArgsBuilder, IsaOp, Memory, register_names::*, test_utils::make_computer_80};
 
 #[test]
 fn unsigned_values_zero_extend_4_byte() {

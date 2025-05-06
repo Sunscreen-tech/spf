@@ -2,10 +2,7 @@ use std::sync::Arc;
 
 use rand::{RngCore, thread_rng};
 
-use crate::{
-    ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80,
-    tomasulo::registers::RegisterName,
-};
+use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
 
 use parasol_runtime::{fluent::UInt, test_utils::get_secret_keys_80};
 
