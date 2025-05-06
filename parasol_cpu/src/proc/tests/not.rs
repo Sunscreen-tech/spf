@@ -7,8 +7,8 @@ use parasol_runtime::test_utils::get_secret_keys_80;
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
+    register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 fn can_not(val: u32, encrypted_computation: bool) {
@@ -28,10 +28,7 @@ fn can_not(val: u32, encrypted_computation: bool) {
         ))
         .return_value::<MaybeEncryptedUInt<32>>();
 
-    let program = memory.allocate_program(&[
-        IsaOp::Not(RegisterName::new(10), RegisterName::new(10)),
-        IsaOp::Ret(),
-    ]);
+    let program = memory.allocate_program(&[IsaOp::Not(A0, A0), IsaOp::Ret()]);
 
     let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
     let ans = ans.get(&enc, &sk);

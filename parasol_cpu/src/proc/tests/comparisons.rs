@@ -6,8 +6,8 @@ use rand::{RngCore, thread_rng};
 use crate::{
     ArgsBuilder, FheComputer, Memory,
     proc::IsaOp,
+    register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;
@@ -25,11 +25,7 @@ fn run_single_test(
     let expected = comparison(val1, val2);
     let memory = Arc::new(Memory::new_default_stack());
 
-    let program = memory.allocate_program(&[
-        isa_op,
-        IsaOp::Zext(RegisterName::new(10), RegisterName::new(10), 32),
-        IsaOp::Ret(),
-    ]);
+    let program = memory.allocate_program(&[isa_op, IsaOp::Zext(A0, A0, 32), IsaOp::Ret()]);
 
     let args = ArgsBuilder::new()
         .arg(MaybeEncryptedUInt::<32>::new(
@@ -88,130 +84,50 @@ fn run_comparison_test(
 
 #[test]
 fn can_equal_plaintext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 == val2,
-        IsaOp::CmpEq(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        false,
-    );
+    run_comparison_test(|val1, val2| val1 == val2, IsaOp::CmpEq(A0, A0, A1), false);
 }
 
 #[test]
 fn can_equal_ciphertext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 == val2,
-        IsaOp::CmpEq(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        true,
-    );
+    run_comparison_test(|val1, val2| val1 == val2, IsaOp::CmpEq(A0, A0, A1), true);
 }
 
 #[test]
 fn can_greater_than_plaintext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 > val2,
-        IsaOp::CmpGt(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        false,
-    );
+    run_comparison_test(|val1, val2| val1 > val2, IsaOp::CmpGt(A0, A0, A1), false);
 }
 
 #[test]
 fn can_greater_than_ciphertext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 > val2,
-        IsaOp::CmpGt(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        true,
-    );
+    run_comparison_test(|val1, val2| val1 > val2, IsaOp::CmpGt(A0, A0, A1), true);
 }
 
 #[test]
 fn can_greater_than_or_equal_plaintext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 >= val2,
-        IsaOp::CmpGe(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        false,
-    );
+    run_comparison_test(|val1, val2| val1 >= val2, IsaOp::CmpGe(A0, A0, A1), false);
 }
 
 #[test]
 fn can_greater_than_or_equal_ciphertext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 >= val2,
-        IsaOp::CmpGe(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        true,
-    );
+    run_comparison_test(|val1, val2| val1 >= val2, IsaOp::CmpGe(A0, A0, A1), true);
 }
 
 #[test]
 fn can_less_than_plaintext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 < val2,
-        IsaOp::CmpLt(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        false,
-    );
+    run_comparison_test(|val1, val2| val1 < val2, IsaOp::CmpLt(A0, A0, A1), false);
 }
 
 #[test]
 fn can_less_than_ciphertext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 < val2,
-        IsaOp::CmpLt(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        true,
-    );
+    run_comparison_test(|val1, val2| val1 < val2, IsaOp::CmpLt(A0, A0, A1), true);
 }
 
 #[test]
 fn can_less_than_or_equal_plaintext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 <= val2,
-        IsaOp::CmpLe(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        false,
-    );
+    run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(A0, A0, A1), false);
 }
 
 #[test]
 fn can_less_than_or_equal_ciphertext_inputs() {
-    run_comparison_test(
-        |val1, val2| val1 <= val2,
-        IsaOp::CmpLe(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        true,
-    );
+    run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(A0, A0, A1), true);
 }

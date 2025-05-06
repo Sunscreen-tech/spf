@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
+    register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;
@@ -24,14 +24,7 @@ fn can_sub_inputs() {
 
         let memory = Arc::new(Memory::new_default_stack());
 
-        let program = memory.allocate_program(&[
-            IsaOp::Sub(
-                RegisterName::new(10),
-                RegisterName::new(10),
-                RegisterName::new(11),
-            ),
-            IsaOp::Ret(),
-        ]);
+        let program = memory.allocate_program(&[IsaOp::Sub(A0, A0, A1), IsaOp::Ret()]);
 
         let (_, ans_sum) = proc.run_program(program, &memory, args, 200_000).unwrap();
 
@@ -75,15 +68,9 @@ fn can_sub_borrow_inputs() {
         let memory = Arc::new(Memory::new_default_stack());
 
         let program = memory.allocate_program(&[
-            IsaOp::Trunc(RegisterName::new(12), RegisterName::new(12), 1),
-            IsaOp::SubB(
-                RegisterName::new(10),
-                RegisterName::new(11),
-                RegisterName::new(10),
-                RegisterName::new(11),
-                RegisterName::new(12),
-            ),
-            IsaOp::Zext(RegisterName::new(11), RegisterName::new(11), 8),
+            IsaOp::Trunc(A2, A2, 1),
+            IsaOp::SubB(A0, A1, A0, A1, A2),
+            IsaOp::Zext(A1, A1, 8),
             IsaOp::Ret(),
         ]);
 
@@ -199,14 +186,7 @@ fn sub_use_same_dst_and_src() {
 
     let (_, ans) = proc
         .run_program(
-            memory.allocate_program(&[
-                IsaOp::Sub(
-                    RegisterName::new(10),
-                    RegisterName::new(10),
-                    RegisterName::new(10),
-                ),
-                IsaOp::Ret(),
-            ]),
+            memory.allocate_program(&[IsaOp::Sub(A0, A0, A0), IsaOp::Ret()]),
             &memory,
             args,
             100,

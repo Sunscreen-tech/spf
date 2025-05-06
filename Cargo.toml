@@ -39,6 +39,7 @@ raw-cpuid = "11"
 rayon = "1"
 realfft = "3"
 rustfft = "6"
+seq-macro = "0.3"
 serde = { version = "1", features = ["rc", "derive"] }
 serde_json = "1"
 statrs = "0.18"

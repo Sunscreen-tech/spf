@@ -5,8 +5,8 @@ use rand::{RngCore, thread_rng};
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
+    register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;
@@ -19,14 +19,7 @@ fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
 
     let memory = Arc::new(Memory::new_default_stack());
 
-    let program = memory.allocate_program(&[
-        IsaOp::Xor(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(11),
-        ),
-        IsaOp::Ret(),
-    ]);
+    let program = memory.allocate_program(&[IsaOp::Xor(A0, A0, A1), IsaOp::Ret()]);
 
     let args = ArgsBuilder::new()
         .arg(MaybeEncryptedUInt::<32>::new(

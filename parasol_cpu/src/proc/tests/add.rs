@@ -3,8 +3,8 @@ use std::sync::Arc;
 use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
+    register_names::*,
     test_utils::{MaybeEncryptedUInt, make_computer_80},
-    tomasulo::registers::RegisterName,
 };
 
 use parasol_runtime::test_utils::get_secret_keys_80;
@@ -19,14 +19,7 @@ fn can_add_inputs() {
 
         let memory = Memory::new_default_stack();
 
-        let program = memory.allocate_program(&[
-            IsaOp::Add(
-                RegisterName::new(10),
-                RegisterName::new(10),
-                RegisterName::new(11),
-            ),
-            IsaOp::Ret(),
-        ]);
+        let program = memory.allocate_program(&[IsaOp::Add(A0, A0, A1), IsaOp::Ret()]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
@@ -85,15 +78,9 @@ fn can_add_carry_inputs() {
         let memory = Memory::new_default_stack();
 
         let prog_ptr = memory.allocate_program(&[
-            IsaOp::Trunc(RegisterName::new(12), RegisterName::new(12), 1),
-            IsaOp::AddC(
-                RegisterName::new(10),
-                RegisterName::new(1),
-                RegisterName::new(10),
-                RegisterName::new(11),
-                RegisterName::new(12),
-            ),
-            IsaOp::Zext(RegisterName::new(11), RegisterName::new(1), 32),
+            IsaOp::Trunc(A2, A2, 1),
+            IsaOp::AddC(A0, A1, A0, A1, A2),
+            IsaOp::Zext(A1, A1, 32),
             IsaOp::Ret(),
         ]);
 
@@ -201,14 +188,7 @@ fn add_use_same_dst_and_src() {
     let (mut proc, _enc) = make_computer_80();
 
     let memory = Memory::new_default_stack();
-    let program_ptr = memory.allocate_program(&[
-        IsaOp::Add(
-            RegisterName::new(10),
-            RegisterName::new(10),
-            RegisterName::new(10),
-        ),
-        IsaOp::Ret(),
-    ]);
+    let program_ptr = memory.allocate_program(&[IsaOp::Add(A0, A0, A0), IsaOp::Ret()]);
 
     let args = ArgsBuilder::new().arg(10u16).return_value::<u16>();
 

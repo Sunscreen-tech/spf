@@ -30,6 +30,7 @@ paste = { workspace = true }
 petgraph = { workspace = true }
 rand = { workspace = true }
 rayon = { workspace = true }
+seq-macro = { workspace = true }
 serde = { workspace = true }
 sunscreen_math = { workspace = true }
 sunscreen_tfhe = { workspace = true }

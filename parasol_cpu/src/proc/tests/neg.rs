@@ -1,9 +1,6 @@
 use std::sync::Arc;
 
-use crate::{
-    ArgsBuilder, Memory, proc::IsaOp, test_utils::make_computer_80,
-    tomasulo::registers::RegisterName,
-};
+use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
 
 #[test]
 fn can_neg_plaintext_inputs() {
@@ -16,10 +13,7 @@ fn can_neg_plaintext_inputs() {
 
     let args = ArgsBuilder::new().arg(val1).return_value::<u8>();
 
-    let program = memory.allocate_program(&[
-        IsaOp::Neg(RegisterName::new(10), RegisterName::new(10)),
-        IsaOp::Ret(),
-    ]);
+    let program = memory.allocate_program(&[IsaOp::Neg(A0, A0), IsaOp::Ret()]);
 
     let (_, ans) = proc.run_program(program, &memory, args, 100).unwrap();
 

@@ -1,5 +1,6 @@
 use crate::{
     Allocation, Byte, Extend, Memory, Result, Word,
+    register_names::*,
     tomasulo::{
         registers::{RegisterFile, RegisterName, RobEntryRef},
         scoreboard::{ScoreboardEntry, ScoreboardEntryId, ScoreboardEntryRef},
@@ -430,7 +431,7 @@ impl FheProcessor {
                 ret_info.alignment as u32,
             )?;
 
-            let reg = self.registers.rename(RegisterName::new(10), None);
+            let reg = self.registers.rename(A0, None);
 
             unwrap_registers!((mut reg));
 
@@ -572,7 +573,7 @@ impl FheProcessor {
         if args.return_value.size == 0 {
             T::try_from_bytes(vec![])
         } else if args.return_value.size <= 4 {
-            let x10 = self.registers.map_entry(RegisterName::new(10)).unwrap();
+            let x10 = self.registers.map_entry(A0).unwrap();
 
             unwrap_registers!((x10));
 
@@ -602,8 +603,8 @@ impl FheProcessor {
 
             Ok(val)
         } else if args.return_value.size <= 8 {
-            let x10 = self.registers.map_entry(RegisterName::new(10)).unwrap();
-            let x11 = self.registers.map_entry(RegisterName::new(11)).unwrap();
+            let x10 = self.registers.map_entry(A0).unwrap();
+            let x11 = self.registers.map_entry(A1).unwrap();
 
             unwrap_registers!((x10)(x11));
 
