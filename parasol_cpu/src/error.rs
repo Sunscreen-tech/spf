@@ -170,6 +170,10 @@ pub enum Error {
     #[error("ELF file is not ELF32")]
     ElfNotElf32,
 
+    /// Encountered an STT_FUNC symbol out of range.
+    #[error("Encountered an STT_FUNC symbol out of range.")]
+    ElfBadSymbolValue,
+
     /// The specified symbol does not exist the ELF file.
     #[error("The ELF file does not contain the specified symbol: {0}")]
     ElfSymbolNotFound(String),
