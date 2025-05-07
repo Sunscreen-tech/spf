@@ -346,8 +346,7 @@ define_op! {
     [0x22 Shr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
 
     // Arithmetic shift right
-    // TODO: Assign actual opcode for shra
-    [0xFF Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+    [0x24 Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
 
     // Bitshift left
     [0x20 Shl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
