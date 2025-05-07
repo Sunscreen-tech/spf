@@ -25,7 +25,9 @@ impl FheProcessor {
                 Register::Plaintext { val: ptr, width: _ } => {
                     let base_addr = *ptr as u32;
 
-                    if is_invalid_load_store_alignment(base_addr, width) {
+                    let num_bytes = width / 8;
+
+                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
                         return Err(Error::UnalignedAccess(base_addr));
                     }
 
@@ -37,7 +39,7 @@ impl FheProcessor {
                         Byte::Plaintext(val) => {
                             let mut result = val as u128;
 
-                            for i in 1..width {
+                            for i in 1..num_bytes {
                                 // We already checked alignment, so pointer can't overflow.
                                 match memory.try_load(base_addr.try_offset(i).unwrap())? {
                                     Byte::Plaintext(b) => {
@@ -49,15 +51,12 @@ impl FheProcessor {
                                 }
                             }
 
-                            *dst = Register::Plaintext {
-                                val: result,
-                                width: width * 8,
-                            };
+                            *dst = Register::Plaintext { val: result, width };
                         }
                         Byte::Ciphertext(val) => {
                             let mut result = val.clone();
 
-                            for i in 1..width {
+                            for i in 1..num_bytes {
                                 // We already checked alignment, so pointer can't overflow.
                                 match memory.try_load(base_addr.try_offset(i).unwrap())? {
                                     Byte::Ciphertext(mut b) => {

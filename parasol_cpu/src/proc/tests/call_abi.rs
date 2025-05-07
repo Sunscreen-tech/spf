@@ -130,13 +130,13 @@ fn large_return_value() {
         IsaOp::LoadI(T0, 0xDEADBEEF, 32),
         IsaOp::LoadI(T1, 0xFEEDF00D, 32),
         IsaOp::LoadI(T2, 4, 32),
-        IsaOp::Store(A0, T0, 4),
+        IsaOp::Store(A0, T0, 32),
         IsaOp::Add(A0, A0, T2),
-        IsaOp::Store(A0, T1, 4),
+        IsaOp::Store(A0, T1, 32),
         IsaOp::Add(A0, A0, T2),
-        IsaOp::Store(A0, T1, 4),
+        IsaOp::Store(A0, T1, 32),
         IsaOp::Add(A0, A0, T2),
-        IsaOp::Store(A0, T0, 4),
+        IsaOp::Store(A0, T0, 32),
         IsaOp::Ret(),
     ]);
 
@@ -163,9 +163,9 @@ fn two_large_parameters() {
     let program = memory.allocate_program(&[
         IsaOp::LoadI(T2, 12, 32),
         IsaOp::Add(A0, A0, T2),
-        IsaOp::Load(A0, A0, 4),
+        IsaOp::Load(A0, A0, 32),
         IsaOp::Add(A1, A1, T2),
-        IsaOp::Load(A1, A1, 4),
+        IsaOp::Load(A1, A1, 32),
         IsaOp::Or(A0, A0, A1),
         IsaOp::Ret(),
     ]);
@@ -195,9 +195,9 @@ fn pass_on_stack_wide() {
     // Read the 8 bytes off the stack pointer
     let program = memory.allocate_program(&[
         IsaOp::LoadI(T2, 4, 32),
-        IsaOp::Load(A0, SP, 4),
+        IsaOp::Load(A0, SP, 32),
         IsaOp::Add(T0, SP, T2),
-        IsaOp::Load(A1, T0, 4),
+        IsaOp::Load(A1, T0, 32),
         IsaOp::Ret(),
     ]);
 

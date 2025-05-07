@@ -12,8 +12,8 @@ use crate::{
 use parasol_runtime::test_utils::get_secret_keys_128;
 
 fn get_mask(width: u32) -> u128 {
-    if width < 16 {
-        (0x1u128 << (8 * width)) - 1
+    if width < 128 {
+        (1 << width) - 1
     } else {
         u128::MAX
     }
@@ -56,7 +56,7 @@ fn can_unsigned_mul_plain_plain() {
         );
     };
 
-    for width in [1, 2, 4, 8, 16] {
+    for width in [8, 16, 32, 64, 128] {
         for _ in 0..10 {
             let mask = get_mask(width);
 

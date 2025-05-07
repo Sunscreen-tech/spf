@@ -119,8 +119,8 @@ pub fn make_parent_op(retirement_info: &RetirementInfo<DispatchIsaOp>) -> Arc<Co
     }))
 }
 
-pub(crate) fn is_invalid_load_store_alignment(base_addr: u32, width: u32) -> bool {
-    base_addr % width != 0 || width > 16 || !width.is_power_of_two() || width == 0
+pub(crate) fn is_invalid_load_store_alignment(base_addr: u32, num_bytes: u32) -> bool {
+    num_bytes == 0 || base_addr % num_bytes != 0 || num_bytes > 16 || !num_bytes.is_power_of_two()
 }
 
 #[macro_export]

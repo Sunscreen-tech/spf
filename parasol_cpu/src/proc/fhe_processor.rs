@@ -90,12 +90,14 @@ impl FheProcessor {
         //
         // If none exist, then this instruction has no memory dependencies and is free to execute
         // immediately.
-        let mut update_memory_deps = |reg: &Register, num_bytes: u32| {
+        let mut update_memory_deps = |reg: &Register, width: u32| {
             // Add any existing load/store operations to the same addresses this operation touches
             // as dependencies.
             match reg {
                 Register::Plaintext { val: ptr, width: _ } => {
                     let base_addr = *ptr as u32;
+
+                    let num_bytes = width / 8;
 
                     if is_invalid_load_store_alignment(base_addr, num_bytes) {
                         return Err(Error::UnalignedAccess(base_addr));
@@ -125,15 +127,15 @@ impl FheProcessor {
         };
 
         match &scoreboard_entry.instruction.borrow().as_ref().unwrap() {
-            DispatchIsaOp::Store(dst, _, num_bytes) => {
+            DispatchIsaOp::Store(dst, _, width) => {
                 unwrap_registers!((dst));
 
-                update_memory_deps(dst, *num_bytes)?
+                update_memory_deps(dst, *width)?
             }
-            DispatchIsaOp::Load(_, src, num_bytes) => {
+            DispatchIsaOp::Load(_, src, width) => {
                 unwrap_registers!((src));
 
-                update_memory_deps(src, *num_bytes)?
+                update_memory_deps(src, *width)?
             }
             _ => {}
         };

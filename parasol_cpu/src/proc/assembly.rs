@@ -1,5 +1,15 @@
 use crate::Register;
 
+fn width_dec(input: u64) -> u64 {
+    assert!(input < 128, "{input} out of range [0, 128)");
+    if input == 0 { 128 } else { input }
+}
+
+fn width_enc(input: u64) -> u64 {
+    assert!(input > 0 && input <= 128, "{input} out of range (0, 128]");
+    if input == 128 { 0 } else { input }
+}
+
 /// Define the list of opcodes for the processors ISA.
 #[macro_export]
 macro_rules! define_op {
@@ -13,6 +23,7 @@ macro_rules! define_op {
             $((dst $dst_name:ident, $dst_type_id:tt, $dst_type:ty))*
             $((src $src_name:ident, $src_type_id:tt, $src_type:ty))*
             $((meta $meta_name:ident, $meta_width:literal, $meta_type:ty))*
+            $((cmeta $cmeta_name:ident, $cmeta_width:literal, $cmeta_type:ty, $cmeta_dec:ident, $cmeta_enc:ident))*
         ]),* $(,)?
     ) => {
         paste::paste! {
@@ -52,6 +63,7 @@ macro_rules! define_op {
                             $(RegisterName<$dst_type>,)*
                             $(RegisterName<$src_type>,)*
                             $($meta_type,)*
+                            $($cmeta_type,)*
                         )
                     ),*
                 }
@@ -89,10 +101,17 @@ macro_rules! define_op {
                                         let value = value >> $meta_width;
                                     )*
 
+                                    $(
+                                        let mask = (0x1u64 << $cmeta_width) - 1;
+                                        let $cmeta_name = $cmeta_dec((value & mask) as $cmeta_type as u64) as $cmeta_type;
+                                        let value = value >> $cmeta_width;
+                                    )*
+
                                     $inst_name :: $op_name(
                                         $($dst_name,)*
                                         $($src_name,)*
                                         $($meta_name,)*
+                                        $($cmeta_name,)*
                                     )
                                 }
                             )*
@@ -116,6 +135,7 @@ macro_rules! define_op {
                                     $($dst_name,)*
                                     $($src_name,)*
                                     $($meta_name,)*
+                                    $($cmeta_name,)*
                                 ) => {
                                     $(
                                         encoded |= ($dst_name.name as u64) << shift;
@@ -128,6 +148,10 @@ macro_rules! define_op {
                                     $(
                                         let encoded = encoded | ($meta_name as u64) << shift;
                                         shift += $meta_width;
+                                    )*
+                                    $(
+                                        let encoded = encoded | $cmeta_enc($cmeta_name as u64) << shift;
+                                        shift += $cmeta_width;
                                     )*
 
                                     encoded
@@ -142,7 +166,7 @@ macro_rules! define_op {
                         #[allow(unused)]
                         match self {
                             $(
-                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
+                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)* $($cmeta_name,)*) => {
                                     $(if !matches!($dst_name, _) {
                                         return Err(Error::IllegalOperands { inst_id, pc });
                                     })*
@@ -160,6 +184,7 @@ macro_rules! define_op {
                                     $([<_ $dst_name>],)*
                                     $([<_ $src_name>],)*
                                     $([<_ $meta_name>],)*
+                                    $([<_ $cmeta_name>],)*
                                 ) => [<$inst_name OpCode>]::$op_name,
                             )*
                         }
@@ -178,7 +203,7 @@ macro_rules! define_op {
                         #[allow(unused)]
                         match self {
                             $(
-                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
+                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)* $($cmeta_name,)*) => {
                                     $(let $src_name = rename_set.$src_type_id.get_instruction(*$src_name);)*
 
                                     $crate::dep_idx! {idx, $($src_name)*}
@@ -193,7 +218,7 @@ macro_rules! define_op {
                         #[allow(unused)]
                         match self {
                             $(
-                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
+                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)* $($cmeta_name,)*) => {
                                     $crate::rep_len!($($src_name)*)
                                 }
                             )*
@@ -226,6 +251,7 @@ macro_rules! define_op {
                             $(RobEntryRef<$dst_type>,)*
                             $(RobEntryRef<$src_type>,)*
                             $($meta_type,)*
+                            $($cmeta_type,)*
                         )
                     ),*
                 }
@@ -252,14 +278,14 @@ macro_rules! define_op {
                     ) -> $crate::error::Result<Self::DispatchedOp> {
                         let disp_op = match self {
                             $(
-                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)*) => {
+                                Self::$op_name($($dst_name,)* $($src_name,)* $($meta_name,)* $($cmeta_name,)*) => {
                                     // It's important we capture the srcs first, as they should not be renamed.
                                     $(let $src_name = srcs.$src_type_id.map_entry(*$src_name).map(|x| x.clone_immutable()).ok_or(Error::IllegalOperands { inst_id: instruction_id, pc })?;)*
                                     $(let $dst_name =
                                         srcs.$dst_type_id.rename(*$dst_name, Some(&scoreboard_entry));
                                     )*
 
-                                    Self::DispatchedOp::$op_name($($dst_name,)* $($src_name,)* $($meta_name.clone(),)*)
+                                    Self::DispatchedOp::$op_name($($dst_name,)* $($src_name,)* $($meta_name.clone(),)* $($cmeta_name.clone(),)*)
                                 },
                             )*
                         };
@@ -291,6 +317,7 @@ macro_rules! define_op {
                                     $(RegisterName::<$dst_type>::new(12),)*
                                     $(RegisterName::<$src_type>::new(12),)*
                                     $(1234 as $meta_type,)*
+                                    $(4321 as $cmeta_type,)*
                                 ),
                             )*
                         ] {
@@ -316,13 +343,13 @@ define_op! {
     (Register, 64, X),
 
     // Load
-    [0x02 Load (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
+    [0x02 Load (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
 
     // Load immediate
-    [0x03 LoadI (dst dst, 0, Register) (meta imm, 44, u128) (meta width, 7, u32)],
+    [0x03 LoadI (dst dst, 0, Register) (meta imm, 44, u128) (cmeta width, 7, u32, width_dec, width_enc)],
 
     // Store
-    [0x04 Store (src dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
+    [0x04 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
 
     // And
     [0x30 And (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
@@ -397,9 +424,9 @@ define_op! {
     [0x53 CmpLeS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
     // Casting operations
-    [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
-    [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
-    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
+    [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
 
     // Branch relative to the current PC if `src` is non-zero.
     [0x46 BranchNonZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
