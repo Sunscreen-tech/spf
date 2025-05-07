@@ -137,14 +137,15 @@ impl FheProcessor {
         retirement_info: RetirementInfo<DispatchIsaOp>,
         dst: RobEntryRef<Register>,
         src: RobEntryRef<Register>,
-        new_width: u32,
+        log_width: u32,
         instruction_id: usize,
         pc: u32,
     ) {
+        let new_width = 0x1u32 << log_width;
         let trunc_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
 
-            if (new_width as usize) > src.width() {
+            if (log_width as usize) > src.width() {
                 return Err(crate::Error::WidthMismatch {
                     inst_id: instruction_id,
                     pc,
@@ -153,7 +154,7 @@ impl FheProcessor {
 
             match src {
                 Register::Plaintext { val, width: _ } => {
-                    let mask = (0x1 << new_width) - 1;
+                    let mask = new_width as u128 - 1;
                     *dst = Register::Plaintext {
                         val: (*val) & mask,
                         width: new_width,
