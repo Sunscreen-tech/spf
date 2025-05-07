@@ -64,15 +64,13 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
         let memory = Arc::new(Memory::new_default_stack());
 
         let program = memory.allocate_program(&[
-            // Loads use byte widths.
-            IsaOp::Load(A0, A0, input_width / 8),
+            IsaOp::Load(A0, A0, input_width),
             match cast_type {
                 CastType::SignExtension => IsaOp::Sext(A0, A0, output_width),
                 CastType::ZeroExtension => IsaOp::Zext(A0, A0, output_width),
                 CastType::Truncation => IsaOp::Trunc(A0, A0, output_width),
             },
-            // Stores use byte widths.
-            IsaOp::Store(A1, A0, output_width / 8),
+            IsaOp::Store(A1, A0, output_width),
             IsaOp::Ret(),
         ]);
 

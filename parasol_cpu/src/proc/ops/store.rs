@@ -14,7 +14,7 @@ impl FheProcessor {
         memory: &Memory,
         src: RobEntryRef<Register>,
         dst: RobEntryRef<Register>,
-        num_bytes: u32,
+        width: u32,
         instruction_id: usize,
         pc: u32,
     ) {
@@ -27,6 +27,8 @@ impl FheProcessor {
             match dst {
                 Register::Plaintext { val: ptr, width: _ } => {
                     let base_addr = *ptr as u32;
+
+                    let num_bytes = width / 8;
 
                     if is_invalid_load_store_alignment(base_addr, num_bytes) {
                         return Err(Error::UnalignedAccess(base_addr));

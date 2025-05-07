@@ -7,10 +7,10 @@ use crate::{
 use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_80};
 
 #[test]
-fn can_load_store_plain_byte_width() {
+fn can_load_store_plain_bit_width() {
     let (mut proc, _) = make_computer_80();
 
-    let mut case = |bytes: u32| {
+    let mut case = |width| {
         let memory = Arc::new(Memory::new_default_stack());
         let input_ptr = memory.try_allocate(16).unwrap();
         let output_ptr = memory.try_allocate(16).unwrap();
@@ -22,8 +22,8 @@ fn can_load_store_plain_byte_width() {
         }
 
         let program = memory.allocate_program(&[
-            IsaOp::Load(T0, A0, bytes),
-            IsaOp::Store(A1, T0, bytes),
+            IsaOp::Load(T0, A0, width),
+            IsaOp::Store(A1, T0, width),
             IsaOp::Ret(),
         ]);
 
@@ -33,6 +33,8 @@ fn can_load_store_plain_byte_width() {
             .no_return_value();
 
         proc.run_program(program, &memory, args, 200_000).unwrap();
+
+        let bytes = width / 8;
 
         for i in 0..bytes {
             let byte = memory.try_load(output_ptr.try_offset(i).unwrap()).unwrap();
@@ -48,16 +50,16 @@ fn can_load_store_plain_byte_width() {
     };
 
     for i in 1..=4 {
-        case(0x1 << i);
+        case(8 << i);
     }
 }
 
 #[test]
-fn can_load_store_ciphertext_byte_width() {
+fn can_load_store_ciphertext_bit_width() {
     let (mut proc, enc) = make_computer_80();
     let sk = get_secret_keys_80();
 
-    let mut case = |width: u32| {
+    let mut case = |width| {
         let plain_values = (1..=16).collect::<Vec<_>>();
 
         let memory = Arc::new(Memory::new_default_stack());
@@ -86,22 +88,25 @@ fn can_load_store_ciphertext_byte_width() {
 
         proc.run_program(program, &memory, args, 100).unwrap();
 
-        for (i, p) in plain_values.iter().take(width as usize).enumerate() {
+        let bytes = (width / 8) as usize;
+
+        for (i, p) in plain_values.iter().take(bytes).enumerate() {
             let actual: UInt<8, L1GlweCiphertext> = memory
                 .try_load_type(dst.try_offset(i as u32).unwrap())
                 .unwrap();
             assert_eq!(actual.decrypt(&enc, &sk) as u8, *p);
         }
 
-        for i in width..plain_values.len() as u32 {
-            let actual: UInt<8, L1GlweCiphertext> =
-                memory.try_load_type(dst.try_offset(i).unwrap()).unwrap();
+        for i in bytes..plain_values.len() {
+            let actual: UInt<8, L1GlweCiphertext> = memory
+                .try_load_type(dst.try_offset(i as u32).unwrap())
+                .unwrap();
             assert_eq!(actual.decrypt(&enc, &sk) as u8, 0);
         }
     };
 
     for i in 0..=4 {
-        case(0x1 << i);
+        case(8 << i);
     }
 }
 
@@ -157,7 +162,7 @@ fn can_offset_load() {
             memory.allocate_program(&[
                 IsaOp::LoadI(T0, 2, 32),
                 IsaOp::Add(A0, A0, T0),
-                IsaOp::Load(A0, A0, 2),
+                IsaOp::Load(A0, A0, 16),
                 IsaOp::Ret(),
             ]),
             &memory,
