@@ -1,6 +1,6 @@
 use mux_circuits::{
     MuxCircuit,
-    comparisons::{compare_equal, compare_or_maybe_equal},
+    comparisons::{compare_equal, compare_or_maybe_equal, compare_or_maybe_equal_signed},
 };
 use parasol_runtime::FheCircuit;
 
@@ -14,6 +14,15 @@ use crate::{
 
 use super::make_parent_op;
 
+fn to_signed(val: u128, width: u32) -> i128 {
+    let sign = 1 << (width - 1);
+    if sign & val == 0 {
+        val as i128
+    } else {
+        (!((sign << 1) - 1) | val) as i128
+    }
+}
+
 impl FheProcessor {
     #[allow(clippy::too_many_arguments)]
     fn comparison_operation(
@@ -24,7 +33,7 @@ impl FheProcessor {
         b: RobEntryRef<Register>,
         instruction_id: usize,
         pc: u32,
-        operation: fn(u128, u128) -> bool,
+        operation: fn(u128, u32, u128, u32) -> bool,
         circuit_gen: fn(usize) -> MuxCircuit,
     ) {
         let mut comparison_impl = || -> Result<()> {
@@ -35,16 +44,16 @@ impl FheProcessor {
             if let (
                 Register::Plaintext {
                     val: val1,
-                    width: _,
+                    width: width1,
                 },
                 Register::Plaintext {
                     val: val2,
-                    width: _,
+                    width: width2,
                 },
             ) = (a, b)
             {
                 *dst = Register::Plaintext {
-                    val: operation(*val1, *val2) as u128,
+                    val: operation(*val1, *width1, *val2, *width2) as u128,
                     width: 1,
                 };
 
@@ -113,7 +122,7 @@ impl FheProcessor {
             b,
             instruction_id,
             pc,
-            |a, b| a == b,
+            |a, _, b, _| a == b,
             compare_equal,
         )
     }
@@ -134,7 +143,7 @@ impl FheProcessor {
             b,
             instruction_id,
             pc,
-            |a, b| a > b,
+            |a, _, b, _| a > b,
             |n| compare_or_maybe_equal(n, true, false),
         )
     }
@@ -155,7 +164,7 @@ impl FheProcessor {
             b,
             instruction_id,
             pc,
-            |a, b| a >= b,
+            |a, _, b, _| a >= b,
             |n| compare_or_maybe_equal(n, true, true),
         )
     }
@@ -176,7 +185,7 @@ impl FheProcessor {
             b,
             instruction_id,
             pc,
-            |a, b| a < b,
+            |a, _, b, _| a < b,
             |n| compare_or_maybe_equal(n, false, false),
         )
     }
@@ -197,8 +206,92 @@ impl FheProcessor {
             b,
             instruction_id,
             pc,
-            |a, b| a <= b,
+            |a, _, b, _| a <= b,
             |n| compare_or_maybe_equal(n, false, true),
+        )
+    }
+
+    pub fn greater_than_signed(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        a: RobEntryRef<Register>,
+        b: RobEntryRef<Register>,
+        instruction_id: usize,
+        pc: u32,
+    ) {
+        self.comparison_operation(
+            retirement_info,
+            dst,
+            a,
+            b,
+            instruction_id,
+            pc,
+            |a, wa, b, wb| to_signed(a, wa) > to_signed(b, wb),
+            |n| compare_or_maybe_equal_signed(n, true, false),
+        )
+    }
+
+    pub fn greater_than_or_equal_signed(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        a: RobEntryRef<Register>,
+        b: RobEntryRef<Register>,
+        instruction_id: usize,
+        pc: u32,
+    ) {
+        self.comparison_operation(
+            retirement_info,
+            dst,
+            a,
+            b,
+            instruction_id,
+            pc,
+            |a, wa, b, wb| to_signed(a, wa) >= to_signed(b, wb),
+            |n| compare_or_maybe_equal_signed(n, true, true),
+        )
+    }
+
+    pub fn less_than_signed(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        a: RobEntryRef<Register>,
+        b: RobEntryRef<Register>,
+        instruction_id: usize,
+        pc: u32,
+    ) {
+        self.comparison_operation(
+            retirement_info,
+            dst,
+            a,
+            b,
+            instruction_id,
+            pc,
+            |a, wa, b, wb| to_signed(a, wa) < to_signed(b, wb),
+            |n| compare_or_maybe_equal_signed(n, false, false),
+        )
+    }
+
+    pub fn less_than_or_equal_signed(
+        &mut self,
+        retirement_info: RetirementInfo<DispatchIsaOp>,
+        dst: RobEntryRef<Register>,
+        a: RobEntryRef<Register>,
+        b: RobEntryRef<Register>,
+        instruction_id: usize,
+        pc: u32,
+    ) {
+        self.comparison_operation(
+            retirement_info,
+            dst,
+            a,
+            b,
+            instruction_id,
+            pc,
+            |a, wa, b, wb| to_signed(a, wa) <= to_signed(b, wb),
+            |n| compare_or_maybe_equal_signed(n, false, true),
         )
     }
 }

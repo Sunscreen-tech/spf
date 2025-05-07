@@ -385,6 +385,18 @@ define_op! {
     // Compare less than or equal
     [0x43 CmpLe (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
+    // Compare greater than, signed
+    [0x50 CmpGtS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Compare greater than or equal, signed
+    [0x51 CmpGeS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Compare less than, signed
+    [0x52 CmpLtS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Compare less than or equal, signed
+    [0x53 CmpLeS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
     // Casting operations
     [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
     [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (meta width, 7, u32)],
