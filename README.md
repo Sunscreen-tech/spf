@@ -1,5 +1,5 @@
 # Parasol processor
-This repository contains Sunscreen's virtual processor, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Specifically, it makes use our ownvariant of the torus fully homomorphic encryption scheme (TFHE).
+This repository contains Sunscreen's virtual processor, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Specifically, it makes use of our own variant of the torus fully homomorphic encryption scheme (TFHE).
 
 Developer documentation is available [here](https://docs.sunscreen.tech/intro.html).
 
@@ -122,7 +122,7 @@ we get
 Encrypted 2 + 7 = 9
 ```
 # License
-This is currently licensened under [APGLv3](https://www.gnu.org/licenses/agpl-3.0.html). If you require a different license, please [email us](mailto:hello@sunscreen.tech) and we'll see what we can do.
+This is currently licensed under [APGLv3](https://www.gnu.org/licenses/agpl-3.0.html). If you require a different license, please [email us](mailto:hello@sunscreen.tech) and we'll see what we can do.
 
 # Disclaimers
 This code has *not* been audited. Use at your own risk.
