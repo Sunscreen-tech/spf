@@ -43,7 +43,7 @@ fn can_unsigned_mul_plain_plain() {
             .arg(c_ptr)
             .no_return_value();
 
-        proc.run_program(program, &memory, args, 100).unwrap();
+        proc.run_program(program, &memory, args).unwrap();
 
         let mask = get_mask(width);
 
@@ -86,7 +86,7 @@ where
             .arg(MaybeEncryptedUInt::<N>::new(b, &enc, &sk, b_enc))
             .return_value::<MaybeEncryptedUInt<N>>();
 
-        let (_, actual) = proc.run_program(program, &memory, args, 500_000).unwrap();
+        let actual = proc.run_program(program, &memory, args).unwrap();
 
         let expected = a.wrapping_mul(b) & ((0x1 << N) - 1);
         let actual: u64 = actual.get(&enc, &sk).into();

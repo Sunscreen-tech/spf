@@ -91,10 +91,10 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
             .arg(output_ptr)
             .no_return_value();
 
-        let result = proc.run_program(program, &memory, args, 200_000);
+        let result = proc.run_program(program, &memory, args);
 
         match (valid, result) {
-            (true, Ok((_, ()))) => {
+            (true, Ok(())) => {
                 let ans_bytes = (0..output_width / 8)
                     .map(|x| memory.try_load(output_ptr.try_offset(x).unwrap()).unwrap())
                     .collect::<Vec<_>>();
@@ -131,7 +131,7 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
                 continue;
             }
             (true, Err(e)) => panic!("Unexpected error: {:?}", e),
-            (false, Ok((_, ()))) => panic!("Expected error"),
+            (false, Ok(())) => panic!("Expected error"),
         }
     }
 }

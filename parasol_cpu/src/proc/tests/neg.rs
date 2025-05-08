@@ -15,7 +15,7 @@ fn can_neg_plaintext_inputs() {
 
     let program = memory.allocate_program(&[IsaOp::Neg(A0, A0), IsaOp::Ret()]);
 
-    let (_, ans) = proc.run_program(program, &memory, args, 100).unwrap();
+    let ans = proc.run_program(program, &memory, args).unwrap();
 
     assert_eq!(expected, ans);
 }

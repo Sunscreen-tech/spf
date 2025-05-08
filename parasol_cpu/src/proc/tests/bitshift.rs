@@ -48,9 +48,7 @@ fn run_single_test(
         ))
         .return_value::<MaybeEncryptedUInt<8>>();
 
-    let (_, ans) = proc
-        .run_program(program, &Arc::new(memory), args, 200_000)
-        .unwrap();
+    let ans = proc.run_program(program, &Arc::new(memory), args).unwrap();
     let ans = ans.get(enc, &sk);
 
     assert_eq!(

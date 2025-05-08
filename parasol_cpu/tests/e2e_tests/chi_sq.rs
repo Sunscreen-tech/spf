@@ -30,7 +30,7 @@ fn can_run_from_elf() {
 
     let prog = memory.get_function_entry("chi_sq").unwrap();
 
-    proc.run_program(prog, &memory, args, 3_000_000).unwrap();
+    proc.run_program(prog, &memory, args).unwrap();
 
     let result = memory.try_load_type::<[UInt<16, _>; 4]>(result).unwrap();
 

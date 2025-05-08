@@ -222,7 +222,7 @@ impl FheProcessor {
         &mut self,
         inst: IsaOp,
         pc: u32,
-        gas_limit: u32,
+        gas_limit: Option<u32>,
     ) -> Result<(u32, u32)> {
         use crate::tomasulo::{GetDeps, ToDispatchedOp};
 
@@ -249,8 +249,10 @@ impl FheProcessor {
 
         let gas = self.compute_gas(&disp_inst);
 
-        if gas > gas_limit {
-            return Err(Error::OutOfGas(gas, gas_limit));
+        if let Some(gas_limit) = gas_limit {
+            if gas > gas_limit {
+                return Err(Error::OutOfGas(gas, gas_limit));
+            }
         }
 
         scoreboard_entry.set_instruction(&disp_inst);
@@ -666,13 +668,14 @@ impl FheProcessor {
     }
 
     /// Runs the given program using the passed user `data` as arguments with a gas limit
-    /// Returns used gas a program return value
-    pub fn run_program<T: ToArg>(
+    /// Returns the amount of gas used to run the program and the program return
+    /// value
+    pub fn run_program_metered<T: ToArg>(
         &mut self,
         memory: &Arc<Memory>,
         initial_pc: Ptr32,
         args: &Args<T>,
-        gas_limit: u32,
+        gas_limit: Option<u32>,
     ) -> Result<(u32, T)> {
         self.reset()?;
         let return_data = self.set_up_function_call(memory, args)?;
@@ -697,7 +700,14 @@ impl FheProcessor {
                         Error::Halt => break,
                         Error::OutOfGas(used_gas, _) => {
                             self.wait()?;
-                            return Err(Error::OutOfGas(gas + used_gas, gas_limit));
+                            if let Some(gas_limit) = gas_limit {
+                                return Err(Error::OutOfGas(gas + used_gas, gas_limit));
+                            } else {
+                                // This case should never happen since gas
+                                // tracking should throw an out of gas answer
+                                // only when the gas_limit is a Some variant.
+                                unreachable!()
+                            }
                         }
                         _ => return Err(e),
                     },
@@ -717,6 +727,18 @@ impl FheProcessor {
 
         self.try_capture_return_value(memory, args, return_data)
             .map(|ret_val| (gas, ret_val))
+    }
+
+    /// Runs the given program using the passed user `data` as arguments.
+    /// Returns the result of the program.
+    pub fn run_program<T: ToArg>(
+        &mut self,
+        memory: &Arc<Memory>,
+        initial_pc: Ptr32,
+        args: &Args<T>,
+    ) -> Result<T> {
+        self.run_program_metered(memory, initial_pc, args, None)
+            .map(|x| x.1)
     }
 }
 

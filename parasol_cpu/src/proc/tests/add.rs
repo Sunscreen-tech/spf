@@ -26,9 +26,7 @@ fn can_add_inputs() {
             .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc2))
             .return_value::<MaybeEncryptedUInt<32>>();
 
-        let (_, result) = proc
-            .run_program(program, &Arc::new(memory), args, 200_000)
-            .unwrap();
+        let result = proc.run_program(program, &Arc::new(memory), args).unwrap();
 
         let ans_sum = result.get(&enc, &sk);
 
@@ -95,9 +93,7 @@ fn can_add_carry_inputs() {
             ))
             .return_value::<[MaybeEncryptedUInt<32>; 2]>();
 
-        let (_, [ans_sum, ans_carry]) = proc
-            .run_program(prog_ptr, &Arc::new(memory), args, 200_000)
-            .unwrap();
+        let [ans_sum, ans_carry] = proc.run_program(prog_ptr, &Arc::new(memory), args).unwrap();
 
         let ans_sum = ans_sum.get(&enc, sk);
         let ans_carry = ans_carry.get(&enc, sk);
@@ -192,8 +188,8 @@ fn add_use_same_dst_and_src() {
 
     let args = ArgsBuilder::new().arg(10u16).return_value::<u16>();
 
-    let (_, actual) = proc
-        .run_program(program_ptr, &Arc::new(memory), args, 200_000)
+    let actual = proc
+        .run_program(program_ptr, &Arc::new(memory), args)
         .unwrap();
 
     assert_eq!(actual, 20);

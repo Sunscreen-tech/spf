@@ -32,7 +32,7 @@ fn can_load_store_plain_bit_width() {
             .arg(output_ptr)
             .no_return_value();
 
-        proc.run_program(program, &memory, args, 200_000).unwrap();
+        proc.run_program(program, &memory, args).unwrap();
 
         let bytes = width / 8;
 
@@ -86,7 +86,7 @@ fn can_load_store_ciphertext_bit_width() {
 
         let args = ArgsBuilder::new().arg(src).arg(dst).no_return_value();
 
-        proc.run_program(program, &memory, args, 100).unwrap();
+        proc.run_program(program, &memory, args).unwrap();
 
         let bytes = (width / 8) as usize;
 
@@ -120,7 +120,7 @@ fn can_load_immediate() {
 
     let program = memory.allocate_program(&[IsaOp::LoadI(A0, 1234, 15), IsaOp::Ret()]);
 
-    let (_, result) = proc.run_program(program, &memory, args, 100).unwrap();
+    let result = proc.run_program(program, &memory, args).unwrap();
 
     assert_eq!(result, 1234u16);
 }
@@ -137,7 +137,6 @@ fn load_immediate_fails_out_of_range() {
         memory.allocate_program(&[IsaOp::LoadI(A0, 1234, 4), IsaOp::Ret()]),
         &memory,
         args,
-        200_000,
     );
 
     assert!(matches!(
@@ -157,7 +156,7 @@ fn can_offset_load() {
 
     let args = ArgsBuilder::new().arg(src).return_value::<u16>();
 
-    let (_, actual) = proc
+    let actual = proc
         .run_program(
             memory.allocate_program(&[
                 IsaOp::LoadI(T0, 2, 32),
@@ -167,7 +166,6 @@ fn can_offset_load() {
             ]),
             &memory,
             args,
-            200_000,
         )
         .unwrap();
 
