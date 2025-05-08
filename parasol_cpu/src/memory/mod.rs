@@ -288,11 +288,11 @@ impl Memory {
                 continue;
             }
 
-            let name = sym_names.get(sym.st_name as usize)?;
-
             if sym.st_value > u32::MAX as u64 {
                 return Err(Error::ElfBadSymbolValue);
             }
+
+            let name = sym_names.get(sym.st_name as usize)?;
 
             memory
                 .symbols
