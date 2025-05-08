@@ -10,7 +10,7 @@ impl FheProcessor {
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
         dst: RobEntryRef<Register>,
-        imm: u128,
+        imm: i32,
         width: u32,
         instruction_id: usize,
         pc: u32,
@@ -18,11 +18,22 @@ impl FheProcessor {
         let loadi_impl = || -> Result<()> {
             unwrap_registers!((mut dst));
 
-            if imm >= 0x1 << width {
+            // Sign extend imm
+            let imm = imm as i128;
+
+            // 2s complement features 1 more negative value than positive.
+            // Hence the >= vs < mismatch.
+            if (imm.is_positive() && imm >= 0x1 << (width - 1))
+                || (imm.is_negative() && imm < -1 << (width - 1))
+            {
                 return Err(Error::out_of_range(instruction_id, pc));
             }
 
-            *dst = Register::Plaintext { val: imm, width };
+            // Bitcast imm from i128 to u128.
+            *dst = Register::Plaintext {
+                val: imm as u128,
+                width,
+            };
 
             FheProcessor::retire(&retirement_info, Ok(()));
 

@@ -346,7 +346,7 @@ define_op! {
     [0x02 Load (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
 
     // Load immediate
-    [0x03 LoadI (dst dst, 0, Register) (meta imm, 32, u128) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x03 LoadI (dst dst, 0, Register) (meta imm, 32, i32) (cmeta width, 7, u32, width_dec, width_enc)],
 
     // Store
     [0x04 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],

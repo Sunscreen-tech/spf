@@ -127,8 +127,8 @@ fn large_return_value() {
     let memory = Arc::new(Memory::new_default_stack());
 
     let program = memory.allocate_program(&[
-        IsaOp::LoadI(T0, 0xDEADBEEF, 32),
-        IsaOp::LoadI(T1, 0xFEEDF00D, 32),
+        IsaOp::LoadI(T0, 0xDEADBEEFu32 as i32, 32),
+        IsaOp::LoadI(T1, 0xFEEDF00Du32 as i32, 32),
         IsaOp::LoadI(T2, 4, 32),
         IsaOp::Store(A0, T0, 32),
         IsaOp::Add(A0, A0, T2),
