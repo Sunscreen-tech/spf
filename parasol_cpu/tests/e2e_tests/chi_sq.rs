@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{ComputeKey, Encryption, Evaluation, SecretKey, fluent::UInt};
+use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
 
 use crate::{get_ck, get_sk};
 
