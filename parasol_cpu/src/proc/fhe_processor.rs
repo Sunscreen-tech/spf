@@ -45,22 +45,9 @@ where
     ),
 }
 
-pub(crate) struct RegisterConfig {
-    pub num_registers: usize,
-}
-
-impl Default for RegisterConfig {
-    fn default() -> Self {
-        Self { num_registers: 32 }
-    }
-}
-
 impl FheProcessor {
-    pub fn new(
-        register_config: &RegisterConfig,
-        aux_data: <Self as Tomasulo>::AuxiliaryData,
-    ) -> Self {
-        let registers = RegisterFile::<Register, DispatchIsaOp>::new(register_config.num_registers);
+    pub fn new(aux_data: <Self as Tomasulo>::AuxiliaryData) -> Self {
+        let registers = RegisterFile::<Register, DispatchIsaOp>::new(64);
 
         Self {
             registers,
