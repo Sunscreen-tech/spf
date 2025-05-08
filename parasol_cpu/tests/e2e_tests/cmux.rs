@@ -3,12 +3,14 @@ use std::sync::Arc;
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
 use parasol_runtime::{ComputeKey, Encryption, Evaluation, SecretKey, fluent::UInt};
 
+use crate::{get_ck, get_sk};
+
 #[test]
 fn can_run_from_elf() {
-    let memory = Arc::new(Memory::new_from_elf(include_bytes!("./test_data/cmux")).unwrap());
+    let memory = Arc::new(Memory::new_from_elf(include_bytes!("../test_data/cmux")).unwrap());
 
-    let sk = SecretKey::generate_with_default_params();
-    let ck = Arc::new(ComputeKey::generate_with_default_params(&sk));
+    let sk = get_sk();
+    let ck = get_ck();
 
     let enc = Encryption::default();
     let eval = Evaluation::with_default_params(ck);
