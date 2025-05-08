@@ -96,6 +96,19 @@ pub enum Register {
     Ciphertext(Ciphertext),
 }
 
+impl std::fmt::Debug for Register {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Plaintext { val, width } => {
+                write!(f, "v={val}, w={width}")
+            }
+            Self::Ciphertext(c) => {
+                write!(f, "v=<encrypted>, w={}", c.len())
+            }
+        }
+    }
+}
+
 impl Register {
     /// How many bits is the value of the register?
     pub fn width(&self) -> usize {

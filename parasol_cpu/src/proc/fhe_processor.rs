@@ -11,7 +11,7 @@ use crate::{
 
 use super::{ops::is_invalid_load_store_alignment, *};
 
-use log::trace;
+use log::{debug, trace};
 
 use std::sync::{
     Arc,
@@ -242,6 +242,10 @@ impl FheProcessor {
         inst.validate(self.current_instruction, pc)?;
 
         let srcs = (&self.registers, ());
+
+        debug!("Dispatching pc={pc} {:?}", inst);
+
+        self.registers.trace_dump();
 
         // We need to capture the dependencies *before* we map our dispatch op.
         // If we don't a src operand that's also a dst can get renamed and our
