@@ -11,7 +11,7 @@ use crate::{
 
 use super::{ops::is_invalid_load_store_alignment, *};
 
-use log::trace;
+use log::{debug, trace};
 
 use std::sync::{
     Arc,
@@ -45,22 +45,9 @@ where
     ),
 }
 
-pub(crate) struct RegisterConfig {
-    pub num_registers: usize,
-}
-
-impl Default for RegisterConfig {
-    fn default() -> Self {
-        Self { num_registers: 32 }
-    }
-}
-
 impl FheProcessor {
-    pub fn new(
-        register_config: &RegisterConfig,
-        aux_data: <Self as Tomasulo>::AuxiliaryData,
-    ) -> Self {
-        let registers = RegisterFile::<Register, DispatchIsaOp>::new(register_config.num_registers);
+    pub fn new(aux_data: <Self as Tomasulo>::AuxiliaryData) -> Self {
+        let registers = RegisterFile::<Register, DispatchIsaOp>::new(64);
 
         Self {
             registers,
@@ -242,6 +229,10 @@ impl FheProcessor {
         inst.validate(self.current_instruction, pc)?;
 
         let srcs = (&self.registers, ());
+
+        debug!("Dispatching pc={pc} {:?}", inst);
+
+        self.registers.trace_dump();
 
         // We need to capture the dependencies *before* we map our dispatch op.
         // If we don't a src operand that's also a dst can get renamed and our

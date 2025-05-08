@@ -1,17 +1,20 @@
 use std::{
     cell::RefCell,
+    fmt::Debug,
     marker::PhantomData,
     ops::{Deref, DerefMut},
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use crate::{Error, Result};
+use log::{log_enabled, trace};
+
+use crate::{Error, Result, unwrap_registers};
 
 use super::scoreboard::ScoreboardEntryRef;
 
 pub(crate) struct RegisterFile<T, I>
 where
-    T: Default + 'static,
+    T: Default + Debug + 'static,
     I: 'static + Clone,
 {
     pub rename: Vec<RefCell<Rename<T, I>>>,
@@ -19,7 +22,7 @@ where
 
 impl<T, I> RegisterFile<T, I>
 where
-    T: Default + 'static,
+    T: Default + Debug + 'static,
     I: 'static + Clone,
 {
     pub fn new(num_registers: usize) -> Self {
@@ -78,6 +81,26 @@ where
     /// If the given `register_name` exceeds the total number of registers.
     pub fn get_instruction(&self, register_name: RegisterName<T>) -> Option<ScoreboardEntryRef<I>> {
         self.rename[register_name.name].borrow().producer_id.clone()
+    }
+
+    /// Dumps the register file's contents when LOG_LEVEL=trace.
+    pub fn trace_dump(&self) {
+        if log_enabled!(log::Level::Trace) {
+            trace!("Register state:");
+            for (i, r) in self.rename.iter().enumerate() {
+                let r = r.borrow().rob_ref.clone();
+
+                let contents = if let Some(r) = r {
+                    unwrap_registers!((r));
+
+                    format!("{r:#?}")
+                } else {
+                    "None".to_owned()
+                };
+
+                trace!("\tr{i}: {contents}");
+            }
+        }
     }
 }
 

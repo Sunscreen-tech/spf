@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, collections::HashMap, sync::Arc};
 
-use fhe_processor::{FheProcessor, RegisterConfig};
+use fhe_processor::FheProcessor;
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
@@ -94,6 +94,19 @@ pub enum Register {
     Plaintext { val: u128, width: u32 },
 
     Ciphertext(Ciphertext),
+}
+
+impl std::fmt::Debug for Register {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Plaintext { val, width } => {
+                write!(f, "v={val}, w={width}")
+            }
+            Self::Ciphertext(c) => {
+                write!(f, "v=<encrypted>, w={}", c.len())
+            }
+        }
+    }
 }
 
 impl Register {
@@ -232,11 +245,9 @@ pub struct FheComputer {
 impl FheComputer {
     /// Create a new [`FheComputer`]. Tasks will run on the global [`rayon::ThreadPool`].
     pub fn new(enc: &Encryption, eval: &Evaluation) -> Self {
-        let config = RegisterConfig { num_registers: 32 };
-
         let aux_data = FheProcessorAuxData::new(enc, eval, None);
 
-        let processor = FheProcessor::new(&config, aux_data);
+        let processor = FheProcessor::new(aux_data);
 
         Self { processor }
     }
@@ -247,11 +258,9 @@ impl FheComputer {
         eval: &Evaluation,
         thread_pool: Arc<ThreadPool>,
     ) -> Self {
-        let config = RegisterConfig { num_registers: 32 };
-
         let aux_data = FheProcessorAuxData::new(enc, eval, Some(thread_pool));
 
-        let processor = FheProcessor::new(&config, aux_data);
+        let processor = FheProcessor::new(aux_data);
 
         Self { processor }
     }
