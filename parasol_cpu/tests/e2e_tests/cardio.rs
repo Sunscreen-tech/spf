@@ -29,18 +29,18 @@ fn can_run_from_elf() {
         .sum::<u8>();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(flags as u64, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(40, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(50, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(70, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(170, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, &enc, &sk))
+        .arg(UInt::<8, _>::encrypt_secret(flags as u64, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(40, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(50, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(70, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(170, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(1, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(1, &enc, sk))
         .return_value::<UInt<8, _>>();
 
     let prog = memory.get_function_entry("cardio").unwrap();
 
     let result = proc.run_program(prog, &memory, args, 3_000_000).unwrap();
 
-    assert_eq!(result.1.decrypt(&enc, &sk), 3);
+    assert_eq!(result.1.decrypt(&enc, sk), 3);
 }

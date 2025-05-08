@@ -18,13 +18,13 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(42, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(54, &enc, &sk))
+        .arg(UInt::<8, _>::encrypt_secret(42, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(54, &enc, sk))
         .return_value::<UInt<8, _>>();
 
     let prog = memory.get_function_entry("add").unwrap();
 
     let result = proc.run_program(prog, &memory, args, 200_000).unwrap();
 
-    assert_eq!(result.1.decrypt(&enc, &sk), 96);
+    assert_eq!(result.1.decrypt(&enc, sk), 96);
 }

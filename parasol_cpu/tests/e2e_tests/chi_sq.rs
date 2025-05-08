@@ -22,9 +22,9 @@ fn can_run_from_elf() {
         .unwrap();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<16, _>::encrypt_secret(2, &enc, &sk))
-        .arg(UInt::<16, _>::encrypt_secret(7, &enc, &sk))
-        .arg(UInt::<16, _>::encrypt_secret(9, &enc, &sk))
+        .arg(UInt::<16, _>::encrypt_secret(2, &enc, sk))
+        .arg(UInt::<16, _>::encrypt_secret(7, &enc, sk))
+        .arg(UInt::<16, _>::encrypt_secret(9, &enc, sk))
         .arg(result)
         .no_return_value();
 
@@ -34,8 +34,8 @@ fn can_run_from_elf() {
 
     let result = memory.try_load_type::<[UInt<16, _>; 4]>(result).unwrap();
 
-    assert_eq!(result[0].decrypt(&enc, &sk), 529);
-    assert_eq!(result[1].decrypt(&enc, &sk), 242);
-    assert_eq!(result[2].decrypt(&enc, &sk), 275);
-    assert_eq!(result[3].decrypt(&enc, &sk), 1250);
+    assert_eq!(result[0].decrypt(&enc, sk), 529);
+    assert_eq!(result[1].decrypt(&enc, sk), 242);
+    assert_eq!(result[2].decrypt(&enc, sk), 275);
+    assert_eq!(result[3].decrypt(&enc, sk), 1250);
 }

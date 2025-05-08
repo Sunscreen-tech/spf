@@ -20,7 +20,7 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let data =
-        std::array::from_fn::<_, 8, _>(|i| UInt::<8, _>::encrypt_secret(i as u64, &enc, &sk));
+        std::array::from_fn::<_, 8, _>(|i| UInt::<8, _>::encrypt_secret(i as u64, &enc, sk));
 
     let a = memory.try_allocate_type(&data).unwrap();
     let b = memory.try_allocate_type(&data).unwrap();
@@ -35,7 +35,7 @@ fn can_run_from_elf() {
     let result = memory
         .try_load_type::<[UInt<8, _>; 8]>(c)
         .unwrap()
-        .map(|r| r.decrypt(&enc, &sk) as u8);
+        .map(|r| r.decrypt(&enc, sk) as u8);
 
     assert_eq!(result, std::array::from_fn(|i| 2 * i as u8));
 }
