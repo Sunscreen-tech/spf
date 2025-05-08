@@ -1,2 +1,2 @@
 # Allow for C object files since we use them for testing here
-!*.o
+*.o
