@@ -1,46 +1,62 @@
-use parasol_runtime::ComputeKey;
+use std::sync::Arc;
 
-use crate::{Args, Memory, error::Result};
+use parasol_runtime::{ComputeKey, Encryption, Evaluation};
+
+use crate::{Args, Error, FheComputer, Memory, ToArg, error::Result};
 
 /// Runs a program by generating a new [`crate::FheComputer`]. This function is meant
 /// for simple testing of a program; for full applications see the
 /// [`crate::FheComputer`] struct.
-pub fn run_program<T>(
-    _compute_key: ComputeKey,
-    _memory: Memory,
-    _program_name: &str,
-    _arguments: Args<T>,
-    _gas_limit: u32,
-) -> Result<(u32, T)> {
-    todo!();
+pub fn run_program<T: ToArg>(
+    compute_key: ComputeKey,
+    elf_file: &[u8],
+    program_name: &str,
+    arguments: Args<T>,
+) -> Result<T> {
+    let memory = Arc::new(Memory::new_from_elf(elf_file)?);
+    let enc = Encryption::default();
+    let eval = Evaluation::with_default_params(Arc::new(compute_key));
+
+    let mut proc = FheComputer::new(&enc, &eval);
+
+    let prog = memory
+        .get_function_entry(program_name)
+        .ok_or(Error::ElfSymbolNotFound(program_name.to_string()))?;
+
+    proc.run_program(prog, &memory, arguments)
 }
 
 #[cfg(test)]
 mod tests {
-    // #[test]
-    // fn test_run_program() {
-    //     let compute_key = get_compute_key_128();
-    //     let compute_key: &ComputeKey = compute_key.borrow();
-    //     let enc = Encryption::default();
+    use std::borrow::Borrow;
 
-    //     let bound = 20u8;
-    //     let a = 6u8;
-    //     let b = 3u8;
+    use crate::ArgsBuilder;
 
-    //     let buffer_0 = buffer_from_value_128(bound, &enc, true);
-    //     let buffer_1 = buffer_from_value_128(a, &enc, true);
-    //     let buffer_2 = buffer_from_value_128(b, &enc, true);
-    //     let output_buffer = buffer_from_value_128(0u8, &enc, true);
+    use super::*;
+    use parasol_runtime::{
+        Encryption,
+        fluent::UInt,
+        test_utils::{get_compute_key_128, get_secret_keys_128},
+    };
 
-    //     let arguments = vec![buffer_0, buffer_1, buffer_2, output_buffer];
+    const CMUX_ELF: &[u8] = include_bytes!("../tests/test_data/cmux");
 
-    //     let (_gas, result) = run_program(compute_key.clone(), CMUX_ELF, "cmux", &arguments, 300_000).unwrap();
+    #[test]
+    fn test_run_program() {
+        let compute_key = get_compute_key_128();
+        let compute_key: &ComputeKey = compute_key.borrow();
 
-    //     let output = result[3]
-    //         .cipher_try_into_value::<u8>(&enc, &get_secret_keys_128())
-    //         .unwrap();
-    //     let expected = if bound > 10 { a } else { b };
+        let enc = Encryption::default();
+        let sk = get_secret_keys_128();
 
-    //     assert_eq!(expected, output);
-    // }
+        let arguments = ArgsBuilder::new()
+            .arg(UInt::<8, _>::encrypt_secret(42, &enc, &sk))
+            .arg(UInt::<8, _>::encrypt_secret(54, &enc, &sk))
+            .arg(UInt::<8, _>::encrypt_secret(11, &enc, &sk))
+            .return_value::<UInt<8, _>>();
+
+        let result = run_program(compute_key.clone(), CMUX_ELF, "cmux", arguments).unwrap();
+
+        assert_eq!(result.decrypt(&enc, &sk), 54);
+    }
 }
