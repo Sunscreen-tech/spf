@@ -8,4 +8,3 @@
 ) {
     return bound > 10 ? a : b;
 }
-

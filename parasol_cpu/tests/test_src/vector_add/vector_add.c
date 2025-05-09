@@ -10,4 +10,3 @@ typedef unsigned int uint32_t;
         c[i] = a[i] + b[i];
     }
 }
-
