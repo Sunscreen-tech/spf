@@ -42,5 +42,5 @@ fn can_run_from_elf() {
 
     let result = proc.run_program(prog, &memory, args).unwrap();
 
-    assert_eq!(result.decrypt(&enc, &sk), 3);
+    assert_eq!(result.decrypt(&enc, sk), 3);
 }

@@ -19,6 +19,46 @@ use std::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
+/// Options for running [`FheProcessor::run_program_with_options`]
+#[derive(Debug, Clone, PartialEq, Default)]
+pub struct RunProgramOptions {
+    gas_limit: Option<u32>,
+}
+
+impl RunProgramOptions {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    fn gas_limit(&self) -> Option<u32> {
+        self.gas_limit
+    }
+}
+
+/// Builder pattern for [`RunProgramOptions`]
+#[derive(Debug, Default)]
+pub struct RunProgramOptionsBuilder {
+    gas_limit: Option<u32>,
+}
+
+impl RunProgramOptionsBuilder {
+    pub fn new() -> Self {
+        Self::default()
+    }
+
+    #[allow(unused)]
+    pub fn gas_limit(mut self, gas_limit: Option<u32>) -> Self {
+        self.gas_limit = gas_limit;
+        self
+    }
+
+    pub fn build(self) -> RunProgramOptions {
+        RunProgramOptions {
+            gas_limit: self.gas_limit,
+        }
+    }
+}
+
 pub(crate) struct FheProcessor
 where
     Self: Tomasulo,
@@ -670,13 +710,15 @@ impl FheProcessor {
     /// Runs the given program using the passed user `data` as arguments with a gas limit
     /// Returns the amount of gas used to run the program and the program return
     /// value
-    pub fn run_program_metered<T: ToArg>(
+    pub fn run_program_with_options<T: ToArg>(
         &mut self,
         memory: &Arc<Memory>,
         initial_pc: Ptr32,
         args: &Args<T>,
-        gas_limit: Option<u32>,
+        options: &RunProgramOptions,
     ) -> Result<(u32, T)> {
+        let gas_limit = options.gas_limit();
+
         self.reset()?;
         let return_data = self.set_up_function_call(memory, args)?;
         self.aux_data.memory = Some(memory.clone());
@@ -737,8 +779,13 @@ impl FheProcessor {
         initial_pc: Ptr32,
         args: &Args<T>,
     ) -> Result<T> {
-        self.run_program_metered(memory, initial_pc, args, None)
-            .map(|x| x.1)
+        self.run_program_with_options(
+            memory,
+            initial_pc,
+            args,
+            &RunProgramOptionsBuilder::new().build(),
+        )
+        .map(|x| x.1)
     }
 }
 

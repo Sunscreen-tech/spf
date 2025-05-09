@@ -1,6 +1,6 @@
 use std::{borrow::BorrowMut, collections::HashMap, sync::Arc};
 
-use fhe_processor::FheProcessor;
+use fhe_processor::{FheProcessor, RunProgramOptions};
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
@@ -266,15 +266,15 @@ impl FheComputer {
     }
 
     /// Run the given FHE program with user specified data and a gas limit, return the used gas and program return value
-    pub fn run_program_metered<T: ToArg>(
+    pub fn run_program_with_options<T: ToArg>(
         &mut self,
         initial_pc: Ptr32,
         memory: &Arc<Memory>,
         args: Args<T>,
-        gas_limit: Option<u32>,
+        options: &RunProgramOptions,
     ) -> Result<(u32, T)> {
         self.processor
-            .run_program_metered(memory, initial_pc, &args, gas_limit)
+            .run_program_with_options(memory, initial_pc, &args, options)
     }
 
     /// Run the given FHE program with user specified data.
