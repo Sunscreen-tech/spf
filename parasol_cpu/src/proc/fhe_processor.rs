@@ -19,18 +19,20 @@ use std::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
-/// Options for running [`FheProcessor::run_program_with_options`]
+/// Options for running [`FheComputer::run_program_with_options`]
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct RunProgramOptions {
     gas_limit: Option<u32>,
 }
 
 impl RunProgramOptions {
+    /// Creates a new [`RunProgramOptions`]
     pub fn new() -> Self {
         Self::default()
     }
 
-    fn gas_limit(&self) -> Option<u32> {
+    /// Gas limit for a program before it terminates
+    pub fn gas_limit(&self) -> Option<u32> {
         self.gas_limit
     }
 }
@@ -42,16 +44,18 @@ pub struct RunProgramOptionsBuilder {
 }
 
 impl RunProgramOptionsBuilder {
+    /// Creates a new [`RunProgramOptionsBuilder`]
     pub fn new() -> Self {
         Self::default()
     }
 
-    #[allow(unused)]
+    /// Set the gas limit.
     pub fn gas_limit(mut self, gas_limit: Option<u32>) -> Self {
         self.gas_limit = gas_limit;
         self
     }
 
+    /// Build the run program options into a [`RunProgramOptions`] struct.
     pub fn build(self) -> RunProgramOptions {
         RunProgramOptions {
             gas_limit: self.gas_limit,
