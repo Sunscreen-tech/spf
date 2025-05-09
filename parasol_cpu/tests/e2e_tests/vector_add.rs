@@ -29,7 +29,7 @@ fn can_run_from_elf() {
 
     let prog = memory.get_function_entry("vector_add").unwrap();
 
-    proc.run_program(prog, &memory, args, 5_000_000).unwrap();
+    proc.run_program(prog, &memory, args).unwrap();
 
     let result = memory
         .try_load_type::<[UInt<8, _>; 8]>(c)

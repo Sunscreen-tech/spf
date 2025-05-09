@@ -33,9 +33,7 @@ fn can_branch_zero() {
         IsaOp::Ret(),
     ]);
 
-    let (_, ans) = proc
-        .run_program(program, &Arc::new(memory), args, 200_000)
-        .unwrap();
+    let ans = proc.run_program(program, &Arc::new(memory), args).unwrap();
 
     assert_eq!(5, ans);
 }
@@ -64,9 +62,7 @@ fn can_branch_nonzero() {
         IsaOp::Ret(),
     ]);
 
-    let (_, ans) = proc
-        .run_program(program, &Arc::new(memory), args, 200_000)
-        .unwrap();
+    let ans = proc.run_program(program, &Arc::new(memory), args).unwrap();
 
     assert_eq!(0, ans);
 }

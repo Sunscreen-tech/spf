@@ -25,9 +25,9 @@ fn can_run_from_elf() {
 
     let prog = memory.get_function_entry("cmux").unwrap();
 
-    let result = proc.run_program(prog, &memory, args, 200_000).unwrap();
+    let result = proc.run_program(prog, &memory, args).unwrap();
 
-    assert_eq!(result.1.decrypt(&enc, sk), 54);
+    assert_eq!(result.decrypt(&enc, sk), 54);
 
     let args = ArgsBuilder::new()
         .arg(UInt::<8, _>::encrypt_secret(10, &enc, sk))
@@ -35,7 +35,7 @@ fn can_run_from_elf() {
         .arg(UInt::<8, _>::encrypt_secret(11, &enc, sk))
         .return_value::<UInt<8, _>>();
 
-    let result = proc.run_program(prog, &memory, args, 200_000).unwrap();
+    let result = proc.run_program(prog, &memory, args).unwrap();
 
-    assert_eq!(result.1.decrypt(&enc, sk), 11);
+    assert_eq!(result.decrypt(&enc, sk), 11);
 }

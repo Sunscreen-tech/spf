@@ -61,7 +61,7 @@ fn run_single_test(
     };
     let args = args.return_value::<MaybeEncryptedUInt<32>>();
 
-    let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let ans = proc.run_program(program, &memory, args).unwrap();
     assert_eq!(expected as u32, ans.get(enc, &sk));
 }
 

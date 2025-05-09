@@ -30,7 +30,7 @@ fn can_not(val: u32, encrypted_computation: bool) {
 
     let program = memory.allocate_program(&[IsaOp::Not(A0, A0), IsaOp::Ret()]);
 
-    let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let ans = proc.run_program(program, &memory, args).unwrap();
     let ans = ans.get(&enc, &sk);
 
     assert_eq!(expected, ans);

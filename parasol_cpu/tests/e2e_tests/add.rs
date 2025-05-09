@@ -24,7 +24,7 @@ fn can_run_from_elf() {
 
     let prog = memory.get_function_entry("add").unwrap();
 
-    let result = proc.run_program(prog, &memory, args, 200_000).unwrap();
+    let result = proc.run_program(prog, &memory, args).unwrap();
 
-    assert_eq!(result.1.decrypt(&enc, sk), 96);
+    assert_eq!(result.decrypt(&enc, sk), 96);
 }

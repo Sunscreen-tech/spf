@@ -36,7 +36,7 @@ fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
         ))
         .return_value::<MaybeEncryptedUInt<32>>();
 
-    let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
+    let ans = proc.run_program(program, &memory, args).unwrap();
     let ans = ans.get(&enc, &sk);
 
     assert_eq!(expected, ans);

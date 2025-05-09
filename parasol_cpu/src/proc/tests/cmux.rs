@@ -11,32 +11,6 @@ use crate::{
 
 use parasol_runtime::test_utils::get_secret_keys_80;
 
-// Implements this program:
-// [[clang::fhe_circuit]] void cmux(
-//     [[clang::encrypted]] uX_ptr bound_ptr,
-//     [[clang::encrypted]] uX_ptr a_ptr,
-//     [[clang::encrypted]] uX_ptr b_ptr,
-//     [[clang::encrypted]] uX_ptr output_ptr
-// ) {
-//     uX bound = *bound_ptr;
-//     uX a = *a_ptr;
-//     uX b = *b_ptr;
-//
-//     *output_ptr = (bound > 10) ? a : b;
-// }
-// ber     p0, 0
-// ldr     r0, p0
-// ldi     r1, 10
-// gt      r0, r0, r1
-// ber     p2, 2
-// ldr     r1, p2
-// ber     p1, 1
-// ldr     r2, p1
-// cmux    r0, r0, r2, r1
-// berw    p3, 3
-// str     p3, r0
-// ret
-// where ber is BindReadOnly, ldr is Load, ldi is LoadImmediate, gt is GreaterThan, berw is BindReadWrite, str is Store, and ret is Return
 fn cmux_test_program() -> Vec<IsaOp> {
     vec![
         IsaOp::LoadI(T0, 10, 32),
@@ -84,7 +58,7 @@ fn can_cmux(encrypted_computation: bool) {
 
         let program = memory.allocate_program(&cmux_test_program());
 
-        let (_, ans) = proc.run_program(program, &memory, args, 200_000).unwrap();
+        let ans = proc.run_program(program, &memory, args).unwrap();
 
         assert_eq!(expected, ans.get(&enc, &sk));
     }

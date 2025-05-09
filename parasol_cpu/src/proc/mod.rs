@@ -1,6 +1,7 @@
 use std::{borrow::BorrowMut, collections::HashMap, sync::Arc};
 
 use fhe_processor::FheProcessor;
+pub use fhe_processor::{RunProgramOptions, RunProgramOptionsBuilder};
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
@@ -266,15 +267,25 @@ impl FheComputer {
     }
 
     /// Run the given FHE program with user specified data and a gas limit, return the used gas and program return value
+    pub fn run_program_with_options<T: ToArg>(
+        &mut self,
+        initial_pc: Ptr32,
+        memory: &Arc<Memory>,
+        args: Args<T>,
+        options: &RunProgramOptions,
+    ) -> Result<(u32, T)> {
+        self.processor
+            .run_program_with_options(memory, initial_pc, &args, options)
+    }
+
+    /// Run the given FHE program with user specified data.
     pub fn run_program<T: ToArg>(
         &mut self,
         initial_pc: Ptr32,
         memory: &Arc<Memory>,
         args: Args<T>,
-        gas_limit: u32,
-    ) -> Result<(u32, T)> {
-        self.processor
-            .run_program(memory, initial_pc, &args, gas_limit)
+    ) -> Result<T> {
+        self.processor.run_program(memory, initial_pc, &args)
     }
 
     /// Run a graph in blocking mode.
