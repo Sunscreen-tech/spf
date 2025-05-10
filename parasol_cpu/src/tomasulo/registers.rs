@@ -6,7 +6,7 @@ use std::{
     sync::{Arc, RwLock, RwLockReadGuard, RwLockWriteGuard},
 };
 
-use log::{log_enabled, trace};
+use log::{debug, log_enabled};
 
 use crate::{Error, Result, unwrap_registers};
 
@@ -85,8 +85,8 @@ where
 
     /// Dumps the register file's contents when LOG_LEVEL=trace.
     pub fn trace_dump(&self) {
-        if log_enabled!(log::Level::Trace) {
-            trace!("Register state:");
+        if log_enabled!(log::Level::Debug) {
+            debug!("Register state:");
             for (i, r) in self.rename.iter().enumerate() {
                 let r = r.borrow().rob_ref.clone();
 
@@ -98,7 +98,7 @@ where
                     "None".to_owned()
                 };
 
-                trace!("\tr{i}: {contents}");
+                debug!("\tr{i}: {contents}");
             }
         }
     }

@@ -11,7 +11,7 @@ use crate::{
 
 use super::{ops::is_invalid_load_store_alignment, *};
 
-use log::{debug, trace};
+use log::{debug, error, trace};
 
 use std::sync::{
     Arc,
@@ -23,6 +23,9 @@ use std::sync::{
 #[derive(Debug, Clone, PartialEq, Default)]
 pub struct RunProgramOptions {
     gas_limit: Option<u32>,
+    log_instruction_execution: bool,
+    log_backend_execution: bool,
+    log_register_info: bool,
 }
 
 impl RunProgramOptions {
@@ -41,6 +44,9 @@ impl RunProgramOptions {
 #[derive(Debug, Default)]
 pub struct RunProgramOptionsBuilder {
     gas_limit: Option<u32>,
+    log_instruction_execution: bool,
+    log_backend_execution: bool,
+    log_register_info: bool,
 }
 
 impl RunProgramOptionsBuilder {
@@ -55,10 +61,31 @@ impl RunProgramOptionsBuilder {
         self
     }
 
+    /// Enable debug logging for instruction decode, execution, and retirement.
+    pub fn log_instruction_execution(mut self) -> Self {
+        self.log_instruction_execution = true;
+        self
+    }
+
+    /// Enable debug logging for graph processor execution.
+    pub fn log_backend_execution(mut self) -> Self {
+        self.log_instruction_execution = true;
+        self
+    }
+
+    /// Dump the register state before decoding each instruction.
+    pub fn log_register_info(mut self) -> Self {
+        self.log_register_info = true;
+        self
+    }
+
     /// Build the run program options into a [`RunProgramOptions`] struct.
     pub fn build(self) -> RunProgramOptions {
         RunProgramOptions {
             gas_limit: self.gas_limit,
+            log_instruction_execution: self.log_instruction_execution,
+            log_backend_execution: self.log_backend_execution,
+            log_register_info: self.log_register_info,
         }
     }
 }
@@ -266,7 +293,7 @@ impl FheProcessor {
         &mut self,
         inst: IsaOp,
         pc: u32,
-        gas_limit: Option<u32>,
+        options: &RunProgramOptions,
     ) -> Result<(u32, u32)> {
         use crate::tomasulo::{GetDeps, ToDispatchedOp};
 
@@ -274,9 +301,16 @@ impl FheProcessor {
 
         let srcs = (&self.registers, ());
 
-        debug!("Dispatching pc={pc} {:?}", inst);
+        if options.log_instruction_execution {
+            debug!(
+                "Dispatching pc={pc} id={} {:?}",
+                self.current_instruction, inst
+            );
+        }
 
-        self.registers.trace_dump();
+        if options.log_register_info {
+            self.registers.trace_dump();
+        }
 
         // We need to capture the dependencies *before* we map our dispatch op.
         // If we don't a src operand that's also a dst can get renamed and our
@@ -293,7 +327,7 @@ impl FheProcessor {
 
         let gas = self.compute_gas(&disp_inst);
 
-        if let Some(gas_limit) = gas_limit {
+        if let Some(gas_limit) = options.gas_limit {
             if gas > gas_limit {
                 return Err(Error::OutOfGas(gas, gas_limit));
             }
@@ -342,22 +376,30 @@ impl FheProcessor {
         }
 
         // Execute any ready instructions (possibly including the one we just dispatched)
-        self.execute_ready_instructions(false)?;
+        self.execute_ready_instructions(false, options)?;
 
         let next_pc = self.next_program_counter(disp_inst, pc)?;
 
         Ok((next_pc, gas))
     }
 
-    fn execute_ready_instructions(&mut self, blocking: bool) -> Result<()> {
+    fn execute_ready_instructions(
+        &mut self,
+        blocking: bool,
+        options: &RunProgramOptions,
+    ) -> Result<()> {
         // Finally, attempt to execute any ready instructions
         loop {
             let ready = if blocking {
-                trace!("{}: Waiting for instructions", stringify!($name),);
+                if options.log_instruction_execution {
+                    trace!("Waiting for instructions");
+                }
 
                 // If no instructions remain, we're done.
                 if self.instructions_inflight == 0 {
-                    trace!("{}: No instructions remaining, finished", stringify!($name),);
+                    if options.log_instruction_execution {
+                        trace!("No instructions remaining, finished");
+                    }
                     return Ok(());
                 }
 
@@ -374,30 +416,26 @@ impl FheProcessor {
                 }
             };
 
-            trace!(
-                "{}: Instructions remaining {}",
-                stringify!($name),
-                self.instructions_inflight
-            );
+            if options.log_instruction_execution {
+                trace!("Instructions remaining {}", self.instructions_inflight);
+            }
 
             match ready {
                 InstructionOperation::Retire(Ok(v)) => {
-                    trace!("{}: Frontend retired {}", stringify!($name), v.id);
+                    if options.log_instruction_execution {
+                        debug!("retired id={} pc={}", v.id, v.pc);
+                    }
 
                     self.instructions_inflight -= 1;
                 }
                 InstructionOperation::Retire(Err(e)) => {
-                    trace!(
-                        "{}: Frontend received instruction failure {}",
-                        stringify!($name),
-                        e
-                    );
+                    if options.log_instruction_execution {
+                        error!("retire error e={e}");
+                    }
 
                     return Err(e);
                 }
                 InstructionOperation::Exec(v) => {
-                    trace!("{}: Frontend executing {}", stringify!($name), v.id);
-
                     self.exec_instruction(v.clone(), self.make_retirement_info(&v));
                 }
             }
@@ -453,8 +491,8 @@ impl FheProcessor {
     }
 
     /// Waits for all issued instructions to retire.
-    pub fn wait(&mut self) -> crate::Result<()> {
-        self.execute_ready_instructions(true)?;
+    pub fn wait(&mut self, options: &RunProgramOptions) -> crate::Result<()> {
+        self.execute_ready_instructions(true, options)?;
 
         Ok(())
     }
@@ -735,7 +773,7 @@ impl FheProcessor {
                 let inst = memory.try_load_plaintext_dword(self.pc.into())?;
                 let inst = IsaOp::try_from(inst)?;
 
-                let pc_result = self.dispatch_instruction(inst, self.pc, gas_limit);
+                let pc_result = self.dispatch_instruction(inst, self.pc, options);
 
                 match pc_result {
                     Ok((next_pc, used_gas)) => {
@@ -745,7 +783,7 @@ impl FheProcessor {
                     Err(e) => match e {
                         Error::Halt => break,
                         Error::OutOfGas(used_gas, _) => {
-                            self.wait()?;
+                            self.wait(options)?;
                             if let Some(gas_limit) = gas_limit {
                                 return Err(Error::OutOfGas(gas + used_gas, gas_limit));
                             } else {
@@ -760,7 +798,7 @@ impl FheProcessor {
                 }
             }
 
-            self.wait()?;
+            self.wait(options)?;
 
             Ok::<_, Error>(gas)
         };
@@ -815,6 +853,8 @@ impl Tomasulo for FheProcessor {
         let pc = scoreboard_entry.pc;
 
         use DispatchIsaOp::*;
+
+        debug!("executing pc={pc} id={instruction_id} {:#?}", instruction);
 
         match instruction {
             Load(dst, src, width) => {
