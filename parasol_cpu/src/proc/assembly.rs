@@ -24,6 +24,7 @@ macro_rules! define_op {
             $((src $src_name:ident, $src_type_id:tt, $src_type:ty))*
             $((meta $meta_name:ident, $meta_width:literal, $meta_type:ty))*
             $((cmeta $cmeta_name:ident, $cmeta_width:literal, $cmeta_type:ty, $cmeta_dec:ident, $cmeta_enc:ident))*
+            $((unused $unused_width:literal))*
         ]),* $(,)?
     ) => {
         paste::paste! {
@@ -87,13 +88,11 @@ macro_rules! define_op {
 
                                     $(
                                         let $dst_name = RegisterName::new(value as usize & reg_masks[$dst_type_id]);
-                                        #[allow(unused)]
                                         let value = value >> reg_counts[$dst_type_id];
                                     )*
 
                                     $(
                                         let $src_name = RegisterName::new(value as usize & reg_masks[$src_type_id]);
-                                        #[allow(unused)]
                                         let value = value >> reg_counts[$src_type_id];
                                     )*
 
@@ -108,6 +107,12 @@ macro_rules! define_op {
                                         let $cmeta_name = $cmeta_dec((value & mask) as $cmeta_type as u64) as $cmeta_type;
                                         let value = value >> $cmeta_width;
                                     )*
+
+                                    $(
+                                        let value = value >> $unused_width;
+                                    )*
+
+                                    assert_eq!(value, 0);
 
                                     $inst_name :: $op_name(
                                         $($dst_name,)*
@@ -148,11 +153,15 @@ macro_rules! define_op {
                                         shift += reg_counts[$src_type_id];
                                     )*
                                     $(
-                                        let encoded = encoded | ($meta_name as u64) << shift;
+                                        let mask = (0x1u64 << $meta_width) - 1;
+                                        let bits = ($meta_name as u64) & mask;
+                                        let encoded = encoded | bits << shift;
                                         shift += $meta_width;
                                     )*
                                     $(
-                                        let encoded = encoded | $cmeta_enc($cmeta_name as u64) << shift;
+                                        let mask = (0x1u64 << $cmeta_width) - 1;
+                                        let bits = $cmeta_enc($cmeta_name as u64) & mask;
+                                        let encoded = encoded | bits << shift;
                                         shift += $cmeta_width;
                                     )*
 
@@ -318,13 +327,13 @@ macro_rules! define_op {
                                 $inst_name::$op_name(
                                     $(RegisterName::<$dst_type>::new(12),)*
                                     $(RegisterName::<$src_type>::new(12),)*
-                                    $(1234 as $meta_type,)*
-                                    $(4321 as $cmeta_type,)*
+                                    $(0xFFFFFF30u32 as $meta_type,)*
+                                    $(4 as $cmeta_type,)*
                                 ),
                             )*
                         ] {
-                            let as_u64 = i.into();
-                            let actual = $inst_name::from(as_u64);
+                            let as_u64: u64 = i.into();
+                            let actual = $inst_name::try_from(as_u64).unwrap();
 
                             assert_eq!(i, actual);
                         }
@@ -426,9 +435,9 @@ define_op! {
     [0x53 CmpLeS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
     // Casting operations
-    [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
-    [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
-    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
+    [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
+    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
 
     // Branch relative to the current PC if `src` is non-zero.
     [0x46 BranchNonZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
@@ -440,7 +449,7 @@ define_op! {
     [0x45 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
     // Return
-    [0xFE Ret]
+    [0xFE Ret (unused 44)]
 }
 
 pub mod register_names {
