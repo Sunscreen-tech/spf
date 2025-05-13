@@ -24,7 +24,6 @@ use std::sync::{
 pub struct RunProgramOptions {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
-    log_backend_execution: bool,
     log_register_info: bool,
 }
 
@@ -45,7 +44,6 @@ impl RunProgramOptions {
 pub struct RunProgramOptionsBuilder {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
-    log_backend_execution: bool,
     log_register_info: bool,
 }
 
@@ -86,7 +84,6 @@ impl RunProgramOptionsBuilder {
         RunProgramOptions {
             gas_limit: self.gas_limit,
             log_instruction_execution: self.log_instruction_execution,
-            log_backend_execution: self.log_backend_execution,
             log_register_info: self.log_register_info,
         }
     }
