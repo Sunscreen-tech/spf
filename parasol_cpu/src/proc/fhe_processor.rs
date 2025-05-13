@@ -433,7 +433,7 @@ impl FheProcessor {
                     return Err(e);
                 }
                 InstructionOperation::Exec(v) => {
-                    self.exec_instruction(v.clone(), self.make_retirement_info(&v));
+                    self.exec_instruction(v.clone(), self.make_retirement_info(&v), options);
                 }
             }
         }
@@ -836,6 +836,7 @@ impl Tomasulo for FheProcessor {
         &mut self,
         scoreboard_entry: ScoreboardEntryRef<Self::DispatchInstruction>,
         retirement_info: RetirementInfo<Self::DispatchInstruction>,
+        options: &RunProgramOptions,
     ) {
         // Take the instructon out of the scoreboard entry. We do this because
         // 1. It's not needed after execution.
@@ -851,7 +852,9 @@ impl Tomasulo for FheProcessor {
 
         use DispatchIsaOp::*;
 
-        debug!("executing pc={pc} id={instruction_id} {:#?}", instruction);
+        if options.log_instruction_execution {
+            debug!("executing pc={pc} id={instruction_id} {:#?}", instruction);
+        }
 
         match instruction {
             Load(dst, src, width) => {
