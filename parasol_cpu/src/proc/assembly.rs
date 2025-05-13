@@ -76,6 +76,8 @@ macro_rules! define_op {
                             $(($num_reg as u32).next_power_of_two().ilog2())*
                         ];
 
+                        let reg_masks = reg_counts.map(|x| (0x1 << x) - 1);
+
                         #[allow(unused_variables)]
                         Ok(match [<$inst_name OpCode>]::try_from((value & 0xFF) as u8)? {
                             $(
@@ -84,13 +86,13 @@ macro_rules! define_op {
                                     let value = value >> 8;
 
                                     $(
-                                        let $dst_name = RegisterName::new(value as usize & 0x1F);
+                                        let $dst_name = RegisterName::new(value as usize & reg_masks[$dst_type_id]);
                                         #[allow(unused)]
                                         let value = value >> reg_counts[$dst_type_id];
                                     )*
 
                                     $(
-                                        let $src_name = RegisterName::new(value as usize & 0x1F);
+                                        let $src_name = RegisterName::new(value as usize & reg_masks[$src_type_id]);
                                         #[allow(unused)]
                                         let value = value >> reg_counts[$src_type_id];
                                     )*

@@ -622,7 +622,7 @@ where
     /// # Panics
     /// If `val > 2^N`
     pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey) -> Self {
-        if val > 0x1 << N {
+        if N < 64 && val > 0x1 << N {
             panic!("Out of bounds");
         }
 
