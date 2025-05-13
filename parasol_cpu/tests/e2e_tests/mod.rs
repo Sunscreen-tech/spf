@@ -6,3 +6,4 @@ mod hamming_distance;
 mod payment;
 mod transfer;
 mod vector_add;
+mod zext_and_trunc;
