@@ -8,7 +8,6 @@
     [[clang::encrypted]] uint8_t *u8_output_ptr,
     [[clang::encrypted]] bool *bool_output_ptr,
     [[clang::encrypted]] uint32_t *comparison_output_ptr
-    // [[clang::encrypted]] bool *bool_output_ptr
 ) {
     // Extend
     uint32_t u32_a = u8_a;
