@@ -1,7 +1,7 @@
 use std::sync::mpsc::Sender;
 
 use super::scoreboard::ScoreboardEntryRef;
-use crate::Result;
+use crate::{Result, RunProgramOptions};
 
 #[derive(Clone)]
 pub struct RetirementInfo<I: Clone> {
@@ -18,6 +18,7 @@ pub trait Tomasulo {
         &mut self,
         scoreboard_entry: ScoreboardEntryRef<Self::DispatchInstruction>,
         retirement_info: RetirementInfo<Self::DispatchInstruction>,
+        optons: &RunProgramOptions
     );
 
     /// Runs the given instruction.
