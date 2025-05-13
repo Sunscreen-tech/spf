@@ -116,13 +116,22 @@ fn can_load_immediate() {
 
     let memory = Arc::new(Memory::new_default_stack());
 
-    let args = ArgsBuilder::new().return_value::<u16>();
+    for (val, width) in [
+        // 0x30 is 0b110000 which is at least 6 bits long as unsigned (or 7 bits long as signed positive)
+        (0x30, 6),
+        // 0xF0 is 0b1000000 which is at least 8 bits long as unsigned (or 9 bits long as signed positive)
+        (0xF0, 8),
+        // 0xFFFFFF30 is 0b1..100110000 which is at least 9 bits long as signed negative (or 32 bits as unsigned)
+        (0xFFFFFF30, 9),
+    ] {
+        let args = ArgsBuilder::new().return_value::<u32>();
 
-    let program = memory.allocate_program(&[IsaOp::LoadI(A0, 1234, 15), IsaOp::Ret()]);
+        let program = memory.allocate_program(&[IsaOp::LoadI(A0, val, width), IsaOp::Ret()]);
 
-    let result = proc.run_program(program, &memory, args).unwrap();
+        let result = proc.run_program(program, &memory, args).unwrap();
 
-    assert_eq!(result, 1234u16);
+        assert_eq!(result, val & ((1 << width) - 1));
+    }
 }
 
 #[test]
@@ -131,18 +140,21 @@ fn load_immediate_fails_out_of_range() {
 
     let memory = Arc::new(Memory::new_default_stack());
 
-    let args = ArgsBuilder::new().return_value::<u16>();
+    // see test above for why these values are chosen
+    for (val, width) in [(0x30, 5), (0xF0, 7), (0xFFFFFF30, 8)] {
+        let args = ArgsBuilder::new().return_value::<u32>();
 
-    let result = proc.run_program(
-        memory.allocate_program(&[IsaOp::LoadI(A0, 1234, 4), IsaOp::Ret()]),
-        &memory,
-        args,
-    );
+        let result = proc.run_program(
+            memory.allocate_program(&[IsaOp::LoadI(A0, val, width), IsaOp::Ret()]),
+            &memory,
+            args,
+        );
 
-    assert!(matches!(
-        result,
-        Err(Error::OutOfRange { inst_id: _, pc: _ })
-    ));
+        assert!(matches!(
+            result,
+            Err(Error::OutOfRange { inst_id: _, pc: _ })
+        ));
+    }
 }
 
 #[test]

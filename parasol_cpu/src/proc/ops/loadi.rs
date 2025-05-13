@@ -10,7 +10,7 @@ impl FheProcessor {
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
         dst: RobEntryRef<Register>,
-        imm: i32,
+        imm: u32,
         width: u32,
         instruction_id: usize,
         pc: u32,
@@ -18,20 +18,21 @@ impl FheProcessor {
         let loadi_impl = || -> Result<()> {
             unwrap_registers!((mut dst));
 
-            // Sign extend imm
-            let imm = imm as i128;
+            // check if the immediate number is out of range
+            // a caveat that is LLVM will sign extend the immediate to 32 bit
+            // if it's smaller than 32 bit, for example, in `ldi x10, -90, 8`
+            // the number -90 in 2's complement with 8 bit will be 0xA6, but
+            // in the encoding we have 32 bit for the immediate so it's
+            // 0xFFFFFFA6, not 0x000000A6
+            let in_range_unsigned = (imm as u64) < (1 << width);
+            let in_range_signed_neg = (imm | ((1 << (width - 1)) - 1)) == 0xFFFFFFFF;
 
-            // 2s complement features 1 more negative value than positive.
-            // Hence the >= vs < mismatch.
-            if (imm.is_positive() && imm >= 0x1 << (width - 1))
-                || (imm.is_negative() && imm < -1 << (width - 1))
-            {
+            if !in_range_unsigned && !in_range_signed_neg {
                 return Err(Error::out_of_range(instruction_id, pc));
             }
 
-            // Bitcast imm from i128 to u128.
             *dst = Register::Plaintext {
-                val: imm as u128,
+                val: imm as u128 & ((1 << width) - 1),
                 width,
             };
 
