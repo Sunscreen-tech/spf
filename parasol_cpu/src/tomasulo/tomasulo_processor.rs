@@ -18,7 +18,7 @@ pub trait Tomasulo {
         &mut self,
         scoreboard_entry: ScoreboardEntryRef<Self::DispatchInstruction>,
         retirement_info: RetirementInfo<Self::DispatchInstruction>,
-        optons: &RunProgramOptions
+        optons: &RunProgramOptions,
     );
 
     /// Runs the given instruction.

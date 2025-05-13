@@ -836,7 +836,7 @@ impl Tomasulo for FheProcessor {
         &mut self,
         scoreboard_entry: ScoreboardEntryRef<Self::DispatchInstruction>,
         retirement_info: RetirementInfo<Self::DispatchInstruction>,
-        options: &RunProgramOptions
+        options: &RunProgramOptions,
     ) {
         // Take the instructon out of the scoreboard entry. We do this because
         // 1. It's not needed after execution.
