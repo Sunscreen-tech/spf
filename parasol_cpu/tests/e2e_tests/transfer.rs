@@ -18,16 +18,16 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let sender = memory
-        .try_allocate_type(&UInt::<32, _>::encrypt_secret(42, &enc, &sk))
+        .try_allocate_type(&UInt::<32, _>::encrypt_secret(42, &enc, sk))
         .unwrap();
     let receiver = memory
-        .try_allocate_type(&UInt::<32, _>::encrypt_secret(29, &enc, &sk))
+        .try_allocate_type(&UInt::<32, _>::encrypt_secret(29, &enc, sk))
         .unwrap();
 
     let args = ArgsBuilder::new()
         .arg(sender)
         .arg(receiver)
-        .arg(UInt::<32, _>::encrypt_secret(26, &enc, &sk))
+        .arg(UInt::<32, _>::encrypt_secret(26, &enc, sk))
         .no_return_value();
 
     let prog = memory.get_function_entry("transfer").unwrap();
@@ -37,12 +37,12 @@ fn can_run_from_elf() {
     let new_sender = memory
         .try_load_type::<UInt<32, _>>(sender)
         .unwrap()
-        .decrypt(&enc, &sk);
+        .decrypt(&enc, sk);
 
     let new_receiver = memory
         .try_load_type::<UInt<32, _>>(receiver)
         .unwrap()
-        .decrypt(&enc, &sk);
+        .decrypt(&enc, sk);
 
     assert_eq!(new_sender, 16);
     assert_eq!(new_receiver, 55);
