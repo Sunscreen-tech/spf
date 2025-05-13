@@ -62,20 +62,22 @@ impl RunProgramOptionsBuilder {
     }
 
     /// Enable debug logging for instruction decode, execution, and retirement.
-    pub fn log_instruction_execution(mut self) -> Self {
-        self.log_instruction_execution = true;
-        self
-    }
-
-    /// Enable debug logging for graph processor execution.
-    pub fn log_backend_execution(mut self) -> Self {
-        self.log_instruction_execution = true;
+    ///
+    /// # Remarks
+    /// These logs will be emitted with `log::debug!`. You'll need an appropriate
+    /// logger installed to see them (e.g. `env_logger`).
+    pub fn log_instruction_execution(mut self, val: bool) -> Self {
+        self.log_instruction_execution = val;
         self
     }
 
     /// Dump the register state before decoding each instruction.
-    pub fn log_register_info(mut self) -> Self {
-        self.log_register_info = true;
+    ///
+    /// # Remarks
+    /// These logs will be emitted with `log::debug!`. You'll need an appropriate
+    /// logger installed to see them (e.g. `env_logger`).
+    pub fn log_register_info(mut self, val: bool) -> Self {
+        self.log_register_info = val;
         self
     }
 
@@ -429,9 +431,7 @@ impl FheProcessor {
                     self.instructions_inflight -= 1;
                 }
                 InstructionOperation::Retire(Err(e)) => {
-                    if options.log_instruction_execution {
-                        error!("retire error e={e}");
-                    }
+                    error!("retire error e={e}");
 
                     return Err(e);
                 }
