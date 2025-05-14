@@ -439,14 +439,17 @@ define_op! {
     [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
     [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
 
+    // Raw cmux
+    [0x45 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
     // Branch relative to the current PC if `src` is non-zero.
     [0x46 BranchNonZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
 
     // Branch relative to the current PC if `src` is zero.
     [0x47 BranchZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
 
-    // Raw cmux
-    [0x45 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    // Unconditionally branch relative to the currenct PC.
+    [0x48 Branch (meta pc_offset, 32, i32)],
 
     // Return
     [0xFE Ret (unused 44)]
