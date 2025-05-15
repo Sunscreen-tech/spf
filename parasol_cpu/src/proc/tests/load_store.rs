@@ -123,6 +123,8 @@ fn can_load_immediate() {
         (0xF0, 8),
         // 0xFFFFFF30 is 0b1..100110000 which is at least 9 bits long as signed negative (or 32 bits as unsigned)
         (0xFFFFFF30, 9),
+        // 0xFFFFFFE0 is 0b1..111100000 which is at least 6 bits long as signed negative (or 32 bits as unsigned)
+        (0xFFFFFFE0, 6),
     ] {
         let args = ArgsBuilder::new().return_value::<u32>();
 
@@ -141,7 +143,7 @@ fn load_immediate_fails_out_of_range() {
     let memory = Arc::new(Memory::new_default_stack());
 
     // see test above for why these values are chosen
-    for (val, width) in [(0x30, 5), (0xF0, 7), (0xFFFFFF30, 8)] {
+    for (val, width) in [(0x30, 5), (0xF0, 7), (0xFFFFFF30, 8), (0xFFFFFFE0, 5)] {
         let args = ArgsBuilder::new().return_value::<u32>();
 
         let result = proc.run_program(

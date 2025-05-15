@@ -25,7 +25,7 @@ impl FheProcessor {
             // in the encoding we have 32 bit for the immediate so it's
             // 0xFFFFFFA6, not 0x000000A6
             let in_range_unsigned = (imm as u64) < (1 << width);
-            let in_range_signed_neg = (imm | ((1 << (width - 1)) - 1)) == 0xFFFFFFFF;
+            let in_range_signed_neg = imm >= 0xFFFFFFFF << (width - 1);
 
             if !in_range_unsigned && !in_range_signed_neg {
                 return Err(Error::out_of_range(instruction_id, pc));
