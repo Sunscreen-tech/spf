@@ -66,3 +66,29 @@ fn can_branch_nonzero() {
 
     assert_eq!(0, ans);
 }
+
+#[test]
+fn can_unconditional_branch() {
+    let (mut proc, _enc) = make_computer_80();
+
+    let args = ArgsBuilder::new().arg(5u32).arg(1u32).return_value::<u32>();
+
+    let memory = Memory::new_default_stack();
+
+    // Equivalent program:
+    // int x = 42;
+    // goto END;
+    // x = 0;
+    // END:
+    // return x;
+    let program = memory.allocate_program(&[
+        IsaOp::LoadI(A0, 42, 32),
+        IsaOp::Branch(16), // Skip next instruction
+        IsaOp::LoadI(A0, 0, 32),
+        IsaOp::Ret(),
+    ]);
+
+    let ans = proc.run_program(program, &Arc::new(memory), args).unwrap();
+
+    assert_eq!(42, ans);
+}

@@ -212,7 +212,7 @@ impl FheProcessor {
 
         match dispatched_op {
             // instructions that do not compute anything are assigned trivial gas cost
-            Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) => 1,
+            Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) | Branch(..) => 1,
 
             // instructions that compute on one input source, but gas does not rely on it
             Sext(..) | Zext(..) | Trunc(..) => 1,
@@ -993,6 +993,9 @@ impl Tomasulo for FheProcessor {
                 // Retire the instruction
                 Self::retire(&retirement_info, Ok(()));
             }
+            Branch(..) => {
+                Self::retire(&retirement_info, Ok(()));
+            }
             Ret() => {
                 Self::retire(&retirement_info, Ok(()));
             }
@@ -1029,6 +1032,7 @@ impl Tomasulo for FheProcessor {
                     Err(Error::BranchConditionNotPlaintext)
                 }
             }
+            DispatchIsaOp::Branch(pc_offset) => Ok(pc.wrapping_add_signed(pc_offset)),
             DispatchIsaOp::Ret() => Err(Error::Halt),
             _ => Ok(pc + 8),
         }
