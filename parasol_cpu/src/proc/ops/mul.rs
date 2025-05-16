@@ -105,7 +105,7 @@ impl FheProcessor {
 
         // Prune the hi word of the multiplication, as we only use it in
         // mul_wide
-        let graph = prune(&graph, &outputs).into();
+        let graph = prune(&graph, &outputs).0.into();
 
         let parent_op = make_parent_op(retirement_info);
 

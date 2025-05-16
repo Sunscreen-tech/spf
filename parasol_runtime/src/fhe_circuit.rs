@@ -519,7 +519,7 @@ impl From<StableGraph<FheOp, FheEdge>> for FheCircuit {
 pub fn prune<N: Clone, E: Clone>(
     graph: &StableGraph<N, E>,
     nodes: &[NodeIndex],
-) -> StableGraph<N, E> {
+) -> (StableGraph<N, E>, HashMap<NodeIndex, NodeIndex>) {
     let mut out_graph = StableGraph::new();
     let mut queue = VecDeque::new();
     let mut rename = HashMap::new();
@@ -555,7 +555,7 @@ pub fn prune<N: Clone, E: Clone>(
         }
     }
 
-    out_graph
+    (out_graph, rename)
 }
 
 /// Inserts conversions between the result at `cur_node` from an `in_type`
