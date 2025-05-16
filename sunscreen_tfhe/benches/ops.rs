@@ -5,8 +5,9 @@ use criterion::{
 };
 
 use sunscreen_tfhe::{
-    GLWE_1_1024_80, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80, LweDef,
-    LweDimension, PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus,
+    GLWE_1_1024_80, GLWE_1_1024_128, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension,
+    GlweSize, LWE_512_80, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
+    RadixDecomposition, RadixLog, Torus,
     entities::{
         GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial,
         PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft,
@@ -70,19 +71,9 @@ fn cmux(c: &mut Criterion) {
     let params = CmuxParams {
         gsw_radix: RadixDecomposition {
             count: RadixCount(2),
-            radix_log: RadixLog(10),
+            radix_log: RadixLog(7),
         },
-        glwe: GLWE_5_256_80,
-    };
-
-    cmux_params(&params, c);
-
-    let params = CmuxParams {
-        gsw_radix: RadixDecomposition {
-            count: RadixCount(1),
-            radix_log: RadixLog(11),
-        },
-        glwe: GLWE_1_1024_80,
+        glwe: GLWE_1_2048_128,
     };
 
     cmux_params(&params, c);
@@ -122,8 +113,11 @@ fn programmable_bootstrapping(c: &mut Criterion) {
     run_bench(
         "CBS parameters",
         &mut g,
-        &LWE_512_80,
-        &GLWE_5_256_80,
+        &LweDef {
+            dim: LweDimension(637),
+            std: Stddev(6.27510880527384e-05),
+        },
+        &GLWE_1_2048_128,
         &radix,
     );
 
@@ -180,17 +174,20 @@ fn circuit_bootstrapping(c: &mut Criterion) {
         radix_log: RadixLog(16),
     };
     let cbs_radix = RadixDecomposition {
-        count: RadixCount(1),
-        radix_log: RadixLog(11),
+        count: RadixCount(2),
+        radix_log: RadixLog(7),
     };
     let pfks_radix = RadixDecomposition {
-        count: RadixCount(3),
-        radix_log: RadixLog(11),
+        count: RadixCount(2),
+        radix_log: RadixLog(17),
     };
 
-    let level_2_params = GLWE_5_256_80;
-    let level_1_params = GLWE_1_1024_80;
-    let level_0_params = LWE_512_80;
+    let level_2_params = GLWE_1_2048_128;
+    let level_1_params = GLWE_1_2048_128;
+    let level_0_params = LweDef {
+        dim: LweDimension(637),
+        std: Stddev(6.27510880527384e-05),
+    };
 
     let sk_0 = keygen::generate_binary_lwe_sk(&level_0_params);
     let sk_1 = keygen::generate_binary_glwe_sk(&level_1_params);

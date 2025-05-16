@@ -1,8 +1,7 @@
-use std::{marker::PhantomData, mem::size_of, sync::Arc};
+use std::{marker::PhantomData, mem::size_of, sync::Arc, time::Instant};
 
 use crate::{
-    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
-    SecretKey, crypto::PublicKey, safe_bincode::GetSize,
+    crypto::PublicKey, prune, safe_bincode::GetSize, Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext, SecretKey
 };
 
 use super::{
@@ -479,9 +478,21 @@ impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, 
 
         let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
 
-        let (lo, _hi) = V::append_multiply::<OutCt>(&mut ctx.circuit.borrow_mut(), &a, &b);
+        let mut circuit_mut = ctx.circuit.borrow_mut();
+        
+        // TODO: introduce a mul_lo so we don't have to do this pruning in the first place.
+        let existing_outputs = circuit_mut.node_indices().filter(|x| {
+            circuit_mut.neighbors_directed(*x, petgraph::Direction::Outgoing).count() == 0
+        }).collect::<Vec<_>>();
 
-        // TODO: prune the high bits somehow?
+        let now = Instant::now();
+        let (lo, _hi) = V::append_multiply::<OutCt>(&mut circuit_mut, &a, &b);
+
+        let to_keep = [lo.clone(), existing_outputs].concat();
+
+        circuit_mut.graph = prune(&circuit_mut, &to_keep);
+
+        println!("Mul gen {}s", now.elapsed().as_secs_f64());
 
         GenericIntGraphNodes::from_nodes(lo.into_iter(), &ctx.allocator)
     }
