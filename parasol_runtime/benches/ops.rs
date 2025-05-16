@@ -128,7 +128,7 @@ fn ops(c: &mut Criterion) {
     run_benchmarks::<8>(c);
     run_benchmarks::<16>(c);
     run_benchmarks::<32>(c);
-    // run_benchmarks::<64>(c);
+    run_benchmarks::<64>(c);
     //run_benchmarks::<256>(c);
 }
 
