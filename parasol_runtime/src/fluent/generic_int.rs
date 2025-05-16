@@ -1,7 +1,8 @@
-use std::{marker::PhantomData, mem::size_of, sync::Arc, time::Instant};
+use std::{marker::PhantomData, mem::size_of, sync::Arc};
 
 use crate::{
-    crypto::PublicKey, prune, safe_bincode::GetSize, Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext, SecretKey
+    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
+    SecretKey, crypto::PublicKey, prune, safe_bincode::GetSize,
 };
 
 use super::{
@@ -479,22 +480,38 @@ impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, 
         let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
 
         let mut circuit_mut = ctx.circuit.borrow_mut();
-        
-        // TODO: introduce a mul_lo so we don't have to do this pruning in the first place.
-        let existing_outputs = circuit_mut.node_indices().filter(|x| {
-            circuit_mut.neighbors_directed(*x, petgraph::Direction::Outgoing).count() == 0
-        }).collect::<Vec<_>>();
 
-        let now = Instant::now();
+        // TODO: introduce a mul_lo so we don't have to do this pruning in the first place.
+        let existing_outputs = circuit_mut
+            .node_indices()
+            .filter(|x| {
+                let node_type = matches!(
+                    circuit_mut.node_weight(*x).unwrap(),
+                    FheOp::OutputGgsw1(_)
+                        | FheOp::OutputGlev1(_)
+                        | FheOp::OutputGlwe1(_)
+                        | FheOp::OutputLwe0(_)
+                        | FheOp::OutputLwe1(_)
+                );
+
+                node_type
+                    && circuit_mut
+                        .neighbors_directed(*x, petgraph::Direction::Outgoing)
+                        .count()
+                        == 0
+            })
+            .collect::<Vec<_>>();
+
         let (lo, _hi) = V::append_multiply::<OutCt>(&mut circuit_mut, &a, &b);
 
         let to_keep = [lo.clone(), existing_outputs].concat();
 
-        circuit_mut.graph = prune(&circuit_mut, &to_keep);
+        let (pruned, rename) = prune(&circuit_mut, &to_keep);
+        circuit_mut.graph = pruned;
 
-        println!("Mul gen {}s", now.elapsed().as_secs_f64());
+        let lo = lo.into_iter().map(|x| *rename.get(&x).unwrap());
 
-        GenericIntGraphNodes::from_nodes(lo.into_iter(), &ctx.allocator)
+        GenericIntGraphNodes::from_nodes(lo, &ctx.allocator)
     }
 }
 
