@@ -5,24 +5,18 @@ use criterion::{
 };
 
 use sunscreen_tfhe::{
-    GLWE_1_1024_80, GLWE_1_1024_128, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension,
-    GlweSize, LWE_512_80, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
-    RadixDecomposition, RadixLog, Torus,
     entities::{
         GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial,
         PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft,
         UnivariateLookupTable,
-    },
-    high_level::{self, *},
-    ops::{
+    }, high_level::{self, *}, ops::{
         bootstrapping::{circuit_bootstrap, generate_scheme_switch_key},
         encryption::encrypt_secret_glev_ciphertext,
         fft_ops::scheme_switch_fft,
         keyswitch::public_functional_keyswitch::{
             generate_public_functional_keyswitch_key, public_functional_keyswitch,
         },
-    },
-    rand::Stddev,
+    }, rand::Stddev, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, LWE_512_80, LWE_637_128
 };
 
 fn cmux(c: &mut Criterion) {
@@ -113,10 +107,7 @@ fn programmable_bootstrapping(c: &mut Criterion) {
     run_bench(
         "CBS parameters",
         &mut g,
-        &LweDef {
-            dim: LweDimension(637),
-            std: Stddev(6.27510880527384e-05),
-        },
+        &LWE_637_128,
         &GLWE_1_2048_128,
         &radix,
     );
@@ -184,10 +175,7 @@ fn circuit_bootstrapping(c: &mut Criterion) {
 
     let level_2_params = GLWE_1_2048_128;
     let level_1_params = GLWE_1_2048_128;
-    let level_0_params = LweDef {
-        dim: LweDimension(637),
-        std: Stddev(6.27510880527384e-05),
-    };
+    let level_0_params = LWE_637_128;
 
     let sk_0 = keygen::generate_binary_lwe_sk(&level_0_params);
     let sk_1 = keygen::generate_binary_glwe_sk(&level_1_params);

@@ -61,7 +61,6 @@ sunscreen_tfhe = { version = "0.9", path = "./sunscreen_tfhe" }
 [profile.bench]
 lto = "fat"
 codegen-units = 1
-debug = true
 
 [profile.release]
 lto = "fat"

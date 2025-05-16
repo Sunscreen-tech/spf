@@ -217,6 +217,12 @@ impl SecurityLevel for GlweDef {
     }
 }
 
+/// 128-bit secure parameters for an LWE instance with a dimension of 637.
+pub const LWE_637_128: LweDef = LweDef {
+    dim: LweDimension(637),
+    std: Stddev(0.00004991317407260058),
+};
+
 /// 128-bit secure parameters for an LWE instance with a dimension of 512.
 pub const LWE_512_128: LweDef = LweDef {
     dim: LweDimension(512),
@@ -295,6 +301,10 @@ mod tests {
         let actual_lwe_std = lwe_security_level_to_std(512, 128.0).unwrap();
         println!("LWE 512 128: {}", actual_lwe_std);
         LWE_512_128.assert_security_level(128);
+
+        let actual_lwe_std = lwe_security_level_to_std(637, 128.0).unwrap();
+        println!("LWE 637 128: {}", actual_lwe_std);
+        LWE_637_128.assert_security_level(128);
 
         let actual_glwe_std = lwe_security_level_to_std(5 * 256, 128.0).unwrap();
         println!("GLWE 5 256 128: {}", actual_glwe_std);
