@@ -5,18 +5,24 @@ use criterion::{
 };
 
 use sunscreen_tfhe::{
+    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80,
+    LWE_637_128, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
+    RadixDecomposition, RadixLog, Torus,
     entities::{
         GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial,
         PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft,
         UnivariateLookupTable,
-    }, high_level::{self, *}, ops::{
+    },
+    high_level::{self, *},
+    ops::{
         bootstrapping::{circuit_bootstrap, generate_scheme_switch_key},
         encryption::encrypt_secret_glev_ciphertext,
         fft_ops::scheme_switch_fft,
         keyswitch::public_functional_keyswitch::{
             generate_public_functional_keyswitch_key, public_functional_keyswitch,
         },
-    }, rand::Stddev, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, LWE_512_80, LWE_637_128
+    },
+    rand::Stddev,
 };
 
 fn cmux(c: &mut Criterion) {
