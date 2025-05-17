@@ -212,7 +212,8 @@ impl FheProcessor {
 
         match dispatched_op {
             // instructions that do not compute anything are assigned trivial gas cost
-            Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) | Branch(..) => 1,
+            Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) | Branch(..)
+            | Move(..) => 1,
 
             // instructions that compute on one input source, but gas does not rely on it
             Sext(..) | Zext(..) | Trunc(..) => 1,
@@ -881,6 +882,9 @@ impl Tomasulo for FheProcessor {
                     instruction_id,
                     pc,
                 );
+            }
+            Move(..) => {
+                unimplemented!()
             }
             And(dst, a, b) => {
                 self.and(retirement_info, dst, a, b, instruction_id, pc);

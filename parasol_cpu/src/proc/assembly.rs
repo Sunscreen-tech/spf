@@ -362,38 +362,20 @@ define_op! {
     // Store
     [0x04 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
 
-    // And
-    [0x30 And (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    // Zero extension
+    [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
 
-    // Or
-    [0x31 Or (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    // Truncation
+    [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
 
-    // Multiply a * b and produce the low word of the product.
-    [0x14 Mul (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+    // Sign extension
+    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
+
+    // Move
+    [0x08 Move (dst dst, 0, Register) (src src, 0, Register)],
 
     // Add
     [0x10 Add (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
-
-    // Not
-    [0x33 Not (dst dst, 0, Register) (src src, 0, Register)],
-
-    // Xor
-    [0x32 Xor (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
-
-    // Bitshift right
-    [0x22 Shr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
-
-    // Arithmetic shift right
-    [0x24 Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
-
-    // Bitshift left
-    [0x20 Shl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
-
-    // Rotate right
-    [0x23 Rotr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
-
-    // Rotate left
-    [0x21 Rotl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
 
     // Add with carry
     [0x11 AddC (dst dst, 0, Register) (dst carry_out, 0, Register) (src a, 0, Register) (src b, 0, Register) (src carry_in, 0, Register)],
@@ -401,14 +383,41 @@ define_op! {
     // Subtract
     [0x12 Sub (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
-    // Subract and borrow
+    // Subtract and borrow
     [0x13 SubB (dst dst, 0, Register) (dst borrow_out, 0, Register) (src a, 0, Register) (src b, 0, Register) (src borrow_in, 0, Register)],
+
+    // Multiply a * b and produce the low word of the product.
+    [0x14 Mul (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Bitshift left
+    [0x20 Shl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
+    // Rotate left
+    [0x21 Rotl (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
+    // Bitshift right
+    [0x22 Shr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
+    // Rotate right
+    [0x23 Rotr (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
+    // Arithmetic shift right
+    [0x24 Shra (dst dst, 0, Register) (src src, 0, Register) (src shift, 0, Register)],
+
+    // And
+    [0x30 And (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Or
+    [0x31 Or (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Xor
+    [0x32 Xor (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Not
+    [0x33 Not (dst dst, 0, Register) (src src, 0, Register)],
 
     // Negate
     [0x34 Neg (dst dst, 0, Register) (src src, 0, Register)],
-
-    // Compare equal
-    [0x44 CmpEq (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
     // Compare greater than
     [0x40 CmpGt (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
@@ -422,6 +431,12 @@ define_op! {
     // Compare less than or equal
     [0x43 CmpLe (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
+    // Compare equal
+    [0x44 CmpEq (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // Raw cmux
+    [0x45 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
     // Compare greater than, signed
     [0x50 CmpGtS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
@@ -434,24 +449,16 @@ define_op! {
     // Compare less than or equal, signed
     [0x53 CmpLeS (dst dst, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
-    // Casting operations
-    [0x05 Zext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
-    [0x06 Trunc (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
-    [0x07 Sext (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (unused 7)],
-
-    // Raw cmux
-    [0x45 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
-
     // Branch relative to the current PC if `src` is non-zero.
-    [0x46 BranchNonZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
+    [0x60 BranchNonZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
 
     // Branch relative to the current PC if `src` is zero.
-    [0x47 BranchZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
+    [0x61 BranchZero (src cond, 0, Register) (meta pc_offset, 32, i32)],
 
-    // Unconditionally branch relative to the currenct PC.
-    [0x48 Branch (meta pc_offset, 32, i32)],
+    // Unconditionally branch relative to the current PC.
+    [0x62 Branch (meta pc_offset, 32, i32)],
 
-    // Return
+    // Pseudo return with jump and link register
     [0xFE Ret (unused 44)]
 }
 
