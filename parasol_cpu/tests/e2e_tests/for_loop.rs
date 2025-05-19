@@ -7,7 +7,7 @@ use crate::{get_ck, get_sk};
 
 #[test]
 fn can_run_from_elf() {
-    let memory = Arc::new(Memory::new_from_elf(include_bytes!("../test_data/loopy")).unwrap());
+    let memory = Arc::new(Memory::new_from_elf(include_bytes!("../test_data/for_loop")).unwrap());
 
     let sk = get_sk();
     let ck = get_ck();
@@ -27,7 +27,7 @@ fn can_run_from_elf() {
         .arg(8)
         .return_value::<UInt<32, _>>();
 
-    let prog = memory.get_function_entry("loopy").unwrap();
+    let prog = memory.get_function_entry("for_loop").unwrap();
 
     let result = proc.run_program(prog, &memory, args).unwrap();
 
