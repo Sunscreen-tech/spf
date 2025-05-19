@@ -47,7 +47,3 @@ itertools = { workspace = true }
 
 [profile.dev.package."*"]
 opt-level = 3
-
-[[bench]]
-name = "chi_squared"
-harness = false
