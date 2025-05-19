@@ -22,19 +22,22 @@ const LOG2_PAGE_SIZE: u32 = 12;
 /// The number of bytes in a page.
 pub const PAGE_SIZE: u32 = 0x1 << LOG2_PAGE_SIZE;
 
-// The top bits of a pointer indicate the page id.
+/// The top bits of a pointer indicate the page id.
 const PAGE_OFFSET_MASK: u32 = PAGE_SIZE - 1;
 
-// The bottom bits indicate the byte offset.
+/// The bottom bits indicate the byte offset.
 const PAGE_ID_MASK: u32 = !PAGE_OFFSET_MASK;
 
-// The total number of pages that fit in the 32-bit address space.
+/// The total number of pages that fit in the 32-bit address space.
 const TOTAL_PAGES: u32 = 0x1 << (32 - LOG2_PAGE_SIZE);
 
-// Bytes in a word
+/// The number of bytes in a word
 pub(crate) const WORD_SIZE: u32 = 4;
 
-// Number of bytes in an instruction
+/// The number of bytes in a double word
+pub(crate) const DOUBLE_WORD_SIZE: u32 = 8;
+
+/// The number of bytes in an instruction
 pub(crate) const INSTRUCTION_SIZE: u32 = 8;
 
 // ABI version changes:
@@ -447,16 +450,14 @@ impl Memory {
     }
 
     fn try_load_n_bytes<const N: usize>(&self, virtual_address: Ptr32) -> Result<[u8; N]> {
-        let bytes = (0..N)
-            .map(|i| {
-                virtual_address
-                    .try_offset(i as u32)
-                    .and_then(|addr| self.try_load_plaintext_byte(addr))
-            })
-            .collect::<Result<Vec<u8>>>()?
-            // Safe to unwrap because we are iterating over a fixed-size array
-            .try_into()
-            .unwrap();
+        // We don't use an iterator to avoid the allocation of a vector. You can
+        // do it, but the resulting code is less readable than the raw loop.
+        let mut bytes = [0u8; N];
+
+        for (i, byte) in bytes.iter_mut().enumerate().take(N) {
+            let addr = virtual_address.try_offset(i as u32)?;
+            *byte = self.try_load_plaintext_byte(addr)?;
+        }
 
         Ok(bytes)
     }
@@ -473,11 +474,11 @@ impl Memory {
 
     /// Attempt to load a plaintext double word from the given address.
     pub(crate) fn try_load_plaintext_dword(&self, virtual_address: Ptr32) -> Result<u64> {
-        if virtual_address.0 % (2 * WORD_SIZE) != 0 {
+        if virtual_address.0 % (DOUBLE_WORD_SIZE) != 0 {
             return Err(Error::UnalignedAccess(virtual_address.0));
         }
 
-        let bytes = self.try_load_n_bytes::<{ 2 * WORD_SIZE as usize }>(virtual_address)?;
+        let bytes = self.try_load_n_bytes::<{ DOUBLE_WORD_SIZE as usize }>(virtual_address)?;
         Ok(u64::from_le_bytes(bytes))
     }
 
