@@ -1,7 +1,7 @@
 #include <stdint.h>
 #include <stdbool.h>
 
-[[clang::fhe_circuit]] void zext_and_trunc(
+[[clang::fhe_program]] void zext_and_trunc(
     [[clang::encrypted]] uint8_t u8_a,
     [[clang::encrypted]] uint32_t u32_b,
     [[clang::encrypted]] uint32_t *u32_output_ptr,

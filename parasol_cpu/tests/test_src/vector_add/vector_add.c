@@ -1,7 +1,7 @@
 typedef unsigned char uint8_t;
 typedef unsigned int uint32_t;
 
-[[clang::fhe_circuit]] void vector_add(
+[[clang::fhe_program]] void vector_add(
     [[clang::encrypted]] uint8_t* a,
     [[clang::encrypted]] uint8_t* b,
     [[clang::encrypted]] uint8_t* c

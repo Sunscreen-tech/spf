@@ -6,7 +6,7 @@ inline bool get_bit(uint8_t flags, unsigned int n) {
   return ((flags >> n) & 0x1);
 }
 
-[[clang::fhe_circuit]] uint8_t
+[[clang::fhe_program]] uint8_t
 cardio([[clang::encrypted]] uint8_t flags,
        [[clang::encrypted]] uint8_t age,
        [[clang::encrypted]] uint8_t hdl,

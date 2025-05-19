@@ -7,7 +7,7 @@ inline bool get_bit(uint64_t flags, unsigned int n) {
   return ((flags >> n) & 0x1);
 }
 
-[[clang::fhe_circuit]] uint8_t
+[[clang::fhe_program]] uint8_t
 hamming_distance([[clang::encrypted]] uint64_t a,
                  [[clang::encrypted]] uint64_t b
 ) {
