@@ -883,8 +883,8 @@ impl Tomasulo for FheProcessor {
                     pc,
                 );
             }
-            Move(..) => {
-                unimplemented!()
+            Move(dst, src) => {
+                self.mov(retirement_info, dst, src);
             }
             And(dst, a, b) => {
                 self.and(retirement_info, dst, a, b, instruction_id, pc);

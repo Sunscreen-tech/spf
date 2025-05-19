@@ -7,6 +7,7 @@ mod casting;
 mod cmux;
 mod comparisons;
 mod load_store;
+mod mov;
 mod mul;
 mod neg;
 mod not;

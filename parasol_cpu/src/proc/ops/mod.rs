@@ -20,6 +20,7 @@ mod cmux;
 mod comparisons;
 mod load;
 mod loadi;
+mod mov;
 mod mul;
 mod neg;
 mod not;
