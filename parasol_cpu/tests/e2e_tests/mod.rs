@@ -3,6 +3,7 @@ mod cardio;
 mod chi_sq;
 mod cmux;
 mod hamming_distance;
+mod loopy;
 mod payment;
 mod transfer;
 mod vector_add;
