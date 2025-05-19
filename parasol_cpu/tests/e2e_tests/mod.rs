@@ -2,6 +2,7 @@ mod add;
 mod cardio;
 mod chi_sq;
 mod cmux;
+mod for_loop;
 mod hamming_distance;
 mod payment;
 mod transfer;
