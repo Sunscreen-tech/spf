@@ -1,6 +1,6 @@
 typedef unsigned short uint16_t;
 
-[[clang::fhe_circuit]]
+[[clang::fhe_program]]
 void xor_shift([[clang::encrypted]] uint16_t *rn)
 {
     *rn ^= *rn << 7;

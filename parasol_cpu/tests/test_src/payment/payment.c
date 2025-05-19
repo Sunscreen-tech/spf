@@ -1,6 +1,6 @@
 #include <stdint.h>
 
-[[clang::fhe_circuit]] void payment(
+[[clang::fhe_program]] void payment(
     [[clang::encrypted]] uint32_t amount,
     [[clang::encrypted]] uint32_t *balance_pointer
 ) {

@@ -1,7 +1,7 @@
 #include <stdbool.h>
 #include <stdint.h>
 
-[[clang::fhe_circuit]]
+[[clang::fhe_program]]
 void transfer([[clang::encrypted]] uint32_t *sender_balance_pointer,
               [[clang::encrypted]] uint32_t *recipient_balance_pointer,
               [[clang::encrypted]] uint32_t transfer_amount) {

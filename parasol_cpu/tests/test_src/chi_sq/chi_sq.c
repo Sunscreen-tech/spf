@@ -7,7 +7,7 @@ typedef struct Result {
     uint16_t b_3;
 } Result;
 
-[[clang::fhe_circuit]] void chi_sq(
+[[clang::fhe_program]] void chi_sq(
     [[clang::encrypted]] uint16_t n_0,
     [[clang::encrypted]] uint16_t n_1,
     [[clang::encrypted]] uint16_t n_2,

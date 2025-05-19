@@ -1,7 +1,7 @@
 all: ../../test_data/add
 
 clean:
-	rm ../../test_data/add.o ../../test_data/add
+	$(RM) ../../test_data/add.o ../../test_data/add
 
 ../../test_data/add.o: add.c
 	$(LLVM_DIR)/bin/clang -O2 -target parasol -c -o ../../test_data/add.o add.c

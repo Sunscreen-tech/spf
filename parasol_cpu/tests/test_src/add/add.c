@@ -1,6 +1,6 @@
 typedef unsigned char uint8_t;
 
-[[clang::fhe_circuit]] uint8_t add(
+[[clang::fhe_program]] uint8_t add(
     [[clang::encrypted]] uint8_t a,
     [[clang::encrypted]] uint8_t b
 ) {

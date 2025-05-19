@@ -1,7 +1,7 @@
 all: ../../test_data/cardio
 
 clean:
-	rm ../../test_data/cardio.o ../../test_data/cardio
+	$(RM) ../../test_data/cardio.o ../../test_data/cardio
 
 ../../test_data/cardio.o: cardio.c
 	$(LLVM_DIR)/bin/clang -O2 -target parasol -c -o ../../test_data/cardio.o cardio.c
