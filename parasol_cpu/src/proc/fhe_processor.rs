@@ -1,5 +1,5 @@
 use crate::{
-    Allocation, Byte, Extend, Memory, Result, Word,
+    Allocation, Byte, Extend, INSTRUCTION_SIZE, Memory, Result, Word,
     register_names::*,
     tomasulo::{
         registers::{RegisterFile, RegisterName, RobEntryRef},
@@ -1018,7 +1018,7 @@ impl Tomasulo for FheProcessor {
                     if *val != 0 {
                         Ok(pc.wrapping_add_signed(pc_offset))
                     } else {
-                        Ok(pc + 8)
+                        Ok(pc + INSTRUCTION_SIZE)
                     }
                 } else {
                     Err(Error::BranchConditionNotPlaintext)
@@ -1030,7 +1030,7 @@ impl Tomasulo for FheProcessor {
                     if *val == 0 {
                         Ok(pc.wrapping_add_signed(pc_offset))
                     } else {
-                        Ok(pc + 8)
+                        Ok(pc + INSTRUCTION_SIZE)
                     }
                 } else {
                     Err(Error::BranchConditionNotPlaintext)
@@ -1038,7 +1038,7 @@ impl Tomasulo for FheProcessor {
             }
             DispatchIsaOp::Branch(pc_offset) => Ok(pc.wrapping_add_signed(pc_offset)),
             DispatchIsaOp::Ret() => Err(Error::Halt),
-            _ => Ok(pc + 8),
+            _ => Ok(pc + INSTRUCTION_SIZE),
         }
     }
 }

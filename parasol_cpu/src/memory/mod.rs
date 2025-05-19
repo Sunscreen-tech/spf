@@ -31,6 +31,12 @@ const PAGE_ID_MASK: u32 = !PAGE_OFFSET_MASK;
 // The total number of pages that fit in the 32-bit address space.
 const TOTAL_PAGES: u32 = 0x1 << (32 - LOG2_PAGE_SIZE);
 
+// Bytes in a word
+pub(crate) const WORD_SIZE: u32 = 4;
+
+// Number of bytes in an instruction
+pub(crate) const INSTRUCTION_SIZE: u32 = 8;
+
 // ABI version changes:
 // 1:
 //   - Organized instructions into groupings
@@ -43,7 +49,7 @@ pub(crate) const SUPPORTED_ABI_VERSION: u8 = 1;
 ///
 /// # Remarks
 /// All bytes must be plaintext or ciphertext; you cannot mix encrypted-ness.
-pub struct Word(pub [Byte; 4]);
+pub struct Word(pub [Byte; (WORD_SIZE as usize)]);
 
 impl From<u32> for Word {
     fn from(value: u32) -> Self {
@@ -440,36 +446,39 @@ impl Memory {
         }
     }
 
-    /// Attempt to load a 4-byte plaintext word from the given address.
-    pub(crate) fn try_load_plaintext_word(&self, virtual_address: Ptr32) -> Result<u32> {
-        if virtual_address.0 % 4 != 0 {
-            return Err(Error::UnalignedAccess(virtual_address.0));
-        }
+    fn try_load_n_bytes<const N: usize>(&self, virtual_address: Ptr32) -> Result<[u8; N]> {
+        let bytes = (0..N)
+            .map(|i| {
+                virtual_address
+                    .try_offset(i as u32)
+                    .and_then(|addr| self.try_load_plaintext_byte(addr))
+            })
+            .collect::<Result<Vec<u8>>>()?
+            // Safe to unwrap because we are iterating over a fixed-size array
+            .try_into()
+            .unwrap();
 
-        let b0 = self.try_load_plaintext_byte(virtual_address)?;
-        let b1 = self.try_load_plaintext_byte(virtual_address.try_offset(1).unwrap())?;
-        let b2 = self.try_load_plaintext_byte(virtual_address.try_offset(2).unwrap())?;
-        let b3 = self.try_load_plaintext_byte(virtual_address.try_offset(3).unwrap())?;
-
-        Ok(u32::from_le_bytes([b0, b1, b2, b3]))
+        Ok(bytes)
     }
 
-    /// Attempt to load a 4-byte plaintext word from the given address.
-    pub(crate) fn try_load_plaintext_dword(&self, virtual_address: Ptr32) -> Result<u64> {
-        if virtual_address.0 % 8 != 0 {
+    /// Attempt to load a plaintext word from the given address.
+    pub(crate) fn try_load_plaintext_word(&self, virtual_address: Ptr32) -> Result<u32> {
+        if virtual_address.0 % WORD_SIZE != 0 {
             return Err(Error::UnalignedAccess(virtual_address.0));
         }
 
-        let b0 = self.try_load_plaintext_byte(virtual_address)?;
-        let b1 = self.try_load_plaintext_byte(virtual_address.try_offset(1).unwrap())?;
-        let b2 = self.try_load_plaintext_byte(virtual_address.try_offset(2).unwrap())?;
-        let b3 = self.try_load_plaintext_byte(virtual_address.try_offset(3).unwrap())?;
-        let b4 = self.try_load_plaintext_byte(virtual_address.try_offset(4).unwrap())?;
-        let b5 = self.try_load_plaintext_byte(virtual_address.try_offset(5).unwrap())?;
-        let b6 = self.try_load_plaintext_byte(virtual_address.try_offset(6).unwrap())?;
-        let b7 = self.try_load_plaintext_byte(virtual_address.try_offset(7).unwrap())?;
+        let bytes = self.try_load_n_bytes::<{ WORD_SIZE as usize }>(virtual_address)?;
+        Ok(u32::from_le_bytes(bytes))
+    }
 
-        Ok(u64::from_le_bytes([b0, b1, b2, b3, b4, b5, b6, b7]))
+    /// Attempt to load a plaintext double word from the given address.
+    pub(crate) fn try_load_plaintext_dword(&self, virtual_address: Ptr32) -> Result<u64> {
+        if virtual_address.0 % (2 * WORD_SIZE) != 0 {
+            return Err(Error::UnalignedAccess(virtual_address.0));
+        }
+
+        let bytes = self.try_load_n_bytes::<{ 2 * WORD_SIZE as usize }>(virtual_address)?;
+        Ok(u64::from_le_bytes(bytes))
     }
 
     /// Allocate a contiguous virtual address region of at least `len` bytes. This also
