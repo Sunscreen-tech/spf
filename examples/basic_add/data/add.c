@@ -1,9 +1,8 @@
 typedef unsigned char uint8_t;
 
-[[clang::fhe_circuit]] void add(
-    [[clang::encrypted]] uint8_t *a,
-    [[clang::encrypted]] uint8_t *b,
-    [[clang::encrypted]] uint8_t *output
+[[clang::fhe_program]] uint8_t add(
+    [[clang::encrypted]] uint8_t a,
+    [[clang::encrypted]] uint8_t b
 ) {
-    *output = *a + *b;
+    return a + b;
 }
