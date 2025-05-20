@@ -3,19 +3,18 @@
 //! This crate provides the Parasol processor for running programs over encrypted data. The general
 //! workflow for using it is:
 //! * Compile a program using Parasol-clang
-//! * Load our program into a [`Memory`] object.
 //! * Encrypt our data and create an [`Args`] object.
-//! * Call [`FheComputer::run_program`], passing our memory, the name of
+//! * Call [`FheComputer::run_program`], passing our key, program binary, the name of
 //!   the program we want to run, and args.
 //! * Return or decrypt your program's result.
 //!
 //! # Example
 //! ```ignore
-//! use parasol_cpu::{run_program, Memory, ArgsBuilder};
+//! use parasol_cpu::{run_program, ArgsBuilder};
 //! use parasol_runtime::{ComputeKey, Encryption, SecretKey, fluent::Uint};
 //!
 //! // Embed the compiled Parasol add program into a constant.
-//! const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
+//! const FHE_FILE: &[u8] = include_bytes!("../data/add");
 //!
 //! // Generate a secret key for the user. By default this ensures
 //! // 128-bit security.
@@ -30,30 +29,29 @@
 //!         &secret_key,
 //!     );
 //!
-//! // Load up a memory object with our program.
-//! let memory = Memory::new_from_elf(FHE_FILE);
-//!
-//! // Define the values we want to add and the return type.
-//! // The values' sizes must match the Parasol C program's parameters!
+//! // Define the values we want to add. The values'
+//! // sizes must match the Parasol C program's parameters
+//! // when we encrypt them. Create the arguments and specify
+//! // the return type
+//! let enc = Encryption::default();
 //! let args = ArgsBuilder::new()
-//!     .arg(UInt::<8>::encrypt_secret(7, &enc, &sk))
-//!     .arg(UInt::<8>::encrypt_secret(2, &enc, &sk))
-//!     .return_value::<UInt<8>>();
+//!     .arg(UInt::<8, _>::encrypt_secret(2, &enc, &sk))
+//!     .arg(UInt::<8, _>::encrypt_secret(7, &enc, &sk))
+//!     .return_value::<UInt<8, _>>();
 //!
 //! // Run the program.
-//! let (gas, encrypted_result) = run_program(
+//! let encrypted_result = run_program(
 //!     compute_key.clone(),
 //!     FHE_FILE,
 //!     "add",
-//!     &arguments,
-//!     200_000,
+//!     &args,
 //! )
 //! .unwrap();
 //!
 //! // Decrypt the result.
 //! let result = encrypted_result.decrypt(&enc, &sk);
 //!
-//! println!("Encrypted {a} + {b} = {result}, using {gas} gas");
+//! println!("Encrypted {a} + {b} = {result}");
 //! ```
 
 mod error;

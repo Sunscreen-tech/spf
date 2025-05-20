@@ -17,29 +17,29 @@ Program that will run on our virtual processor:
 ```C
 typedef unsigned char uint8_t;
 
-[[clang::fhe_circuit]] void add(
-    [[clang::encrypted]] uint8_t *a,
-    [[clang::encrypted]] uint8_t *b,
-    [[clang::encrypted]] uint8_t *output
+[[clang::fhe_program]] uint8_t add(
+    [[clang::encrypted]] uint8_t a,
+    [[clang::encrypted]] uint8_t b
 ) {
-    *output = *a + *b;
+    return a + b;
 }
 ```
 
 Compile `add.c`
 ```bash
-$LLVM_DIR/clang -c add.c -o add.a -O2 -target parasol
+$LLVM_DIR/clang -c add.c -o add.o -O2 -target parasol
+$LLVM_DIR/ld.lld add.o -o add
 ```
 
 This Rust program that runs on the host generates keys, encrypts our data, runs our program, and decrypts the result:
 
 `main.rs`
 ```rust
-use parasol_cpu::{run_program, Buffer};
-use parasol_runtime::{ComputeKey, Encryption, SecretKey};
+use parasol_cpu::{run_program, ArgsBuilder};
+use parasol_runtime::{ComputeKey, Encryption, SecretKey, fluent::Uint};
 
 // Embed the compiled Parasol add program into a constant.
-const FHE_FILE: &[u8] = include_bytes!("../data/add.a");
+const FHE_FILE: &[u8] = include_bytes!("../data/add");
 
 fn main() {
     // Generate a secret key for the user. By default this ensures
@@ -56,42 +56,28 @@ fn main() {
         );
 
     // Define the values we want to add. The values' 
-    // sizes must match the Parasol C program's parameters!
-    let a = 2u8;
-    let b = 7u8;
-
-    // To pass arguments into the Parasol C program, we must convert
-    // them to `Buffer`s. Note that we must provide an output
-    // buffer as well!
-    let arguments = [a, b, 0u8].map(|x| {
-        Buffer::cipher_from_value(
-            &x,
-            &Encryption::default(),
-            &secret_key,
-        )
-    });
+    // sizes must match the Parasol C program's parameters
+    // when we encrypt them. Create the arguments and specify
+    // the return type
+    let enc = Encryption::default();
+    let args = ArgsBuilder::new()
+        .arg(UInt::<8, _>::encrypt_secret(2, &enc, &sk))
+        .arg(UInt::<8, _>::encrypt_secret(7, &enc, &sk))
+        .return_value::<UInt<8, _>>();
 
     // Run the program.
-    let (gas, encrypted_result) = run_program(
+    let encrypted_result = run_program(
         compute_key.clone(),
         FHE_FILE,
         "add",
-        &arguments,
-        200_000,
+        &args,
     )
     .unwrap();
 
-    // Decrypt the result. Note that we have to choose the index
-    // to decrypt from all the arguments passed to the C function;
-    // since the result is written out to the third argument of
-    // the `add` function in C, we specify that index here.
-    let result = encrypted_result[2]
-        .cipher_try_into_value::<u8>(
-            &Encryption::default(),
-            &secret_key,
-        )
-        .unwrap();
-    println!("Encrypted {a} + {b} = {result}, using {gas} gas");
+    // Decrypt the result.
+    let result = encrypted_result.decrypt(&enc, &sk);
+
+    println!("Encrypted {a} + {b} = {result}");
 }
 ```
 
