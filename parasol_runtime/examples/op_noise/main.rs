@@ -55,6 +55,10 @@ fn main() {
             write_results(&path.join("analyze_cbs.json"), &result);
         }
         Command::AnalyzeCmux(cmd) => {
+            if let Err(e) = cmd.load_config() {
+                eprintln!("Error loading configuration: {}", e);
+                return;
+            }
             let result = analyze_cmux(&cmd);
             write_results(&path.join("analyze_cmux.json"), &result);
         }

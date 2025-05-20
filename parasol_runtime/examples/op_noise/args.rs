@@ -1,4 +1,7 @@
+use std::path::{Path, PathBuf};
+
 use clap::{Args, Parser, Subcommand};
+use serde::{Deserialize, Serialize};
 
 #[derive(Debug, Parser)]
 #[command(version, about = "A tool for analyzing noise resulting from various FHE operations", long_about = None)]
@@ -204,8 +207,12 @@ pub struct AnalyzeCbs {
     pub sample_count: u64,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone, Serialize, Deserialize)]
 pub struct AnalyzeCMux {
+    #[arg(long)]
+    /// Path to a JSON configuration file containing the parameters. These parameters are selected if this field exists, and all other fields are ignored.
+    pub file: Option<PathBuf>,
+
     #[arg(default_value_t = 2, long)]
     /// The radix decomposition count of the resulting GGSW.
     pub cbs_radix_count: usize,
@@ -226,7 +233,7 @@ pub struct AnalyzeCMux {
     pub key_sigma: f64,
 
     #[arg(default_value_t = 0.00000000000000034667670193445625, long)]
-    /// The std deviation of the L0 LWE instance.
+    /// The std deviation of the L1 GLWE instance.
     pub start_sigma: f64,
 
     #[arg(default_value_t = 1000.0, long)]
@@ -241,4 +248,22 @@ pub struct AnalyzeCMux {
 
     #[arg(default_value_t = false, long)]
     pub ntt: bool,
+}
+
+impl AnalyzeCMux {
+    pub fn from_file(path: &Path) -> Result<Self, std::io::Error> {
+        let file_content = std::fs::read_to_string(path)?;
+        let config = serde_json::from_str(&file_content)?;
+        Ok(config)
+    }
+
+    pub fn load_config(&self) -> Result<Self, std::io::Error> {
+        if let Some(config_path) = &self.file {
+            let config = Self::from_file(config_path)?;
+
+            return Ok(config);
+        } else {
+            return Ok(self.clone());
+        }
+    }
 }

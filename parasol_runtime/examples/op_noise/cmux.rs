@@ -1,7 +1,7 @@
 use indicatif::ProgressBar;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use sunscreen_math::stats::RunningMeanVariance;
+use sunscreen_math::{security::probability_away_from_mean_gaussian, stats::RunningMeanVariance};
 use sunscreen_tfhe::{
     GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, RadixCount,
     RadixDecomposition, RadixLog,
@@ -21,10 +21,21 @@ pub struct CMuxSample {
     pub ggsw_sigma: f64,
     pub a_sigma: f64,
     pub b_sigma: f64,
-    pub out_sigma: Result<f64>,
+    pub out_sigma: f64,
+    pub out_error_rate_base_10_log: f64,
+    pub out_error_rate_base_2_log: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CMuxRun {
+    pub cmux_samples: Vec<CMuxSample>,
+    pub parameters: AnalyzeCMux,
 }
 
 pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
+    println!("Running with the following parameters:");
+    println!("{}", serde_json::to_string_pretty(cmd).unwrap());
+
     let glwe = GlweDef {
         std: Stddev(cmd.key_sigma),
         dim: GlweDimension {
@@ -127,11 +138,25 @@ pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
                 var.std()
             });
 
+            let std = match std {
+                Ok(std) => std,
+                Err(e) => {
+                    eprintln!("Error measuring noise: {:?}", e);
+                    continue;
+                }
+            };
+
+            let out_error_rate_base_10_log = probability_away_from_mean_gaussian(0.5, std);
+
+            let out_error_rate_base_2_log = 10.0f64.powf(out_error_rate_base_10_log).log(2.0);
+
             noise_results.push(CMuxSample {
                 ggsw_sigma,
                 a_sigma,
                 b_sigma,
                 out_sigma: std,
+                out_error_rate_base_10_log,
+                out_error_rate_base_2_log,
             });
 
             b_sigma = next_sigma(b_sigma, cmd.start_sigma, cmd.sigma_inc);
