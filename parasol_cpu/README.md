@@ -1,12 +1,5 @@
-# Parasol Processor
+# Parasol processor
 This crate contains Sunscreen's virtual processor, which allows users to run computations over encrypted data using FHE (Fully Homomorphic Encryption). Its out-of-order processor design automatically extracts parallelism from user-provided programs to run them efficiently on modern architectures. Additionally, its design provides more flexibility than the traditional circuits used in FHE.
-
-# Prereqs
-While the contained `parasol_cpu` crate contains everything you need to *run* programs, to write them you'll need the Parasol-llvm compiler. You can get that [here](https://github.com/Sunscreen-tech/testnet-starter/tree/main/compiler).
-
-* Download the tar file for your host architecture and OS.
-* Run `tar xvzf parasol-compiler-<variant>.tar.gz`.
-* Optionally an environment variable to the untarred location's contained bin directory.
 
 # Basic example
 Let's build a basic program where an end user can encrypt two values and send them to a server which will compute and respond with their encrypted sum. After that, the user decrypts the result. For simplicity, we'll describe both parties in a single program.
