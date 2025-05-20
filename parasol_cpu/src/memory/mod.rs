@@ -46,7 +46,7 @@ pub(crate) const INSTRUCTION_SIZE: u32 = 8;
 //   - Added rotl, rotr, neg, xor, addc, subb
 //   - Note that addc and subb are not currently implemented in the backend, but
 //     they do have defined opcodes.
-pub(crate) const SUPPORTED_ABI_VERSION: u8 = 1;
+pub(crate) const SUPPORTED_ABI_VERSION: u8 = 2;
 
 /// An encrypted or unencrypted 32-bit value.
 ///
@@ -241,6 +241,10 @@ impl Memory {
         let elf = ElfBytes::<LittleEndian>::minimal_parse(elf_data)?;
 
         let abi_version = elf.ehdr.abiversion;
+
+        if abi_version != SUPPORTED_ABI_VERSION {
+            return Err(Error::ElfUnsupportedAbiVersion(abi_version));
+        }
 
         if elf.ehdr.class != Class::ELF32 {
             return Err(Error::ElfNotElf32);
@@ -762,10 +766,10 @@ mod tests {
 
     use super::*;
 
-    const CARDIO_O: &[u8] = include_bytes!("test_data/cardio.so");
+    const CARDIO: &[u8] = include_bytes!("test_data/cardio");
 
     fn validate_loader(memory: &Memory, elf: &[u8]) {
-        let elf = ElfBytes::<LittleEndian>::minimal_parse(CARDIO_O).unwrap();
+        let elf = ElfBytes::<LittleEndian>::minimal_parse(CARDIO).unwrap();
 
         for s in elf.segments().unwrap() {
             let memory_start = s.p_vaddr as u32;
@@ -780,7 +784,7 @@ mod tests {
                 if i < s.p_filesz as usize {
                     match memory.try_load(ptr.into()).unwrap() {
                         Byte::Plaintext(val) => {
-                            assert_eq!(val, CARDIO_O[fileloc as usize]);
+                            assert_eq!(val, CARDIO[fileloc as usize]);
                         }
                         Byte::Ciphertext(_) => {
                             panic!("Expected plaintext");
@@ -798,9 +802,9 @@ mod tests {
 
     #[test]
     fn can_create_memory() {
-        let memory = Memory::new_from_elf(CARDIO_O).unwrap();
+        let memory = Memory::new_from_elf(CARDIO).unwrap();
 
-        validate_loader(&memory, CARDIO_O);
+        validate_loader(&memory, CARDIO);
     }
 
     #[test]
@@ -808,7 +812,7 @@ mod tests {
         // Load an ELF file's segments into memory and then allocate additional user buffers
         // into the address space. Verify our ELF segments aren't overwritten and the user's
         // data persists.
-        let memory = Memory::new_from_elf(CARDIO_O).unwrap();
+        let memory = Memory::new_from_elf(CARDIO).unwrap();
         let ptr_plain = memory.try_allocate(32).unwrap();
         let ptr_ct = memory.try_allocate(32).unwrap();
 
@@ -827,7 +831,7 @@ mod tests {
         }
 
         // Check that our allocation didn't write somewhere in an ELF segment
-        validate_loader(&memory, CARDIO_O);
+        validate_loader(&memory, CARDIO);
 
         for b in 0..32 {
             match memory.try_load(ptr_plain.try_offset(b).unwrap()).unwrap() {
