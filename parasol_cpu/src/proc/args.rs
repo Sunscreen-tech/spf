@@ -154,11 +154,11 @@ primitive_impl_to_arg!(i128, true);
 
 impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
     fn alignment() -> usize {
-        return N / 8;
+        N / 8
     }
 
     fn size() -> usize {
-        return N / 8;
+        N / 8
     }
 
     fn is_signed() -> bool {
@@ -196,11 +196,11 @@ impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
 
 impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
     fn alignment() -> usize {
-        return N / 8;
+        N / 8
     }
 
     fn size() -> usize {
-        return N / 8;
+        N / 8
     }
 
     fn is_signed() -> bool {
@@ -238,11 +238,11 @@ impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
 
 impl<const N: usize, T: ToArg> ToArg for [T; N] {
     fn alignment() -> usize {
-        return T::alignment();
+        T::alignment()
     }
 
     fn size() -> usize {
-        return T::size().next_multiple_of(T::alignment()) * N;
+        T::size().next_multiple_of(T::alignment()) * N
     }
 
     fn is_signed() -> bool {
