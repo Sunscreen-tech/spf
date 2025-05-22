@@ -615,7 +615,7 @@ impl FheProcessor {
                         cur_register += 1;
                     } else {
                         memory.try_push_arg_onto_stack(&Arg {
-                            alignment: Ptr32::ALIGNMENT,
+                            alignment: Ptr32::alignment(),
                             is_signed: false,
                             bytes: ptr.to_bytes(),
                         })?;
@@ -661,7 +661,7 @@ impl FheProcessor {
                     let data = val
                         .to_le_bytes()
                         .iter()
-                        .take(T::SIZE)
+                        .take(T::size())
                         .copied()
                         .map(Byte::from)
                         .collect::<Vec<_>>();
@@ -672,7 +672,7 @@ impl FheProcessor {
                     let data = vals
                         .unwrap_l1glwe()
                         .chunks(8)
-                        .take(T::SIZE)
+                        .take(T::size())
                         .map(|x| Byte::try_from(x.to_owned()).unwrap())
                         .collect::<Vec<_>>();
 
@@ -706,7 +706,7 @@ impl FheProcessor {
                     let mut x11 = x11
                         .to_le_bytes()
                         .into_iter()
-                        .take(T::SIZE - 4)
+                        .take(T::size() - 4)
                         .map(Byte::from)
                         .collect::<Vec<_>>();
 
@@ -726,7 +726,7 @@ impl FheProcessor {
                         .chunks(8)
                         .map(|x| Byte::try_from(x.to_vec()))
                         .chain(x11.chunks(8).map(|x| Byte::try_from(x.to_vec())))
-                        .take(T::SIZE)
+                        .take(T::size())
                         .collect::<Result<Vec<_>>>()?;
 
                     T::try_from_bytes(data)?

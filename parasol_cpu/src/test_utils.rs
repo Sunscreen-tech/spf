@@ -147,9 +147,17 @@ where
     BitsUnsigned: Bits<N>,
     <BitsUnsigned as Bits<N>>::PlaintextType: Into<u64>,
 {
-    const ALIGNMENT: usize = <BitsUnsigned as Bits<N>>::PlaintextType::ALIGNMENT;
-    const SIZE: usize = <BitsUnsigned as Bits<N>>::PlaintextType::SIZE;
-    const SIGNED: bool = false;
+    fn alignment() -> usize {
+        <BitsUnsigned as Bits<N>>::PlaintextType::alignment()
+    }
+
+    fn size() -> usize {
+        <BitsUnsigned as Bits<N>>::PlaintextType::size()
+    }
+
+    fn is_signed() -> bool {
+        false
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
         match self {
@@ -229,9 +237,17 @@ where
     BitsSigned: Bits<N>,
     <BitsSigned as Bits<N>>::PlaintextType: Into<i64>,
 {
-    const ALIGNMENT: usize = <BitsSigned as Bits<N>>::PlaintextType::ALIGNMENT;
-    const SIZE: usize = <BitsSigned as Bits<N>>::PlaintextType::SIZE;
-    const SIGNED: bool = true;
+    fn alignment() -> usize {
+        <BitsSigned as Bits<N>>::PlaintextType::size()
+    }
+
+    fn size() -> usize {
+        <BitsSigned as Bits<N>>::PlaintextType::size()
+    }
+
+    fn is_signed() -> bool {
+        true
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
         match self {
