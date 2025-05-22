@@ -178,9 +178,17 @@ impl From<Ptr32> for u32 {
 }
 
 impl ToArg for Ptr32 {
-    const ALIGNMENT: usize = u32::ALIGNMENT;
-    const SIZE: usize = u32::SIZE;
-    const SIGNED: bool = false;
+    fn alignment() -> usize {
+        u32::alignment()
+    }
+
+    fn size() -> usize {
+        u32::size()
+    }
+
+    fn is_signed() -> bool {
+        false
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
         self.0.to_bytes()
@@ -524,17 +532,17 @@ impl Memory {
     /// Attempt to write `x` to the pre-allocated address given by `ptr`.
     ///
     /// # Remarks
-    /// `ptr..ptr + T::SIZE` must be in bounds or an error results.
-    /// `ptr` must be aligned to T::ALIGNMENT.
+    /// `ptr..ptr + T::size()` must be in bounds or an error results.
+    /// `ptr` must be aligned to T::alignment().
     ///
-    /// In the event of an error, the contents between addresses `ptr`` and `ptr + T::Size`
+    /// In the event of an error, the contents between addresses `ptr`` and `ptr + T::size()`
     /// are undefined.
     pub fn try_write_type<T: ToArg>(&self, ptr: Ptr32, x: &T) -> Result<()> {
-        if ptr.0 % T::ALIGNMENT as u32 != 0 {
+        if ptr.0 % T::alignment() as u32 != 0 {
             return Err(Error::UnalignedAccess(ptr.0));
         }
 
-        self.check_range_is_mapped(ptr, T::SIZE as u32)?;
+        self.check_range_is_mapped(ptr, T::size() as u32)?;
 
         for (i, b) in x.to_bytes().into_iter().enumerate() {
             self.try_store(ptr.try_offset(i as u32)?, b)?;
@@ -545,15 +553,15 @@ impl Memory {
 
     /// Attempt to read a type `T` starting at address ptr.
     pub fn try_load_type<T: ToArg>(&self, ptr: Ptr32) -> Result<T> {
-        if ptr.0 % T::ALIGNMENT as u32 != 0 {
+        if ptr.0 % T::alignment() as u32 != 0 {
             return Err(Error::UnalignedAccess(ptr.0));
         }
 
-        self.check_range_is_mapped(ptr, T::SIZE as u32)?;
+        self.check_range_is_mapped(ptr, T::size() as u32)?;
 
-        let mut data = Vec::with_capacity(T::SIZE);
+        let mut data = Vec::with_capacity(T::size());
 
-        for i in (0..T::SIZE) {
+        for i in (0..T::size()) {
             let b = self.try_load(ptr.try_offset(i as u32)?)?;
             data.push(b);
         }
@@ -587,7 +595,7 @@ impl Memory {
     /// Returns an error if allocation fails or the pointer the allocated
     /// `x` on success.
     pub fn try_allocate_type<T: ToArg>(&self, x: &T) -> Result<Ptr32> {
-        let ptr = self.try_allocate(T::SIZE as u32)?;
+        let ptr = self.try_allocate(T::size() as u32)?;
 
         self.try_write_type(ptr, x)?;
 

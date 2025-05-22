@@ -16,19 +16,19 @@ where
     Self: Sized,
 {
     /// The required alignment for this type. Must be power of 2 and should be no larger than 4096.
-    const ALIGNMENT: usize;
+    fn alignment() -> usize;
 
     /// The number of bytes this type takes. Should be no greater than `u32::MAX`.
-    const SIZE: usize;
+    fn size() -> usize;
 
     /// Whether this type needs to be sign extended or not.
-    const SIGNED: bool;
+    fn is_signed() -> bool;
 
     /// Convert a byte array and metadata into an [`Arg`] indicating the alignment,
     /// size, and how to extend the given value.
     fn bytes_to_arg(bytes: Vec<Byte>, is_signed: bool) -> Arg {
         Arg {
-            alignment: Self::ALIGNMENT,
+            alignment: Self::alignment(),
             is_signed,
             bytes,
         }
@@ -37,7 +37,7 @@ where
     /// Convert this value into a [`Vec<Byte>`].
     ///
     /// # Remarks
-    /// The number of bytes returned must equal `T::size` or panics may result in related
+    /// The number of bytes returned must equal `T::size()` or panics may result in related
     /// methods.
     fn to_bytes(&self) -> Vec<Byte>;
 
@@ -48,13 +48,13 @@ where
     /// details.
     ///
     /// # Panics
-    /// If `self.to_bytes().len() != Self::SIZE`.
+    /// If `self.to_bytes().len() != Self::size()`.
     fn to_arg(&self) -> Arg {
         let bytes = self.to_bytes();
 
-        assert_eq!(bytes.len(), Self::SIZE);
+        assert_eq!(bytes.len(), Self::size());
 
-        Self::bytes_to_arg(bytes, Self::SIGNED)
+        Self::bytes_to_arg(bytes, Self::is_signed())
     }
 
     /// Describe this type when it appears in the return value of a function call.
@@ -65,8 +65,8 @@ where
     /// details.
     fn to_return_value() -> ReturnValue<Self> {
         ReturnValue {
-            alignment: Self::ALIGNMENT,
-            size: Self::SIZE,
+            alignment: Self::alignment(),
+            size: Self::size(),
             _phantom: PhantomData,
         }
     }
@@ -79,9 +79,17 @@ macro_rules! primitive_impl_to_arg {
     ($t:ty,$signed:literal) => {
         paste! {
             impl ToArg for $t {
-                const ALIGNMENT: usize = std::mem::align_of::<$t>();
-                const SIZE: usize = std::mem::size_of::<$t>();
-                const SIGNED: bool = $signed;
+                fn alignment() -> usize {
+                    std::mem::align_of::<$t>()
+                }
+
+                fn size() -> usize {
+                    std::mem::size_of::<$t>()
+                }
+
+                fn is_signed() -> bool {
+                    $signed
+                }
 
                 fn to_bytes(&self) -> Vec<Byte> {
                     self.to_le_bytes().map(|x| Byte::from(x)).into_iter().collect::<Vec<_>>()
@@ -90,7 +98,7 @@ macro_rules! primitive_impl_to_arg {
                 fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
                     let mut val: $t = 0;
 
-                    if data.len() != Self::SIZE {
+                    if data.len() != Self::size() {
                         return Err(Error::TypeSizeMismatch);
                     }
 
@@ -119,7 +127,7 @@ macro_rules! primitive_impl_to_arg {
 
                 #[test]
                 fn [<try_from_bytes_ $t:lower>]() {
-                    let bytes: [u8; $t::SIZE] = std::array::from_fn(|x| x as u8);
+                    let bytes: [u8; std::mem::size_of::<$t>()] = std::array::from_fn(|x| x as u8);
                     let expected = $t::from_le_bytes(bytes);
                     let bytes = bytes.into_iter().map(|x| Byte::from(x)).collect::<Vec<_>>();
 
@@ -145,9 +153,17 @@ primitive_impl_to_arg!(i64, true);
 primitive_impl_to_arg!(i128, true);
 
 impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
-    const ALIGNMENT: usize = N / 8;
-    const SIZE: usize = N / 8;
-    const SIGNED: bool = false;
+    fn alignment() -> usize {
+        return N / 8;
+    }
+
+    fn size() -> usize {
+        return N / 8;
+    }
+
+    fn is_signed() -> bool {
+        false
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
         assert!(N.is_power_of_two() && N % 8 == 0);
@@ -179,9 +195,17 @@ impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
 }
 
 impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
-    const ALIGNMENT: usize = N / 8;
-    const SIZE: usize = N / 8;
-    const SIGNED: bool = true;
+    fn alignment() -> usize {
+        return N / 8;
+    }
+
+    fn size() -> usize {
+        return N / 8;
+    }
+
+    fn is_signed() -> bool {
+        true
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
         assert!(N.is_power_of_two() && N % 8 == 0);
@@ -213,12 +237,20 @@ impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
 }
 
 impl<const N: usize, T: ToArg> ToArg for [T; N] {
-    const ALIGNMENT: usize = T::ALIGNMENT;
-    const SIZE: usize = T::SIZE.next_multiple_of(T::ALIGNMENT) * N;
-    const SIGNED: bool = false;
+    fn alignment() -> usize {
+        return T::alignment();
+    }
+
+    fn size() -> usize {
+        return T::size().next_multiple_of(T::alignment()) * N;
+    }
+
+    fn is_signed() -> bool {
+        false
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        if T::SIZE == 0 {
+        if T::size() == 0 {
             return vec![];
         }
 
@@ -230,7 +262,7 @@ impl<const N: usize, T: ToArg> ToArg for [T; N] {
                 bytes
                     .iter()
                     .chain(std::iter::repeat(&bytes[0]))
-                    .take(T::SIZE.next_multiple_of(T::ALIGNMENT))
+                    .take(T::size().next_multiple_of(T::alignment()))
                     .cloned()
                     .collect::<Vec<_>>()
             })
@@ -239,7 +271,7 @@ impl<const N: usize, T: ToArg> ToArg for [T; N] {
 
     fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
         // ZSTs are zesty and need to ignore the normal padding rules.
-        if T::SIZE == 0 {
+        if T::size() == 0 {
             if !data.is_empty() {
                 return Err(Error::TypeSizeMismatch);
             }
@@ -254,7 +286,7 @@ impl<const N: usize, T: ToArg> ToArg for [T; N] {
 
         let as_vec = data
             // Strip off the padding and recreate the Ts
-            .chunks(T::SIZE.next_multiple_of(T::ALIGNMENT))
+            .chunks(T::size().next_multiple_of(T::alignment()))
             .map(|x| T::try_from_bytes(x.to_owned()))
             .collect::<Result<Vec<_>>>()?;
 
@@ -267,9 +299,17 @@ impl<const N: usize, T: ToArg> ToArg for [T; N] {
 }
 
 impl ToArg for () {
-    const ALIGNMENT: usize = 1;
-    const SIZE: usize = 0;
-    const SIGNED: bool = false;
+    fn alignment() -> usize {
+        1
+    }
+
+    fn size() -> usize {
+        0
+    }
+
+    fn is_signed() -> bool {
+        false
+    }
 
     fn to_bytes(&self) -> Vec<Byte> {
         vec![]
@@ -433,8 +473,8 @@ impl<T> Args<T> {
                     if free_regs > 1 {
                         free_regs -= 1;
                     } else {
-                        stack_size = stack_size.next_multiple_of(Ptr32::ALIGNMENT);
-                        stack_size += Ptr32::SIZE;
+                        stack_size = stack_size.next_multiple_of(Ptr32::alignment());
+                        stack_size += Ptr32::size();
                     }
                 }
             }
