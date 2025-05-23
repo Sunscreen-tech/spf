@@ -242,7 +242,7 @@ fn check_low_power_mode() -> Option<bool> {
     output
         .lines()
         .find(|line| line.trim().starts_with("lowpowermode"))
-        .map(|line| line.trim().split_whitespace().nth(1) == Some("1"))
+        .map(|line| line.split_whitespace().nth(1) == Some("1"))
 }
 
 #[cfg(not(target_os = "macos"))]

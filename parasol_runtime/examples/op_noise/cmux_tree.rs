@@ -204,10 +204,10 @@ fn run_compute_tree(
     compute_key: &ComputeKey,
     params: &Params,
 ) -> Vec<(crate::Result<f64>, crate::Result<f64>)> {
-    let permutation = choose_permutation(&ones, &zeros);
+    let permutation = choose_permutation(ones, zeros);
 
-    let mut a = trivial_one_encryption(&params);
-    let mut b = trivial_zero_encryption(&params);
+    let mut a = trivial_one_encryption(params);
+    let mut b = trivial_zero_encryption(params);
 
     let mut last_inputs = (1, 0);
 
@@ -221,10 +221,10 @@ fn run_compute_tree(
 
         // Note: select_1 = !select_2. So out_a and out_b must be different.
         let out_a =
-            high_level::evaluation::cmux(&select_1, &b, &a, &params.l1_params, &params.cbs_radix);
+            high_level::evaluation::cmux(select_1, &b, &a, &params.l1_params, &params.cbs_radix);
 
         let out_b =
-            high_level::evaluation::cmux(&select_2, &b, &a, &params.l1_params, &params.cbs_radix);
+            high_level::evaluation::cmux(select_2, &b, &a, &params.l1_params, &params.cbs_radix);
 
         // We need to measure the noise in the output ciphertexts by keyswitching eventually.
         let noise_a = measure_noise_by_keyswitch_glwe_to_lwe(
@@ -232,7 +232,7 @@ fn run_compute_tree(
             &secret_key.lwe_0,
             &compute_key.ks_key,
             out_a_expected,
-            &params,
+            params,
             PlaintextBits(1),
         );
 
@@ -241,7 +241,7 @@ fn run_compute_tree(
             &secret_key.lwe_0,
             &compute_key.ks_key,
             out_b_expected,
-            &params,
+            params,
             PlaintextBits(1),
         );
 

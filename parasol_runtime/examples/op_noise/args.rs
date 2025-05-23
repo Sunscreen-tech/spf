@@ -266,9 +266,9 @@ impl AnalyzeCMux {
         if let Some(config_path) = &self.file {
             let config = Self::from_file(config_path)?;
 
-            return Ok(config);
+            Ok(config)
         } else {
-            return Ok(self.clone());
+            Ok(self.clone())
         }
     }
 }
@@ -315,7 +315,7 @@ impl AnalyzeCMuxTreeSource {
                 };
                 Ok(CMuxTreeParameters {
                     parameter_set,
-                    run_options: run_options.clone(),
+                    run_options: *run_options,
                 })
             }
         }
