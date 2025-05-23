@@ -1,4 +1,5 @@
 mod add;
+mod auction;
 mod cardio;
 mod chi_sq;
 mod cmux;
