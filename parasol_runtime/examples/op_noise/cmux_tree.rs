@@ -29,6 +29,10 @@ pub struct CMuxTreeRunOptions {
     /// The maximum level of the cmux tree to run
     #[arg(long)]
     depth: usize,
+
+    /// Whether to include the raw data in the output
+    #[arg(long, default_value_t = false)]
+    include_raw: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -64,6 +68,7 @@ impl Serialize for Method {
 
 #[derive(Serialize, Deserialize, Clone)]
 pub struct CMuxTreeDataFile {
+    pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
     pub system_info: SystemInfo,
     pub method: Method,
@@ -338,7 +343,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
             CMuxTreeDataPoint {
                 mean: rmv.mean(),
-                depth: i,
+                depth: i + 1,
                 std,
                 predicted_err: predicted_err.into(),
                 measured_err: n_errors as f64 / n_samples as f64,
@@ -346,14 +351,21 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         })
         .collect::<Vec<_>>();
 
+    let raw = if run_options.include_raw {
+        samples_per_level_flattened
+            .into_iter()
+            .map(|level| level.into_iter().map(|res| res.ok()).collect())
+            .collect()
+    } else {
+        vec![]
+    };
+
     CMuxTreeDataFile {
+        time: chrono::Local::now().to_string(),
         cmux_tree_parameters: cmux_tree_params.clone(),
         system_info,
         method: Method::RandomSelectLinesCascadedDataLines,
         data: data_points_per_level,
-        raw: samples_per_level_flattened
-            .into_iter()
-            .map(|level| level.into_iter().map(|res| res.ok()).collect())
-            .collect(),
+        raw,
     }
 }
