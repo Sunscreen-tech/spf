@@ -1,7 +1,11 @@
 use std::path::{Path, PathBuf};
 
+use anyhow::{Result, anyhow};
 use clap::{Args, Parser, Subcommand};
+use parasol_runtime::{DEFAULT_80, DEFAULT_128, Params};
 use serde::{Deserialize, Serialize};
+
+use crate::cmux_tree::CMuxTreeParameters;
 
 #[derive(Debug, Parser)]
 #[command(version, about = "A tool for analyzing noise resulting from various FHE operations", long_about = None)]
@@ -18,6 +22,7 @@ pub enum Command {
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
     AnalyzeCmux(AnalyzeCMux),
+    AnalyzeCmuxTree(AnalyzeCMuxTree),
 }
 
 #[derive(Debug, Args)]
@@ -251,19 +256,68 @@ pub struct AnalyzeCMux {
 }
 
 impl AnalyzeCMux {
-    pub fn from_file(path: &Path) -> Result<Self, std::io::Error> {
+    pub fn from_file(path: &Path) -> Result<Self> {
         let file_content = std::fs::read_to_string(path)?;
         let config = serde_json::from_str(&file_content)?;
         Ok(config)
     }
 
-    pub fn load_config(&self) -> Result<Self, std::io::Error> {
+    pub fn load_config(&self) -> Result<Self> {
         if let Some(config_path) = &self.file {
             let config = Self::from_file(config_path)?;
 
             return Ok(config);
         } else {
             return Ok(self.clone());
+        }
+    }
+}
+
+#[derive(Debug, Args, Clone, Serialize, Deserialize)]
+pub struct AnalyzeCMuxTree {
+    #[command(subcommand)]
+    pub source: AnalyzeCMuxTreeSource,
+}
+
+#[derive(Debug, Subcommand, Clone, Serialize, Deserialize)]
+pub enum AnalyzeCMuxTreeSource {
+    File {
+        #[arg(long)]
+        file: std::path::PathBuf,
+    },
+    Params {
+        #[arg(long)]
+        parameter_set_name: String,
+        #[clap(flatten)]
+        run_options: crate::cmux_tree::CMuxTreeRunOptions,
+    },
+}
+
+impl AnalyzeCMuxTreeSource {
+    pub fn load_config(&self) -> Result<CMuxTreeParameters> {
+        match self {
+            AnalyzeCMuxTreeSource::File { file } => {
+                // Load the file and parse it using serde_json
+                let file_content = std::fs::read_to_string(file)?;
+                let params: CMuxTreeParameters = serde_json::from_str(&file_content)?;
+
+                Ok(params)
+            }
+            AnalyzeCMuxTreeSource::Params {
+                parameter_set_name,
+                run_options,
+            } => {
+                let parameter_set = match parameter_set_name.to_lowercase().as_str() {
+                    "default" => Params::default(),
+                    "default_80" => DEFAULT_80,
+                    "default_128" => DEFAULT_128,
+                    _ => Err(anyhow!("Invalid parameter set"))?,
+                };
+                Ok(CMuxTreeParameters {
+                    parameter_set,
+                    run_options: run_options.clone(),
+                })
+            }
         }
     }
 }

@@ -146,7 +146,7 @@ pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
                 }
             };
 
-            let out_error_rate_base_10_log = probability_away_from_mean_gaussian(0.5, std);
+            let out_error_rate_base_10_log = probability_away_from_mean_gaussian(0.25, std);
 
             let out_error_rate_base_2_log = 10.0f64.powf(out_error_rate_base_10_log).log(2.0);
 

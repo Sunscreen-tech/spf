@@ -1,7 +1,12 @@
 use crate::{Error, Result};
+use parasol_runtime::Params;
 use sunscreen_tfhe::{
     GlweDef, PlaintextBits, RadixDecomposition, Torus,
-    entities::{GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, Polynomial, PolynomialRef},
+    entities::{
+        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, LweKeyswitchKeyRef,
+        LweSecretKeyRef, Polynomial, PolynomialRef,
+    },
+    high_level::{self},
     ops::encryption::{decrypt_glwe_ciphertext, scale_msg_by_gadget_factor},
     polynomial::polynomial_external_mad,
 };
@@ -30,6 +35,34 @@ pub fn measure_noise_glwe(
             }
         })
         .collect::<Result<Vec<_>>>()
+}
+
+pub fn measure_noise_by_keyswitch_glwe_to_lwe(
+    ct: &GlweCiphertextRef<u64>,
+    sk: &LweSecretKeyRef<u64>,
+    ksk: &LweKeyswitchKeyRef<u64>,
+    expected: u64,
+    params: &Params,
+    plaintext_bits: PlaintextBits,
+) -> Result<f64> {
+    let sample_extract_ct = high_level::evaluation::sample_extract(ct, &params.l1_params, 0);
+
+    let lwe0 = high_level::evaluation::keyswitch_lwe_to_lwe(
+        &sample_extract_ct,
+        ksk,
+        &params.l1_params.as_lwe_def(),
+        &params.l0_params,
+        &params.ks_radix,
+    );
+
+    let decrypted = sk.decrypt_without_decode(&lwe0, &params.l0_params);
+
+    if decrypted.decode(plaintext_bits) != expected {
+        return Err(Error::TooMuchNoise);
+    }
+
+    let expeced_encoded = Torus::<u64>::encode(expected, plaintext_bits);
+    Ok(decrypted.normalized_torus_distance(&expeced_encoded))
 }
 
 /// Measures the noise in the GGSW ciphertext requiring the largest plaintext space to represent.

@@ -26,12 +26,15 @@ sunscreen_tfhe = { workspace = true }
 thiserror = { workspace = true }
 
 [dev-dependencies]
+anyhow = "1.0.98"
 clap = { workspace = true }
 criterion = { workspace = true }
 indicatif = { workspace = true }
 rand = { workspace = true }
 serde_json = { workspace = true }
 sunscreen_math = { workspace = true }
+reqwest = { version = "0.12.15", features = ["blocking"] }
+sysinfo = "0.35.1"
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }

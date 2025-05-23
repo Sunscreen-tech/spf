@@ -347,7 +347,8 @@ impl FheCircuit {
             }
 
             // Since FHE operations are connected only to cmux operations, we
-            // are either taking in a select (Ggsw) or data (Glwe) line.
+            // are only taking inputs in ggsw form (unless scheme switching, in
+            // which case glev).
             if !matches!(
                 self.graph[*fhe_provided_op_index],
                 FheOp::InputGgsw1(_)
@@ -356,7 +357,7 @@ impl FheCircuit {
                     | FheOp::OneGgsw1
                     | FheOp::SchemeSwitch
             ) {
-                panic!("Mux trees can only be connected to Ggsw, CBS, or Schemeswitch nodes.");
+                panic!("Mux trees can only be connected to Ggsw, CBS, or Scheme switch nodes.");
             }
 
             // Connect the FHE input to all of the mux input outgoing edges.
