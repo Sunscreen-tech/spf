@@ -1,7 +1,7 @@
 use indicatif::ProgressBar;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
-use sunscreen_math::{security::probability_away_from_mean_gaussian, stats::RunningMeanVariance};
+use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
     GlweDef, GlweDimension, GlweSize, PlaintextBits, PolynomialDegree, RadixCount,
     RadixDecomposition, RadixLog,
@@ -14,7 +14,10 @@ use sunscreen_tfhe::{
     rand::Stddev,
 };
 
-use crate::{Result, args::AnalyzeCMux, noise::measure_noise_glwe};
+use crate::{
+    Result, args::AnalyzeCMux, noise::measure_noise_glwe,
+    probability_away_from_mean_gaussian_log_binary,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CMuxSample {
@@ -146,17 +149,15 @@ pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
                 }
             };
 
-            let out_error_rate_base_10_log = probability_away_from_mean_gaussian(0.25, std);
-
-            let out_error_rate_base_2_log = 10.0f64.powf(out_error_rate_base_10_log).log(2.0);
+            let error_rate = probability_away_from_mean_gaussian_log_binary(std);
 
             noise_results.push(CMuxSample {
                 ggsw_sigma,
                 a_sigma,
                 b_sigma,
                 out_sigma: std,
-                out_error_rate_base_10_log,
-                out_error_rate_base_2_log,
+                out_error_rate_base_10_log: error_rate.log_10(),
+                out_error_rate_base_2_log: error_rate.log_2(),
             });
 
             b_sigma = next_sigma(b_sigma, cmd.start_sigma, cmd.sigma_inc);
