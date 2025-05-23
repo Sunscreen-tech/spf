@@ -51,7 +51,7 @@ impl Method {
     pub fn description(&self) -> &'static str {
         match self {
             Method::RandomSelectLinesCascadedDataLines => {
-                "The random select lines, cascading data lines method. This method involves generating `depth` select GGSW ciphertexts, and then randomly selecting two GGSWs (one for a message and it's complement) for each level of the cmux tree. At each level, two cmux operations are run on the data lines from the previous level, and the output is used as the input for the next level. The calculated errors are based on keyswitching the GLWEs at each level into the l0 LWE key. This is the noise that tells us whether we can compute up to the specified CMUX depth before needing to do a bootstrap; i.e if we don't want a decryption failure higher than 2^-64 and that threshold is crossed at depth d, then we know we can run cmux graphs up to depth d before needing to bootstrap."
+                "The 'random select lines, cascading data lines' method generates a set of GGSW ciphertexts for each level of the CMUX tree. At every level, two GGSWs are randomly selected—one encrypting a binary value and the other its complement—and used as select lines for CMUX operations on the data lines from the previous level. The outputs from the CMUX operations become the inputs for the next level. Noise is measured by keyswitching the resulting GLWE ciphertexts at each level into the L0 LWE key. This process helps determine the maximum CMUX tree depth that can be evaluated before bootstrapping is required to keep the probability of decryption failure below a chosen threshold (e.g., 2^-64)."
             }
         }
     }
