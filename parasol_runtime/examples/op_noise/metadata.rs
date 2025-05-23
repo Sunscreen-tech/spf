@@ -180,7 +180,7 @@ fn get_ec2_info() -> SystemInfo {
     };
 
     let gpu_info = get_gpu_info();
-    let ram_gb = sys.total_memory() / 1024 / 1024; // Convert from KB to GB
+    let ram_gb = sys.total_memory() / 1024 / 1024 / 1024; // Convert from KB to GB
 
     SystemInfo {
         instance_type,
