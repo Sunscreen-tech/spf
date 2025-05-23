@@ -66,7 +66,7 @@ impl Serialize for Method {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 pub struct CMuxTreeDataFile {
     pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
@@ -76,7 +76,7 @@ pub struct CMuxTreeDataFile {
     pub raw: Vec<Vec<Option<f64>>>,
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 struct PredictedError {
     base_10: f64,
     base_2: f64,
@@ -91,7 +91,7 @@ impl From<ProbabilityAwayMeanGaussianLog> for PredictedError {
     }
 }
 
-#[derive(Serialize, Deserialize, Clone)]
+#[derive(Serialize, Clone)]
 pub struct CMuxTreeDataPoint {
     depth: usize,
     mean: f64,
