@@ -14,6 +14,10 @@ mod cbs;
 mod cmux;
 mod error;
 pub use error::*;
+mod math;
+pub use math::*;
+mod cmux_tree;
+mod metadata;
 mod noise;
 mod scheme_switch;
 mod secret_key_encryption;
@@ -55,8 +59,20 @@ fn main() {
             write_results(&path.join("analyze_cbs.json"), &result);
         }
         Command::AnalyzeCmux(cmd) => {
+            if let Err(e) = cmd.load_config() {
+                eprintln!("Error loading configuration: {}", e);
+                return;
+            }
             let result = analyze_cmux(&cmd);
             write_results(&path.join("analyze_cmux.json"), &result);
+        }
+        Command::AnalyzeCmuxTree(cmd) => {
+            let cmux_tree_params = cmd
+                .source
+                .load_config()
+                .expect("Error loading configuration");
+            let result = cmux_tree::analyze_cmux_tree(&cmux_tree_params);
+            write_results(&path.join("analyze_cmux_tree.json"), &result);
         }
     };
 }

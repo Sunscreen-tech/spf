@@ -136,7 +136,11 @@ pub const DEFAULT_80: Params = Params {
 /// The standard 128-bit secure parameter set.
 ///
 /// # Remarks
-/// Is compatible with RLWE public-key encryption.
+/// - This parameter set is compatible with RLWE public-key encryption.
+/// - The noise exponent (2^x) at a given depth inside a CMUX tree is well
+///   approximated (within 3% approximation error, valid up to depth 10,000) by
+///   `base_2_error_exponent(depth) = -161785.15 / (depth + 233.42) - 3.54`
+///   The error at a computational depth of 1024 is about 2^(-132).
 pub const DEFAULT_128: Params = Params {
     l0_params: LweDef {
         dim: LweDimension(637),

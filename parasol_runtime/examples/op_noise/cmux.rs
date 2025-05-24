@@ -14,17 +14,31 @@ use sunscreen_tfhe::{
     rand::Stddev,
 };
 
-use crate::{Result, args::AnalyzeCMux, noise::measure_noise_glwe};
+use crate::{
+    Result, args::AnalyzeCMux, noise::measure_noise_glwe,
+    probability_away_from_mean_gaussian_log_binary,
+};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct CMuxSample {
     pub ggsw_sigma: f64,
     pub a_sigma: f64,
     pub b_sigma: f64,
-    pub out_sigma: Result<f64>,
+    pub out_sigma: f64,
+    pub out_error_rate_base_10_log: f64,
+    pub out_error_rate_base_2_log: f64,
+}
+
+#[derive(Debug, Serialize, Deserialize)]
+pub struct CMuxRun {
+    pub cmux_samples: Vec<CMuxSample>,
+    pub parameters: AnalyzeCMux,
 }
 
 pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
+    println!("Running with the following parameters:");
+    println!("{}", serde_json::to_string_pretty(cmd).unwrap());
+
     let glwe = GlweDef {
         std: Stddev(cmd.key_sigma),
         dim: GlweDimension {
@@ -127,11 +141,23 @@ pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
                 var.std()
             });
 
+            let std = match std {
+                Ok(std) => std,
+                Err(e) => {
+                    eprintln!("Error measuring noise: {:?}", e);
+                    continue;
+                }
+            };
+
+            let error_rate = probability_away_from_mean_gaussian_log_binary(std);
+
             noise_results.push(CMuxSample {
                 ggsw_sigma,
                 a_sigma,
                 b_sigma,
                 out_sigma: std,
+                out_error_rate_base_10_log: error_rate.log_10(),
+                out_error_rate_base_2_log: error_rate.log_2(),
             });
 
             b_sigma = next_sigma(b_sigma, cmd.start_sigma, cmd.sigma_inc);

@@ -1,4 +1,11 @@
+use std::path::{Path, PathBuf};
+
+use anyhow::{Result, anyhow};
 use clap::{Args, Parser, Subcommand};
+use parasol_runtime::{DEFAULT_80, DEFAULT_128, Params};
+use serde::{Deserialize, Serialize};
+
+use crate::cmux_tree::CMuxTreeParameters;
 
 #[derive(Debug, Parser)]
 #[command(version, about = "A tool for analyzing noise resulting from various FHE operations", long_about = None)]
@@ -15,6 +22,7 @@ pub enum Command {
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
     AnalyzeCmux(AnalyzeCMux),
+    AnalyzeCmuxTree(AnalyzeCMuxTree),
 }
 
 #[derive(Debug, Args)]
@@ -204,8 +212,12 @@ pub struct AnalyzeCbs {
     pub sample_count: u64,
 }
 
-#[derive(Debug, Args)]
+#[derive(Debug, Args, Clone, Serialize, Deserialize)]
 pub struct AnalyzeCMux {
+    #[arg(long)]
+    /// Path to a JSON configuration file containing the parameters. These parameters are selected if this field exists, and all other fields are ignored.
+    pub file: Option<PathBuf>,
+
     #[arg(default_value_t = 2, long)]
     /// The radix decomposition count of the resulting GGSW.
     pub cbs_radix_count: usize,
@@ -226,7 +238,7 @@ pub struct AnalyzeCMux {
     pub key_sigma: f64,
 
     #[arg(default_value_t = 0.00000000000000034667670193445625, long)]
-    /// The std deviation of the L0 LWE instance.
+    /// The std deviation of the L1 GLWE instance.
     pub start_sigma: f64,
 
     #[arg(default_value_t = 1000.0, long)]
@@ -241,4 +253,71 @@ pub struct AnalyzeCMux {
 
     #[arg(default_value_t = false, long)]
     pub ntt: bool,
+}
+
+impl AnalyzeCMux {
+    pub fn from_file(path: &Path) -> Result<Self> {
+        let file_content = std::fs::read_to_string(path)?;
+        let config = serde_json::from_str(&file_content)?;
+        Ok(config)
+    }
+
+    pub fn load_config(&self) -> Result<Self> {
+        if let Some(config_path) = &self.file {
+            let config = Self::from_file(config_path)?;
+
+            Ok(config)
+        } else {
+            Ok(self.clone())
+        }
+    }
+}
+
+#[derive(Debug, Args, Clone, Serialize, Deserialize)]
+pub struct AnalyzeCMuxTree {
+    #[command(subcommand)]
+    pub source: AnalyzeCMuxTreeSource,
+}
+
+#[derive(Debug, Subcommand, Clone, Serialize, Deserialize)]
+pub enum AnalyzeCMuxTreeSource {
+    File {
+        #[arg(long)]
+        file: std::path::PathBuf,
+    },
+    Params {
+        #[arg(long)]
+        parameter_set_name: String,
+        #[clap(flatten)]
+        run_options: crate::cmux_tree::CMuxTreeRunOptions,
+    },
+}
+
+impl AnalyzeCMuxTreeSource {
+    pub fn load_config(&self) -> Result<CMuxTreeParameters> {
+        match self {
+            AnalyzeCMuxTreeSource::File { file } => {
+                // Load the file and parse it using serde_json
+                let file_content = std::fs::read_to_string(file)?;
+                let params: CMuxTreeParameters = serde_json::from_str(&file_content)?;
+
+                Ok(params)
+            }
+            AnalyzeCMuxTreeSource::Params {
+                parameter_set_name,
+                run_options,
+            } => {
+                let parameter_set = match parameter_set_name.to_lowercase().as_str() {
+                    "default" => Params::default(),
+                    "default_80" => DEFAULT_80,
+                    "default_128" => DEFAULT_128,
+                    _ => Err(anyhow!("Invalid parameter set"))?,
+                };
+                Ok(CMuxTreeParameters {
+                    parameter_set,
+                    run_options: *run_options,
+                })
+            }
+        }
+    }
 }
