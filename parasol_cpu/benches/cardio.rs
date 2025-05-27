@@ -48,13 +48,13 @@ fn generate_args(enc: &Encryption, sk: &SecretKey) -> Args<UInt<8, L1GlweCiphert
         .sum::<u8>();
 
     ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(flags as u64, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(40, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(50, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(70, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(170, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, &enc, &sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, &enc, &sk))
+        .arg(UInt::<8, _>::encrypt_secret(flags as u64, enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(40, enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(50, enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(70, enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(170, enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(1, enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(1, enc, sk))
         .return_value::<UInt<8, _>>()
 }
 
