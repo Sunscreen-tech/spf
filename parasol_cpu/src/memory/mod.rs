@@ -337,11 +337,16 @@ impl Memory {
         memory
     }
 
-    pub(crate) fn new_default_stack() -> Self {
+    /// Create a new [`Memory`] object with a default stack starting at
+    /// 0x8000_0000. This is mostly useful if you are generating your own
+    /// program in assembly.
+    pub fn new_default_stack() -> Self {
         Memory::new(Ptr32::from(0x8000_0000), 4096)
     }
 
-    pub(crate) fn allocate_program(&self, program: &[IsaOp]) -> Ptr32 {
+    /// Allocate a program in this memory and return the address of the
+    /// program.
+    pub fn allocate_program(&self, program: &[IsaOp]) -> Ptr32 {
         let byte_len = (program.len() * std::mem::size_of::<u64>()) as u32;
         let addr = self.try_allocate(byte_len).unwrap();
 

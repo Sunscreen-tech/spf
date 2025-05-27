@@ -1520,6 +1520,7 @@ dependencies = [
  "rayon",
  "seq-macro",
  "serde",
+ "serde_json",
  "sunscreen_math",
  "sunscreen_tfhe",
  "thiserror",

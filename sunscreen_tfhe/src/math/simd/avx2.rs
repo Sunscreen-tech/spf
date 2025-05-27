@@ -77,43 +77,45 @@ unsafe fn complex_mad_avx_512_unchecked(
         // This snippet reads 2 vectors of 4 complex numbers from a, b, c and computes
         // stores the complex multiply-add result to c. Thus, it iterates over 16 f64
         // elements from each vector at a time.
-        asm!(
-            // Load 2 __m512d of Complex<f64> from a
-            "vmovapd zmm0, [{a_ptr}+8*{i}]",
-            "vmovapd zmm1, [{a_ptr}+8*{i}+64]",
-            "vshufpd zmm2, zmm0, zmm1, $0",   // Extract the re(a) into zmm2
-            "vshufpd zmm3, zmm0, zmm1, $255", // Extract the im(a) into zmm3
-            // Load 2 __m512d of Complex<f64> from b
-            "vmovapd zmm0, [{b_ptr}+8*{i}]",
-            "vmovapd zmm1, [{b_ptr}+8*{i}+64]",
-            "vshufpd zmm4, zmm0, zmm1, $0",   // Extract the re(b) into zmm4
-            "vshufpd zmm5, zmm0, zmm1, $255", // Extract the im(b) into zmm5
-            // Load 2 __m512d of Complex<f64> from c
-            "vmovapd zmm0, [{c_ptr}+8*{i}]",
-            "vmovapd zmm1, [{c_ptr}+8*{i}+64]",
-            "vshufpd zmm6, zmm0, zmm1, $0",   // Extract the re(c) into zmm6
-            "vshufpd zmm7, zmm0, zmm1, $255", // Extract the im(c) into zmm7
-            "vfmadd231pd zmm6, zmm2, zmm4",   // re(c) += re(a) * re(b)
-            "vfmadd231pd zmm7, zmm2, zmm5",   // im(c) += re(a) * im(b)
-            "vfnmadd231pd zmm6, zmm3, zmm5",  // re(c) -= im(a) * im(b)
-            "vfmadd231pd zmm7, zmm3, zmm4",   // im(c) += im(a) * re(b)
-            "vshufpd zmm0, zmm6, zmm7, $0",   // Repack the lower 4 Complex<f64>s
-            "vshufpd zmm1, zmm6, zmm7, $255", // Repack the upper 4 Complex<f64>s
-            "vmovapd [{c_ptr}+8*{i}], zmm0",    // Write the repacked values back.
-            "vmovapd [{c_ptr}+8*{i}+64], zmm1", // Write the repacked values back.
-            a_ptr = in(reg) a_ptr,
-            b_ptr = in(reg) b_ptr,
-            c_ptr = in(reg) c_ptr,
-            i = in(reg) i,
-            out("zmm0") _, // Indicate our clobbers
-            out("zmm1") _,
-            out("zmm2") _,
-            out("zmm3") _,
-            out("zmm4") _,
-            out("zmm5") _,
-            out("zmm6") _,
-            out("zmm7") _,
-        );
+        unsafe {
+            asm!(
+                // Load 2 __m512d of Complex<f64> from a
+                "vmovapd zmm0, [{a_ptr}+8*{i}]",
+                "vmovapd zmm1, [{a_ptr}+8*{i}+64]",
+                "vshufpd zmm2, zmm0, zmm1, $0",   // Extract the re(a) into zmm2
+                "vshufpd zmm3, zmm0, zmm1, $255", // Extract the im(a) into zmm3
+                // Load 2 __m512d of Complex<f64> from b
+                "vmovapd zmm0, [{b_ptr}+8*{i}]",
+                "vmovapd zmm1, [{b_ptr}+8*{i}+64]",
+                "vshufpd zmm4, zmm0, zmm1, $0",   // Extract the re(b) into zmm4
+                "vshufpd zmm5, zmm0, zmm1, $255", // Extract the im(b) into zmm5
+                // Load 2 __m512d of Complex<f64> from c
+                "vmovapd zmm0, [{c_ptr}+8*{i}]",
+                "vmovapd zmm1, [{c_ptr}+8*{i}+64]",
+                "vshufpd zmm6, zmm0, zmm1, $0",   // Extract the re(c) into zmm6
+                "vshufpd zmm7, zmm0, zmm1, $255", // Extract the im(c) into zmm7
+                "vfmadd231pd zmm6, zmm2, zmm4",   // re(c) += re(a) * re(b)
+                "vfmadd231pd zmm7, zmm2, zmm5",   // im(c) += re(a) * im(b)
+                "vfnmadd231pd zmm6, zmm3, zmm5",  // re(c) -= im(a) * im(b)
+                "vfmadd231pd zmm7, zmm3, zmm4",   // im(c) += im(a) * re(b)
+                "vshufpd zmm0, zmm6, zmm7, $0",   // Repack the lower 4 Complex<f64>s
+                "vshufpd zmm1, zmm6, zmm7, $255", // Repack the upper 4 Complex<f64>s
+                "vmovapd [{c_ptr}+8*{i}], zmm0",    // Write the repacked values back.
+                "vmovapd [{c_ptr}+8*{i}+64], zmm1", // Write the repacked values back.
+                a_ptr = in(reg) a_ptr,
+                b_ptr = in(reg) b_ptr,
+                c_ptr = in(reg) c_ptr,
+                i = in(reg) i,
+                out("zmm0") _, // Indicate our clobbers
+                out("zmm1") _,
+                out("zmm2") _,
+                out("zmm3") _,
+                out("zmm4") _,
+                out("zmm5") _,
+                out("zmm6") _,
+                out("zmm7") _,
+            );
+        }
 
         i += 16;
     }
