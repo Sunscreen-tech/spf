@@ -44,6 +44,15 @@ debug = []
 criterion = { workspace = true }
 env_logger = { workspace = true }
 itertools = { workspace = true }
+serde_json = { workspace = true }
 
 [profile.dev.package."*"]
 opt-level = 3
+
+[[bench]]
+harness = false
+name = "chi_squared"
+
+[[bench]]
+harness = false
+name = "cardio"

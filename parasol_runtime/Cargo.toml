@@ -21,8 +21,11 @@ num = { workspace = true }
 parasol_concurrency = { workspace = true }
 petgraph = { workspace = true }
 rayon = { workspace = true }
+reqwest = { version = "0.12.15", features = ["blocking"] }
 serde = { workspace = true }
+serde_json = { workspace = true }
 sunscreen_tfhe = { workspace = true }
+sysinfo = "0.35.1"
 thiserror = { workspace = true }
 
 [dev-dependencies]
@@ -32,10 +35,7 @@ clap = { workspace = true }
 criterion = { workspace = true }
 indicatif = { workspace = true }
 rand = { workspace = true }
-serde_json = { workspace = true }
 sunscreen_math = { workspace = true }
-reqwest = { version = "0.12.15", features = ["blocking"] }
-sysinfo = "0.35.1"
 
 [target.wasm32-unknown-unknown.dependencies]
 getrandom = { version = "0.2", features = ["js"] }

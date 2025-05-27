@@ -17,14 +17,22 @@ pub struct CpuInfo {
 
     /// Option in case on Mac the pmset command doesn't return the lowpowermode field
     pub low_power_mode: Option<bool>,
+
+    /// Do we have AVX2 support?
+    pub avx2_support: Option<bool>,
 }
 
 impl std::fmt::Display for CpuInfo {
     fn fmt(&self, f: &mut std::fmt::Formatter) -> std::fmt::Result {
+        let low_power_mode = self
+            .low_power_mode
+            .map(|mode| if mode { "Enabled" } else { "Disabled" })
+            .unwrap_or_else(|| "Unapplicable (not a Mac) or unknown");
+
         write!(
             f,
-            "Model: {}\nCores: {}\nThreads: {}\nClock Speed: {} GHz",
-            self.model_name, self.cpu_cores, self.cpu_threads, self.clock_speed
+            "Model: {}\nCores: {}\nThreads: {}\nClock Speed: {} GHz\nLow Power Mode: {}",
+            self.model_name, self.cpu_cores, self.cpu_threads, self.clock_speed, low_power_mode
         )
     }
 }
@@ -177,6 +185,7 @@ fn get_ec2_info() -> SystemInfo {
         cpu_threads: sys.cpus().len() as u32,
         clock_speed: sys.cpus()[0].frequency() as f32 / 1000.0, // Convert to GHz
         low_power_mode: check_low_power_mode(),
+        avx2_support: check_avx2_support(),
     };
 
     let gpu_info = get_gpu_info();
@@ -208,6 +217,7 @@ fn get_local_system_info() -> SystemInfo {
         cpu_threads: sys.cpus().len() as u32,
         clock_speed: sys.cpus()[0].frequency() as f32 / 1000.0, // Convert to GHz
         low_power_mode,
+        avx2_support: check_avx2_support(),
     };
 
     let gpu_info = get_gpu_info();
@@ -228,6 +238,12 @@ pub fn is_running_on_ec2() -> bool {
         .map(|_| true)
         .unwrap_or(false)
 }
+
+///////////////////////////////////////////////////////////////////////////
+// Check for platform-specific features                                  //
+///////////////////////////////////////////////////////////////////////////
+
+// Low power mode is a feature on macOS that can affect performance
 
 #[cfg(target_os = "macos")]
 fn check_low_power_mode() -> Option<bool> {
@@ -250,10 +266,36 @@ fn check_low_power_mode() -> Option<bool> {
     None
 }
 
+// AVX2 support is a feature on x86/x86_64 architectures that can improve
+// performance
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    target_feature = "avx2"
+))]
+fn check_avx2_support() -> Option<bool> {
+    Some(true)
+}
+
+#[cfg(all(
+    any(target_arch = "x86", target_arch = "x86_64"),
+    not(target_feature = "avx2")
+))]
+fn check_avx2_support() -> Option<bool> {
+    Some(false)
+}
+
+#[cfg(not(any(target_arch = "x86", target_arch = "x86_64")))]
+fn check_avx2_support() -> Option<bool> {
+    None
+}
+
 pub fn print_system_info() -> SystemInfo {
     let info = get_system_info();
-    println!("\nSystem Information:");
-    println!("{}\n", info);
+    let info_json = serde_json::to_string_pretty(&info).unwrap();
+
+    println!("System Information:");
+    println!("{}\n", info_json);
 
     info
 }

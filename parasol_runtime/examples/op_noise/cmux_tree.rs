@@ -2,7 +2,10 @@ use std::sync::Arc;
 
 use clap::Args;
 use num::Complex;
-use parasol_runtime::{ComputeKey, Params, SecretKey};
+use parasol_runtime::{
+    ComputeKey, Params, SecretKey,
+    metadata::{SystemInfo, print_system_info},
+};
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
 use serde::{Deserialize, Serialize};
@@ -14,9 +17,7 @@ use sunscreen_tfhe::{
 };
 
 use crate::{
-    ProbabilityAwayMeanGaussianLog,
-    metadata::{SystemInfo, print_system_info},
-    noise::measure_noise_by_keyswitch_glwe_to_lwe,
+    ProbabilityAwayMeanGaussianLog, noise::measure_noise_by_keyswitch_glwe_to_lwe,
     probability_away_from_mean_gaussian_log_binary,
 };
 

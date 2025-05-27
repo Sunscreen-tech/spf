@@ -17,7 +17,6 @@ pub use error::*;
 mod math;
 pub use math::*;
 mod cmux_tree;
-mod metadata;
 mod noise;
 mod scheme_switch;
 mod secret_key_encryption;
