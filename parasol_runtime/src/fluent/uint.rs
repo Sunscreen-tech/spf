@@ -2,7 +2,10 @@ use crate::circuits::mul::append_uint_multiply;
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
-    generic_int::{GenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, Sign},
+    generic_int::{
+        DynamicGenericInt, GenericInt, GenericIntGraphNodes, PackedDynamicGenericInt,
+        PackedGenericIntGraphNode, Sign,
+    },
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
@@ -49,6 +52,12 @@ pub type UInt<const N: usize, T> = GenericInt<N, T, Unsigned>;
 /// Unsigned variant for [`PackedGenericInt`]
 pub type PackedUInt<const N: usize, T> = PackedGenericInt<N, T, Unsigned>;
 
+/// Unsigned variant for [`DynamicGenericInt`]
+pub type DynamicUInt<T> = DynamicGenericInt<T, Unsigned>;
+
+/// Unsigned variant for [`PackedDynamicGenericInt`]
+pub type PackedDynamicUInt<T> = PackedDynamicGenericInt<T, Unsigned>;
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -74,6 +83,18 @@ mod tests {
     }
 
     #[test]
+    fn can_roundtrip_packed_dyn_uint() {
+        let enc = get_encryption_128();
+
+        let sk = get_secret_keys_128();
+        let pk = get_public_key_128();
+
+        let val = PackedDynamicUInt::<L1GlweCiphertext>::encrypt(42, &enc, &pk, 16);
+
+        assert_eq!(val.decrypt(&enc, &sk), 42);
+    }
+
+    #[test]
     fn can_unpack_uint() {
         let enc = get_encryption_128();
 
@@ -82,6 +103,31 @@ mod tests {
         let (uproc, fc) = make_uproc_128();
 
         let val = PackedUInt::<16, L1GlweCiphertext>::encrypt(42, &enc, &pk);
+
+        let ctx = FheCircuitCtx::new();
+
+        let as_unpacked = val
+            .graph_input(&ctx)
+            .unpack(&ctx)
+            .collect_outputs(&ctx, &enc);
+
+        uproc
+            .lock()
+            .unwrap()
+            .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+
+        assert_eq!(as_unpacked.decrypt(&enc, &sk), 42);
+    }
+
+    #[test]
+    fn can_unpack_dyn_uint() {
+        let enc = get_encryption_128();
+
+        let sk = get_secret_keys_128();
+        let pk = get_public_key_128();
+        let (uproc, fc) = make_uproc_128();
+
+        let val = PackedDynamicUInt::<L1GlweCiphertext>::encrypt(42, &enc, &pk, 16);
 
         let ctx = FheCircuitCtx::new();
 
@@ -122,6 +168,29 @@ mod tests {
     }
 
     #[test]
+    fn can_pack_dyn_uint() {
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+        let (uproc, fc) = make_uproc_128();
+
+        let val = DynamicUInt::<L1GlweCiphertext>::encrypt_secret(42, &enc, &sk, 16);
+
+        let ctx = FheCircuitCtx::new();
+
+        let actual = val
+            .graph_inputs(&ctx)
+            .pack(&ctx, &enc)
+            .collect_output(&ctx, &enc);
+
+        uproc
+            .lock()
+            .unwrap()
+            .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+
+        assert_eq!(actual.decrypt(&enc, &sk), 42);
+    }
+
+    #[test]
     fn can_safe_deserialize_uint() {
         fn case<T: CiphertextOps + for<'a> Deserialize<'a> + Serialize>() {
             let enc = get_encryption_128();
@@ -131,6 +200,24 @@ mod tests {
 
             let ser = bincode::serialize(&val).unwrap();
             crate::safe_bincode::deserialize::<UInt<15, T>>(&ser, &DEFAULT_128).unwrap();
+        }
+
+        case::<L0LweCiphertext>();
+        case::<L1LweCiphertext>();
+        case::<L1GlweCiphertext>();
+        case::<L1GlevCiphertext>();
+    }
+
+    #[test]
+    fn can_unsafe_deserialize_dyn_uint() {
+        fn case<T: CiphertextOps + for<'a> Deserialize<'a> + Serialize>() {
+            let enc = get_encryption_128();
+            let sk = get_secret_keys_128();
+
+            let val = DynamicUInt::<T>::encrypt_secret(42, &enc, &sk, 16);
+
+            let ser = bincode::serialize(&val).unwrap();
+            bincode::deserialize::<DynamicUInt<T>>(&ser).unwrap();
         }
 
         case::<L0LweCiphertext>();
@@ -153,11 +240,34 @@ mod tests {
     }
 
     #[test]
+    fn can_safe_deserialize_packed_dyn_uint() {
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+        let pk = PublicKey::generate(&DEFAULT_128, &sk);
+
+        let val = PackedDynamicUInt::<L1GlweCiphertext>::encrypt(42, &enc, &pk, 16);
+
+        let ser = bincode::serialize(&val).unwrap();
+        crate::safe_bincode::deserialize::<PackedDynamicUInt<L1GlweCiphertext>>(&ser, &DEFAULT_128)
+            .unwrap();
+    }
+
+    #[test]
     fn can_trivial_encrypt_packed_uint() {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
 
         let val = PackedUInt::<15, L1GlweCiphertext>::trivial_encrypt(42, &enc);
+
+        assert_eq!(val.decrypt(&enc, &sk), 42);
+    }
+
+    #[test]
+    fn can_trivial_encrypt_packed_dyn_uint() {
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+
+        let val = PackedDynamicUInt::<L1GlweCiphertext>::trivial_encrypt(42, &enc, 16);
 
         assert_eq!(val.decrypt(&enc, &sk), 42);
     }

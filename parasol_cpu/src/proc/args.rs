@@ -4,7 +4,7 @@ use crate::{Byte, Ptr32};
 use crate::{Error, Result};
 use parasol_runtime::{
     L1GlweCiphertext,
-    fluent::{Int, UInt},
+    fluent::{DynamicInt, DynamicUInt, Int, UInt},
 };
 use paste::paste;
 
@@ -68,6 +68,51 @@ where
             alignment: Self::alignment(),
             size: Self::size(),
             _phantom: PhantomData,
+        }
+    }
+
+    /// Attempt to create a value of this type from the given bytes.
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self>;
+}
+
+/// Similar to [`ToArg`] but the alignment and size are figured out from the instance not just the type
+pub trait DynamicToArg
+where
+    Self: Sized,
+{
+    /// The required alignment for this type. Must be power of 2 and should be no larger than 4096.
+    fn alignment(&self) -> usize;
+
+    /// The number of bytes this type takes. Should be no greater than `u32::MAX`.
+    fn size(&self) -> usize;
+
+    /// Whether this type needs to be sign extended or not.
+    fn is_signed() -> bool;
+
+    /// Convert this value into a [`Vec<Byte>`].
+    ///
+    /// # Remarks
+    /// The number of bytes returned must equal `self.size()` or panics may result in related
+    /// methods.
+    fn to_bytes(&self) -> Vec<Byte>;
+
+    /// Convert this value into an [`Arg`] for calling with a function.
+    /// This allows parasol to understand how to pass arguments to a program.
+    ///
+    /// See [here](https://drive.google.com/file/d/1Ja_Tpp_5Me583CGVD-BIZMlgGBnlKU4R/view?pli=1) for
+    /// details.
+    ///
+    /// # Panics
+    /// If `self.to_bytes().len() != self.size()`.
+    fn to_arg(&self) -> Arg {
+        let bytes = self.to_bytes();
+
+        assert_eq!(bytes.len(), self.size());
+
+        Arg {
+            alignment: self.alignment(),
+            is_signed: Self::is_signed(),
+            bytes,
         }
     }
 
@@ -324,6 +369,82 @@ impl ToArg for () {
     }
 }
 
+impl DynamicToArg for DynamicUInt<L1GlweCiphertext> {
+    fn alignment(&self) -> usize {
+        self.bits.len() / 8
+    }
+
+    fn size(&self) -> usize {
+        self.bits.len() / 8
+    }
+
+    fn is_signed() -> bool {
+        false
+    }
+
+    fn to_bytes(&self) -> Vec<Byte> {
+        assert!(self.bits.len().is_power_of_two() && self.bits.len() % 8 == 0);
+
+        self.bits
+            .chunks(8)
+            .map(|x| Byte::try_from(x.to_owned()).unwrap())
+            .collect()
+    }
+
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
+        let data = data
+            .into_iter()
+            .map(|x| match x {
+                Byte::Plaintext(_) => Err(Error::EncryptionMismatch),
+                Byte::Ciphertext(val) => Ok(val),
+            })
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        Ok(DynamicUInt::from_bits_shallow(data))
+    }
+}
+
+impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
+    fn alignment(&self) -> usize {
+        self.bits.len() / 8
+    }
+
+    fn size(&self) -> usize {
+        self.bits.len() / 8
+    }
+
+    fn is_signed() -> bool {
+        true
+    }
+
+    fn to_bytes(&self) -> Vec<Byte> {
+        assert!(self.bits.len().is_power_of_two() && self.bits.len() % 8 == 0);
+
+        self.bits
+            .chunks(8)
+            .map(|x| Byte::try_from(x.to_owned()).unwrap())
+            .collect()
+    }
+
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
+        let data = data
+            .into_iter()
+            .map(|x| match x {
+                Byte::Plaintext(_) => Err(Error::EncryptionMismatch),
+                Byte::Ciphertext(val) => Ok(val),
+            })
+            .collect::<Result<Vec<_>>>()?
+            .into_iter()
+            .flatten()
+            .collect::<Vec<_>>();
+
+        Ok(DynamicInt::from_bits_shallow(data))
+    }
+}
+
 /// A type for passing arguments to Parasol programs. When invoking
 /// [`crate::FheComputer::run_program`], the processor will transparently set up the registers
 /// and first stack frame according to Parasol ABI's calling convention.
@@ -375,6 +496,13 @@ impl ArgsBuilder {
         self
     }
 
+    /// Similar to [`ArgsBuilder::arg`] but the value is [`DynamicToArg`]
+    pub fn arg_dyn<T: DynamicToArg>(mut self, val: T) -> Self {
+        self.args.push(val.to_arg());
+
+        self
+    }
+
     /// Specify a return value for an FHE program.
     ///
     /// # Remarks
@@ -385,6 +513,18 @@ impl ArgsBuilder {
         Args {
             args: self.args,
             return_value: T::to_return_value(),
+        }
+    }
+
+    /// Specify a generic return value type for an FHE program
+    pub fn return_value_raw(self, align: usize, num_bytes: usize) -> Args<Vec<Byte>> {
+        Args {
+            args: self.args,
+            return_value: ReturnValue {
+                alignment: align,
+                size: num_bytes,
+                _phantom: PhantomData,
+            },
         }
     }
 

@@ -6,7 +6,7 @@ use std::{
     sync::{Arc, Mutex},
 };
 
-use crate::{Arg, Error, IsaOp, Result, ToArg};
+use crate::{Arg, DynamicToArg, Error, IsaOp, Result, ToArg};
 use elf::{
     ElfBytes,
     abi::{PT_LOAD, STT_FUNC},
@@ -556,6 +556,21 @@ impl Memory {
         Ok(())
     }
 
+    /// Similar to [`Memory::try_write_type`] but the value to write is [`DynamicToArg`]
+    pub fn try_write_type_dyn<T: DynamicToArg>(&self, ptr: Ptr32, x: &T) -> Result<()> {
+        if ptr.0 % x.alignment() as u32 != 0 {
+            return Err(Error::UnalignedAccess(ptr.0));
+        }
+
+        self.check_range_is_mapped(ptr, x.size() as u32)?;
+
+        for (i, b) in x.to_bytes().into_iter().enumerate() {
+            self.try_store(ptr.try_offset(i as u32)?, b)?;
+        }
+
+        Ok(())
+    }
+
     /// Attempt to read a type `T` starting at address ptr.
     pub fn try_load_type<T: ToArg>(&self, ptr: Ptr32) -> Result<T> {
         if ptr.0 % T::alignment() as u32 != 0 {
@@ -567,6 +582,29 @@ impl Memory {
         let mut data = Vec::with_capacity(T::size());
 
         for i in (0..T::size()) {
+            let b = self.try_load(ptr.try_offset(i as u32)?)?;
+            data.push(b);
+        }
+
+        T::try_from_bytes(data)
+    }
+
+    /// Similar to [`Memory::try_load_type`] but the value to load is [`DynamicToArg`]
+    pub fn try_load_type_dyn<T: DynamicToArg>(
+        &self,
+        ptr: Ptr32,
+        align: usize,
+        num_bytes: usize,
+    ) -> Result<T> {
+        if ptr.0 % align as u32 != 0 {
+            return Err(Error::UnalignedAccess(ptr.0));
+        }
+
+        self.check_range_is_mapped(ptr, num_bytes as u32)?;
+
+        let mut data = Vec::with_capacity(num_bytes);
+
+        for i in (0..num_bytes) {
             let b = self.try_load(ptr.try_offset(i as u32)?)?;
             data.push(b);
         }
@@ -603,6 +641,15 @@ impl Memory {
         let ptr = self.try_allocate(T::size() as u32)?;
 
         self.try_write_type(ptr, x)?;
+
+        Ok(ptr)
+    }
+
+    /// Similar to [`Memory::try_allocate_type`] but the value to allocate and write is [`DynamicToArg`]
+    pub fn try_allocate_type_dyn<T: DynamicToArg>(&self, x: &T) -> Result<Ptr32> {
+        let ptr = self.try_allocate(x.size() as u32)?;
+
+        self.try_write_type_dyn(ptr, x)?;
 
         Ok(ptr)
     }

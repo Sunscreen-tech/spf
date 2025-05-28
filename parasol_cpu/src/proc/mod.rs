@@ -6,7 +6,10 @@ use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
     L1LweCiphertext, TrivialOne, TrivialZero, UOpProcessor,
-    fluent::{FheCircuitCtx, GenericInt, PackedGenericInt, Sign},
+    fluent::{
+        DynamicGenericInt, FheCircuitCtx, GenericInt, PackedDynamicGenericInt, PackedGenericInt,
+        Sign,
+    },
 };
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
@@ -312,11 +315,44 @@ impl FheComputer {
         packed_ct
     }
 
+    /// Similar to [`FheComputer::pack_int`] but works on [`DynamicGenericInt`]
+    pub fn pack_int_dyn<U: Sign>(
+        &mut self,
+        input: DynamicGenericInt<L1GlweCiphertext, U>,
+    ) -> PackedDynamicGenericInt<L1GlweCiphertext, U> {
+        let ctx = FheCircuitCtx::new();
+
+        let packed_ct = input
+            .graph_inputs(&ctx)
+            .pack(&ctx, &self.processor.aux_data.enc)
+            .collect_output(&ctx, &self.processor.aux_data.enc);
+
+        self.run_graph_blocking(&ctx.circuit.borrow());
+        packed_ct
+    }
+
     /// Unpacks a `PackedGenericInt<N, L1GlweCiphertext, U>` into a `GenericInt<N, L1GlweCiphertext, U>`.
     pub fn unpack_int<const N: usize, U: Sign>(
         &mut self,
         input: PackedGenericInt<N, L1GlweCiphertext, U>,
     ) -> GenericInt<N, L1GlweCiphertext, U> {
+        let ctx = FheCircuitCtx::new();
+
+        let unpacked_ct = input
+            .graph_input(&ctx)
+            .unpack(&ctx)
+            .convert(&ctx)
+            .collect_outputs(&ctx, &self.processor.aux_data.enc);
+
+        self.run_graph_blocking(&ctx.circuit.borrow());
+        unpacked_ct
+    }
+
+    /// Similar to [`FheComputer::unpack_int`] but works on [`PackedDynamicGenericInt`]
+    pub fn unpack_int_dyn<U: Sign>(
+        &mut self,
+        input: PackedDynamicGenericInt<L1GlweCiphertext, U>,
+    ) -> DynamicGenericInt<L1GlweCiphertext, U> {
         let ctx = FheCircuitCtx::new();
 
         let unpacked_ct = input

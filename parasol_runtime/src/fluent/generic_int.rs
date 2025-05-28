@@ -515,6 +515,146 @@ impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, 
     }
 }
 
+/// Similar to [`GenericIntGraphNodes`] but without the size N generic parameter
+pub struct DynamicGenericIntGraphNodes<'a, T: CiphertextOps, U: Sign> {
+    /// The generic integer's [`BitNode`]s from least to most significant.
+    pub bits: &'a [BitNode<T>],
+
+    _phantom: PhantomData<U>,
+}
+
+impl<'a, T: CiphertextOps, U: Sign> DynamicGenericIntGraphNodes<'a, T, U> {
+    pub(crate) fn from_nodes<I: ExactSizeIterator<Item = NodeIndex>>(
+        iter: I,
+        bump: &'a Bump,
+    ) -> DynamicGenericIntGraphNodes<'a, T, U> {
+        let nodes: &mut [BitNode<T>] = bump.alloc_slice_fill_default(iter.len());
+
+        for (idx, bit_node) in iter.zip(nodes.iter_mut()) {
+            bit_node.node = idx
+        }
+
+        Self {
+            bits: nodes,
+            _phantom: PhantomData,
+        }
+    }
+
+    pub(crate) fn from_bit_nodes<I: ExactSizeIterator<Item = BitNode<T>>>(
+        iter: I,
+        bump: &'a Bump,
+    ) -> DynamicGenericIntGraphNodes<'a, T, U> {
+        let nodes: &mut [BitNode<T>] = bump.alloc_slice_fill_default(iter.len());
+
+        for (idx, bit_node) in iter.zip(nodes.iter_mut()) {
+            *bit_node = idx
+        }
+
+        Self {
+            bits: nodes,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Similar to [`GenericIntGraphNodes::convert`], but works on [`DynamicGenericIntGraphNodes`]
+    pub fn convert<V: CiphertextOps>(
+        &self,
+        graph: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, V, U> {
+        let iter = self.bits.iter().map(|x| x.convert(graph));
+
+        DynamicGenericIntGraphNodes::from_bit_nodes(iter, &graph.allocator)
+    }
+
+    /// Similar to [`GenericIntGraphNodes::collect_outputs`], but works on [`DynamicGenericIntGraphNodes`]
+    pub fn collect_outputs(
+        &self,
+        ctx: &FheCircuitCtx,
+        enc: &Encryption,
+    ) -> DynamicGenericInt<T, U> {
+        let result = DynamicGenericInt::new(enc, self.bits.len());
+
+        for (prev, res) in self.bits.iter().zip(result.bits.iter()) {
+            let mut circuit = ctx.circuit.borrow_mut();
+
+            let output = circuit.add_node(T::graph_output(res));
+            circuit.add_edge(prev.node, output, FheEdge::Unary);
+        }
+
+        result
+    }
+}
+
+impl<U: Sign> DynamicGenericIntGraphNodes<'_, L1GlweCiphertext, U> {
+    /// Similar to [`GenericIntGraphNodes::pack`] but works on [`DynamicGenericIntGraphNodes`]
+    pub fn pack(
+        &self,
+        ctx: &FheCircuitCtx,
+        enc: &Encryption,
+    ) -> PackedDynamicGenericIntGraphNode<L1GlweCiphertext, U> {
+        let n = self.bits.len();
+        assert!(n <= enc.params.l1_poly_degree().0);
+        assert!(n > 0);
+
+        let log_n = n.next_power_of_two().ilog2();
+
+        // Multiply the i'th bit polynomial by x^1. When these resultant
+        // polynomials are summed, the i'th bit will appear in the x^i
+        // term.
+        let shifted = self
+            .bits
+            .iter()
+            .enumerate()
+            .map(|(i, x)| {
+                let mut circuit = ctx.circuit.borrow_mut();
+
+                if i > 0 {
+                    let rot = circuit.add_node(FheOp::MulXN(i));
+                    circuit.add_edge(x.node, rot, FheEdge::Unary);
+
+                    rot
+                } else {
+                    x.node
+                }
+            })
+            .collect::<Vec<_>>();
+
+        let mut reduction = shifted;
+
+        // Perform a tree reduction to sum the shifted ciphertexts.
+        for _ in 0..log_n {
+            assert!(reduction.len() > 1);
+
+            let next = reduction
+                .chunks(2)
+                .map(|x| {
+                    if x.len() == 1 {
+                        x[0]
+                    } else {
+                        let mut circuit = ctx.circuit.borrow_mut();
+
+                        let add = circuit.add_node(FheOp::GlweAdd);
+                        circuit.add_edge(x[0], add, FheEdge::Left);
+                        circuit.add_edge(x[1], add, FheEdge::Right);
+
+                        add
+                    }
+                })
+                .collect::<Vec<_>>();
+
+            reduction = next;
+        }
+
+        assert_eq!(reduction.len(), 1);
+
+        PackedDynamicGenericIntGraphNode {
+            bit_len: n as u32,
+            id: reduction[0],
+            _phantom: PhantomData,
+        }
+    }
+}
+
 /// A graph node that represents a generic integer in packed form. See [`PackedGenericInt`] for a
 /// description of packing.
 pub struct PackedGenericIntGraphNode<
@@ -571,6 +711,54 @@ impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign>
         circuit.add_edge(self.id, out_node, FheEdge::Unary);
 
         PackedGenericInt {
+            ct: result,
+            _phantom: PhantomData,
+        }
+    }
+}
+
+/// Similar to [`PackedGenericIntGraphNode`] but without the size N generic parameter
+pub struct PackedDynamicGenericIntGraphNode<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> {
+    bit_len: u32,
+    id: NodeIndex,
+    _phantom: PhantomData<(T, U)>,
+}
+
+impl<V: Sign> PackedDynamicGenericIntGraphNode<L1GlweCiphertext, V> {
+    /// Similar to [`PackedGenericIntGraphNode::unpack`] but works on [`PackedDynamicGenericIntGraphNode`]
+    pub fn unpack<'a>(
+        &self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, L1LweCiphertext, V> {
+        let nodes = (0..self.bit_len as usize).map(|i| {
+            let mut circuit = ctx.circuit.borrow_mut();
+
+            let se = circuit.add_node(FheOp::SampleExtract(i));
+            circuit.add_edge(self.id, se, FheEdge::Unary);
+
+            se
+        });
+
+        DynamicGenericIntGraphNodes::from_nodes(nodes, &ctx.allocator)
+    }
+}
+
+impl<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> PackedDynamicGenericIntGraphNode<T, U> {
+    /// Similar to [`PackedGenericIntGraphNode::collect_output`] but works on [`PackedDynamicGenericIntGraphNode`]
+    pub fn collect_output(
+        &self,
+        ctx: &FheCircuitCtx,
+        enc: &Encryption,
+    ) -> PackedDynamicGenericInt<T, U> {
+        let result = Arc::new(AtomicRefCell::new(T::allocate(enc)));
+
+        let mut circuit = ctx.circuit.borrow_mut();
+
+        let out_node = circuit.add_node(T::graph_output(&result));
+        circuit.add_edge(self.id, out_node, FheEdge::Unary);
+
+        PackedDynamicGenericInt {
+            bit_len: self.bit_len,
             ct: result,
             _phantom: PhantomData,
         }
@@ -715,6 +903,85 @@ where
 }
 
 #[derive(Clone, Serialize, Deserialize)]
+/// Similar to [`GenericInt`] but without the size N generic parameter
+pub struct DynamicGenericInt<T: CiphertextOps, U: Sign> {
+    /// The ciphertexts encrypting this generic integer's bits in least-to-most significant order.
+    pub bits: Vec<Arc<AtomicRefCell<T>>>,
+    _phantom: PhantomData<U>,
+}
+
+impl<T, U> DynamicGenericInt<T, U>
+where
+    T: CiphertextOps,
+    U: Sign,
+{
+    /// Similar to [`GenericInt::new`] but generates [`DynamicGenericInt`]
+    pub fn new(enc: &Encryption, n: usize) -> Self {
+        Self {
+            bits: (0..n)
+                .map(|_| Arc::new(AtomicRefCell::new(T::allocate(enc))))
+                .collect(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Similar to [`GenericInt::from_bits_shallow`] but generates [`DynamicGenericInt`]
+    pub fn from_bits_shallow(bits: Vec<Arc<AtomicRefCell<T>>>) -> Self {
+        Self {
+            bits,
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Similar to [`GenericInt::encrypt_secret`] but generates [`DynamicGenericInt`]
+    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
+        if n < 64 && val > 0x1 << n {
+            panic!("Out of bounds");
+        }
+
+        Self {
+            bits: (0..n)
+                .map(|i| {
+                    let ct = T::encrypt_secret((val >> i) & 0x1 == 0x1, enc, sk);
+                    Arc::new(AtomicRefCell::new(ct))
+                })
+                .collect(),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Similar to [`GenericInt::decrypt`] but works on [`DynamicGenericInt`]
+    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
+        self.with_decryption_fn(|x| x.decrypt(enc, sk))
+    }
+
+    /// Similar to [`GenericInt::graph_inputs`] but generates [`DynamicGenericIntGraphNodes`]
+    pub fn graph_inputs<'a>(
+        &self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, T, U> {
+        DynamicGenericIntGraphNodes::from_nodes(
+            self.bits
+                .iter()
+                .map(|b| ctx.circuit.borrow_mut().add_node(T::graph_input(b))),
+            &ctx.allocator,
+        )
+    }
+
+    /// Similar to [`GenericInt::with_decryption_fn`] but works on [`DynamicGenericInt`]
+    pub fn with_decryption_fn<F>(&self, f: F) -> u64
+    where
+        F: Fn(&T) -> bool,
+    {
+        self.bits.iter().enumerate().fold(0u64, |s, (i, x)| {
+            let x = AtomicRefCell::borrow(x);
+
+            s + ((f(&x) as u64) << i)
+        })
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
 /// An `N`-bit integer encrypted and packed into a single ciphertext of type `T`. Note `T` must
 /// allow polynomial messages (e.g. [`L1GlweCiphertext`]).
 ///
@@ -847,6 +1114,122 @@ where
         let msg = Self::encode(val, enc);
 
         Self {
+            ct: Arc::new(AtomicRefCell::new(
+                <T as PolynomialCiphertextOps>::trivial_encryption(&msg, enc),
+            )),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Returns the inner ciphertext.
+    pub fn inner(&self) -> T {
+        self.ct.borrow().clone()
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+/// Similar to [`PackedGenericInt`] but without the size N generic parameter
+pub struct PackedDynamicGenericInt<T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    bit_len: u32,
+    ct: Arc<AtomicRefCell<T>>,
+    _phantom: PhantomData<U>,
+}
+
+impl<T, U> From<(u32, T)> for PackedDynamicGenericInt<T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    fn from(value: (u32, T)) -> Self {
+        Self {
+            bit_len: value.0,
+            ct: Arc::new(AtomicRefCell::new(value.1)),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+impl<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> GetSize
+    for PackedDynamicGenericInt<T, U>
+{
+    fn get_size(params: &crate::Params) -> usize {
+        size_of::<u32>() + T::get_size(params)
+    }
+
+    fn check_is_valid(&self, params: &crate::Params) -> crate::Result<()> {
+        self.ct.borrow().check_is_valid(params)
+    }
+}
+
+impl<T, U> PackedDynamicGenericInt<T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    /// Similar to [`PackedGenericInt::encrypt`] but generates [`PackedDynamicGenericInt`]
+    pub fn encrypt(val: u64, enc: &Encryption, pk: &PublicKey, n: usize) -> Self {
+        let msg = Self::encode(val, enc, n);
+
+        Self {
+            bit_len: n as u32,
+            ct: Arc::new(AtomicRefCell::new(T::encrypt(&msg, enc, pk))),
+            _phantom: PhantomData,
+        }
+    }
+
+    fn encode(val: u64, enc: &Encryption, n: usize) -> Polynomial<u64> {
+        assert!(val < 0x1 << n);
+        assert!(n < T::poly_degree(&enc.params).0);
+
+        let mut msg = Polynomial::<u64>::zero(T::poly_degree(&enc.params).0);
+
+        for i in 0..n {
+            msg.coeffs_mut()[i] = (val >> i) & 0x1;
+        }
+
+        msg
+    }
+}
+
+impl<T, U> PackedDynamicGenericInt<T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    /// Similar to [`PackedGenericInt::graph_input`] but works on [`PackedDynamicGenericInt`]
+    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
+        let n = self.bit_len as usize;
+        assert!(n < T::poly_degree(&enc.params).0);
+        let mut val = 0;
+
+        let poly = <T as PolynomialCiphertextOps>::decrypt(&self.ct.borrow(), enc, sk);
+
+        for i in 0..n {
+            val += poly.coeffs()[i] << i;
+        }
+
+        val
+    }
+
+    /// Similar to [`PackedGenericInt::graph_input`] but works on [`PackedDynamicGenericInt`]
+    pub fn graph_input(&self, ctx: &FheCircuitCtx) -> PackedDynamicGenericIntGraphNode<T, U> {
+        PackedDynamicGenericIntGraphNode {
+            bit_len: self.bit_len,
+            id: ctx.circuit.borrow_mut().add_node(T::graph_input(&self.ct)),
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Similar to [`PackedGenericInt::trivial_encrypt`] but generates [`PackedDynamicGenericInt`]
+    pub fn trivial_encrypt(val: u64, enc: &Encryption, n: usize) -> Self {
+        let msg = Self::encode(val, enc, n);
+
+        Self {
+            bit_len: n as u32,
             ct: Arc::new(AtomicRefCell::new(
                 <T as PolynomialCiphertextOps>::trivial_encryption(&msg, enc),
             )),
