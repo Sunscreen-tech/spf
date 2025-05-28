@@ -24,9 +24,8 @@ fn generate_keys() -> (SecretKey, ComputeKey) {
 /// Returns:
 ///     A tuple of the secret and compute keys.
 pub fn load_or_generate_keys(params_name: &str) -> std::io::Result<(SecretKey, ComputeKey)> {
-    let target_dir = find_target_dir().ok_or_else(|| {
-        std::io::Error::new(std::io::ErrorKind::Other, "Could not find target directory")
-    })?;
+    let target_dir = find_target_dir()
+        .ok_or_else(|| std::io::Error::other("Could not find target directory"))?;
     let keys_dir = target_dir.join("keys").join(params_name);
     fs::create_dir_all(&keys_dir)?;
 

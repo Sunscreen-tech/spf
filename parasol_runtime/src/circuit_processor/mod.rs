@@ -165,17 +165,14 @@ impl UOpProcessor {
         let parent_op = parent_op.clone();
 
         for dep in deps {
-            match dep.0.dependents.try_lock() {
-                // If we acquire the lock, then add ourselves as a dependant and increase the
-                // dependency count.
-                Some(mut x) => {
-                    new_task.num_deps.fetch_add(1, Ordering::Acquire);
-                    x.push(new_task.clone());
-                }
-                // If we fail to acquire the lock, then the dependent task has already completed
-                // and notified its subscribers. However, its data is immediately available for
-                // use, so we don't update our dependency count.
-                None => {}
+            // If we acquire the lock, then add ourselves as a dependant and increase the
+            // dependency count. Otherwise the dependent task has already completed
+            // and notified its subscribers. However, its data is immediately available for
+            // use, so we don't update our dependency count, hence nothing needed for the
+            // else branch
+            if let Some(mut x) = dep.0.dependents.try_lock() {
+                new_task.num_deps.fetch_add(1, Ordering::Acquire);
+                x.push(new_task.clone());
             }
         }
 

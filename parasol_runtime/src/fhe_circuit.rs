@@ -434,7 +434,7 @@ impl FheCircuit {
             .map(|_| Arc::new(AtomicRefCell::new(enc.allocate_glwe_l1())))
             .collect::<Vec<_>>();
 
-        let outputs = cmux_outputs
+        cmux_outputs
             .iter()
             .zip(glwe_outputs.iter())
             .map(|(cmux_out, glwe_out)| {
@@ -442,9 +442,7 @@ impl FheCircuit {
                 self.graph.add_edge(*cmux_out, o, FheEdge::Unary);
                 o
             })
-            .collect::<Vec<_>>();
-
-        outputs
+            .collect::<Vec<_>>()
     }
 
     /// Insert a [`MuxCircuit`] into the [`FheCircuit`] and emit outputs for each resulting
@@ -458,7 +456,7 @@ impl FheCircuit {
         let glwe_outputs =
             self.insert_mux_circuit_output_glwe1_outputs(mux_circuit, nodes_to_inputs, enc);
 
-        let outputs = glwe_outputs
+        glwe_outputs
             .iter()
             .map(|x| {
                 let node = self.graph.node_weight(*x).unwrap();
@@ -467,9 +465,7 @@ impl FheCircuit {
                     _ => unreachable!(),
                 }
             })
-            .collect::<Vec<_>>();
-
-        outputs
+            .collect::<Vec<_>>()
     }
 
     /// Insert a mux circuit into the graph and connect the FHE circuit inputs
@@ -533,10 +529,9 @@ pub fn prune<N: Clone, E: Clone>(
     while !queue.is_empty() {
         let cur_id = queue.pop_front().unwrap();
 
-        rename.entry(cur_id).or_insert_with(|| {
-            let new_id = out_graph.add_node(graph.node_weight(cur_id).unwrap().to_owned());
-            new_id
-        });
+        rename
+            .entry(cur_id)
+            .or_insert_with(|| out_graph.add_node(graph.node_weight(cur_id).unwrap().to_owned()));
 
         for next in graph.neighbors_directed(cur_id, Direction::Incoming) {
             if let std::collections::hash_map::Entry::Vacant(e) = rename.entry(next) {
