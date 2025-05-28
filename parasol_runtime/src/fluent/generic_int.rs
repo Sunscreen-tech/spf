@@ -1237,4 +1237,9 @@ where
             _phantom: PhantomData,
         }
     }
+
+    /// Returns the inner ciphertext.
+    pub fn inner(&self) -> T {
+        self.ct.borrow().clone()
+    }
 }
