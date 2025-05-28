@@ -97,6 +97,8 @@ jobs:
           ${{ runner.os }}-cargo-clippy-
           ${{ runner.os }}-cargo-
     # Check the submitted change passes the clippy linter
+    - name: Cargo clippy versio check
+      run: cargo clippy --version
     - name: Cargo clippy
       run: cargo clippy --release --all-targets -- --deny warnings
 
