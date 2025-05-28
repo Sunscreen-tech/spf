@@ -950,7 +950,7 @@ where
         }
     }
 
-    /// Decrypts this encrypted integer and returns the contained GenericInt message.
+    /// Similar to [`GenericInt::decrypt`] but works on [`DynamicGenericInt`]
     pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
         self.with_decryption_fn(|x| x.decrypt(enc, sk))
     }
@@ -968,7 +968,7 @@ where
         )
     }
 
-    /// Run a custom (e.g. threshold) decryption algorithm and return the result.
+    /// Similar to [`GenericInt::with_decryption_fn`] but works on [`DynamicGenericInt`]
     pub fn with_decryption_fn<F>(&self, f: F) -> u64
     where
         F: Fn(&T) -> bool,
@@ -1170,8 +1170,7 @@ where
     T: CiphertextOps + PolynomialCiphertextOps,
     U: Sign,
 {
-    /// Encrypt and pack the given `val` into a single `T` ciphertext.
-    /// See [`PackedGenericInt`] for more details on packing.
+    /// Similar to [`PackedGenericInt::encrypt`] but generates [`PackedDynamicGenericInt`]
     pub fn encrypt(val: u64, enc: &Encryption, pk: &PublicKey, n: usize) -> Self {
         let msg = Self::encode(val, enc, n);
 
@@ -1225,7 +1224,7 @@ where
         }
     }
 
-    /// Trivially encrypt the given value as a [`PackedGenericInt`].
+    /// Similar to [`PackedGenericInt::trivial_encrypt`] but generates [`PackedDynamicGenericInt`]
     pub fn trivial_encrypt(val: u64, enc: &Encryption, n: usize) -> Self {
         let msg = Self::encode(val, enc, n);
 
