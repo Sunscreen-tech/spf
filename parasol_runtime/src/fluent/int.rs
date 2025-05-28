@@ -91,7 +91,7 @@ mod tests {
 
         let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk, 16);
 
-        assert_eq!(val.decrypt(&enc, &sk, 16), 2u64.pow(16) - 42);
+        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(16) - 42);
     }
 
     #[test]
@@ -133,8 +133,8 @@ mod tests {
 
         let as_unpacked = val
             .graph_input(&ctx)
-            .unpack(&ctx, 16)
-            .collect_outputs(&ctx, &enc, 16);
+            .unpack(&ctx)
+            .collect_outputs(&ctx, &enc);
 
         uproc
             .lock()
@@ -178,16 +178,16 @@ mod tests {
         let ctx = FheCircuitCtx::new();
 
         let actual = val
-            .graph_inputs(&ctx, 15)
-            .pack(&ctx, &enc, 15)
-            .collect_output(&ctx, &enc, 15);
+            .graph_inputs(&ctx)
+            .pack(&ctx, &enc)
+            .collect_output(&ctx, &enc);
 
         uproc
             .lock()
             .unwrap()
             .run_graph_blocking(&ctx.circuit.borrow(), &fc);
 
-        assert_eq!(actual.decrypt(&enc, &sk, 15), 2u64.pow(15) - 42);
+        assert_eq!(actual.decrypt(&enc, &sk), 2u64.pow(15) - 42);
     }
 
     #[test]
@@ -270,6 +270,6 @@ mod tests {
         let val =
             PackedDynamicInt::<L1GlweCiphertext>::trivial_encrypt(2u64.pow(15) - 42, &enc, 15);
 
-        assert_eq!(val.decrypt(&enc, &sk, 15), 2u64.pow(15) - 42);
+        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(15) - 42);
     }
 }

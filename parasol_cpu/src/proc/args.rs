@@ -89,16 +89,6 @@ where
     /// Whether this type needs to be sign extended or not.
     fn is_signed() -> bool;
 
-    /// Convert a byte array and metadata into an [`Arg`] indicating the alignment,
-    /// size, and how to extend the given value.
-    fn bytes_to_arg(&self, bytes: Vec<Byte>, is_signed: bool) -> Arg {
-        Arg {
-            alignment: self.alignment(),
-            is_signed,
-            bytes,
-        }
-    }
-
     /// Convert this value into a [`Vec<Byte>`].
     ///
     /// # Remarks
@@ -119,20 +109,10 @@ where
 
         assert_eq!(bytes.len(), self.size());
 
-        self.bytes_to_arg(bytes, Self::is_signed())
-    }
-
-    /// Describe this type when it appears in the return value of a function call.
-    /// This allows the Parasol processor to understand how to capture the return value from a
-    /// program.
-    ///
-    /// See [here](https://drive.google.com/file/d/1Ja_Tpp_5Me583CGVD-BIZMlgGBnlKU4R/view?pli=1) for
-    /// details.
-    fn to_return_value(&self) -> ReturnValue<Self> {
-        ReturnValue {
+        Arg {
             alignment: self.alignment(),
-            size: self.size(),
-            _phantom: PhantomData,
+            is_signed: Self::is_signed(),
+            bytes,
         }
     }
 
