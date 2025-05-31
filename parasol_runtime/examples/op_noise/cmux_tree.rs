@@ -71,8 +71,10 @@ impl Serialize for Method {
 }
 
 fn function_to_fit(x: f64, a: f64, b: f64, c: f64) -> f64 {
-    a / (x + b) + c
+    -1.0 / (a * x + b) + c
 }
+
+const FUNCTION_TO_FIT_DESCRIPTION: &str = "f(x) = -1 / (a * x + b) + c";
 
 #[derive(Debug, Serialize, Clone)]
 pub enum FitResults {
@@ -83,6 +85,7 @@ pub enum FitResults {
         a: f64,
         b: f64,
         c: f64,
+        equation: String,
         max_error: f64,
         base_2_error_at_depth_1024: f64,
     },
@@ -241,14 +244,14 @@ fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
         res
     };
 
-    let bounds = Bounds::new(&[(None, Some(-1.0)), (None, None), (None, None)]);
+    let bounds = Bounds::new(&[(Some(0.0), None), (None, None), (None, None)]);
     let options = BoundedOptions {
         max_iter: 10_000,
         ..Default::default()
     };
 
     // Initial guess for the parameters based on prior experiments.
-    let initial_params = Array1::from_vec(vec![-1.6e5, 2.0e2, -3.0]);
+    let initial_params = Array1::from_vec(vec![6e-5, 2.0e-3, -3.0]);
 
     let data = Array1::from_vec(base_2_error_rates.to_vec());
 
@@ -279,6 +282,7 @@ fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
             a: results.x[0],
             b: results.x[1],
             c: results.x[2],
+            equation: FUNCTION_TO_FIT_DESCRIPTION.to_string(),
             max_error,
             base_2_error_at_depth_1024: function_to_fit(
                 1024.0,
