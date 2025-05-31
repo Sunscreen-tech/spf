@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use clap::Args;
+use ndarray::{Array1, Array2};
 use num::Complex;
 use parasol_runtime::{
     ComputeKey, Params, SecretKey,
@@ -8,6 +9,7 @@ use parasol_runtime::{
 };
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
+use scirs2_optimize::{Bounds, bounded_least_squares, prelude::BoundedOptions};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
@@ -67,12 +69,35 @@ impl Serialize for Method {
     }
 }
 
+fn function_to_fit(x: f64, a: f64, b: f64, c: f64) -> f64 {
+    a / (x + b) + c
+}
+
+#[derive(Debug, Serialize, Clone)]
+pub enum FitResults {
+    #[serde(rename = "results")]
+    /// The fit results for the error rate
+    FitErrorRate {
+        /// The fit parameters: a, b, c
+        a: f64,
+        b: f64,
+        c: f64,
+        max_error: f64,
+        base_2_error_at_depth_1024: f64,
+    },
+
+    #[serde(rename = "error_message")]
+    /// Fit error message
+    FitErrorMessage(String),
+}
+
 #[derive(Serialize, Clone)]
 pub struct CMuxTreeDataFile {
     pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
     pub system_info: SystemInfo,
     pub method: Method,
+    pub fit: FitResults,
     pub data: Vec<CMuxTreeDataPoint>,
     pub raw: Vec<Vec<Option<f64>>>,
 }
@@ -195,6 +220,74 @@ fn choose_permutation<T: Clone>(a: &[T], b: &[T]) -> Vec<(Order, T, T)> {
             }
         })
         .collect()
+}
+
+fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
+    let depths = depths.iter().map(|&d| d as f64).collect::<Vec<_>>();
+    let n = depths.len();
+
+    let residuals = |params: &[f64], y: &[f64]| {
+        let a = params[0];
+        let b = params[1];
+        let c = params[2];
+
+        let mut res = Array1::zeros(n);
+
+        for (i, &x) in depths.iter().enumerate() {
+            res[i] = y[i] - function_to_fit(x, a, b, c);
+        }
+
+        res
+    };
+
+    let bounds = Bounds::new(&[(None, Some(-1.0)), (None, None), (None, None)]);
+    let options = BoundedOptions {
+        max_iter: 10_000,
+        ..Default::default()
+    };
+
+    // Initial guess for the parameters based on prior experiments.
+    let initial_params = Array1::from_vec(vec![-1.6e5, 2.0e2, -3.0]);
+
+    let data = Array1::from_vec(base_2_error_rates.to_vec());
+
+    let results = bounded_least_squares(
+        residuals,
+        &initial_params,
+        Some(bounds),
+        None::<fn(&[f64], &[f64]) -> Array2<f64>>,
+        &data,
+        Some(options),
+    );
+
+    let results = results.map(|results| {
+        let a = results.x[0];
+        let b = results.x[1];
+        let c = results.x[2];
+
+        let max_error = depths
+            .iter()
+            .zip(base_2_error_rates.iter())
+            .map(|(x, y)| (y - function_to_fit(*x, a, b, c)).abs() / y.abs())
+            .fold(f64::NEG_INFINITY, f64::max);
+        (results, max_error)
+    });
+
+    match results {
+        Ok((results, max_error)) => FitResults::FitErrorRate {
+            a: results.x[0],
+            b: results.x[1],
+            c: results.x[2],
+            max_error,
+            base_2_error_at_depth_1024: function_to_fit(
+                1024.0,
+                results.x[0],
+                results.x[1],
+                results.x[2],
+            ),
+        },
+        Err(e) => FitResults::FitErrorMessage(e.to_string()),
+    }
 }
 
 fn run_compute_tree(
@@ -352,6 +445,13 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         })
         .collect::<Vec<_>>();
 
+    let (depths, base_2_error_rates) = data_points_per_level
+        .iter()
+        .map(|dp| (dp.depth, dp.predicted_err.base_2))
+        .unzip::<usize, f64, Vec<_>, Vec<_>>();
+
+    let fit = fit_error_rate(&depths, &base_2_error_rates);
+
     let raw = if run_options.include_raw {
         samples_per_level_flattened
             .into_iter()
@@ -366,6 +466,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         cmux_tree_parameters: cmux_tree_params.clone(),
         system_info,
         method: Method::RandomSelectLinesCascadedDataLines,
+        fit,
         data: data_points_per_level,
         raw,
     }
