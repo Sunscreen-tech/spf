@@ -1,6 +1,7 @@
 use std::sync::Arc;
 
 use clap::Args;
+use indicatif::{ProgressBar, ProgressStyle};
 use ndarray::{Array1, Array2};
 use num::Complex;
 use parasol_runtime::{
@@ -23,7 +24,7 @@ use crate::{
     probability_away_from_mean_gaussian_log_binary,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Args)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Args, Hash)]
 pub struct CMuxTreeRunOptions {
     /// Number of times to run the cmux tree to measure the noise
     #[arg(long)]
@@ -350,6 +351,8 @@ fn run_compute_tree(
     samples_per_level
 }
 
+const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
+
 pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
     let system_info = print_system_info();
 
@@ -372,31 +375,50 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
     // Generate all bootstraps in parallel and in advance. This could take a lot of memory.
     println!("Generating select lines");
     let now = std::time::Instant::now();
+    let progress = ProgressBar::new((run_options.depth * 2) as u64);
+    progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
+
     let zeros = (0..run_options.depth)
         .into_par_iter()
-        .map(|_| Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params)))
+        .map(|_| {
+            let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params));
+
+            progress.inc(1);
+            ggsw
+        })
         .collect::<Vec<_>>();
 
     let ones = (0..run_options.depth)
         .into_par_iter()
-        .map(|_| Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params)))
+        .map(|_| {
+            let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params));
+
+            progress.inc(1);
+            ggsw
+        })
         .collect::<Vec<_>>();
     println!("Time to generate select lines: {:?}", now.elapsed());
 
     println!("Running each cmux tree");
     let now = std::time::Instant::now();
+    let progress = ProgressBar::new(run_options.sample_count as u64);
+    progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
+
     // We have a vector of size sample_count, each containing a vector of size depth of noise.
     let samples_per_run = (0..run_options.sample_count)
         .into_par_iter()
         .map(|_| {
-            run_compute_tree(
+            let run = run_compute_tree(
                 run_options.depth,
                 &ones,
                 &zeros,
                 &secret_key,
                 &compute_key,
                 &params,
-            )
+            );
+
+            progress.inc(1);
+            run
         })
         .collect::<Vec<_>>();
     println!("Time to run cmux tree: {:?}", now.elapsed());
