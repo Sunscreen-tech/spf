@@ -71,10 +71,10 @@ impl Serialize for Method {
 }
 
 fn function_to_fit(x: f64, a: f64, b: f64, c: f64) -> f64 {
-    -1.0 / (a * x + b) + c
+    -1.0 / (a * (x + b)) + c
 }
 
-const FUNCTION_TO_FIT_DESCRIPTION: &str = "f(x) = -1 / (a * x + b) + c";
+const FUNCTION_TO_FIT_DESCRIPTION: &str = "f(x) = -1 / (a * (x + b)) + c";
 
 #[derive(Debug, Serialize, Clone)]
 pub enum FitResults {
@@ -251,7 +251,7 @@ fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
     };
 
     // Initial guess for the parameters based on prior experiments.
-    let initial_params = Array1::from_vec(vec![6e-5, 2.0e-3, -3.0]);
+    let initial_params = Array1::from_vec(vec![6e-5, 30.0, -3.0]);
 
     let data = Array1::from_vec(base_2_error_rates.to_vec());
 
@@ -366,15 +366,11 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
     let run_options = cmux_tree_params.run_options;
     let params = cmux_tree_params.parameter_set.clone();
-    let glwe_params = params.l1_params;
 
     // We will use the public key for the encryption because it might generate
     // different noise parameters.
     let secret_key = SecretKey::generate(&params);
     let compute_key = ComputeKey::generate(&secret_key, &params);
-
-    let mut msg = Polynomial::<u64>::zero(glwe_params.dim.polynomial_degree.0);
-    msg.coeffs_mut()[0] = 0u64;
 
     // Generate all bootstraps in parallel and in advance. This could take a lot of memory.
     println!("Generating select lines");
@@ -427,7 +423,8 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         .collect::<Vec<_>>();
     println!("Time to run cmux tree: {:?}", now.elapsed());
 
-    // Transpose the samples, so now we have a vector of size depth, each containing a vector of size sample_count.
+    // Transpose the samples, so now we have a vector of size depth, each
+    // containing a vector of size sample_count.
     let samples_per_level = transpose(samples_per_run);
 
     // Flatten Vec<Vec<(T, T)>> to Vec<Vec<T>>
