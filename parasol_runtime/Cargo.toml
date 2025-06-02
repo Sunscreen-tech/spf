@@ -34,7 +34,9 @@ chrono = "0.4.41"
 clap = { workspace = true }
 criterion = { workspace = true }
 indicatif = { workspace = true }
+ndarray = "0.16.1"
 rand = { workspace = true }
+scirs2-optimize = "0.1.0-alpha.3"
 sunscreen_math = { workspace = true }
 
 [target.wasm32-unknown-unknown.dependencies]

@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
 use clap::Args;
+use indicatif::{ProgressBar, ProgressStyle};
+use ndarray::{Array1, Array2};
 use num::Complex;
 use parasol_runtime::{
     ComputeKey, Params, SecretKey,
@@ -8,6 +10,7 @@ use parasol_runtime::{
 };
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
+use scirs2_optimize::{Bounds, bounded_least_squares, prelude::BoundedOptions};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
@@ -21,7 +24,7 @@ use crate::{
     probability_away_from_mean_gaussian_log_binary,
 };
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Args)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Args, Hash)]
 pub struct CMuxTreeRunOptions {
     /// Number of times to run the cmux tree to measure the noise
     #[arg(long)]
@@ -67,12 +70,38 @@ impl Serialize for Method {
     }
 }
 
+fn function_to_fit(x: f64, a: f64, b: f64, c: f64) -> f64 {
+    -1.0 / (a * (x + b)) + c
+}
+
+const FUNCTION_TO_FIT_DESCRIPTION: &str = "f(x) = -1 / (a * (x + b)) + c";
+
+#[derive(Debug, Serialize, Clone)]
+pub enum FitResults {
+    #[serde(rename = "results")]
+    /// The fit results for the error rate
+    FitErrorRate {
+        /// The fit parameters: a, b, c
+        a: f64,
+        b: f64,
+        c: f64,
+        equation: String,
+        max_error: f64,
+        base_2_error_at_depth_1024: f64,
+    },
+
+    #[serde(rename = "error_message")]
+    /// Fit error message
+    FitErrorMessage(String),
+}
+
 #[derive(Serialize, Clone)]
 pub struct CMuxTreeDataFile {
     pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
     pub system_info: SystemInfo,
     pub method: Method,
+    pub fit: FitResults,
     pub data: Vec<CMuxTreeDataPoint>,
     pub raw: Vec<Vec<Option<f64>>>,
 }
@@ -197,6 +226,75 @@ fn choose_permutation<T: Clone>(a: &[T], b: &[T]) -> Vec<(Order, T, T)> {
         .collect()
 }
 
+fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
+    let depths = depths.iter().map(|&d| d as f64).collect::<Vec<_>>();
+    let n = depths.len();
+
+    let residuals = |params: &[f64], y: &[f64]| {
+        let a = params[0];
+        let b = params[1];
+        let c = params[2];
+
+        let mut res = Array1::zeros(n);
+
+        for (i, &x) in depths.iter().enumerate() {
+            res[i] = y[i] - function_to_fit(x, a, b, c);
+        }
+
+        res
+    };
+
+    let bounds = Bounds::new(&[(Some(0.0), None), (None, None), (None, None)]);
+    let options = BoundedOptions {
+        max_iter: 10_000,
+        ..Default::default()
+    };
+
+    // Initial guess for the parameters based on prior experiments.
+    let initial_params = Array1::from_vec(vec![6e-5, 30.0, -3.0]);
+
+    let data = Array1::from_vec(base_2_error_rates.to_vec());
+
+    let results = bounded_least_squares(
+        residuals,
+        &initial_params,
+        Some(bounds),
+        None::<fn(&[f64], &[f64]) -> Array2<f64>>,
+        &data,
+        Some(options),
+    );
+
+    let results = results.map(|results| {
+        let a = results.x[0];
+        let b = results.x[1];
+        let c = results.x[2];
+
+        let max_error = depths
+            .iter()
+            .zip(base_2_error_rates.iter())
+            .map(|(x, y)| (y - function_to_fit(*x, a, b, c)).abs() / y.abs())
+            .fold(f64::NEG_INFINITY, f64::max);
+        (results, max_error)
+    });
+
+    match results {
+        Ok((results, max_error)) => FitResults::FitErrorRate {
+            a: results.x[0],
+            b: results.x[1],
+            c: results.x[2],
+            equation: FUNCTION_TO_FIT_DESCRIPTION.to_string(),
+            max_error,
+            base_2_error_at_depth_1024: function_to_fit(
+                1024.0,
+                results.x[0],
+                results.x[1],
+                results.x[2],
+            ),
+        },
+        Err(e) => FitResults::FitErrorMessage(e.to_string()),
+    }
+}
+
 fn run_compute_tree(
     depth: usize,
     ones: &[Arc<GgswCiphertextFft<Complex<f64>>>],
@@ -257,6 +355,8 @@ fn run_compute_tree(
     samples_per_level
 }
 
+const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
+
 pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
     let system_info = print_system_info();
 
@@ -266,49 +366,67 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
     let run_options = cmux_tree_params.run_options;
     let params = cmux_tree_params.parameter_set.clone();
-    let glwe_params = params.l1_params;
 
     // We will use the public key for the encryption because it might generate
     // different noise parameters.
     let secret_key = SecretKey::generate(&params);
     let compute_key = ComputeKey::generate(&secret_key, &params);
 
-    let mut msg = Polynomial::<u64>::zero(glwe_params.dim.polynomial_degree.0);
-    msg.coeffs_mut()[0] = 0u64;
-
     // Generate all bootstraps in parallel and in advance. This could take a lot of memory.
     println!("Generating select lines");
     let now = std::time::Instant::now();
+    let progress = ProgressBar::new((run_options.depth * 2) as u64);
+    progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
+
     let zeros = (0..run_options.depth)
         .into_par_iter()
-        .map(|_| Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params)))
+        .map(|_| {
+            let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params));
+
+            progress.inc(1);
+            ggsw
+        })
         .collect::<Vec<_>>();
 
     let ones = (0..run_options.depth)
         .into_par_iter()
-        .map(|_| Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params)))
+        .map(|_| {
+            let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params));
+
+            progress.inc(1);
+            ggsw
+        })
         .collect::<Vec<_>>();
+    progress.finish_and_clear();
     println!("Time to generate select lines: {:?}", now.elapsed());
 
     println!("Running each cmux tree");
     let now = std::time::Instant::now();
+    let progress = ProgressBar::new(run_options.sample_count as u64);
+    progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
+
     // We have a vector of size sample_count, each containing a vector of size depth of noise.
     let samples_per_run = (0..run_options.sample_count)
         .into_par_iter()
         .map(|_| {
-            run_compute_tree(
+            let run = run_compute_tree(
                 run_options.depth,
                 &ones,
                 &zeros,
                 &secret_key,
                 &compute_key,
                 &params,
-            )
+            );
+
+            progress.inc(1);
+            run
         })
         .collect::<Vec<_>>();
+    progress.finish_and_clear();
     println!("Time to run cmux tree: {:?}", now.elapsed());
 
-    // Transpose the samples, so now we have a vector of size depth, each containing a vector of size sample_count.
+    // Transpose the samples, so now we have a vector of size depth, each
+    // containing a vector of size sample_count.
     let samples_per_level = transpose(samples_per_run);
 
     // Flatten Vec<Vec<(T, T)>> to Vec<Vec<T>>
@@ -352,6 +470,13 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         })
         .collect::<Vec<_>>();
 
+    let (depths, base_2_error_rates) = data_points_per_level
+        .iter()
+        .map(|dp| (dp.depth, dp.predicted_err.base_2))
+        .unzip::<usize, f64, Vec<_>, Vec<_>>();
+
+    let fit = fit_error_rate(&depths, &base_2_error_rates);
+
     let raw = if run_options.include_raw {
         samples_per_level_flattened
             .into_iter()
@@ -366,6 +491,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         cmux_tree_parameters: cmux_tree_params.clone(),
         system_info,
         method: Method::RandomSelectLinesCascadedDataLines,
+        fit,
         data: data_points_per_level,
         raw,
     }
