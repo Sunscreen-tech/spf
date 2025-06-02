@@ -20,17 +20,20 @@ fn can_run_from_elf() {
 
     let mut proc = FheComputer::new(&enc, &eval);
 
+    let a = 0xFEEDF00D_CAFEBABEu64
+        .to_le_bytes()
+        .map(|x| UInt::<8, _>::encrypt_secret(x as u64, &enc, sk));
+    let b = 0x12345678_9ABCDEF0u64
+        .to_le_bytes()
+        .map(|x| UInt::<8, _>::encrypt_secret(x as u64, &enc, sk));
+
+    let a = memory.try_allocate_type(&a).unwrap();
+    let b = memory.try_allocate_type(&b).unwrap();
+
     let args = ArgsBuilder::new()
-        .arg(UInt::<64, _>::encrypt_secret(
-            0xFEEDF00D_CAFEBABEu64,
-            &enc,
-            sk,
-        ))
-        .arg(UInt::<64, _>::encrypt_secret(
-            0x12345678_9ABCDEF0u64,
-            &enc,
-            sk,
-        ))
+        .arg(a)
+        .arg(b)
+        .arg(8)
         .return_value::<UInt<8, _>>();
 
     let prog = memory.get_function_entry("hamming_distance").unwrap();
