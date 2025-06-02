@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
-    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LweDef, LweDimension,
-    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, rand::Stddev,
+    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LWE_637_128, LweDef,
+    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -99,7 +99,7 @@ impl Default for Params {
     }
 }
 
-/// An 80-bit secure parameter set.
+/// A < 80-bit secure parameter set. These numbers are out of date.
 ///
 /// # Remarks
 /// Is *not* compatible with RLWE public-key encryption.
@@ -142,10 +142,7 @@ pub const DEFAULT_80: Params = Params {
 ///   `base_2_error_exponent(depth) = -161785.15 / (depth + 233.42) - 3.54`
 ///   The error at a computational depth of 1024 is about 2^(-132).
 pub const DEFAULT_128: Params = Params {
-    l0_params: LweDef {
-        dim: LweDimension(637),
-        std: Stddev(6.27510880527384e-05),
-    },
+    l0_params: LWE_637_128,
     l1_params: GLWE_1_2048_128,
     l2_params: GLWE_1_2048_128,
     cbs_radix: RadixDecomposition {
