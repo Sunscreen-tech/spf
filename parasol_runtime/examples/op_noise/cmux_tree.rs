@@ -397,6 +397,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
             ggsw
         })
         .collect::<Vec<_>>();
+    progress.finish_and_clear();
     println!("Time to generate select lines: {:?}", now.elapsed());
 
     println!("Running each cmux tree");
@@ -421,6 +422,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
             run
         })
         .collect::<Vec<_>>();
+    progress.finish_and_clear();
     println!("Time to run cmux tree: {:?}", now.elapsed());
 
     // Transpose the samples, so now we have a vector of size depth, each
