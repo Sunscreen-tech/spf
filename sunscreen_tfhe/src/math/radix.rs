@@ -95,7 +95,6 @@ where
         }
     }
 
-    #[inline(never)]
     /// Writes the next polynomial decomposition to `dst` and returns `Some(())` if there is a next digit.
     pub fn write_next(&mut self, dst: &mut PolynomialRef<S>) -> Option<()> {
         if self.level == self.radix.count.0 {
@@ -109,15 +108,6 @@ where
             dst.coeffs_mut(),
             self.radix.radix_log.0,
         );
-
-        // for (s, r) in self
-        //     .scratch
-        //     .coeffs_mut()
-        //     .iter_mut()
-        //     .zip(dst.coeffs_mut().iter_mut())
-        // {
-        //     *r = get_next_digit(s, self.radix.radix_log.0);
-        // }
 
         Some(())
     }

@@ -39,22 +39,18 @@ impl<S: TorusOps> VectorOps for Torus<S> {
 }
 
 impl VectorOps for u64 {
-    #[inline(never)]
     fn vector_add(c: &mut [Self], a: &[Self], b: &[Self]) {
         scalar::vector_add(c, a, b);
     }
 
-    #[inline(never)]
     fn vector_sub(c: &mut [Self], a: &[Self], b: &[Self]) {
         scalar::vector_add(c, a, b);
     }
 
-    #[inline(always)]
     fn vector_mod_pow2_q_f64(c: &mut [Self], a: &[f64], log2_q: u64) {
         scalar::vector_mod_pow2_q_f64(c, a, log2_q);
     }
 
-    #[inline(always)]
     fn vector_next_decomp(s: &mut [Self], r: &mut [Self], radix_log: usize) {
         scalar::vector_next_decomp(s, r, radix_log);
     }
@@ -90,7 +86,6 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
     scalar::complex_untwist(output, ifft, twist_inv)
 }
 
-#[inline(never)]
 /// Compute vector `c += a * b` over &[Complex<f64>].
 ///
 /// # Panics

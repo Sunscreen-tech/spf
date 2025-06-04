@@ -12,7 +12,6 @@ use crate::{
     scratch::{allocate_scratch, allocate_scratch_ref},
 };
 
-#[inline(never)]
 /// Compute `c += a \[*] b`` where
 /// * `a` is a GLWE ciphertext
 /// * `b` is a GGSW cipheetext
@@ -52,7 +51,6 @@ pub fn glwe_ggsw_mad<S>(
     }
 }
 
-#[inline(never)]
 /// Compute `c += (G^-1 * a) \[*\] b`, where
 /// * `G^-1 * a`` is the radix decomposition of `a`
 /// * `b` is a GLEV ciphertext.
@@ -121,7 +119,6 @@ pub fn glwe_polynomial_mad(
     c_b.multiply_add(a_b, b);
 }
 
-#[inline(never)]
 /// Performs a CMUX operation, which enables one of two GLWE ciphertexts
 /// to be selected from an encrypted boolean GGSW ciphertext. The result
 /// is stored in `c`.

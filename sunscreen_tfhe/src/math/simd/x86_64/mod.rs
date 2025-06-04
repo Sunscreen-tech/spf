@@ -50,7 +50,6 @@ fn fma_available() -> bool {
     })
 }
 
-#[inline(never)]
 /// Compute vector `c += a * b` over &[Complex<f64>].
 ///
 /// # Panics
@@ -127,7 +126,6 @@ impl<S: TorusOps> VectorOps for Torus<S> {
 }
 
 impl VectorOps for u64 {
-    #[inline(never)]
     fn vector_add(c: &mut [Self], a: &[Self], b: &[Self]) {
         if fma_available() && avx2_available() {
             unsafe { avx2::vector_add_u64(c, a, b) };
@@ -136,7 +134,6 @@ impl VectorOps for u64 {
         }
     }
 
-    #[inline(never)]
     fn vector_sub(c: &mut [Self], a: &[Self], b: &[Self]) {
         if avx2_available() {
             unsafe { avx2::vector_sub_u64(c, a, b) };
