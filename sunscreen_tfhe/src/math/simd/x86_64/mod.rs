@@ -3,7 +3,7 @@ mod avx512;
 
 use std::{arch::x86_64::__m512d, sync::OnceLock};
 
-use num::Complex;
+use num::{Complex, Float};
 use raw_cpuid::CpuId;
 
 use crate::{Torus, TorusOps, simd::VectorOps};
@@ -71,6 +71,15 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
         unsafe { avx2::complex_mad_avx2(c, a, b) }
     } else {
         scalar::complex_mad(c, a, b)
+    }
+}
+
+#[inline]
+pub fn complex_twist<T: Float>(c: &mut [Complex<T>], re: &[T], im: &[T], b: &[Complex<T>]) {
+    if avx2_available() {
+        unsafe { avx2::complex_twist(c, re, im, b) }
+    } else {
+        scalar::complex_twist(c, re, im, b)
     }
 }
 
