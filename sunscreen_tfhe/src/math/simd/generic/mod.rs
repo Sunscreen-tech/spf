@@ -36,6 +36,14 @@ impl<S: TorusOps> VectorOps for Torus<S> {
             radix_log,
         );
     }
+
+    fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self) {
+        S::vector_scalar_mad(
+            bytemuck::cast_slice_mut(c),
+            bytemuck::cast_slice(a),
+            s.inner(),
+        );
+    }
 }
 
 impl VectorOps for u64 {
@@ -44,7 +52,7 @@ impl VectorOps for u64 {
     }
 
     fn vector_sub(c: &mut [Self], a: &[Self], b: &[Self]) {
-        scalar::vector_add(c, a, b);
+        scalar::vector_sub(c, a, b);
     }
 
     fn vector_mod_pow2_q_f64(c: &mut [Self], a: &[f64], log2_q: u64) {
@@ -53,6 +61,10 @@ impl VectorOps for u64 {
 
     fn vector_next_decomp(s: &mut [Self], r: &mut [Self], radix_log: usize) {
         scalar::vector_next_decomp(s, r, radix_log);
+    }
+
+    fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self) {
+        scalar::vector_scalar_mad(c, a, s);
     }
 }
 
@@ -73,6 +85,10 @@ impl VectorOps for u32 {
 
     fn vector_next_decomp(s: &mut [Self], r: &mut [Self], radix_log: usize) {
         scalar::vector_next_decomp(s, r, radix_log);
+    }
+
+    fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self) {
+        scalar::vector_scalar_mad(c, a, s);
     }
 }
 
