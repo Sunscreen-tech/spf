@@ -104,14 +104,20 @@ where
 
         self.level += 1;
 
-        for (s, r) in self
-            .scratch
-            .coeffs_mut()
-            .iter_mut()
-            .zip(dst.coeffs_mut().iter_mut())
-        {
-            *r = get_next_digit(s, self.radix.radix_log.0);
-        }
+        S::vector_next_decomp(
+            self.scratch.coeffs_mut(),
+            dst.coeffs_mut(),
+            self.radix.radix_log.0,
+        );
+
+        // for (s, r) in self
+        //     .scratch
+        //     .coeffs_mut()
+        //     .iter_mut()
+        //     .zip(dst.coeffs_mut().iter_mut())
+        // {
+        //     *r = get_next_digit(s, self.radix.radix_log.0);
+        // }
 
         Some(())
     }

@@ -7,7 +7,7 @@ use num::{Complex, Float, One};
 use realfft::FftNum;
 use rustfft::{Fft, FftPlanner};
 
-use crate::{scratch::allocate_scratch, simd, FrequencyTransform};
+use crate::{FrequencyTransform, scratch::allocate_scratch, simd};
 
 static FFT_CACHE: OnceLock<Vec<TwistedFft<f64>>> = OnceLock::new();
 
@@ -118,14 +118,7 @@ where
 
         self.rev.process_with_scratch(ifft_slice, scratch_slice);
 
-        let n_inv = T::one() / T::from(data.len()).unwrap();
-
-        for (i, x) in ifft_slice.iter().enumerate() {
-            let tmp = *x * n_inv * self.twist_inv[i];
-
-            output[i] = tmp.re.round();
-            output[i + data.len()] = tmp.im.round();
-        }
+        simd::complex_untwist(output, ifft_slice, &self.twist_inv);
     }
 }
 

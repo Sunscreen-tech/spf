@@ -1,10 +1,16 @@
-use std::arch::x86_64::{
-    __m256i, _mm256_add_epi64, _mm256_load_si256, _mm256_store_si256, _mm256_sub_epi64,
+use std::{
+    arch::x86_64::{
+        __m256i, _mm256_add_epi64, _mm256_load_si256, _mm256_store_si256, _mm256_sub_epi64,
+    },
+    ops::{BitAnd, Shl, Shr},
 };
 
-use num::{Complex, Float};
+use num::{
+    Complex, Float,
+    traits::{WrappingAdd, WrappingSub},
+};
 
-use crate::FromF64;
+use crate::{FromF64, FromU64};
 
 #[inline]
 #[target_feature(enable = "avx2,fma")]
@@ -19,6 +25,19 @@ pub fn complex_mad_avx2(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex
 pub fn complex_twist<T: Float>(c: &mut [Complex<T>], re: &[T], im: &[T], twist: &[Complex<T>]) {
     for ((c, (re, im)), b) in c.iter_mut().zip(re.iter().zip(im.iter())).zip(twist.iter()) {
         *c = Complex::new(*re, *im) * b;
+    }
+}
+
+#[inline]
+#[target_feature(enable = "avx2,fma")]
+pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_inv: &[Complex<T>]) {
+    let n_inv = T::one() / T::from(ifft.len()).unwrap();
+
+    for (i, x) in ifft.iter().enumerate() {
+        let tmp = *x * n_inv * twist_inv[i];
+
+        output[i] = tmp.re.round();
+        output[i + ifft.len()] = tmp.im.round();
     }
 }
 
@@ -49,6 +68,30 @@ pub fn vector_sub_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
             let c_vals = _mm256_sub_epi64(a_vals, b_vals);
             _mm256_store_si256(c.as_mut_ptr().add(i * 4) as *mut __m256i, c_vals);
         }
+    }
+}
+
+#[inline]
+#[target_feature(enable = "avx2,fma")]
+pub fn vector_next_decomp<T>(s: &mut [T], r: &mut [T], radix_log: usize)
+where
+    T: FromU64
+        + Shr<usize, Output = T>
+        + BitAnd<T, Output = T>
+        + WrappingSub<Output = T>
+        + Shl<usize, Output = T>
+        + WrappingAdd<Output = T>
+        + Copy,
+{
+    for (s, r) in s.iter_mut().zip(r.iter_mut()) {
+        let mask = T::from_u64((0x1u64 << radix_log) - 1);
+
+        // Interpreting the digits over [-B/2,B/2) reduces noise by half a bit on average.
+        let digit = *s & mask;
+        *s = *s >> radix_log;
+        let carry = digit >> (radix_log - 1);
+        *s = s.wrapping_add(&carry);
+        *r = digit.wrapping_sub(&(carry << radix_log));
     }
 }
 

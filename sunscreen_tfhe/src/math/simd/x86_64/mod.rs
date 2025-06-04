@@ -76,10 +76,19 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 
 #[inline]
 pub fn complex_twist<T: Float>(c: &mut [Complex<T>], re: &[T], im: &[T], b: &[Complex<T>]) {
-    if avx2_available() {
+    if fma_available() && avx2_available() {
         unsafe { avx2::complex_twist(c, re, im, b) }
     } else {
         scalar::complex_twist(c, re, im, b)
+    }
+}
+
+#[inline]
+pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_inv: &[Complex<T>]) {
+    if fma_available() && avx2_available() {
+        unsafe { avx2::complex_untwist(output, ifft, twist_inv) }
+    } else {
+        scalar::complex_untwist(output, ifft, twist_inv)
     }
 }
 
@@ -105,6 +114,14 @@ impl<S: TorusOps> VectorOps for Torus<S> {
     #[inline(always)]
     fn vector_mod_pow2_q_f64(c: &mut [Self], a: &[f64], log2_q: u64) {
         S::vector_mod_pow2_q_f64(bytemuck::cast_slice_mut(c), bytemuck::cast_slice(a), log2_q);
+    }
+
+    fn vector_next_decomp(s: &mut [Self], r: &mut [Self], radix_log: usize) {
+        S::vector_next_decomp(
+            bytemuck::cast_slice_mut(s),
+            bytemuck::cast_slice_mut(r),
+            radix_log,
+        );
     }
 }
 
@@ -135,6 +152,15 @@ impl VectorOps for u64 {
             scalar::vector_mod_pow2_q_f64(c, a, log2_q);
         }
     }
+
+    #[inline(always)]
+    fn vector_next_decomp(s: &mut [Self], r: &mut [Self], radix_log: usize) {
+        if avx2_available() && fma_available() {
+            unsafe { avx2::vector_next_decomp(s, r, radix_log) };
+        } else {
+            scalar::vector_next_decomp(s, r, radix_log);
+        }
+    }
 }
 
 impl VectorOps for u32 {
@@ -150,6 +176,10 @@ impl VectorOps for u32 {
 
     fn vector_mod_pow2_q_f64(c: &mut [Self], a: &[f64], log2_q: u64) {
         scalar::vector_mod_pow2_q_f64(c, a, log2_q);
+    }
+
+    fn vector_next_decomp(s: &mut [Self], r: &mut [Self], radix_log: usize) {
+        scalar::vector_next_decomp(s, r, radix_log);
     }
 }
 
