@@ -1,8 +1,7 @@
 use std::ops::{Add, BitAnd, Shl, Shr, Sub};
 
 use num::{
-    Complex, Float,
-    traits::{WrappingAdd, WrappingSub},
+    traits::{MulAdd, WrappingAdd, WrappingSub}, Complex, Float
 };
 
 use crate::{FromF64, FromU64};
@@ -116,6 +115,18 @@ pub fn vector_mod_pow2_q_f64<T: FromF64>(c: &mut [T], a: &[f64], log2_q: u64) {
         *o = T::from_f64(ifft);
     }
 }
+
+pub fn vector_scalar_mad<S, T, U>(c: &mut [S], a: &[T], s: U) 
+where
+    S: Clone + Copy + Add<S, Output = S>,
+    T: Clone + Copy + MulAdd<U, S, Output = S>,
+    U: Clone + Copy,
+{
+    for (c, a) in c.iter_mut().zip(a.iter()) {
+        *c = a.mul_add(s, *c);
+    }   
+}
+
 
 #[cfg(test)]
 mod test {

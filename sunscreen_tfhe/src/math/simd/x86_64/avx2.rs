@@ -1,5 +1,5 @@
 use std::{
-    ops::{BitAnd, Shl, Shr},
+    ops::{BitAnd, Shl, Shr}
 };
 
 use num::{
@@ -125,6 +125,8 @@ pub fn vector_mod_pow2_q_f64_u64(c: &mut [u64], a: &[f64], log2_q: u64) {
         *o = u64::from_f64(ifft);
     }
 }
+
+
 
 #[cfg(test)]
 mod tests {

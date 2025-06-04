@@ -63,6 +63,15 @@ where
     }
 }
 
+/// Compute `c += a * s`, where `s` is a "small" scalar. May be more efficient than 
+/// `polynomial_scalar_mad`.
+pub fn polynomial_small_scalar_mad<T>(c: &mut PolynomialRef<T>, a: &PolynomialRef<T>, s: T)
+where
+    T: Clone + VectorOps,
+{
+    T::vector_scalar_mad(c.coeffs_mut(), a.coeffs(), s);
+}
+
 /// Compute `c = a + b` where a, b, and c are polynomials.
 pub fn polynomial_add<S>(c: &mut PolynomialRef<S>, a: &PolynomialRef<S>, b: &PolynomialRef<S>)
 where

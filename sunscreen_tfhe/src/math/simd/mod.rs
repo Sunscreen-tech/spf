@@ -24,4 +24,6 @@ where
     fn vector_mod_pow2_q_f64(c: &mut [Self], a: &[f64], log2_q: u64);
 
     fn vector_next_decomp(c: &mut [Self], a: &mut [Self], radix_log: usize);
+
+    fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self);
 }
