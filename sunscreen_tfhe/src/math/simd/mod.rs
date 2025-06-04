@@ -1,9 +1,13 @@
 mod scalar;
-#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"),)))]
-pub use scalar::*;
 
-#[cfg(all(any(target_arch = "x86", target_arch = "x86_64"),))]
+#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"),)))]
+mod generic;
+#[cfg(not(all(any(target_arch = "x86", target_arch = "x86_64"),)))]
+pub use generic::*;
+
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 mod x86_64;
+#[cfg(any(target_arch = "x86", target_arch = "x86_64"))]
 pub use x86_64::*;
 
 use crate::FromF64;

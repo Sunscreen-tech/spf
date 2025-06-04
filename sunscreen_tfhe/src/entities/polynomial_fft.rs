@@ -95,7 +95,7 @@ impl PolynomialFftRef<Complex<f64>> {
 
         fft.reverse(&self.data, ifft);
 
-        T::vector_mod_pow2_q_f64(poly.coeffs_mut(), &ifft, T::BITS as u64);
+        T::vector_mod_pow2_q_f64(poly.coeffs_mut(), ifft, T::BITS as u64);
     }
 
     /// Computes the multiplication of two polynomials as `c += a * b`. This is

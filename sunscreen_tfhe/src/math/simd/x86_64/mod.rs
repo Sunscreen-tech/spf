@@ -6,9 +6,10 @@ use std::{arch::x86_64::__m512d, sync::OnceLock};
 use num::{Complex, Float};
 use raw_cpuid::CpuId;
 
-use crate::{Torus, TorusOps, simd::VectorOps};
-
-use super::scalar;
+use crate::{
+    Torus, TorusOps,
+    simd::{VectorOps, scalar},
+};
 
 #[inline(always)]
 fn avx_512_available() -> bool {
