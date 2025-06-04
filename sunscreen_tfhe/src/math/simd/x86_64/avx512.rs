@@ -138,17 +138,22 @@ pub fn vector_scalar_mad(c: &mut [u64], a: &[u64], s: u64) {
 
 #[cfg(test)]
 mod tests {
+    use crate::simd::x86_64::avx_512_available;
+
     use super::*;
 
     #[test]
     fn can_vector_scalar_mad() {
-        let a = avec_from_iter!(0..64u64);
-        let s = 123u32;
-        let mut c = avec_from_iter!(0..64);
-        let expected = avec_from_iter!(c.iter().zip(a.iter()).map(|(c, a)| c + a * s as u64));
+        // Skip the test if the current hardware can't run it.
+        if avx_512_available() {
+            let a = avec_from_iter!(0..64u64);
+            let s = 123u32;
+            let mut c = avec_from_iter!(0..64);
+            let expected = avec_from_iter!(c.iter().zip(a.iter()).map(|(c, a)| c + a * s as u64));
 
-        vector_scalar_mad(&mut c, &a, s as u64);
+            vector_scalar_mad(&mut c, &a, s as u64);
 
-        assert_eq!(c, expected);
+            assert_eq!(c, expected);
+        }
     }
 }
