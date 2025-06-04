@@ -147,7 +147,7 @@ pub fn auction_test_program() -> Vec<IsaOp> {
         ),
         ("", IsaOp::Load(bid_at_i, bid_offset_to_ptr_i, width)),
         // Check for the higher bid
-        ("", IsaOp::CmpGt(is_winner, bid_at_i, current_bid)),
+        ("", IsaOp::CmpGe(is_winner, bid_at_i, current_bid)),
         // If bid_at_i > current_bid, update winner
         (
             "",
@@ -199,14 +199,18 @@ fn auction_from_assembly(c: &mut Criterion) {
 
                 proc.run_program(prog, &memory, args).unwrap();
 
-                // let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
-                // assert_eq!(winner[0].decrypt(&enc, &sk), 7);
-                // assert_eq!(winner[1].decrypt(&enc, &sk), 7);
+                let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
+                assert_eq!(winner[0].decrypt(&enc, &sk), 7);
+                assert_eq!(winner[1].decrypt(&enc, &sk), 7);
             },
             criterion::BatchSize::PerIteration,
         );
     });
 }
 
-criterion_group!(benches, auction_from_compiler, auction_from_assembly);
+criterion_group!(
+    benches,
+    // auction_from_compiler,
+    auction_from_assembly
+);
 criterion_main!(benches);
