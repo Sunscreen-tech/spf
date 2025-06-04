@@ -78,9 +78,8 @@ pub unsafe fn complex_mad_avx_512_unchecked(
     }
 }
 
-#[inline(never)]
 pub fn vector_scalar_mad(c: &mut [u64], a: &[u64], s: u64) {
-let mut i = 0;
+    let mut i = 0;
 
     // Complex<T> is declared as repr(C), so the location of re and im are guaranteed
     // at address offsets 0 and 8 for Complex<f64>. This allows us to treat
@@ -105,11 +104,11 @@ let mut i = 0;
                 // Load 2 __m512d of u64 from a
                 "vmovdqa64 zmm0, [{a_ptr}+8*{i}]",
                 "vmovdqa64 zmm1, [{a_ptr}+8*{i}+64]",
-                
+
                 // Load 2 __m512d of u64 from c
                 "vmovdqa64 zmm2, [{c_ptr}+8*{i}]",
                 "vmovdqa64 zmm3, [{c_ptr}+8*{i}+64]",
-                
+
                 "vpmullq zmm4, zmm0, zmm7", // multiply 64-bit words in zmm0 and zmm2
                 "vpmullq zmm5, zmm1, zmm7", // multiply 64-bit words in zmm1 and zmm3
 

@@ -125,7 +125,11 @@ impl<S: TorusOps> VectorOps for Torus<S> {
     }
 
     fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self) {
-        S::vector_scalar_mad(bytemuck::cast_slice_mut(c), bytemuck::cast_slice(a), s.inner());
+        S::vector_scalar_mad(
+            bytemuck::cast_slice_mut(c),
+            bytemuck::cast_slice(a),
+            s.inner(),
+        );
     }
 }
 
@@ -169,12 +173,12 @@ impl VectorOps for u64 {
         if avx_512_available() {
             avx512::vector_scalar_mad(c, a, s);
         } else {
-            scalar::vector_scalar_mad(c, a, s.into());
+            scalar::vector_scalar_mad(c, a, s);
         }
     }
 }
 
-impl VectorOps for u32 {    
+impl VectorOps for u32 {
     #[inline(always)]
     fn vector_add(c: &mut [Self], a: &[Self], b: &[Self]) {
         scalar::vector_add(c, a, b);

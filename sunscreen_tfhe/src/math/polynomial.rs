@@ -63,7 +63,7 @@ where
     }
 }
 
-/// Compute `c += a * s`, where `s` is a "small" scalar. May be more efficient than 
+/// Compute `c += a * s`, where `s` is a "small" scalar. May be more efficient than
 /// `polynomial_scalar_mad`.
 pub fn polynomial_small_scalar_mad<T>(c: &mut PolynomialRef<T>, a: &PolynomialRef<T>, s: T)
 where

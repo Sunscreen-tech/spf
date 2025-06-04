@@ -1,6 +1,4 @@
-use std::{
-    ops::{BitAnd, Shl, Shr}
-};
+use std::ops::{BitAnd, Shl, Shr};
 
 use num::{
     Complex, Float,
@@ -43,7 +41,7 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 pub fn vector_add_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
         *c = a + b;
-    }    
+    }
 }
 
 #[inline]
@@ -125,8 +123,6 @@ pub fn vector_mod_pow2_q_f64_u64(c: &mut [u64], a: &[f64], log2_q: u64) {
         *o = u64::from_f64(ifft);
     }
 }
-
-
 
 #[cfg(test)]
 mod tests {

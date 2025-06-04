@@ -1,9 +1,16 @@
 use crate::{
-    dst::FromMutSlice, entities::{
+    GlweDef, OverlaySize, RadixDecomposition, TorusOps,
+    dst::FromMutSlice,
+    entities::{
         GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, LweCiphertextRef, PolynomialRef,
-    }, ops::ciphertext::decomposed_polynomial_glev_mad, polynomial::{
-        polynomial_add, polynomial_external_mad, polynomial_negate, polynomial_scalar_mad, polynomial_small_scalar_mad, polynomial_sub
-    }, radix::PolynomialRadixIterator, scratch::allocate_scratch_ref, GlweDef, OverlaySize, RadixDecomposition, TorusOps
+    },
+    ops::ciphertext::decomposed_polynomial_glev_mad,
+    polynomial::{
+        polynomial_add, polynomial_external_mad, polynomial_negate, polynomial_small_scalar_mad,
+        polynomial_sub,
+    },
+    radix::PolynomialRadixIterator,
+    scratch::allocate_scratch_ref,
 };
 
 /**
