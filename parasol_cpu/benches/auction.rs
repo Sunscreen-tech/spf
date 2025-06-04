@@ -96,20 +96,20 @@ pub fn auction_test_program() -> Vec<IsaOp> {
     // Argument registers
     let bids_ptr = A0; // Pointer to bids array
     let len = A1; // Length of array
-    let winner_ptr = A2; // Pointer to Winner struct
+    let winner_output_ptr = A2; // Pointer to Winner struct
 
     // Working registers
     let i = X32; // Loop counter
     let current_bid = X33;
     let current_idx = X34;
-    let winner_bid = X35;
-    let winner_idx = X36;
+    let winner_output_bid = X35;
+    let winner_output_idx = X36;
     let is_winner = X37;
     let bid_at_i = X39;
     let offset_to_ptr_i = X40;
     let one = X41;
     let loop_cond = X42;
-    let pointer_increment = X43;
+    let bid_pointer_increment = X43;
     let idx_increment = X44;
     let bid_offset_to_ptr_i = X45;
 
@@ -117,28 +117,32 @@ pub fn auction_test_program() -> Vec<IsaOp> {
         // Truncate len to be 16 bits
         ("", IsaOp::Trunc(len, len, width)),
         // We will be iterating over the bids, which involves adding this offset
-        ("", IsaOp::LoadI(pointer_increment, width * 2 / 8, 32)),
+        ("", IsaOp::LoadI(bid_pointer_increment, width * 2 / 8, 32)),
+        // Offset to the idx field in the Winner strict.
         ("", IsaOp::LoadI(idx_increment, width / 8, 32)),
         ("", IsaOp::LoadI(one, 1, width)),
         // Load first bid into winner (bids[0])
         ("", IsaOp::Load(current_bid, bids_ptr, width)),
-        // Initialize winner_idx = 0
+        // Initialize winner_output_idx = 0
         ("", IsaOp::LoadI(current_idx, 0, width)),
-        //
-        ("", IsaOp::Move(winner_bid, winner_ptr)),
-        //
-        ("", IsaOp::Add(winner_idx, winner_ptr, idx_increment)),
-        // Store initial winner_bid to Winner.bid
-        ("", IsaOp::Store(winner_bid, current_bid, width)),
-        ("", IsaOp::Store(winner_idx, current_idx, width)),
+        // Get the pointer for the Winner->bid field
+        ("", IsaOp::Move(winner_output_bid, winner_output_ptr)),
+        // Get the pointer for the Winner->idx field
+        (
+            "",
+            IsaOp::Add(winner_output_idx, winner_output_ptr, idx_increment),
+        ),
+        // Store initial winner_output_bid to Winner.bid
+        ("", IsaOp::Store(winner_output_bid, current_bid, width)),
+        ("", IsaOp::Store(winner_output_idx, current_idx, width)),
         // Initialize counter i = 1 (we start from second element)
         ("", IsaOp::LoadI(i, 1, width)),
         ("loop", IsaOp::CmpLt(loop_cond, i, len)),
-        // Skip to end if i >= len (adjust offset as needed)
+        // Skip to end if i >= len
         ("", IsaOp::BranchZero(loop_cond, 13 * instruction_size)),
         // Expand i to 32
         ("", IsaOp::Zext(i, i, 32)),
-        ("", IsaOp::Mul(offset_to_ptr_i, i, pointer_increment)),
+        ("", IsaOp::Mul(offset_to_ptr_i, i, bid_pointer_increment)),
         ("", IsaOp::Trunc(i, i, width)),
         // Load the bid at index i
         (
@@ -155,8 +159,8 @@ pub fn auction_test_program() -> Vec<IsaOp> {
         ),
         ("", IsaOp::Cmux(current_idx, is_winner, i, current_idx)),
         // Load the current bid for the next iteration
-        ("", IsaOp::Store(winner_bid, current_bid, width)),
-        ("", IsaOp::Store(winner_idx, current_idx, width)),
+        ("", IsaOp::Store(winner_output_bid, current_bid, width)),
+        ("", IsaOp::Store(winner_output_idx, current_idx, width)),
         // Increment i
         ("", IsaOp::Add(i, i, one)),
         // Jump back to the loop start
