@@ -9,13 +9,16 @@ macro_rules! avec {
 
 macro_rules! avec_from_iter {
     ($iter:expr) => {
-        aligned_vec::AVec::from_iter(crate::scratch::SIMD_ALIGN, $iter)
+        aligned_vec::AVec::<_, aligned_vec::ConstAlign<{ $crate::scratch::SIMD_ALIGN }>>::from_iter(
+            crate::scratch::SIMD_ALIGN,
+            $iter,
+        )
     };
 }
 
 macro_rules! avec_from_slice {
     ($slice:expr) => {
-        aligned_vec::AVec::from_slice(crate::scratch::SIMD_ALIGN, $slice)
+        aligned_vec::AVec::<_, aligned_vec::ConstAlign<{$crate::scratch::SIMD_ALIGN}>>::from_slice(crate::scratch::SIMD_ALIGN, $slice)
     };
 }
 
