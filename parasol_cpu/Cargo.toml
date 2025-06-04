@@ -51,8 +51,12 @@ opt-level = 3
 
 [[bench]]
 harness = false
-name = "chi_squared"
+name = "auction"
 
 [[bench]]
 harness = false
 name = "cardio"
+
+[[bench]]
+harness = false
+name = "chi_squared"
