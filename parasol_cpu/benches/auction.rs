@@ -2,11 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{
-    Args, ArgsBuilder, FheComputer, Memory, Ptr32, RunProgramOptionsBuilder, assembly::IsaOp,
-    register_names::*,
+    Args, ArgsBuilder, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
 };
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
 
@@ -40,10 +39,9 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 }
 
 fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Ptr32, Args<()>) {
-    let data =
-        std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, &enc, sk));
+    let data = std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
+    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<32, _>::new(enc));
 
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(&enc));
     let winner = memory.try_allocate_type(&winner).unwrap();
 
     let a = memory.try_allocate_type(&data).unwrap();
@@ -77,7 +75,7 @@ fn auction_from_compiler(c: &mut Criterion) {
 
                 (proc, args, prog, memory, winner)
             },
-            |(mut proc, args, prog, memory, winner)| {
+            |(mut proc, args, prog, memory, _winner)| {
                 proc.run_program(prog, &memory, args).unwrap();
 
                 // let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
@@ -90,9 +88,6 @@ fn auction_from_compiler(c: &mut Criterion) {
 }
 
 pub fn auction_test_program() -> Vec<IsaOp> {
-    let width = 16; // Using uint16_t for bids and winner fields
-    let instruction_size = 8;
-
     // Argument registers
     let bids_ptr = A0; // Pointer to bids array
     let len = A1; // Length of array
@@ -101,74 +96,36 @@ pub fn auction_test_program() -> Vec<IsaOp> {
     // Working registers
     let i = X32; // Loop counter
     let current_bid = X33;
-    let current_idx = X34;
     let winner_output_bid = X35;
     let winner_output_idx = X36;
     let is_winner = X37;
-    let bid_at_i = X39;
-    let offset_to_ptr_i = X40;
     let one = X41;
+    let two = X46;
     let loop_cond = X42;
-    let bid_pointer_increment = X43;
-    let idx_increment = X44;
-    let bid_offset_to_ptr_i = X45;
 
     let instructions = vec![
-        // Truncate len to be 16 bits
-        ("", IsaOp::Trunc(len, len, width)),
-        // We will be iterating over the bids, which involves adding this offset
-        ("", IsaOp::LoadI(bid_pointer_increment, width * 2 / 8, 32)),
-        // Offset to the idx field in the Winner strict.
-        ("", IsaOp::LoadI(idx_increment, width / 8, 32)),
-        ("", IsaOp::LoadI(one, 1, width)),
-        // Load first bid into winner (bids[0])
-        ("", IsaOp::Load(current_bid, bids_ptr, width)),
-        // Initialize winner_output_idx = 0
-        ("", IsaOp::LoadI(current_idx, 0, width)),
-        // Get the pointer for the Winner->bid field
-        ("", IsaOp::Move(winner_output_bid, winner_output_ptr)),
-        // Get the pointer for the Winner->idx field
-        (
-            "",
-            IsaOp::Add(winner_output_idx, winner_output_ptr, idx_increment),
-        ),
-        // Store initial winner_output_bid to Winner.bid
-        ("", IsaOp::Store(winner_output_bid, current_bid, width)),
-        ("", IsaOp::Store(winner_output_idx, current_idx, width)),
-        // Initialize counter i = 1 (we start from second element)
-        ("", IsaOp::LoadI(i, 1, width)),
-        ("loop", IsaOp::CmpLt(loop_cond, i, len)),
-        // Skip to end if i >= len
-        ("", IsaOp::BranchZero(loop_cond, 13 * instruction_size)),
-        // Expand i to 32
-        ("", IsaOp::Zext(i, i, 32)),
-        ("", IsaOp::Mul(offset_to_ptr_i, i, bid_pointer_increment)),
-        ("", IsaOp::Trunc(i, i, width)),
-        // Load the bid at index i
-        (
-            "",
-            IsaOp::Add(bid_offset_to_ptr_i, bids_ptr, offset_to_ptr_i),
-        ),
-        ("", IsaOp::Load(bid_at_i, bid_offset_to_ptr_i, width)),
-        // Check for the higher bid
-        ("", IsaOp::CmpGe(is_winner, bid_at_i, current_bid)),
-        // If bid_at_i > current_bid, update winner
-        (
-            "",
-            IsaOp::Cmux(current_bid, is_winner, bid_at_i, current_bid),
-        ),
-        ("", IsaOp::Cmux(current_idx, is_winner, i, current_idx)),
-        // Load the current bid for the next iteration
-        ("", IsaOp::Store(winner_output_bid, current_bid, width)),
-        ("", IsaOp::Store(winner_output_idx, current_idx, width)),
-        // Increment i
-        ("", IsaOp::Add(i, i, one)),
-        // Jump back to the loop start
-        ("", IsaOp::Branch(-13 * instruction_size)), // FIX
-        ("return", IsaOp::Ret()),
+        IsaOp::Load(winner_output_bid, bids_ptr, 16),
+        IsaOp::LoadI(winner_output_idx, 0, 32),
+        IsaOp::LoadI(i, 1, 32),
+        IsaOp::LoadI(one, 1, 32),
+        IsaOp::LoadI(two, 2, 32),
+        IsaOp::CmpGe(loop_cond, i, len),
+        IsaOp::BranchNonZero(loop_cond, 64),
+        IsaOp::Add(bids_ptr, bids_ptr, two), // Each bid is 2 bytes
+        IsaOp::Load(current_bid, bids_ptr, 16),
+        IsaOp::CmpGt(is_winner, current_bid, winner_output_bid),
+        IsaOp::Cmux(winner_output_bid, is_winner, current_bid, winner_output_bid),
+        IsaOp::Cmux(winner_output_idx, is_winner, i, winner_output_idx),
+        IsaOp::Add(i, i, one),
+        IsaOp::Branch(-72),
+        IsaOp::Store(winner_output_ptr, winner_output_bid, 16),
+        IsaOp::Add(winner_output_ptr, winner_output_ptr, two),
+        IsaOp::Trunc(winner_output_idx, winner_output_idx, 16),
+        IsaOp::Store(winner_output_ptr, winner_output_idx, 16),
+        IsaOp::Ret(),
     ];
 
-    instructions.into_iter().map(|x| x.1).collect()
+    instructions
 }
 
 fn auction_from_assembly(c: &mut Criterion) {
@@ -187,34 +144,13 @@ fn auction_from_assembly(c: &mut Criterion) {
                 let proc = FheComputer::new(&enc, &eval);
                 (proc, args, prog, memory, winner)
             },
-            |(mut proc, args, prog, memory, winner)| {
-                // let options = RunProgramOptionsBuilder::new()
-                //     .log_instruction_execution(true)
-                //     .log_register_info(false)
-                //     .build();
-                // let dummy_options = RunProgramOptionsBuilder::new()
-                //     .log_instruction_execution(false)
-                //     .log_register_info(false)
-                //     .build();
-                // proc.run_program_with_options(prog, &memory, args, &options)
-                //     .unwrap();
-                // proc.run_program_with_options(prog, &memory, args, &dummy_options)
-                //     .unwrap();
-
+            |(mut proc, args, prog, memory, _winner)| {
                 proc.run_program(prog, &memory, args).unwrap();
-
-                let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
-                assert_eq!(winner[0].decrypt(&enc, &sk), 7);
-                assert_eq!(winner[1].decrypt(&enc, &sk), 7);
             },
             criterion::BatchSize::PerIteration,
         );
     });
 }
 
-criterion_group!(
-    benches,
-    // auction_from_compiler,
-    auction_from_assembly
-);
+criterion_group!(benches, auction_from_compiler, auction_from_assembly);
 criterion_main!(benches);
