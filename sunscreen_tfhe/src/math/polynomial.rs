@@ -10,6 +10,7 @@ use crate::{
     dst::{AsMutSlice, AsSlice, FromMutSlice},
     entities::PolynomialRef,
     scratch::allocate_scratch,
+    simd::VectorOps,
 };
 
 /// Polynomial subtraction in place. This is equivalent to `a -= b` for each
@@ -62,21 +63,24 @@ where
     }
 }
 
+/// Compute `c += a * s`, where `s` is a "small" scalar. May be more efficient than
+/// `polynomial_scalar_mad`.
+pub fn polynomial_small_scalar_mad<T>(c: &mut PolynomialRef<T>, a: &PolynomialRef<T>, s: T)
+where
+    T: Clone + VectorOps,
+{
+    T::vector_scalar_mad(c.coeffs_mut(), a.coeffs(), s);
+}
+
 /// Compute `c = a + b` where a, b, and c are polynomials.
 pub fn polynomial_add<S>(c: &mut PolynomialRef<S>, a: &PolynomialRef<S>, b: &PolynomialRef<S>)
 where
-    S: Clone + Copy + Add<S, Output = S>,
+    S: Clone + Copy + VectorOps,
 {
     assert_eq!(c.len(), a.len());
     assert_eq!(c.len(), b.len());
 
-    for (c, (a, b)) in c
-        .as_mut_slice()
-        .iter_mut()
-        .zip(a.as_slice().iter().zip(b.as_slice().iter()))
-    {
-        *c = *a + *b;
-    }
+    S::vector_add(c.as_mut_slice(), a.as_slice(), b.as_slice());
 }
 
 /// Polynomial addition in place. This is equivalent to `a += b` for each
@@ -97,18 +101,12 @@ where
 /// Compute `c = a - b` where a, b, and c are polynomials.
 pub fn polynomial_sub<S>(c: &mut PolynomialRef<S>, a: &PolynomialRef<S>, b: &PolynomialRef<S>)
 where
-    S: Clone + Copy + Sub<S, Output = S>,
+    S: Clone + Copy + VectorOps,
 {
     assert_eq!(c.len(), a.len());
     assert_eq!(c.len(), b.len());
 
-    for (c, (a, b)) in c
-        .as_mut_slice()
-        .iter_mut()
-        .zip(a.as_slice().iter().zip(b.as_slice().iter()))
-    {
-        *c = *a - *b;
-    }
+    S::vector_sub(c.as_mut_slice(), a.as_slice(), b.as_slice());
 }
 
 /// Compute `c += a \[*\] b` where `a` in Z\[X\]/f and `c, b` in T\[X\]/f, and

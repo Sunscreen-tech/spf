@@ -15,6 +15,7 @@ use crate::{
     PlaintextBits,
     math::{ReinterpretAsSigned, ReinterpretAsUnsigned},
     scratch::Pod,
+    simd::VectorOps,
 };
 
 /// Number of bits used in the representation of a type.
@@ -77,6 +78,7 @@ pub trait TorusOps:
     + FromF64
     + ToU64
     + NumBits
+    + VectorOps
     + Sync
     + Send
 {

@@ -1,49 +1,6 @@
+use std::arch::asm;
+
 use num::Complex;
-use raw_cpuid::CpuId;
-
-#[cfg(target_arch = "x86")]
-use core::arch::x86::*;
-
-#[cfg(target_arch = "x86_64")]
-use core::arch::x86_64::*;
-use std::{arch::asm, sync::OnceLock};
-
-use super::scalar;
-
-#[inline(always)]
-fn avx_512_available() -> bool {
-    static AVX512_AVAILABLE: OnceLock<bool> = OnceLock::new();
-
-    *AVX512_AVAILABLE.get_or_init(|| {
-        if let Some(e) = CpuId::new().get_extended_feature_info() {
-            e.has_avx512f()
-        } else {
-            false
-        }
-    })
-}
-
-#[inline(always)]
-/// Compute vector `c += a * b` over &[Complex<f64>].
-///
-/// # Panics
-/// If `c.len() != a.len() != b.len()`
-/// If `a.len() % 8 != 0`
-/// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
-pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
-    assert_eq!(c.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
-    assert_eq!(b.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
-    assert_eq!(a.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
-    assert_eq!(c.len(), a.len());
-    assert_eq!(b.len(), a.len());
-    assert_eq!(a.len() % 8, 0);
-
-    if avx_512_available() {
-        unsafe { complex_mad_avx_512_unchecked(c, a, b) }
-    } else {
-        scalar::complex_mad(c, a, b)
-    }
-}
 
 /// Compute vector `c += a * b` over `&[Complex<f64>]`.
 /// This function is very unsafe.
@@ -55,7 +12,7 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 /// the lengths of c, a, and b must be the equal or UB may result.
 /// the lengths of c, a, and b must be a multiple of 8 or UB will result.
 #[inline(always)]
-unsafe fn complex_mad_avx_512_unchecked(
+pub unsafe fn complex_mad_avx_512_unchecked(
     c: &mut [Complex<f64>],
     a: &[Complex<f64>],
     b: &[Complex<f64>],
@@ -121,32 +78,82 @@ unsafe fn complex_mad_avx_512_unchecked(
     }
 }
 
+pub fn vector_scalar_mad(c: &mut [u64], a: &[u64], s: u64) {
+    let mut i = 0;
+
+    // Complex<T> is declared as repr(C), so the location of re and im are guaranteed
+    // at address offsets 0 and 8 for Complex<f64>. This allows us to treat
+    // &[Complex<f64>] as &[f64] for the below asm snippet.
+    let a_ptr = a.as_ptr() as *const f64;
+    let c_ptr = c.as_ptr() as *mut f64;
+
+    #[repr(C, align(64))]
+    struct AlignedArray([i64; 8]);
+
+    let s = s as i64;
+    let s = AlignedArray([s, s, s, s, s, s, s, s]);
+    let s_ptr = s.0.as_ptr();
+
+    // Each complex is 2 f64 values.
+    while i < c.len() {
+        unsafe {
+            asm!(
+                // TODO: Move loading s outside the loop.
+                "vmovdqa64 zmm7, [{s_ptr}]",
+
+                // Load 2 __m512d of u64 from a
+                "vmovdqa64 zmm0, [{a_ptr}+8*{i}]",
+                "vmovdqa64 zmm1, [{a_ptr}+8*{i}+64]",
+
+                // Load 2 __m512d of u64 from c
+                "vmovdqa64 zmm2, [{c_ptr}+8*{i}]",
+                "vmovdqa64 zmm3, [{c_ptr}+8*{i}+64]",
+
+                "vpmullq zmm4, zmm0, zmm7", // multiply 64-bit words in zmm0 and zmm2
+                "vpmullq zmm5, zmm1, zmm7", // multiply 64-bit words in zmm1 and zmm3
+
+                "vpaddq zmm2, zmm2, zmm4", // Add zmm0 scaled by s
+                "vpaddq zmm3, zmm3, zmm5", // Add zmm1 scaled by s
+
+                "vmovdqa64 [{c_ptr}+8*{i}], zmm2",
+                "vmovdqa64 [{c_ptr}+8*{i}+64], zmm3",
+
+                a_ptr = in(reg) a_ptr,
+                c_ptr = in(reg) c_ptr,
+                i = in(reg) i,
+                s_ptr = in(reg) s_ptr,
+                out("zmm0") _, // Indicate our clobbers
+                out("zmm1") _,
+                out("zmm2") _,
+                out("zmm3") _,
+                out("zmm4") _,
+                out("zmm5") _,
+                out("zmm7") _,
+            );
+        }
+
+        i += 16;
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use aligned_vec::AVec;
+    use crate::simd::x86_64::avx_512_available;
 
     use super::*;
 
     #[test]
-    fn can_scalar_mad_complex_f64_slice() {
-        let len = 1024;
+    fn can_vector_scalar_mad() {
+        // Skip the test if the current hardware can't run it.
+        if avx_512_available() {
+            let a = avec_from_iter!(0..64u64);
+            let s = 123u32;
+            let mut c = avec_from_iter!(0..64);
+            let expected = avec_from_iter!(c.iter().zip(a.iter()).map(|(c, a)| c + a * s as u64));
 
-        let vals_0 = (0..len).map(|x| x as f64).collect::<Vec<_>>();
-        let vals_1 = (len..2 * len).map(|x| x as f64).collect::<Vec<_>>();
-        let vals_2 = (2 * len..3 * len).map(|x| x as f64).collect::<Vec<_>>();
+            vector_scalar_mad(&mut c, &a, s as u64);
 
-        let a =
-            AVec::<Complex<f64>>::from_iter(64, vals_0.chunks(2).map(|x| Complex::new(x[0], x[1])));
-        let b =
-            AVec::<Complex<f64>>::from_iter(64, vals_1.chunks(2).map(|x| Complex::new(x[0], x[1])));
-        let mut expected =
-            AVec::<Complex<f64>>::from_iter(64, vals_2.chunks(2).map(|x| Complex::new(x[0], x[1])));
-
-        let mut actual = expected.clone();
-
-        complex_mad(&mut actual, &a, &b);
-        scalar::complex_mad(&mut expected, &a, &b);
-
-        assert_eq!(expected, actual);
+            assert_eq!(c, expected);
+        }
     }
 }

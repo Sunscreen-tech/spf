@@ -1,27 +1,30 @@
-use std::ops::{Add, BitAnd, Shl, Shr, Sub};
+use std::ops::{BitAnd, Shl, Shr};
 
 use num::{
     Complex, Float,
-    traits::{MulAdd, WrappingAdd, WrappingSub},
+    traits::{WrappingAdd, WrappingSub},
 };
 
 use crate::{FromF64, FromU64};
 
-#[inline(always)]
-pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+#[inline]
+#[target_feature(enable = "avx2,fma")]
+pub fn complex_mad_avx2(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
     for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
         *c += a * b;
     }
 }
 
-#[inline(always)]
+#[inline]
+#[target_feature(enable = "avx2,fma")]
 pub fn complex_twist<T: Float>(c: &mut [Complex<T>], re: &[T], im: &[T], twist: &[Complex<T>]) {
     for ((c, (re, im)), b) in c.iter_mut().zip(re.iter().zip(im.iter())).zip(twist.iter()) {
         *c = Complex::new(*re, *im) * b;
     }
 }
 
-#[inline(always)]
+#[inline]
+#[target_feature(enable = "avx2,fma")]
 pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_inv: &[Complex<T>]) {
     let n_inv = T::one() / T::from(ifft.len()).unwrap();
 
@@ -33,21 +36,24 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
     }
 }
 
-#[inline(always)]
-pub fn vector_add<T: Sized + Add<T, Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+#[inline]
+#[target_feature(enable = "avx2,fma")]
+pub fn vector_add_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
         *c = a + b;
     }
 }
 
-#[inline(always)]
-pub fn vector_sub<T: Sized + Sub<T, Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+#[inline]
+#[target_feature(enable = "avx2,fma")]
+pub fn vector_sub_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
         *c = a - b;
     }
 }
 
-#[inline(always)]
+#[inline]
+#[target_feature(enable = "avx2,fma")]
 pub fn vector_next_decomp<T>(s: &mut [T], r: &mut [T], radix_log: usize)
 where
     T: FromU64
@@ -70,8 +76,9 @@ where
     }
 }
 
-#[inline(always)]
-pub fn vector_mod_pow2_q_f64<T: FromF64>(c: &mut [T], a: &[f64], log2_q: u64) {
+#[target_feature(enable = "avx2,fma")]
+#[inline]
+pub fn vector_mod_pow2_q_f64_u64(c: &mut [u64], a: &[f64], log2_q: u64) {
     // When the exponent != 0 && exponent != 1024,
     // IEEE-754 doubles are represented as -1**s * 1.m * 2**(e - 1023).
     //
@@ -113,64 +120,39 @@ pub fn vector_mod_pow2_q_f64<T: FromF64>(c: &mut [T], a: &[f64], log2_q: u64) {
             ifft += q;
         }
 
-        *o = T::from_f64(ifft);
-    }
-}
-
-pub fn vector_scalar_mad<S, T, U>(c: &mut [S], a: &[T], s: U)
-where
-    S: Clone + Copy + Add<S, Output = S>,
-    T: Clone + Copy + MulAdd<U, S, Output = S>,
-    U: Clone + Copy,
-{
-    for (c, a) in c.iter_mut().zip(a.iter()) {
-        *c = a.mul_add(s, *c);
+        *o = u64::from_f64(ifft);
     }
 }
 
 #[cfg(test)]
-mod test {
-    use rand::{RngCore, thread_rng};
-
-    use super::*;
+mod tests {
+    use crate::{math::simd::VectorOps, simd::x86_64::avx2_available};
 
     #[test]
-    fn can_scalar_mad_complex_f64_slice() {
-        let a = (0..16)
-            .map(|_| {
-                Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            })
-            .collect::<Vec<_>>();
+    fn can_vector_add_u64() {
+        if avx2_available() {
+            let a = avec_from_iter!(0..64u64);
+            let b = avec_from_iter!(0..64u64);
+            let mut c = avec_from_iter!((0..64).map(|_| 0u64));
+            let expected = avec_from_iter!(a.iter().zip(b.iter()).map(|(a, b)| a + b));
 
-        let b = (0..16)
-            .map(|_| {
-                Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            })
-            .collect::<Vec<_>>();
+            u64::vector_add(&mut c, &a, &b);
 
-        let mut expected = (0..16)
-            .map(|_| {
-                Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            })
-            .collect::<Vec<_>>();
-
-        let mut actual = expected.clone();
-
-        complex_mad(&mut actual, &a, &b);
-
-        for ((c, a), b) in expected.iter_mut().zip(a.iter()).zip(b.iter()) {
-            *c += a * b;
+            assert_eq!(expected, c);
         }
+    }
 
-        assert_eq!(actual, expected);
+    #[test]
+    fn can_vector_sub_u64() {
+        if avx2_available() {
+            let a = avec_from_iter!((0..64u64).map(|x| 4 * x));
+            let b = avec_from_iter!(0..64u64);
+            let mut c = avec_from_iter!((0..64).map(|_| 0u64));
+            let expected = avec_from_iter!(a.iter().zip(b.iter()).map(|(a, b)| a - b));
+
+            u64::vector_sub(&mut c, &a, &b);
+
+            assert_eq!(expected, c);
+        }
     }
 }

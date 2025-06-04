@@ -127,7 +127,6 @@ pub fn lwe_ciphertext_modulus_switch<S>(
     *c_b = Torus::from(res);
 }
 
-#[inline(never)]
 fn modulus_switch<S: TorusOps>(x: S, log_chi: usize, log_v: usize, log_modulus: usize) -> S {
     let one = S::one();
     let mask = (one << log_modulus) - one;

@@ -6,7 +6,7 @@ use crate::{
     },
     ops::ciphertext::decomposed_polynomial_glev_mad,
     polynomial::{
-        polynomial_add, polynomial_external_mad, polynomial_negate, polynomial_scalar_mad,
+        polynomial_add, polynomial_external_mad, polynomial_negate, polynomial_small_scalar_mad,
         polynomial_sub,
     },
     radix::PolynomialRadixIterator,
@@ -176,10 +176,10 @@ pub fn glwe_scalar_mad<S>(
     S: TorusOps,
 {
     for (c, a) in c.a_mut(params).zip(a.a(params)) {
-        polynomial_scalar_mad(c, a, b);
+        polynomial_small_scalar_mad(c, a, b.into());
     }
 
-    polynomial_scalar_mad(c.b_mut(params), a.b(params), b);
+    polynomial_small_scalar_mad(c.b_mut(params), a.b(params), b.into());
 }
 
 /// Compute `c += a \[*\] b`` where
