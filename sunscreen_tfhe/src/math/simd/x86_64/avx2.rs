@@ -1,7 +1,4 @@
 use std::{
-    arch::x86_64::{
-        __m256i, _mm256_add_epi64, _mm256_load_si256, _mm256_store_si256, _mm256_sub_epi64,
-    },
     ops::{BitAnd, Shl, Shr},
 };
 
@@ -42,32 +39,18 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 }
 
 #[inline]
-#[target_feature(enable = "avx2")]
+#[target_feature(enable = "avx2,fma")]
 pub fn vector_add_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
-    let len = c.len() / 4;
-
-    for i in 0..len {
-        unsafe {
-            let a_vals = _mm256_load_si256(a.as_ptr().add(i * 4) as *const __m256i);
-            let b_vals = _mm256_load_si256(b.as_ptr().add(i * 4) as *const __m256i);
-            let c_vals = _mm256_add_epi64(a_vals, b_vals);
-            _mm256_store_si256(c.as_mut_ptr().add(i * 4) as *mut __m256i, c_vals);
-        }
-    }
+    for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
+        *c = a + b;
+    }    
 }
 
 #[inline]
-#[target_feature(enable = "avx2")]
+#[target_feature(enable = "avx2,fma")]
 pub fn vector_sub_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
-    let len = c.len() / 4;
-
-    for i in 0..len {
-        unsafe {
-            let a_vals = _mm256_load_si256(a.as_ptr().add(i * 4) as *const __m256i);
-            let b_vals = _mm256_load_si256(b.as_ptr().add(i * 4) as *const __m256i);
-            let c_vals = _mm256_sub_epi64(a_vals, b_vals);
-            _mm256_store_si256(c.as_mut_ptr().add(i * 4) as *mut __m256i, c_vals);
-        }
+    for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
+        *c = a - b;
     }
 }
 
