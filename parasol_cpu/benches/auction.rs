@@ -84,6 +84,8 @@ fn auction_from_compiler(c: &mut Criterion) {
 }
 
 pub fn auction_test_program() -> Vec<IsaOp> {
+    let instruction_size = 8;
+
     // Argument registers
     let bids_ptr = A0; // Pointer to bids array
     let len = A1; // Length of array
@@ -92,32 +94,33 @@ pub fn auction_test_program() -> Vec<IsaOp> {
     // Working registers
     let i = X32; // Loop counter
     let current_bid = X33;
-    let winner_output_bid = X35;
-    let winner_output_idx = X36;
-    let is_winner = X37;
-    let one = X41;
-    let two = X46;
-    let loop_cond = X42;
+    let winner_output_bid = X34;
+    let winner_output_idx = X35;
+    let is_winner = X36;
+    let one = X37;
+    let two = X38;
+    let loop_cond = X39;
 
     let instructions = vec![
+        // Initialize registers
         IsaOp::Load(winner_output_bid, bids_ptr, 16),
         IsaOp::LoadI(winner_output_idx, 0, 32),
         IsaOp::LoadI(i, 1, 32),
         IsaOp::LoadI(one, 1, 32),
         IsaOp::LoadI(two, 2, 32),
-        IsaOp::CmpGe(loop_cond, i, len),
-        IsaOp::BranchNonZero(loop_cond, 64),
+        IsaOp::CmpGe(loop_cond, i, len), // LOOP
+        IsaOp::BranchNonZero(loop_cond, 8 * instruction_size),
         IsaOp::Add(bids_ptr, bids_ptr, two), // Each bid is 2 bytes
-        IsaOp::Load(current_bid, bids_ptr, 16),
-        IsaOp::CmpGt(is_winner, current_bid, winner_output_bid),
-        IsaOp::Cmux(winner_output_bid, is_winner, current_bid, winner_output_bid),
-        IsaOp::Cmux(winner_output_idx, is_winner, i, winner_output_idx),
-        IsaOp::Add(i, i, one),
-        IsaOp::Branch(-72),
-        IsaOp::Store(winner_output_ptr, winner_output_bid, 16),
+        IsaOp::Load(current_bid, bids_ptr, 16), // bids[i]
+        IsaOp::CmpGt(is_winner, current_bid, winner_output_bid), // isWinner = bid[i] >= winningBid->bid
+        IsaOp::Cmux(winner_output_bid, is_winner, current_bid, winner_output_bid), // winning_bid = isWinner ? bid[i] : winner_output_bid
+        IsaOp::Cmux(winner_output_idx, is_winner, i, winner_output_idx), // winning_idx = isWinner ? i : winner_output_idx
+        IsaOp::Add(i, i, one),                                           // i++
+        IsaOp::Branch(-8 * instruction_size),                            // Jump back to LOOP
+        IsaOp::Store(winner_output_ptr, winner_output_bid, 16), // winningBid->bid = winner_output_bid
         IsaOp::Add(winner_output_ptr, winner_output_ptr, two),
-        IsaOp::Trunc(winner_output_idx, winner_output_idx, 16),
-        IsaOp::Store(winner_output_ptr, winner_output_idx, 16),
+        IsaOp::Trunc(winner_output_idx, winner_output_idx, 16), // Convert index to 16 bits
+        IsaOp::Store(winner_output_ptr, winner_output_idx, 16), // winningBid->idx = winner_output_idx
         IsaOp::Ret(),
     ];
 
