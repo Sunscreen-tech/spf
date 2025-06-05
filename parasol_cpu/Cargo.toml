@@ -60,3 +60,7 @@ name = "cardio"
 [[bench]]
 harness = false
 name = "chi_squared"
+
+[[bench]]
+harness = false
+name = "hamming"

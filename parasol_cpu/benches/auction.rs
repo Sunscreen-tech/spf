@@ -77,10 +77,6 @@ fn auction_from_compiler(c: &mut Criterion) {
             },
             |(mut proc, args, prog, memory, _winner)| {
                 proc.run_program(prog, &memory, args).unwrap();
-
-                // let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
-                // assert_eq!(winner[0].decrypt(&enc, &sk), 7);
-                // assert_eq!(winner[1].decrypt(&enc, &sk), 7);
             },
             criterion::BatchSize::PerIteration,
         );
