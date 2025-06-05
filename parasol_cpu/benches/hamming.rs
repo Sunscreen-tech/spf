@@ -115,38 +115,37 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
     let j_compare = X45;
 
     let instructions = vec![
+        // Initialize values
         IsaOp::LoadI(zero_u8, 0, 8),
         IsaOp::LoadI(one_u8, 1, 8),
         IsaOp::LoadI(one_u32, 1, 32),
         IsaOp::LoadI(eight_u32, 8, 32),
         IsaOp::LoadI(distance, 0, 8),
-        IsaOp::Move(a_i, a_ptr),
-        IsaOp::Move(b_i, b_ptr),
-        IsaOp::LoadI(i, 0, 32),
-        IsaOp::Add(a_i, a_ptr, i), // LOOP_I
+        IsaOp::LoadI(i, 0, 32),    // Loop I initialization
+        IsaOp::Add(a_i, a_ptr, i), //** LOOP_I
         IsaOp::Add(b_i, b_ptr, i),
-        IsaOp::Load(a_i, a_i, 8),
-        IsaOp::Load(b_i, b_i, 8),
-        IsaOp::LoadI(j, 0, 32),
-        IsaOp::Shr(a_i_j, a_i, j), // LOOP_J
-        IsaOp::Trunc(a_i_j, a_i_j, 8),
-        IsaOp::And(a_i_j, a_i_j, one_u8),
-        IsaOp::Trunc(a_i_j, a_i_j, 1),
-        IsaOp::Shr(b_i_j, b_i, j),
-        IsaOp::Trunc(b_i_j, b_i_j, 8),
-        IsaOp::And(b_i_j, b_i_j, one_u8),
-        IsaOp::Trunc(b_i_j, b_i_j, 1),
-        IsaOp::CmpEq(bits_unequal, a_i_j, b_i_j),
-        IsaOp::Not(bits_unequal, bits_unequal),
-        IsaOp::Cmux(distance_add, bits_unequal, one_u8, zero_u8),
-        IsaOp::Add(distance, distance, distance_add),
-        IsaOp::Add(j, j, one_u32),
-        IsaOp::CmpLt(j_compare, j, eight_u32),
-        IsaOp::BranchNonZero(j_compare, -14 * instruction_size),
-        IsaOp::Add(i, i, one_u32),
-        IsaOp::CmpLt(i_compare, i, len),
-        IsaOp::BranchNonZero(i_compare, -22 * instruction_size),
-        IsaOp::Move(A0, distance),
+        IsaOp::Load(a_i, a_i, 8),                 // Load a[i]
+        IsaOp::Load(b_i, b_i, 8),                 // Load b[i]
+        IsaOp::LoadI(j, 0, 32),                   // Loop J initialization
+        IsaOp::Shr(a_i_j, a_i, j),                // |** LOOP_J
+        IsaOp::Trunc(a_i_j, a_i_j, 8),            // |
+        IsaOp::And(a_i_j, a_i_j, one_u8),         // |
+        IsaOp::Trunc(a_i_j, a_i_j, 1),            // > get_bit(a[i], j)
+        IsaOp::Shr(b_i_j, b_i, j),                // |
+        IsaOp::Trunc(b_i_j, b_i_j, 8),            // |
+        IsaOp::And(b_i_j, b_i_j, one_u8),         // |
+        IsaOp::Trunc(b_i_j, b_i_j, 1),            // > get_bit(b[i], j)
+        IsaOp::CmpEq(bits_unequal, a_i_j, b_i_j), // |
+        IsaOp::Not(bits_unequal, bits_unequal),   // > bits_unequal = a[i][j] != b[i][j]
+        IsaOp::Cmux(distance_add, bits_unequal, one_u8, zero_u8), // > distance_add = bits_unequal ? 1 : 0
+        IsaOp::Add(distance, distance, distance_add),             // > distance += distance_add
+        IsaOp::Add(j, j, one_u32),                                // > j += 1
+        IsaOp::CmpLt(j_compare, j, eight_u32),                    // > j < 8
+        IsaOp::BranchNonZero(j_compare, -14 * instruction_size),  //** Loop J end
+        IsaOp::Add(i, i, one_u32),                                // > i += 1
+        IsaOp::CmpLt(i_compare, i, len),                          // > i < len
+        IsaOp::BranchNonZero(i_compare, -22 * instruction_size),  //** Loop I end
+        IsaOp::Move(A0, distance),                                // Move result to output register
         IsaOp::Ret(),
     ];
 
@@ -161,7 +160,6 @@ fn hamming_from_assembly(c: &mut Criterion) {
 
     group.bench_function("hamming_from_assembly", |bench| {
         bench.iter_batched(
-            // Setup closure: runs before each iteration, not timed
             || {
                 let memory = Arc::new(Memory::new_default_stack());
                 let prog = memory.allocate_program(&hamming_test_program());
