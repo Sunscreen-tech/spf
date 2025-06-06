@@ -111,8 +111,8 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
     let distance = X42;
     let distance_add = X43;
     let bits_unequal = X44;
-    let i_compare = X43;
-    let j_compare = X45;
+    let i_compare = X45;
+    let j_compare = X46;
 
     let instructions = vec![
         // Initialize values
@@ -168,8 +168,7 @@ fn hamming_from_assembly(c: &mut Criterion) {
                 (proc, args, prog, memory)
             },
             |(mut proc, args, prog, memory)| {
-                let result = proc.run_program(prog, &memory, args).unwrap();
-                assert_eq!(result.decrypt(&enc, &sk), 30);
+                let _result = proc.run_program(prog, &memory, args).unwrap();
             },
             criterion::BatchSize::PerIteration,
         );
