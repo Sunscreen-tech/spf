@@ -71,6 +71,7 @@ pub trait TorusOps:
     + std::fmt::Debug
     + Ord
     + Zero
+    + sunscreen_math::One
     + Pod
     + BytemuckPod
     + Bounded

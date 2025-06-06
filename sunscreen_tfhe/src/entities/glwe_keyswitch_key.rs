@@ -19,6 +19,7 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps,)
 }
+dst_iter! { GlweKeyswitchKeyIterator, GlweKeyswitchKeyIteratorMut, ParallelGlweKeyswitchKeyIterator, ParallelGlweKeyswitchKeyIteratorMut, Torus, GlweKeyswitchKeyRef, (TorusOps,)}
 
 impl<S> OverlaySize for GlweKeyswitchKeyRef<S>
 where

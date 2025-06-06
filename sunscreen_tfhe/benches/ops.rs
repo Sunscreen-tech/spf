@@ -15,7 +15,7 @@ use sunscreen_tfhe::{
     },
     high_level::{self, *},
     ops::{
-        bootstrapping::{circuit_bootstrap, generate_scheme_switch_key},
+        bootstrapping::{circuit_bootstrap_via_pfks, generate_scheme_switch_key},
         encryption::encrypt_secret_glev_ciphertext,
         fft_ops::scheme_switch_fft,
         keyswitch::public_functional_keyswitch::{
@@ -212,7 +212,7 @@ fn circuit_bootstrapping(c: &mut Criterion) {
 
     c.bench_function("Circuit bootstrap", |b| {
         b.iter(|| {
-            circuit_bootstrap(
+            circuit_bootstrap_via_pfks(
                 &mut actual,
                 &ct,
                 &bsk,

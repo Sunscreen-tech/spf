@@ -3,7 +3,7 @@ use std::{borrow::BorrowMut, ops::Deref, sync::Arc};
 use sunscreen_tfhe::{
     entities::{GgswCiphertext, GlweCiphertextFft},
     ops::{
-        bootstrapping::{circuit_bootstrap, rotate_glwe_positive_monomial_negacyclic},
+        bootstrapping::{circuit_bootstrap_via_pfks, rotate_glwe_positive_monomial_negacyclic},
         ciphertext::sample_extract,
         fft_ops::{cmux, glev_cmux, glwe_ggsw_mad, scheme_switch_fft},
         keyswitch::lwe_keyswitch::keyswitch_lwe_to_lwe,
@@ -160,7 +160,7 @@ impl Evaluation {
 
             let mut tmp = GgswCiphertext::new(&params.l1_params, &params.cbs_radix);
 
-            circuit_bootstrap(
+            circuit_bootstrap_via_pfks(
                 &mut tmp,
                 &lwe.0,
                 &compute_key.cbs_key,
@@ -206,7 +206,7 @@ impl Evaluation {
     pub fn circuit_bootstrap(&self, output: &mut L1GgswCiphertext, input: &L0LweCiphertext) {
         let mut tmp = GgswCiphertext::new(&self.params.l1_params, &self.params.cbs_radix);
 
-        circuit_bootstrap(
+        circuit_bootstrap_via_pfks(
             &mut tmp,
             &input.0,
             &self.compute_key.cbs_key,

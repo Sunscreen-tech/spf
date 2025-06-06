@@ -1039,7 +1039,7 @@ pub mod evaluation {
     ) -> GgswCiphertext<u64> {
         let mut out = GgswCiphertext::new(glwe_1, cbs_radix);
 
-        crate::ops::bootstrapping::circuit_bootstrap(
+        crate::ops::bootstrapping::circuit_bootstrap_via_pfks(
             &mut out, input, bsk, cbsksk, lwe_0, glwe_1, glwe_2, pbs_radix, cbs_radix, pfks_radix,
         );
 

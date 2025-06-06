@@ -4,10 +4,10 @@ use crate::{
     entities::{
         GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, LweCiphertextRef, PolynomialRef,
     },
-    ops::ciphertext::decomposed_polynomial_glev_mad,
+    ops::{ciphertext::decomposed_polynomial_glev_mad, polynomial::polynomial_shr},
     polynomial::{
-        polynomial_add, polynomial_external_mad, polynomial_negate, polynomial_small_scalar_mad,
-        polynomial_sub,
+        polynomial_add, polynomial_add_assign, polynomial_external_mad, polynomial_negate,
+        polynomial_small_scalar_mad, polynomial_sub,
     },
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
@@ -96,6 +96,25 @@ pub fn add_glwe_ciphertexts<S>(
     }
 
     polynomial_add(c_b, a_b, b_b);
+}
+
+/// Homomorphically compute `c += a`.
+pub fn glwe_add_assign<S>(c: &mut GlweCiphertextRef<S>, a: &GlweCiphertextRef<S>, params: &GlweDef)
+where
+    S: TorusOps,
+{
+    params.assert_valid();
+    c.assert_is_valid(params.dim);
+    a.assert_is_valid(params.dim);
+
+    let (c_a, c_b) = c.a_b_mut(params);
+    let (a_a, a_b) = a.a_b(params);
+
+    for (c, a) in c_a.zip(a_a) {
+        polynomial_add_assign(c, a);
+    }
+
+    polynomial_add_assign(c_b, a_b);
 }
 
 /// Subtract two GLWE ciphertexts together, storing the result in `c`.
@@ -237,6 +256,28 @@ where
     glwe_ggsw_mad(&mut result, glwe, ggsw, params, radix);
 
     result
+}
+
+/// Given a standard power-of-two `q` modulus, switch to `q' < q`, where `q' | q`, then
+/// switch back to `q`.
+///
+/// # Remarks
+/// This introduces noise in the most significant bits of the ciphertext, but shifts the message down
+/// by `log2(q) - log2(q')` places. This is the "preprocessing" step in WHS+2024 for fast
+/// circuit bootstrapping. See https://eprint.iacr.org/2024/1318.pdf.
+pub fn glwe_mod_switch_and_expand_pow_2<S>(
+    y: &mut GlweCiphertextRef<S>,
+    x: &GlweCiphertextRef<S>,
+    glwe: &GlweDef,
+    log_q_prime: u32,
+) where
+    S: TorusOps,
+{
+    for (y, x) in y.a_mut(glwe).zip(x.a(glwe)) {
+        polynomial_shr(y, x, log_q_prime);
+    }
+
+    polynomial_shr(y.b_mut(glwe), x.b(glwe), log_q_prime);
 }
 
 #[cfg(test)]
@@ -546,6 +587,34 @@ mod tests {
 
                 assert_eq!(expected, *actual);
             }
+        }
+    }
+
+    #[test]
+    fn can_mod_switch_and_expand() {
+        let glwe = TEST_GLWE_DEF_1;
+
+        let sk = keygen::generate_binary_glwe_sk(&glwe);
+
+        let plaintext_bits = (thread_rng().next_u64()) % 8 + 1;
+        let plaintext_bits = PlaintextBits(plaintext_bits as u32);
+
+        let pt = (0..glwe.dim.polynomial_degree.0)
+            .map(|_| thread_rng().next_u64() % plaintext_bits.0 as u64)
+            .collect::<Vec<_>>();
+        let pt = Polynomial::new(&pt);
+
+        let ct = sk.encode_encrypt_glwe(&pt, &glwe, PlaintextBits(3));
+
+        let mut result = GlweCiphertext::new(&glwe);
+
+        glwe_mod_switch_and_expand_pow_2(&mut result, &ct, &glwe, 4);
+
+        // 3 bits from original encryption, 4 bits due to being shifted down.
+        let actual = sk.decrypt_decode_glwe(&result, &glwe, PlaintextBits(7));
+
+        for (a, e) in actual.coeffs().iter().zip(pt.coeffs()) {
+            assert_eq!(*a & 0x7, *e);
         }
     }
 }

@@ -147,7 +147,7 @@ pub fn scale_by_decomposition_factor<S: TorusOps>(
     radix: &RadixDecomposition,
 ) -> S {
     let shift = S::BITS as usize - radix.radix_log.0 * (j + 1);
-    let factor = S::one() << shift;
+    let factor = <S as sunscreen_math::One>::one() << shift;
 
     val.wrapping_mul(&factor)
 }
