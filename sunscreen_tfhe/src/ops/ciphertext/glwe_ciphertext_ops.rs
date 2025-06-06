@@ -1,5 +1,5 @@
 use crate::{
-    GlweDef, OverlaySize, RadixDecomposition, TorusOps,
+    GlweDef, OverlaySize, RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
         GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, LweCiphertextRef, PolynomialRef,
@@ -280,6 +280,30 @@ pub fn glwe_mod_switch_and_expand_pow_2<S>(
     polynomial_shr(y.b_mut(glwe), x.b(glwe), log_q_prime);
 }
 
+/// Rotate all message coeficients by `rotation` amount. GLWE analoge of
+/// [crate::ops::homomorphisms::rotate].
+pub fn glwe_rotate<S>(
+    y: &mut GlweCiphertextRef<S>,
+    x: &GlweCiphertextRef<S>,
+    rotation: Torus<S>,
+    glwe: &GlweDef,
+) where
+    S: TorusOps,
+{
+    for (y_a, x_a) in y.a_mut(glwe).zip(x.a(glwe)) {
+        y_a.coeffs_mut().clone_from_slice(x_a.coeffs());
+    }
+
+    for (y_b, x_b) in y
+        .b_mut(glwe)
+        .coeffs_mut()
+        .iter_mut()
+        .zip(x.b(glwe).coeffs())
+    {
+        *y_b = *x_b + rotation;
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use crate::{
@@ -287,8 +311,8 @@ mod tests {
         entities::{GgswCiphertext, LweCiphertext, Polynomial},
         high_level::*,
         ops::encryption::{
-            decrypt_ggsw_ciphertext, encrypt_ggsw_ciphertext, encrypt_glwe_ciphertext_secret,
-            trivially_encrypt_glwe_ciphertext,
+            decrypt_ggsw_ciphertext, decrypt_glwe_ciphertext, encrypt_ggsw_ciphertext,
+            encrypt_glwe_ciphertext_secret, trivially_encrypt_glwe_ciphertext,
         },
         polynomial::polynomial_mad,
     };
@@ -615,6 +639,50 @@ mod tests {
 
         for (a, e) in actual.coeffs().iter().zip(pt.coeffs()) {
             assert_eq!(*a & 0x7, *e);
+        }
+    }
+
+    #[test]
+    fn can_glwe_rotate() {
+        let glwe_params = TEST_GLWE_DEF_1;
+
+        for _ in 0..100 {
+            let sk = keygen::generate_binary_glwe_sk(&glwe_params);
+
+            let eval = |pt: &PolynomialRef<u64>, check: Box<dyn Fn(Torus<u64>)>| {
+                let val = sk.encode_encrypt_glwe(&pt, &glwe_params, PlaintextBits(1));
+
+                let mut res = GlweCiphertext::new(&glwe_params);
+
+                glwe_rotate(
+                    &mut res,
+                    &val,
+                    Torus::encode(1, PlaintextBits(2)),
+                    &glwe_params,
+                );
+
+                let mut actual =
+                    Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
+                decrypt_glwe_ciphertext(&mut actual, &res, &sk, &glwe_params);
+
+                for a in actual.coeffs().iter() {
+                    check(*a);
+                }
+            };
+
+            let pt = (0..glwe_params.dim.polynomial_degree.0)
+                .map(|_| 0u64)
+                .collect::<Vec<_>>();
+            let pt = Polynomial::new(&pt);
+
+            eval(&pt, Box::new(|a| assert!(a.inner() < 0x1u64 << 63)));
+
+            let pt = (0..glwe_params.dim.polynomial_degree.0)
+                .map(|_| 1u64)
+                .collect::<Vec<_>>();
+            let pt = Polynomial::new(&pt);
+
+            eval(&pt, Box::new(|a| assert!(a.inner() > 0x1u64 << 63)));
         }
     }
 }

@@ -59,6 +59,7 @@ sunscreen_math_macros = { version = "0.9", path = "./sunscreen_math_macros" }
 sunscreen_tfhe = { version = "0.9", path = "./sunscreen_tfhe" }
 
 [profile.bench]
+debug = true
 lto = "fat"
 codegen-units = 1
 

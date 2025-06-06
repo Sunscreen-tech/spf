@@ -9,13 +9,17 @@ use sunscreen_tfhe::{
     LWE_637_128, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
     RadixDecomposition, RadixLog, Torus,
     entities::{
-        GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial,
-        PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft,
-        UnivariateLookupTable,
+        AutomorphismKey, GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext,
+        Polynomial, PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey,
+        SchemeSwitchKeyFft, UnivariateLookupTable,
     },
     high_level::{self, *},
     ops::{
-        bootstrapping::{circuit_bootstrap_via_pfks, generate_scheme_switch_key},
+        automorphisms::generate_automorphism_key,
+        bootstrapping::{
+            circuit_bootstrap_via_pfks, circuit_bootstrap_via_trace_and_scheme_switch,
+            generate_scheme_switch_key,
+        },
         encryption::encrypt_secret_glev_ciphertext,
         fft_ops::scheme_switch_fft,
         keyswitch::public_functional_keyswitch::{
@@ -165,7 +169,7 @@ fn programmable_bootstrapping(c: &mut Criterion) {
     );
 }
 
-fn circuit_bootstrapping(c: &mut Criterion) {
+fn circuit_bootstrapping_via_pfks(c: &mut Criterion) {
     let pbs_radix = RadixDecomposition {
         count: RadixCount(2),
         radix_log: RadixLog(16),
@@ -210,7 +214,7 @@ fn circuit_bootstrapping(c: &mut Criterion) {
 
     let mut actual = GgswCiphertext::new(&level_1_params, &cbs_radix);
 
-    c.bench_function("Circuit bootstrap", |b| {
+    c.bench_function("Circuit bootstrap via PFKS", |b| {
         b.iter(|| {
             circuit_bootstrap_via_pfks(
                 &mut actual,
@@ -223,6 +227,70 @@ fn circuit_bootstrapping(c: &mut Criterion) {
                 &pbs_radix,
                 &cbs_radix,
                 &pfks_radix,
+            );
+        });
+    });
+}
+
+fn circuit_bootstrapping_via_trace_and_scheme_switch(c: &mut Criterion) {
+    let pbs_radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(15),
+    };
+    let cbs_radix = RadixDecomposition {
+        count: RadixCount(4),
+        radix_log: RadixLog(4),
+    };
+    let tr_radix = RadixDecomposition {
+        count: RadixCount(6),
+        radix_log: RadixLog(7),
+    };
+    let ss_radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(17),
+    };
+
+    let glwe = GLWE_1_2048_128;
+    let lwe = LWE_637_128;
+
+    let sk_0 = keygen::generate_binary_lwe_sk(&lwe);
+    let sk_2 = keygen::generate_binary_glwe_sk(&glwe);
+
+    let bsk = keygen::generate_bootstrapping_key(&sk_0, &sk_2, &lwe, &glwe, &pbs_radix);
+    let bsk = fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix);
+
+    let mut ssk = SchemeSwitchKey::<u64>::new(&glwe, &ss_radix);
+    generate_scheme_switch_key(&mut ssk, &sk_2, &glwe, &ss_radix);
+
+    let mut ssk_fft = SchemeSwitchKeyFft::new(&glwe, &ss_radix);
+    ssk.fft(&mut ssk_fft, &glwe, &ss_radix);
+
+    let mut ak = AutomorphismKey::<u64>::new(&glwe, &tr_radix);
+    generate_automorphism_key(&mut ak, &sk_2, &glwe, &tr_radix);
+
+    let val = 0;
+
+    let ct = encryption::encrypt_lwe_secret(val, &sk_0, &lwe, PlaintextBits(1));
+
+    let mut actual = GgswCiphertextFft::new(&glwe, &cbs_radix);
+
+    let mut g = c.benchmark_group("CBS");
+    g.sample_size(10);
+
+    g.bench_function("Circuit bootstrap via trace + scheme switching", |b| {
+        b.iter(|| {
+            circuit_bootstrap_via_trace_and_scheme_switch(
+                &mut actual,
+                &ct,
+                &bsk,
+                &ak,
+                &ssk_fft,
+                &lwe,
+                &glwe,
+                &pbs_radix,
+                &tr_radix,
+                &ss_radix,
+                &cbs_radix,
             );
         });
     });
@@ -387,7 +455,8 @@ criterion_group!(
     benches,
     cmux,
     programmable_bootstrapping,
-    circuit_bootstrapping,
+    circuit_bootstrapping_via_pfks,
+    circuit_bootstrapping_via_trace_and_scheme_switch,
     scheme_switch,
     keygen,
     public_functional_keyswitching
