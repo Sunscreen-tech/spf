@@ -66,7 +66,6 @@ fn cardio_from_compiler(c: &mut Criterion) {
 
     group.bench_function("cardio_from_compiler", |bench| {
         bench.iter_batched(
-            // Setup closure: runs before each iteration, not timed
             || {
                 let memory = Arc::new(
                     Memory::new_from_elf(include_bytes!("../tests/test_data/cardio")).unwrap(),
