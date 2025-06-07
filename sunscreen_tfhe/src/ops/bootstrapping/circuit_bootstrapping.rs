@@ -58,7 +58,7 @@ use crate::{
 /// as LWE) to `glwe_1` with [`RadixDecomposition`] `pfks_radix`.
 ///
 /// # Panics
-/// * If `bsk` is not valid for bootrapping from parameters `lwe_0` to `glwe_2`
+/// * If `bsk` is not valid for bootstrapping from parameters `lwe_0` to `glwe_2`
 ///   (reinterpreted as LWE) with radix decomposition `pbs_radix`.
 /// * If `cbsksk` is not a valid keyswitch key set for switching from `glwe_2`
 ///   (reintrerpreted as LWE) to `glwe_1` with `glwe_1.dim.size` entries and radix
