@@ -52,7 +52,7 @@ where
     ) -> RobEntryRef<T> where {
         let mut rename = self.rename[register_name.name].borrow_mut();
 
-        // Explicity drop the existing rob_ref (if any) so it can be ref counted to zero and dropped.
+        // Explicitly drop the existing rob_ref (if any) so it can be ref counted to zero and dropped.
         rename.rob_ref = None;
 
         let rob_entry_ref = RobEntryRef::new_mut(&Arc::new(RwLock::new(RobEntry::<T>::new())));
