@@ -131,6 +131,10 @@ impl<S: TorusOps> VectorOps for Torus<S> {
             s.inner(),
         );
     }
+
+    fn vector_shr(c: &mut [Self], a: &[Self], n: u32) {
+        S::vector_shr(bytemuck::cast_slice_mut(c), bytemuck::cast_slice(a), n);
+    }
 }
 
 impl VectorOps for u64 {
@@ -179,7 +183,7 @@ impl VectorOps for u64 {
 
     fn vector_shr(c: &mut [Self], a: &[Self], n: u32) {
         if avx2_available() && fma_available() {
-            avx2::vector_shr(c, a, n);
+            unsafe { avx2::vector_shr(c, a, n) };
         } else {
             scalar::vector_shr(c, a, n);
         }
