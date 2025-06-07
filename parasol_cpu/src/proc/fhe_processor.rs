@@ -839,7 +839,7 @@ impl Tomasulo for FheProcessor {
         retirement_info: RetirementInfo<Self::DispatchInstruction>,
         options: &RunProgramOptions,
     ) {
-        // Take the instructon out of the scoreboard entry. We do this because
+        // Take the instruction out of the scoreboard entry. We do this because
         // 1. It's not needed after execution.
         // 2. It may contain PtrRegisters, which can create reference cycles
         // with this scoreboard entry. This will leak memory, but removing
