@@ -5,16 +5,9 @@ use criterion::{
 };
 
 use sunscreen_tfhe::{
-    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80,
-    LWE_637_128, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
-    RadixDecomposition, RadixLog, Torus,
     entities::{
-        AutomorphismKey, GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext,
-        Polynomial, PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey,
-        SchemeSwitchKeyFft, UnivariateLookupTable,
-    },
-    high_level::{self, *},
-    ops::{
+        AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial, PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft, UnivariateLookupTable
+    }, high_level::{self, *}, ops::{
         automorphisms::generate_automorphism_key,
         bootstrapping::{
             circuit_bootstrap_via_pfks, circuit_bootstrap_via_trace_and_scheme_switch,
@@ -25,8 +18,7 @@ use sunscreen_tfhe::{
         keyswitch::public_functional_keyswitch::{
             generate_public_functional_keyswitch_key, public_functional_keyswitch,
         },
-    },
-    rand::Stddev,
+    }, rand::Stddev, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, LWE_512_80, LWE_637_128
 };
 
 fn cmux(c: &mut Criterion) {
@@ -267,6 +259,8 @@ fn circuit_bootstrapping_via_trace_and_scheme_switch(c: &mut Criterion) {
 
     let mut ak = AutomorphismKey::<u64>::new(&glwe, &tr_radix);
     generate_automorphism_key(&mut ak, &sk_2, &glwe, &tr_radix);
+    let mut ak_fft = AutomorphismKeyFft::new(&glwe, &tr_radix);
+    ak.fft(&mut ak_fft, &glwe, &tr_radix);
 
     let val = 0;
 
@@ -274,16 +268,13 @@ fn circuit_bootstrapping_via_trace_and_scheme_switch(c: &mut Criterion) {
 
     let mut actual = GgswCiphertextFft::new(&glwe, &cbs_radix);
 
-    let mut g = c.benchmark_group("CBS");
-    g.sample_size(10);
-
-    g.bench_function("Circuit bootstrap via trace + scheme switching", |b| {
+    c.bench_function("Circuit bootstrap via trace + scheme switching", |b| {
         b.iter(|| {
             circuit_bootstrap_via_trace_and_scheme_switch(
                 &mut actual,
                 &ct,
                 &bsk,
-                &ak,
+                &ak_fft,
                 &ssk_fft,
                 &lwe,
                 &glwe,

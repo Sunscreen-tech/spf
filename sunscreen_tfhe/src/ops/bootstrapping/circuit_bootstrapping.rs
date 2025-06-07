@@ -6,20 +6,17 @@ use crate::{
     RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
-        AutmorphismKeyRef, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
-        GgswCiphertextFftRef, GgswCiphertextRef, GlevCiphertextFftRef, GlevCiphertextRef,
-        GlweCiphertextRef, GlweSecretKeyRef, LweCiphertextListRef, LweCiphertextRef, PolynomialRef,
-        SchemeSwitchKey, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
+        AutmorphismKeyFftRef, AutmorphismKeyRef, BootstrapKeyFftRef,
+        CircuitBootstrappingKeyswitchKeysRef, GgswCiphertextFftRef, GgswCiphertextRef,
+        GlevCiphertextRef, GlweCiphertextRef, LweCiphertextListRef, LweCiphertextRef,
+        SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
-    high_level::encryption::decrypt_glwe,
     ops::{
         automorphisms::trace,
         bootstrapping::{
-            generalized_programmable_bootstrap, rotate_glwe_monomial_negacyclic,
-            rotate_glwe_negative_monomial_negacyclic,
+            generalized_programmable_bootstrap, rotate_glwe_negative_monomial_negacyclic,
         },
-        ciphertext::{glwe_mod_switch_and_expand_pow_2, glwe_rotate, sample_extract},
-        encryption::decrypt_glwe_ciphertext,
+        ciphertext::{glwe_mod_switch_and_expand_pow_2, sample_extract},
         fft_ops::scheme_switch_fft,
         homomorphisms::lwe_rotate,
         keyswitch::private_functional_keyswitch::private_functional_keyswitch,
@@ -94,7 +91,7 @@ use crate::{
 ///   high_level,
 ///   high_level::{keygen, encryption, fft},
 ///   entities::GgswCiphertext,
-///   ops::bootstrapping::circuit_bootstrap,
+///   ops::bootstrapping::circuit_bootstrap_via_pfks,
 ///   params::{
 ///     GLWE_5_256_80,
 ///     GLWE_1_1024_80,
@@ -265,7 +262,7 @@ fn extract_and_rotate_lo_noise_glwe<S>(
 fn mod_switch_trace_and_rotate<S>(
     lo_noise_glev: &mut GlevCiphertextRef<S>,
     lo_noise_glwe: &GlweCiphertextRef<S>,
-    ak: &AutmorphismKeyRef<S>,
+    ak: &AutmorphismKeyFftRef<Complex<f64>>,
     glwe: &GlweDef,
     trace_radix: &RadixDecomposition,
     cbs_radix: &RadixDecomposition,
@@ -313,7 +310,7 @@ pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
     output: &mut GgswCiphertextFftRef<Complex<f64>>,
     input: &LweCiphertextRef<S>,
     bsk: &BootstrapKeyFftRef<Complex<f64>>,
-    ak: &AutmorphismKeyRef<S>,
+    ak: &AutmorphismKeyFftRef<Complex<f64>>,
     ssk: &SchemeSwitchKeyFftRef<Complex<f64>>,
     lwe_0: &LweDef,
     glwe_1: &GlweDef,
@@ -486,15 +483,14 @@ pub fn apply_pfks_on_ggsw_components<S: TorusOps>(
 #[cfg(test)]
 mod tests {
     use rand::{RngCore, thread_rng};
-    use sunscreen_math::poly::Polynomial;
 
     use crate::{
         GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, LWE_512_80, LWE_637_128, PlaintextBits,
         RadixCount, RadixDecomposition, RadixLog,
         dst::AsSlice,
         entities::{
-            AutomorphismKey, GgswCiphertext, GgswCiphertextFft, GlweCiphertext, LweCiphertextList,
-            SchemeSwitchKeyFft,
+            AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlweCiphertext,
+            LweCiphertextList, SchemeSwitchKey, SchemeSwitchKeyFft,
         },
         high_level::{self, TEST_LWE_DEF_1, encryption, fft, keygen},
         ops::{
@@ -724,6 +720,8 @@ mod tests {
 
         let mut ak = AutomorphismKey::<u64>::new(&glwe, &tr_radix);
         generate_automorphism_key(&mut ak, &glwe_sk, &glwe, &tr_radix);
+        let mut ak_fft = AutomorphismKeyFft::new(&glwe, &tr_radix);
+        ak.fft(&mut ak_fft, &glwe, &tr_radix);
 
         for b in [0, 1] {
             let ct = lwe_sk.encrypt(b, &lwe, PlaintextBits(1)).0;
@@ -734,7 +732,7 @@ mod tests {
                 &mut actual,
                 &ct,
                 &bsk,
-                &ak,
+                &ak_fft,
                 &ssk_fft,
                 &lwe,
                 &glwe,

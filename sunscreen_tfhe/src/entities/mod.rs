@@ -1,6 +1,9 @@
 mod automorphism_key;
 pub use automorphism_key::*;
 
+mod automorphism_key_fft;
+pub use automorphism_key_fft::*;
+
 mod public_functional_keyswitch_key;
 pub use public_functional_keyswitch_key::*;
 
@@ -68,7 +71,7 @@ mod glwe_keyswitch_key;
 pub use glwe_keyswitch_key::*;
 
 mod glwe_keyswitch_key_fft;
-pub use glwe_ciphertext_fft::*;
+pub use glwe_keyswitch_key_fft::*;
 
 mod rlwe_public_key;
 pub use rlwe_public_key::*;

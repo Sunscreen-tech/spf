@@ -1,9 +1,13 @@
+use num::Complex;
 use serde::{Deserialize, Serialize};
 use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition, Torus, TorusOps,
-    entities::{GlweKeyswitchKeyIterator, GlweKeyswitchKeyIteratorMut, GlweKeyswitchKeyRef},
+    entities::{
+        AutomorphismKeyFft, GlweKeyswitchKeyIterator, GlweKeyswitchKeyIteratorMut,
+        GlweKeyswitchKeyRef,
+    },
 };
 
 dst! {
@@ -58,5 +62,20 @@ impl<S: TorusOps> AutmorphismKeyRef<S> {
             &mut self.data,
             GlweKeyswitchKeyRef::<S>::size((glwe.dim, radix.count)),
         )
+    }
+
+    /// Takes the fft of these keys and writes the result to `result`.
+    pub fn fft(
+        &self,
+        result: &mut AutomorphismKeyFft<Complex<f64>>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) {
+        for (i, o) in self
+            .keyswitch_keys(glwe, radix)
+            .zip(result.keyswitch_keys_mut(glwe, radix))
+        {
+            i.fft(o, glwe, radix);
+        }
     }
 }

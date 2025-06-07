@@ -1,15 +1,9 @@
 use num::Complex;
 
 use crate::{
-    GlweDef, RadixDecomposition, TorusOps,
-    dst::{FromMutSlice, OverlaySize},
-    entities::{
-        GgswCiphertextFftRef, GlevCiphertextFftRef, GlevCiphertextRef, GlweCiphertextFftRef,
-        GlweCiphertextRef, PolynomialFftRef, PolynomialRef, SchemeSwitchKeyFftRef,
-    },
-    ops::ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts},
-    radix::PolynomialRadixIterator,
-    scratch::{allocate_scratch, allocate_scratch_ref},
+    dst::{FromMutSlice, OverlaySize}, entities::{
+        GgswCiphertextFftRef, GlevCiphertextFftRef, GlevCiphertextRef, GlweCiphertextFftRef, GlweCiphertextRef, GlweKeyswitchKeyFftRef, PolynomialFftRef, PolynomialRef, SchemeSwitchKeyFftRef
+    }, ops::{ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts}, encryption::trivially_encrypt_glwe_ciphertext}, radix::PolynomialRadixIterator, scratch::{allocate_scratch, allocate_scratch_ref}, GlweDef, RadixDecomposition, TorusOps
 };
 
 /// Compute `c += a \[*] b`` where
@@ -437,6 +431,55 @@ pub fn scheme_switch_fft<S>(
     glwe_operations.into_iter().for_each(f);
 }
 
+/// Switches a ciphertext under the original key to a ciphertext under the new
+/// key using a keyswitch key.
+///
+/// # Remark
+///
+/// This performs the following operation:
+///
+/// ```text
+/// switched_ciphertext = trivial_encrypt(ciphertext_b) - sum_i(<decomp(ciphertext_a_i), glev_i>)
+/// ```
+///
+/// where `trivial_encrypt` is the encryption of the body of the original
+/// ciphertext.
+pub fn keyswitch_glwe_to_glwe<S>(
+    output: &mut GlweCiphertextRef<S>,
+    ciphertext_under_original_key: &GlweCiphertextRef<S>,
+    keyswitch_key: &GlweKeyswitchKeyFftRef<Complex<f64>>,
+    params: &GlweDef,
+    radix: &RadixDecomposition,
+) where
+    S: TorusOps,
+{
+    let (ciphertext_a, ciphertext_b) = ciphertext_under_original_key.a_b(params);
+
+    let keyswitch_glevs = keyswitch_key.rows(params, radix);
+
+    allocate_scratch_ref!(a_i_decomp_sum, GlweCiphertextFftRef<Complex<f64>>, (params.dim));
+    allocate_scratch_ref!(scratch, PolynomialRef<S>, (params.dim.polynomial_degree));
+
+    a_i_decomp_sum.clear();
+
+    // sum_i(<decomp(ciphertext_a_i), glev_i>)
+    for (a_i, glev_i) in ciphertext_a.zip(keyswitch_glevs) {
+        let decomp = PolynomialRadixIterator::new(a_i, scratch, radix);
+
+        decomposed_polynomial_glev_mad(a_i_decomp_sum, decomp, glev_i, params);
+    }
+
+    allocate_scratch_ref!(trivial_b, GlweCiphertextRef<S>, (params.dim));
+    allocate_scratch_ref!(a_i_decomp_sum_ifft, GlweCiphertextRef<S>, (params.dim));
+
+    // trivial_encrypt(ciphertext_b)
+    trivially_encrypt_glwe_ciphertext(trivial_b, ciphertext_b, params);
+    a_i_decomp_sum.ifft(a_i_decomp_sum_ifft, params);
+
+    // output = trivial_encrypt(ciphertext_b) - sum_i(<decomp(ciphertext_a_i), glev_i>)
+    sub_glwe_ciphertexts(output, &trivial_b, &a_i_decomp_sum_ifft, params);
+}
+
 #[cfg(test)]
 mod tests {
     use std::time::Duration;
@@ -445,20 +488,15 @@ mod tests {
     use rand::{RngCore, thread_rng};
 
     use crate::{
-        GLWE_1_1024_80, PlaintextBits, RadixCount, RadixLog, Torus,
         entities::{
-            GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, GlweCiphertextFft,
-            GlweSecretKey, Polynomial, SchemeSwitchKey, SchemeSwitchKeyFft,
-        },
-        high_level::{self, *},
-        ops::{
+            GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, GlweCiphertextFft, GlweKeyswitchKey, GlweKeyswitchKeyFft, GlweSecretKey, Polynomial, SchemeSwitchKey, SchemeSwitchKeyFft
+        }, high_level::{self, *}, ops::{
             bootstrapping::{generate_scheme_switch_key, scheme_switch},
             encryption::{
                 decrypt_ggsw_ciphertext, decrypt_glev_ciphertext, encrypt_secret_glev_ciphertext,
                 scale_msg_by_gadget_factor,
-            },
-        },
-        polynomial::polynomial_external_mad,
+            }, keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe,
+        }, polynomial::polynomial_external_mad, PlaintextBits, RadixCount, RadixLog, Torus, GLWE_1_1024_80
     };
 
     use super::*;
@@ -856,5 +894,46 @@ mod tests {
                 assert_eq!(actual, expected);
             }
         }
+    }
+
+    #[test]
+    fn keyswitch_glwe() {
+        let glwe = TEST_GLWE_DEF_1;
+        let bits = PlaintextBits(1);
+
+        let original_sk = keygen::generate_binary_glwe_sk(&glwe);
+        let new_sk = keygen::generate_binary_glwe_sk(&glwe);
+
+        let mut ksk = GlweKeyswitchKey::<u64>::new(&TEST_GLWE_DEF_1, &TEST_RADIX);
+        generate_keyswitch_key_glwe(
+            &mut ksk,
+            &original_sk,
+            &new_sk,
+            &TEST_GLWE_DEF_1,
+            &TEST_RADIX,
+        );
+        let mut ksk_fft = GlweKeyswitchKeyFft::new(&TEST_GLWE_DEF_1, &TEST_RADIX);
+        ksk.fft(&mut ksk_fft, &TEST_GLWE_DEF_1, &TEST_RADIX);
+
+        let msg = Polynomial::new(
+            &(0..glwe.dim.polynomial_degree.0 as u64)
+                .map(|x| x % 2)
+                .collect::<Vec<_>>(),
+        );
+
+        let original_ct = original_sk.encode_encrypt_glwe(&msg, &glwe, bits);
+
+        let mut new_ct = GlweCiphertext::new(&glwe);
+        keyswitch_glwe_to_glwe(
+            &mut new_ct,
+            &original_ct,
+            &ksk_fft,
+            &TEST_GLWE_DEF_1,
+            &TEST_RADIX,
+        );
+
+        let new_decrypted = new_sk.decrypt_decode_glwe(&new_ct, &glwe, bits);
+
+        assert_eq!(new_decrypted.coeffs(), msg.coeffs());
     }
 }

@@ -1,15 +1,9 @@
+use num::Complex;
+
 use crate::{
-    GlweDef, OverlaySize, RadixDecomposition, TorusOps,
-    dst::FromMutSlice,
-    entities::{AutmorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef},
-    ops::{
-        ciphertext::glwe_add_assign,
-        keyswitch::{
-            glwe_keyswitch::keyswitch_glwe_to_glwe, glwe_keyswitch_key::generate_keyswitch_key_glwe,
-        },
-        polynomial::polynomial_pow_k,
-    },
-    scratch::allocate_scratch_ref,
+    dst::FromMutSlice, entities::{AutmorphismKeyFftRef, AutmorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef}, ops::{
+        ciphertext::glwe_add_assign, fft_ops::keyswitch_glwe_to_glwe, keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe, polynomial::polynomial_pow_k
+    }, scratch::allocate_scratch_ref, GlweDef, OverlaySize, RadixDecomposition, TorusOps
 };
 
 /// Generate a new [`AutomorphismKey`](crate::entities::automorphism_key::AutomorphismKey) set for the given `glwe_sk`.
@@ -53,7 +47,7 @@ pub fn generate_automorphism_key<S: TorusOps>(
 pub fn trace<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
-    ak: &AutmorphismKeyRef<S>,
+    ak: &AutmorphismKeyFftRef<Complex<f64>>,
     glwe: &GlweDef,
     radix: &RadixDecomposition,
 ) {
@@ -86,11 +80,10 @@ pub fn trace<S: TorusOps>(
 
 #[cfg(test)]
 mod tests {
+    use num::Complex;
+
     use crate::{
-        GLWE_1_2048_128, RadixCount, RadixDecomposition, RadixLog,
-        entities::{AutomorphismKey, GlweCiphertext, GlweSecretKey, Polynomial},
-        high_level::encryption::decrypt_glwe,
-        ops::automorphisms::{generate_automorphism_key, trace},
+        entities::{AutomorphismKey, AutomorphismKeyFft, GlweCiphertext, GlweSecretKey, Polynomial}, high_level::encryption::decrypt_glwe, ops::automorphisms::{generate_automorphism_key, trace}, RadixCount, RadixDecomposition, RadixLog, GLWE_1_2048_128
     };
 
     #[test]
@@ -105,6 +98,8 @@ mod tests {
 
         let mut ak = AutomorphismKey::<u64>::new(&glwe, &radix);
         generate_automorphism_key(&mut ak, &glwe_sk, &glwe, &radix);
+        let mut ak_fft = AutomorphismKeyFft::<Complex<f64>>::new(&glwe, &radix);
+        ak.fft(&mut ak_fft, &glwe, &radix);
 
         let poly = Polynomial::new(
             &(0..glwe.dim.polynomial_degree.0)
@@ -116,7 +111,7 @@ mod tests {
 
         let mut out = GlweCiphertext::new(&glwe);
 
-        trace(&mut out, &ct, &ak, &glwe, &radix);
+        trace(&mut out, &ct, &ak_fft, &glwe, &radix);
 
         let actual = decrypt_glwe(&out, &glwe_sk, &glwe, crate::PlaintextBits(12));
 
