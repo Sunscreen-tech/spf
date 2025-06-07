@@ -5,7 +5,7 @@ use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
     GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree,
     RadixCount, RadixDecomposition, RadixLog,
-    entities::{GlweSecretKey, LweSecretKey},
+    entities::{GgswCiphertext, GlweSecretKey, LweSecretKey},
     high_level::{self, keygen},
     rand::Stddev,
 };
@@ -33,14 +33,6 @@ pub fn analyze_cbs(cbs: &AnalyzeCbs) -> Result<CbsSample> {
         },
     };
 
-    let l2_glwe = GlweDef {
-        std: Stddev(cbs.l2_sigma),
-        dim: GlweDimension {
-            size: GlweSize(cbs.l2_glwe_size),
-            polynomial_degree: PolynomialDegree(cbs.l2_glwe_poly_degree),
-        },
-    };
-
     let cbs_radix = RadixDecomposition {
         radix_log: RadixLog(cbs.cbs_radix_log),
         count: RadixCount(cbs.cbs_radix_count),
@@ -51,26 +43,28 @@ pub fn analyze_cbs(cbs: &AnalyzeCbs) -> Result<CbsSample> {
         count: RadixCount(cbs.pbs_radix_count),
     };
 
-    let pfks_radix = RadixDecomposition {
-        radix_log: RadixLog(cbs.pfks_radix_log),
-        count: RadixCount(cbs.pfks_radix_count),
+    let ss_radix = RadixDecomposition {
+        count: RadixCount(cbs.ss_radix_count),
+        radix_log: RadixLog(cbs.ss_radix_log),
+    };
+
+    let tr_radix = RadixDecomposition {
+        count: RadixCount(cbs.tr_radix_count),
+        radix_log: RadixLog(cbs.tr_radix_log),
     };
 
     let l0_sk = LweSecretKey::<u64>::generate_binary(&l0_lwe);
     let l1_sk = GlweSecretKey::<u64>::generate_binary(&l1_glwe);
-    let l2_sk = GlweSecretKey::<u64>::generate_binary(&l2_glwe);
 
-    let pfks_key = keygen::generate_cbs_ksk(
-        l2_sk.to_lwe_secret_key(),
-        &l1_sk,
-        &l2_glwe.as_lwe_def(),
-        &l1_glwe,
-        &pfks_radix,
-    );
+    let pbs_key = keygen::generate_bootstrapping_key(&l0_sk, &l1_sk, &l0_lwe, &l1_glwe, &pbs_radix);
 
-    let pbs_key = keygen::generate_bootstrapping_key(&l0_sk, &l2_sk, &l0_lwe, &l2_glwe, &pbs_radix);
+    let pbs_key = high_level::fft::fft_bootstrap_key(&pbs_key, &l0_lwe, &l1_glwe, &pbs_radix);
 
-    let pbs_key = high_level::fft::fft_bootstrap_key(&pbs_key, &l0_lwe, &l2_glwe, &pbs_radix);
+    let ss_key = keygen::generate_scheme_switch_key(&l1_sk, &l1_glwe, &ss_radix);
+    let ss_key = high_level::fft::fft_scheme_switch_key(&ss_key, &l1_glwe, &ss_radix);
+
+    let auto_key = keygen::generate_automorphism_key(&l1_sk, &l1_glwe, &tr_radix);
+    let auto_key = high_level::fft::fft_automorphism_key(&auto_key, &l1_glwe, &tr_radix);
 
     let progress = ProgressBar::new(cbs.sample_count);
 
@@ -84,17 +78,13 @@ pub fn analyze_cbs(cbs: &AnalyzeCbs) -> Result<CbsSample> {
 
             let ct0 = l0_sk.encrypt(1, &encryption_params, PlaintextBits(1)).0;
 
-            let ggsw = high_level::evaluation::circuit_bootstrap(
-                &ct0,
-                &pbs_key,
-                &pfks_key,
-                &l0_lwe,
-                &l1_glwe,
-                &l2_glwe,
-                &pbs_radix,
-                &cbs_radix,
-                &pfks_radix,
+            let ggsw_fft = high_level::evaluation::circuit_bootstrap(
+                &ct0, &pbs_key, &auto_key, &ss_key, &l0_lwe, &l1_glwe, &pbs_radix, &tr_radix,
+                &ss_radix, &cbs_radix,
             );
+
+            let mut ggsw = GgswCiphertext::new(&l1_glwe, &cbs_radix);
+            ggsw_fft.ifft(&mut ggsw, &l1_glwe, &cbs_radix);
 
             let noise = measure_noise_ggsw(&ggsw, &l1_sk, true, &l1_glwe, &cbs_radix);
 

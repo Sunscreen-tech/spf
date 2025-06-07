@@ -2,7 +2,9 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::{NoWrapper, OverlaySize}, entities::GlweKeyswitchKey, GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
+    dst::{NoWrapper, OverlaySize},
+    entities::GlweKeyswitchKey,
 };
 
 use super::{GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, GlevCiphertextFftRef};
@@ -74,8 +76,10 @@ impl GlweKeyswitchKeyFftRef<Complex<f64>> {
         &self,
         output: &mut GlweKeyswitchKey<S>,
         glwe: &GlweDef,
-        radix: &RadixDecomposition
-    ) where S: TorusOps {
+        radix: &RadixDecomposition,
+    ) where
+        S: TorusOps,
+    {
         for (o, i) in output.rows_mut(glwe, radix).zip(self.rows(glwe, radix)) {
             i.ifft(o, glwe);
         }

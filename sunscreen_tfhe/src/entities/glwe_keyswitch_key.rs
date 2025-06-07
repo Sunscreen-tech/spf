@@ -2,7 +2,9 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::OverlaySize, entities::{glwe_keyswitch_key_fft::GlweKeyswitchKeyFft, GlweKeyswitchKeyFftRef}, GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    dst::OverlaySize,
+    entities::{GlweKeyswitchKeyFftRef, glwe_keyswitch_key_fft::GlweKeyswitchKeyFft},
 };
 
 use super::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef};
@@ -76,7 +78,12 @@ where
 
     /// Takes the FFT of these keyswitch keys and write the result into the given
     /// [`GlweKeyswitchKeyFft`].
-    pub fn fft(&self, output: &mut GlweKeyswitchKeyFftRef<Complex<f64>>, glwe: &GlweDef, radix: &RadixDecomposition) {
+    pub fn fft(
+        &self,
+        output: &mut GlweKeyswitchKeyFftRef<Complex<f64>>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) {
         for (o, i) in output.rows_mut(glwe, radix).zip(self.rows(glwe, radix)) {
             i.fft(o, glwe);
         }

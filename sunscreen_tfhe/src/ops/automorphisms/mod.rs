@@ -1,9 +1,14 @@
 use num::Complex;
 
 use crate::{
-    dst::FromMutSlice, entities::{AutmorphismKeyFftRef, AutmorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef}, ops::{
-        ciphertext::glwe_add_assign, fft_ops::keyswitch_glwe_to_glwe, keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe, polynomial::polynomial_pow_k
-    }, scratch::allocate_scratch_ref, GlweDef, OverlaySize, RadixDecomposition, TorusOps
+    GlweDef, OverlaySize, RadixDecomposition, TorusOps,
+    dst::FromMutSlice,
+    entities::{AutmorphismKeyFftRef, AutmorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef},
+    ops::{
+        ciphertext::glwe_add_assign, fft_ops::keyswitch_glwe_to_glwe,
+        keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe, polynomial::polynomial_pow_k,
+    },
+    scratch::allocate_scratch_ref,
 };
 
 /// Generate a new [`AutomorphismKey`](crate::entities::automorphism_key::AutomorphismKey) set for the given `glwe_sk`.
@@ -83,7 +88,12 @@ mod tests {
     use num::Complex;
 
     use crate::{
-        entities::{AutomorphismKey, AutomorphismKeyFft, GlweCiphertext, GlweSecretKey, Polynomial}, high_level::encryption::decrypt_glwe, ops::automorphisms::{generate_automorphism_key, trace}, RadixCount, RadixDecomposition, RadixLog, GLWE_1_2048_128
+        GLWE_1_2048_128, RadixCount, RadixDecomposition, RadixLog,
+        entities::{
+            AutomorphismKey, AutomorphismKeyFft, GlweCiphertext, GlweSecretKey, Polynomial,
+        },
+        high_level::encryption::decrypt_glwe,
+        ops::automorphisms::{generate_automorphism_key, trace},
     };
 
     #[test]

@@ -253,7 +253,7 @@ fn n_bits_are_true(variable_set: &BddVariableSet, bits: &[&Bdd], n: usize) -> Bd
 }
 
 /// The cutoff point at which we stop subdividing values.
-pub(crate) const CIRCUIT_CUTOFF: usize = 32;
+pub(crate) const CIRCUIT_CUTOFF: usize = 16;
 
 /// Take an n-bit integer and partition it for recursive multiplication.
 /// Returns the number of bits in the (lower, upper) words.

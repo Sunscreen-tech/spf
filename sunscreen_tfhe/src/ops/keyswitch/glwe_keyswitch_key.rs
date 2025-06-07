@@ -1,7 +1,10 @@
 use crate::{
+    GlweDef, RadixDecomposition, Torus, TorusOps,
     entities::{
-        GlweCiphertextRef, GlweKeyswitchKeyRef, GlweSecretKeyRef, Polynomial, PolynomialRef
-    }, ops::encryption::encrypt_glwe_ciphertext_secret_generic, polynomial::polynomial_scalar_mul, GlweDef, RadixDecomposition, Torus, TorusOps
+        GlweCiphertextRef, GlweKeyswitchKeyRef, GlweSecretKeyRef, Polynomial, PolynomialRef,
+    },
+    ops::encryption::encrypt_glwe_ciphertext_secret_generic,
+    polynomial::polynomial_scalar_mul,
 };
 
 fn encrypt_glwe_ciphertext_secret_with_keyswitch_noise<S>(

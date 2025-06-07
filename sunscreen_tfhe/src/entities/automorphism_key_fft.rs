@@ -2,7 +2,11 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::NoWrapper, entities::{GlweKeyswitchKeyFftIterator, GlweKeyswitchKeyFftIteratorMut, GlweKeyswitchKeyFftRef}, GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition
+    GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition,
+    dst::NoWrapper,
+    entities::{
+        GlweKeyswitchKeyFftIterator, GlweKeyswitchKeyFftIteratorMut, GlweKeyswitchKeyFftRef,
+    },
 };
 
 dst! {

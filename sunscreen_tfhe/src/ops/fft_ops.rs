@@ -1,9 +1,19 @@
 use num::Complex;
 
 use crate::{
-    dst::{FromMutSlice, OverlaySize}, entities::{
-        GgswCiphertextFftRef, GlevCiphertextFftRef, GlevCiphertextRef, GlweCiphertextFftRef, GlweCiphertextRef, GlweKeyswitchKeyFftRef, PolynomialFftRef, PolynomialRef, SchemeSwitchKeyFftRef
-    }, ops::{ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts}, encryption::trivially_encrypt_glwe_ciphertext}, radix::PolynomialRadixIterator, scratch::{allocate_scratch, allocate_scratch_ref}, GlweDef, RadixDecomposition, TorusOps
+    GlweDef, RadixDecomposition, TorusOps,
+    dst::{FromMutSlice, OverlaySize},
+    entities::{
+        GgswCiphertextFftRef, GlevCiphertextFftRef, GlevCiphertextRef, GlweCiphertextFftRef,
+        GlweCiphertextRef, GlweKeyswitchKeyFftRef, PolynomialFftRef, PolynomialRef,
+        SchemeSwitchKeyFftRef,
+    },
+    ops::{
+        ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts},
+        encryption::trivially_encrypt_glwe_ciphertext,
+    },
+    radix::PolynomialRadixIterator,
+    scratch::{allocate_scratch, allocate_scratch_ref},
 };
 
 /// Compute `c += a \[*] b`` where
@@ -457,7 +467,11 @@ pub fn keyswitch_glwe_to_glwe<S>(
 
     let keyswitch_glevs = keyswitch_key.rows(params, radix);
 
-    allocate_scratch_ref!(a_i_decomp_sum, GlweCiphertextFftRef<Complex<f64>>, (params.dim));
+    allocate_scratch_ref!(
+        a_i_decomp_sum,
+        GlweCiphertextFftRef<Complex<f64>>,
+        (params.dim)
+    );
     allocate_scratch_ref!(scratch, PolynomialRef<S>, (params.dim.polynomial_degree));
 
     a_i_decomp_sum.clear();
@@ -488,15 +502,22 @@ mod tests {
     use rand::{RngCore, thread_rng};
 
     use crate::{
+        GLWE_1_1024_80, PlaintextBits, RadixCount, RadixLog, Torus,
         entities::{
-            GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, GlweCiphertextFft, GlweKeyswitchKey, GlweKeyswitchKeyFft, GlweSecretKey, Polynomial, SchemeSwitchKey, SchemeSwitchKeyFft
-        }, high_level::{self, *}, ops::{
+            GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, GlweCiphertextFft,
+            GlweKeyswitchKey, GlweKeyswitchKeyFft, GlweSecretKey, Polynomial, SchemeSwitchKey,
+            SchemeSwitchKeyFft,
+        },
+        high_level::{self, *},
+        ops::{
             bootstrapping::{generate_scheme_switch_key, scheme_switch},
             encryption::{
                 decrypt_ggsw_ciphertext, decrypt_glev_ciphertext, encrypt_secret_glev_ciphertext,
                 scale_msg_by_gadget_factor,
-            }, keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe,
-        }, polynomial::polynomial_external_mad, PlaintextBits, RadixCount, RadixLog, Torus, GLWE_1_1024_80
+            },
+            keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe,
+        },
+        polynomial::polynomial_external_mad,
     };
 
     use super::*;

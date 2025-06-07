@@ -182,16 +182,17 @@ fn ggsw_fft_encryption(
     let ggsw = high_level::evaluation::circuit_bootstrap(
         &lwe0,
         &compute_key.cbs_key,
-        &compute_key.pfks_key,
+        &compute_key.auto_key,
+        &compute_key.ss_key,
         &params.l0_params,
         &params.l1_params,
-        &params.l2_params,
         &params.pbs_radix,
+        &params.tr_radix,
+        &params.ss_radix,
         &params.cbs_radix,
-        &params.pfks_radix,
     );
 
-    high_level::fft::fft_ggsw(&ggsw, &params.l1_params, &params.cbs_radix)
+    ggsw
 }
 
 #[derive(Debug, Clone, Copy)]

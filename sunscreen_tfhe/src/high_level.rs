@@ -61,8 +61,9 @@ pub mod keygen {
     use crate::{
         GlweDef, LweDef, RadixDecomposition,
         entities::{
-            BootstrapKey, CircuitBootstrappingKeyswitchKeys, GlweSecretKey, GlweSecretKeyRef,
-            LweKeyswitchKey, LwePublicKey, LweSecretKey, LweSecretKeyRef, RlwePublicKey,
+            AutomorphismKey, BootstrapKey, CircuitBootstrappingKeyswitchKeys, GlweSecretKey,
+            GlweSecretKeyRef, LweKeyswitchKey, LwePublicKey, LweSecretKey, LweSecretKeyRef,
+            RlwePublicKey, SchemeSwitchKey,
         },
         ops::{
             bootstrapping::generate_bootstrap_key,
@@ -324,6 +325,40 @@ pub mod keygen {
         rlwe_generate_public_key(&mut pk, sk, glwe);
 
         pk
+    }
+
+    /// Generate a scheme switch key. This is used to turn a GLWE cipertext into a GLEV
+    /// cipehrtext.
+    ///
+    /// # Panics
+    /// If `glwe` doesn't correspond with `sk`.
+    pub fn generate_scheme_switch_key(
+        sk: &GlweSecretKeyRef<u64>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> SchemeSwitchKey<u64> {
+        let mut ssk = SchemeSwitchKey::new(glwe, radix);
+
+        crate::ops::bootstrapping::generate_scheme_switch_key(&mut ssk, sk, glwe, radix);
+
+        ssk
+    }
+
+    /// Generate an [`AutomorphismKey`]. This is used in computing a homomorphic trace
+    /// operation.
+    ///
+    /// # Panics
+    /// If `glwe` doesn't correspond with `sk`.
+    pub fn generate_automorphism_key(
+        sk: &GlweSecretKeyRef<u64>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> AutomorphismKey<u64> {
+        let mut ak = AutomorphismKey::new(glwe, radix);
+
+        crate::ops::automorphisms::generate_automorphism_key(&mut ak, sk, glwe, radix);
+
+        ak
     }
 }
 
@@ -782,8 +817,9 @@ pub mod fft {
     use crate::{
         GlweDef, LweDef, RadixDecomposition,
         entities::{
-            BootstrapKeyFft, BootstrapKeyRef, GgswCiphertextFft, GgswCiphertextRef,
-            GlweCiphertextFft, GlweCiphertextRef,
+            AutmorphismKeyRef, AutomorphismKey, AutomorphismKeyFft, BootstrapKeyFft,
+            BootstrapKeyRef, GgswCiphertextFft, GgswCiphertextRef, GlweCiphertextFft,
+            GlweCiphertextRef, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
         },
     };
 
@@ -854,6 +890,38 @@ pub mod fft {
 
         bsk_fft
     }
+
+    /// Take the Fourier transform of a [`SchemeSwitchKey`](crate::entities::SchemeSwitchKey).
+    ///
+    /// # Panics
+    /// If `glwe` or `radix` parameters don't correspond to `ssk`.
+    pub fn fft_scheme_switch_key(
+        ssk: &SchemeSwitchKeyRef<u64>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> SchemeSwitchKeyFft<Complex<f64>> {
+        let mut ssk_fft = SchemeSwitchKeyFft::new(glwe, radix);
+
+        ssk.fft(&mut ssk_fft, glwe, radix);
+
+        ssk_fft
+    }
+
+    /// Take the Fourier transform of a [`SchemeSwitchKey`](crate::entities::SchemeSwitchKey).
+    ///
+    /// # Panics
+    /// If `glwe` or `radix` parameters don't correspond to `ssk`.
+    pub fn fft_automorphism_key(
+        auto_key: &AutmorphismKeyRef<u64>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> AutomorphismKeyFft<Complex<f64>> {
+        let mut ak_fft = AutomorphismKeyFft::new(glwe, radix);
+
+        auto_key.fft(&mut ak_fft, glwe, radix);
+
+        ak_fft
+    }
 }
 
 /// TFHE operations for performing computation.
@@ -863,10 +931,10 @@ pub mod evaluation {
     use crate::{
         GlweDef, LweDef, RadixDecomposition,
         entities::{
-            BootstrapKeyFft, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
-            GgswCiphertext, GgswCiphertextFftRef, GlevCiphertext, GlevCiphertextRef,
-            GlweCiphertext, GlweCiphertextRef, LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef,
-            UnivariateLookupTableRef,
+            AutmorphismKeyFftRef, BootstrapKeyFft, BootstrapKeyFftRef, GgswCiphertextFft,
+            GgswCiphertextFftRef, GlevCiphertext, GlevCiphertextRef, GlweCiphertext,
+            GlweCiphertextRef, LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef,
+            SchemeSwitchKeyFft, UnivariateLookupTableRef,
         },
     };
 
@@ -1029,18 +1097,20 @@ pub mod evaluation {
     pub fn circuit_bootstrap(
         input: &LweCiphertextRef<u64>,
         bsk: &BootstrapKeyFftRef<Complex<f64>>,
-        cbsksk: &CircuitBootstrappingKeyswitchKeysRef<u64>,
+        ak: &AutmorphismKeyFftRef<Complex<f64>>,
+        ss_key: &SchemeSwitchKeyFft<Complex<f64>>,
         lwe_0: &LweDef,
         glwe_1: &GlweDef,
-        glwe_2: &GlweDef,
         pbs_radix: &RadixDecomposition,
+        tr_radix: &RadixDecomposition,
+        ss_radix: &RadixDecomposition,
         cbs_radix: &RadixDecomposition,
-        pfks_radix: &RadixDecomposition,
-    ) -> GgswCiphertext<u64> {
-        let mut out = GgswCiphertext::new(glwe_1, cbs_radix);
+    ) -> GgswCiphertextFft<Complex<f64>> {
+        let mut out = GgswCiphertextFft::new(glwe_1, cbs_radix);
 
-        crate::ops::bootstrapping::circuit_bootstrap_via_pfks(
-            &mut out, input, bsk, cbsksk, lwe_0, glwe_1, glwe_2, pbs_radix, cbs_radix, pfks_radix,
+        crate::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch(
+            &mut out, input, bsk, ak, ss_key, lwe_0, glwe_1, pbs_radix, &tr_radix, ss_radix,
+            cbs_radix,
         );
 
         out

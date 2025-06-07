@@ -5,9 +5,16 @@ use criterion::{
 };
 
 use sunscreen_tfhe::{
+    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80,
+    LWE_637_128, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
+    RadixDecomposition, RadixLog, Torus,
     entities::{
-        AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, Polynomial, PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey, SchemeSwitchKeyFft, UnivariateLookupTable
-    }, high_level::{self, *}, ops::{
+        AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlevCiphertext,
+        GlweCiphertext, Polynomial, PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey,
+        SchemeSwitchKeyFft, UnivariateLookupTable,
+    },
+    high_level::{self, *},
+    ops::{
         automorphisms::generate_automorphism_key,
         bootstrapping::{
             circuit_bootstrap_via_pfks, circuit_bootstrap_via_trace_and_scheme_switch,
@@ -18,7 +25,8 @@ use sunscreen_tfhe::{
         keyswitch::public_functional_keyswitch::{
             generate_public_functional_keyswitch_key, public_functional_keyswitch,
         },
-    }, rand::Stddev, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, LWE_512_80, LWE_637_128
+    },
+    rand::Stddev,
 };
 
 fn cmux(c: &mut Criterion) {
