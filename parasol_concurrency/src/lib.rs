@@ -160,7 +160,7 @@ impl<T> DerefMut for RefMut<'_, T> {
 }
 
 /// The use of Spinlocks in user processes is a contentious topic. However,
-/// they allow for some unconventional patterns, such as permanantly locking
+/// they allow for some unconventional patterns, such as permanently locking
 /// objects and dropping locked locks.
 ///
 /// Using [`Mutex`](std::sync::Mutex) in this manner can leak resources on
