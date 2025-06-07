@@ -735,7 +735,7 @@ pub mod encryption {
     /// Create a trivial GLEV encryption of `msg`.
     ///
     /// # Remarks
-    /// This ciphertext provides no securtity, but is useful as constants.
+    /// This ciphertext provides no security, but is useful as constants.
     ///
     /// # Panics
     /// If `radix` parameters are invalid.
