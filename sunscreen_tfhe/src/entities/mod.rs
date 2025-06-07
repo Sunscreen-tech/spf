@@ -67,6 +67,9 @@ pub use lwe_keyswitch_key::*;
 mod glwe_keyswitch_key;
 pub use glwe_keyswitch_key::*;
 
+mod glwe_keyswitch_key_fft;
+pub use glwe_ciphertext_fft::*;
+
 mod rlwe_public_key;
 pub use rlwe_public_key::*;
 
