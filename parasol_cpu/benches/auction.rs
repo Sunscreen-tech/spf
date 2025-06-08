@@ -40,7 +40,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
 fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Ptr32, Args<()>) {
     let data = std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<32, _>::new(enc));
+    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(enc));
 
     let winner = memory.try_allocate_type(&winner).unwrap();
 
@@ -50,7 +50,7 @@ fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Ptr32, A
         winner,
         ArgsBuilder::new()
             .arg(a)
-            .arg(data.len() as u32)
+            .arg(data.len() as u16)
             .arg(winner)
             .no_return_value(),
     )
@@ -102,11 +102,13 @@ pub fn auction_test_program() -> Vec<IsaOp> {
     let loop_cond = X39;
 
     let instructions = vec![
+        // Truncate len
+        IsaOp::Trunc(len, len, 16),
         // Initialize registers
         IsaOp::Load(winner_output_bid, bids_ptr, 16),
-        IsaOp::LoadI(winner_output_idx, 0, 32),
-        IsaOp::LoadI(i, 1, 32),
-        IsaOp::LoadI(one, 1, 32),
+        IsaOp::LoadI(winner_output_idx, 0, 16),
+        IsaOp::LoadI(i, 1, 16),
+        IsaOp::LoadI(one, 1, 16),
         IsaOp::LoadI(two, 2, 32),
         IsaOp::CmpGe(loop_cond, i, len), // LOOP
         IsaOp::BranchNonZero(loop_cond, 8 * instruction_size),

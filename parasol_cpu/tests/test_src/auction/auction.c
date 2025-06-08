@@ -1,22 +1,21 @@
 #include <stdbool.h>
 
 typedef unsigned short uint16_t;
-typedef unsigned int uint32_t;
 
 typedef struct Winner {
     uint16_t bid;
-    uint32_t idx;
+    uint16_t idx;
 } Winner;
 
 [[clang::fhe_program]] void auction(
     [[clang::encrypted]] uint16_t *bids,
-    uint32_t len,
+    uint16_t len,
     [[clang::encrypted]] Winner *winningBid
 ) {
     winningBid->bid = bids[0];
     winningBid->idx = 0;
 
-    for (uint32_t i = 1; i < len; i++) {
+    for (uint16_t i = 1; i < len; i++) {
         bool isWinner = bids[i] >= winningBid->bid;
 
         winningBid->bid = isWinner ? bids[i] : winningBid->bid;
