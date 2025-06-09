@@ -20,14 +20,14 @@ fn can_run_auction_from_elf() {
     let data =
         std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, &enc, sk));
 
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<32, _>::new(&enc));
+    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(&enc));
     let winner = memory.try_allocate_type(&winner).unwrap();
 
     let a = memory.try_allocate_type(&data).unwrap();
 
     let args = ArgsBuilder::new()
         .arg(a)
-        .arg(data.len() as u32)
+        .arg(data.len() as u16)
         .arg(winner)
         .no_return_value();
 
@@ -37,7 +37,7 @@ fn can_run_auction_from_elf() {
     proc.run_program(prog, &memory, args).unwrap();
     println!("Runtime {}", now.elapsed().as_secs_f64());
 
-    let winner = memory.try_load_type::<[UInt<32, _>; 2]>(winner).unwrap();
+    let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
 
     assert_eq!(winner[0].decrypt(&enc, sk), 7);
     assert_eq!(winner[1].decrypt(&enc, sk), 7);

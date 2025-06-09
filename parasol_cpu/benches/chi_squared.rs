@@ -160,7 +160,6 @@ fn chi_squared_from_assembly(c: &mut Criterion) {
 
     group.bench_function("chi_squared_from_assembly", |bench| {
         bench.iter_batched(
-            // Setup closure: runs before each iteration, not timed
             || {
                 let memory = Arc::new(Memory::new_default_stack());
                 let prog = memory.allocate_program(&chi_sq_test_program());
