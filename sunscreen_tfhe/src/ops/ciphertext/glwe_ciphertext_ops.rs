@@ -650,7 +650,7 @@ mod tests {
             let sk = keygen::generate_binary_glwe_sk(&glwe_params);
 
             let eval = |pt: &PolynomialRef<u64>, check: Box<dyn Fn(Torus<u64>)>| {
-                let val = sk.encode_encrypt_glwe(&pt, &glwe_params, PlaintextBits(1));
+                let val = sk.encode_encrypt_glwe(pt, &glwe_params, PlaintextBits(1));
 
                 let mut res = GlweCiphertext::new(&glwe_params);
 

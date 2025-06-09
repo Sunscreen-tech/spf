@@ -79,7 +79,7 @@ pub fn trace<S: TorusOps>(
 
         keyswitch_glwe_to_glwe(keyswitched, glwe_k, glwe_ksk, glwe, radix);
 
-        glwe_add_assign(out, &keyswitched, glwe);
+        glwe_add_assign(out, keyswitched, glwe);
     }
 }
 

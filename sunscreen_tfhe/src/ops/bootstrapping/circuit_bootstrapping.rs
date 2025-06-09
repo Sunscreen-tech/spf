@@ -211,7 +211,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
     // This produces our output GLWE ciphertext.
     apply_pfks_on_ggsw_components(
         output,
-        &lo_noise_lwe_decomps,
+        lo_noise_lwe_decomps,
         cbsksk,
         glwe_2,
         glwe_1,
@@ -240,7 +240,7 @@ fn extract_and_rotate_lo_noise_glwe<S>(
         let cur_level = i + 1;
         let plaintext_bits = PlaintextBits((cbs_radix.radix_log.0 * cur_level + 1) as u32);
 
-        sample_extract(extracted, &lo_noise_glwe, i, glwe);
+        sample_extract(extracted, lo_noise_glwe, i, glwe);
 
         // Now we rotate our message containing -1 or 1 by 1 (wrt plaintext_bits).
         // This will overflow -1 to 0 and cause 1 to wrap to 2.
@@ -269,15 +269,15 @@ fn mod_switch_trace_and_rotate<S>(
 ) where
     S: TorusOps,
 {
-    let shift_amount = glwe.dim.polynomial_degree.0.ilog2() as u32;
+    let shift_amount = glwe.dim.polynomial_degree.0.ilog2();
 
     allocate_scratch_ref!(glwe_rotated, GlweCiphertextRef<S>, (glwe.dim));
     allocate_scratch_ref!(glwe_permuted, GlweCiphertextRef<S>, (glwe.dim));
     allocate_scratch_ref!(glwe_shifted, GlweCiphertextRef<S>, (glwe.dim));
 
-    glwe_rotated.clone_from_ref(&lo_noise_glwe);
+    glwe_rotated.clone_from_ref(lo_noise_glwe);
 
-    for (i, glev_i) in lo_noise_glev.glwe_ciphertexts_mut(&glwe).enumerate() {
+    for (i, glev_i) in lo_noise_glev.glwe_ciphertexts_mut(glwe).enumerate() {
         let cur_level = i + 1;
         let plaintext_bits = PlaintextBits((cbs_radix.radix_log.0 * cur_level + 1) as u32);
 
@@ -290,7 +290,7 @@ fn mod_switch_trace_and_rotate<S>(
         rotate_glwe_negative_monomial_negacyclic(glwe_permuted, glwe_rotated, i, glwe);
 
         // Mod shift to implicitly multiply by N^-1
-        glwe_mod_switch_and_expand_pow_2(glwe_shifted, &glwe_permuted, glwe, shift_amount);
+        glwe_mod_switch_and_expand_pow_2(glwe_shifted, glwe_permuted, glwe, shift_amount);
 
         // Compute a trace to 0 all but the constant term. A by-product of this multiplies
         // the constant coefficient by N, but this cancels our N^-1 in the previous step,
@@ -347,7 +347,7 @@ pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
         cbs_radix,
     );
 
-    scheme_switch_fft(output, &lo_noise_glev, ssk, glwe_1, cbs_radix, ss_radix);
+    scheme_switch_fft(output, lo_noise_glev, ssk, glwe_1, cbs_radix, ss_radix);
 }
 
 #[inline(always)]

@@ -177,7 +177,7 @@ impl Evaluation {
                 &params.cbs_radix,
             );
 
-            output.into()
+            output
         };
 
         let l1ggsw_zero = mk_ggsw(false);

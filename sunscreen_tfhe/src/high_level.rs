@@ -1109,7 +1109,7 @@ pub mod evaluation {
         let mut out = GgswCiphertextFft::new(glwe_1, cbs_radix);
 
         crate::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch(
-            &mut out, input, bsk, ak, ss_key, lwe_0, glwe_1, pbs_radix, &tr_radix, ss_radix,
+            &mut out, input, bsk, ak, ss_key, lwe_0, glwe_1, pbs_radix, tr_radix, ss_radix,
             cbs_radix,
         );
 

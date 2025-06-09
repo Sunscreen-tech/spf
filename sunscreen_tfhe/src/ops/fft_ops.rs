@@ -491,7 +491,7 @@ pub fn keyswitch_glwe_to_glwe<S>(
     a_i_decomp_sum.ifft(a_i_decomp_sum_ifft, params);
 
     // output = trivial_encrypt(ciphertext_b) - sum_i(<decomp(ciphertext_a_i), glev_i>)
-    sub_glwe_ciphertexts(output, &trivial_b, &a_i_decomp_sum_ifft, params);
+    sub_glwe_ciphertexts(output, trivial_b, a_i_decomp_sum_ifft, params);
 }
 
 #[cfg(test)]

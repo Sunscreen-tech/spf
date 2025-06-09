@@ -157,9 +157,9 @@ impl GetSize for ComputeKeyNonFft {
             size + AutmorphismKeyRef::<u64>::size((params.l1_params.dim, params.tr_radix.count));
 
         let size = size + 4;
-        let size = size * size_of::<u64>();
+        
 
-        size
+        size * size_of::<u64>()
     }
 
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
