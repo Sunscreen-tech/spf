@@ -4,8 +4,7 @@ use std::mem::size_of;
 use sunscreen_tfhe::OverlaySize;
 use sunscreen_tfhe::entities::{
     AutmorphismKeyFftRef, AutmorphismKeyRef, AutomorphismKey, AutomorphismKeyFft, BootstrapKey,
-    BootstrapKeyFft, BootstrapKeyRef, CircuitBootstrappingKeyswitchKeys,
-    CircuitBootstrappingKeyswitchKeysRef, GlweSecretKey, GlweSecretKeyRef, LweKeyswitchKey,
+    BootstrapKeyFft, BootstrapKeyRef, GlweSecretKey, GlweSecretKeyRef, LweKeyswitchKey,
     LweKeyswitchKeyRef, LweSecretKey, LweSecretKeyRef, RlwePublicKey, RlwePublicKeyRef,
     SchemeSwitchKey, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
 };

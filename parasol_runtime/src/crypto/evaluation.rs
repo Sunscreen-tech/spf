@@ -1,10 +1,10 @@
-use std::{borrow::BorrowMut, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
 use sunscreen_tfhe::{
-    entities::{GgswCiphertext, GlweCiphertextFft},
+    entities::GlweCiphertextFft,
     ops::{
         bootstrapping::{
-            circuit_bootstrap_via_pfks, circuit_bootstrap_via_trace_and_scheme_switch,
+            circuit_bootstrap_via_trace_and_scheme_switch,
             rotate_glwe_positive_monomial_negacyclic,
         },
         ciphertext::sample_extract,

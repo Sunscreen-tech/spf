@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::OverlaySize,
-    entities::{GlweKeyswitchKeyFftRef, glwe_keyswitch_key_fft::GlweKeyswitchKeyFft},
+    entities::GlweKeyswitchKeyFftRef,
 };
 
 use super::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef};

@@ -32,7 +32,7 @@ mod tests {
         ComputeKey, ComputeKeyNonFft, DEFAULT_80, DEFAULT_128, Encryption, L0LweCiphertext,
         L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey,
         test_utils::{
-            get_compute_key_80, get_compute_key_128, get_secret_keys_80, get_secret_keys_128,
+            get_compute_key_128, get_secret_keys_128,
         },
     };
 

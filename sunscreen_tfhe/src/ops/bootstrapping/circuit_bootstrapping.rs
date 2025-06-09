@@ -6,7 +6,7 @@ use crate::{
     RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
-        AutmorphismKeyFftRef, AutmorphismKeyRef, BootstrapKeyFftRef,
+        AutmorphismKeyFftRef, BootstrapKeyFftRef,
         CircuitBootstrappingKeyswitchKeysRef, GgswCiphertextFftRef, GgswCiphertextRef,
         GlevCiphertextRef, GlweCiphertextRef, LweCiphertextListRef, LweCiphertextRef,
         SchemeSwitchKeyFftRef, UnivariateLookupTableRef,

@@ -817,7 +817,7 @@ pub mod fft {
     use crate::{
         GlweDef, LweDef, RadixDecomposition,
         entities::{
-            AutmorphismKeyRef, AutomorphismKey, AutomorphismKeyFft, BootstrapKeyFft,
+            AutmorphismKeyRef, AutomorphismKeyFft, BootstrapKeyFft,
             BootstrapKeyRef, GgswCiphertextFft, GgswCiphertextRef, GlweCiphertextFft,
             GlweCiphertextRef, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
         },
