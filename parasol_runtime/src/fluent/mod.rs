@@ -840,10 +840,14 @@ mod tests {
             let sel_true =
                 Bit::<L1GgswCiphertext>::encrypt_secret(true, enc, &sk).graph_input(&ctx);
 
-            let a = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
-                .graph_inputs(&ctx);
-            let b = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
-                .graph_inputs(&ctx);
+            let a: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
+            let b: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
 
             let sel_false = sel_false.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
             let sel_true = sel_true.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
@@ -875,10 +879,14 @@ mod tests {
             let sel_true =
                 Bit::<L1GgswCiphertext>::trivial_encryption(true, enc, eval).graph_input(&ctx);
 
-            let a = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
-                .graph_inputs(&ctx);
-            let b = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
-                .graph_inputs(&ctx);
+            let a: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
+            let b: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
 
             let sel_false = sel_false.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
             let sel_true = sel_true.select(&a, &b, &ctx).collect_outputs(&ctx, enc);

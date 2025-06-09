@@ -235,7 +235,7 @@ impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
             .flatten()
             .collect::<Vec<_>>();
 
-        Ok(UInt::from(DynamicUInt::from_bits_shallow(data)))
+        Ok(UInt::from_bits_shallow(data))
     }
 }
 
@@ -277,7 +277,7 @@ impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
             .flatten()
             .collect::<Vec<_>>();
 
-        Ok(Int::from(DynamicInt::from_bits_shallow(data)))
+        Ok(Int::from_bits_shallow(data))
     }
 }
 

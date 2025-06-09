@@ -572,6 +572,18 @@ impl<'a, const N: usize, T: CiphertextOps, U: Sign> From<DynamicGenericIntGraphN
     }
 }
 
+impl<'a, const N: usize, T: CiphertextOps, U: Sign> GenericIntGraphNodes<'a, N, T, U> {
+    pub(crate) fn from_nodes<I: ExactSizeIterator<Item = NodeIndex>>(
+        iter: I,
+        bump: &'a Bump,
+    ) -> GenericIntGraphNodes<'a, N, T, U> {
+        assert_eq!(iter.len(), N);
+
+        Self {
+            inner: DynamicGenericIntGraphNodes::from_nodes(iter, bump),
+        }
+    }
+}
 /// A graph node that represents a dynamic generic integer in packed form. See [`PackedDynamicGenericInt`] for a
 /// description of packing.
 pub struct PackedDynamicGenericIntGraphNode<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> {
@@ -845,6 +857,14 @@ where
     T: CiphertextOps,
     U: Sign,
 {
+    /// Allocate a new [`GenericInt`] using trivial or precomputed (if T is [`L1GgswCiphertext`]) encryptions
+    /// of zero.
+    pub fn new(enc: &Encryption) -> Self {
+        Self {
+            inner: DynamicGenericInt::new(enc, N),
+        }
+    }
+
     /// Create a [`GenericInt`] from the underlying bits
     pub fn from_bits_shallow(bits: Vec<Arc<AtomicRefCell<T>>>) -> Self {
         Self {
