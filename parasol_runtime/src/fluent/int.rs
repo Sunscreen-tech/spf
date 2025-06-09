@@ -10,9 +10,10 @@ use super::{
 
 use mux_circuits::comparisons::compare_or_maybe_equal_signed;
 use petgraph::stable_graph::NodeIndex;
+use serde::{Deserialize, Serialize};
 
 /// Marker struct
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Signed;
 
 impl Sign for Signed {
@@ -46,7 +47,7 @@ pub type IntGraphNodes<'a, const N: usize, T> = GenericIntGraphNodes<'a, N, T, S
 /// Signed variant for [`PackedGenericIntGraphNode`]
 pub type PackedIntGraphNode<const N: usize, T> = PackedGenericIntGraphNode<N, T, Signed>;
 
-/// Ssigned variant for [`GenericInt`]
+/// Signed variant for [`GenericInt`]
 pub type Int<const N: usize, T> = GenericInt<N, T, Signed>;
 
 /// Signed variant for [`PackedGenericInt`]

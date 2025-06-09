@@ -1,7 +1,10 @@
 use std::{sync::Arc, time::Instant};
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{
+    Encryption, Evaluation,
+    fluent::{DynamicUInt, UInt},
+};
 
 use crate::{get_ck, get_sk};
 
@@ -20,7 +23,8 @@ fn can_run_auction_from_elf() {
     let data =
         std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, &enc, sk));
 
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(&enc));
+    let winner =
+        std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::from(DynamicUInt::new(&enc, 16)));
     let winner = memory.try_allocate_type(&winner).unwrap();
 
     let a = memory.try_allocate_type(&data).unwrap();

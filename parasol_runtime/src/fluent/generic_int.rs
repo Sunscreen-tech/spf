@@ -1,4 +1,4 @@
-use std::{marker::PhantomData, mem::size_of, sync::Arc};
+use std::{marker::PhantomData, mem::size_of, ops::Deref, sync::Arc};
 
 use crate::{
     Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, L1LweCiphertext,
@@ -39,485 +39,13 @@ pub trait Sign {
     fn resize_config(old_size: usize, new_size: usize) -> (usize, usize, bool);
 }
 
-/// A collection of graph nodes resulting from FHE operations over generic integers (e.g. the
+/// A collection of graph nodes resulting from FHE operations over dynamic generic integers (e.g. the
 /// result of adding two 7-bit values).
 ///
 /// # Remarks
 /// This integer is in unpacked form, meaning each bit resides in a different ciphertext of type `T`.
-pub struct GenericIntGraphNodes<'a, const N: usize, T: CiphertextOps, U: Sign> {
-    /// The generic integer's [`BitNode`]s from least to most significant.
-    pub bits: &'a [BitNode<T>],
-
-    _phantom: PhantomData<U>,
-}
-
-impl<'a, const N: usize, T: CiphertextOps, U: Sign> GenericIntGraphNodes<'a, N, T, U> {
-    pub(crate) fn from_nodes<I: Iterator<Item = NodeIndex>>(
-        iter: I,
-        bump: &'a Bump,
-    ) -> GenericIntGraphNodes<'a, N, T, U> {
-        let nodes: &mut [BitNode<T>] = bump.alloc_slice_fill_default(N);
-
-        for (idx, bit_node) in iter.zip(nodes.iter_mut()) {
-            bit_node.node = idx
-        }
-
-        Self {
-            bits: nodes,
-            _phantom: PhantomData,
-        }
-    }
-
-    pub(super) fn from_bit_nodes<I: Iterator<Item = BitNode<T>>>(
-        iter: I,
-        bump: &'a Bump,
-    ) -> GenericIntGraphNodes<'a, N, T, U> {
-        let nodes: &mut [BitNode<T>] = bump.alloc_slice_fill_default(N);
-
-        for (idx, bit_node) in iter.zip(nodes.iter_mut()) {
-            *bit_node = idx
-        }
-
-        Self {
-            bits: nodes,
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Convert this [`GenericIntGraphNodes<T, W>`] to a [`GenericIntGraphNodes<V, W>`]. Usually, you'll use this
-    /// to convert to [`L1GgswCiphertext`] so you can perform arithmetic computation over integers.
-    pub fn convert<V: CiphertextOps>(
-        &self,
-        graph: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, V, U> {
-        let iter = self.bits.iter().map(|x| x.convert(graph));
-
-        GenericIntGraphNodes::from_bit_nodes(iter, &graph.allocator)
-    }
-
-    /// Add output nodes to the computation for each of this generic integer's bits.
-    /// When the [`FheCircuitCtx`]'s DAG finishes computing, the returned [`GenericInt<N, T>`] will encrypt
-    /// the result of this generic integer's DAG nodes.
-    ///
-    /// # Remarks
-    /// The returned [`GenericInt`] has not yet been evaluated and will be a trivial zero until the
-    /// computation completes. You should generally submit the computation using
-    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
-    ///
-    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
-    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
-    /// is running.
-    pub fn collect_outputs(&self, ctx: &FheCircuitCtx, enc: &Encryption) -> GenericInt<N, T, U> {
-        let result = GenericInt::new(enc);
-
-        for (prev, res) in self.bits.iter().zip(result.bits.iter()) {
-            let mut circuit = ctx.circuit.borrow_mut();
-
-            let output = circuit.add_node(T::graph_output(res));
-            circuit.add_edge(prev.node, output, FheEdge::Unary);
-        }
-
-        result
-    }
-
-    /// Resize skeleton that uses the method provided by the sign
-    pub fn resize<const M: usize>(
-        &self,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, M, T, U> {
-        let (min_len, extend, use_msb) = U::resize_config(N, M);
-
-        let input = self.bits;
-
-        let extend_bit = if use_msb {
-            input.last().unwrap()
-        } else {
-            &BitNode::zero(ctx)
-        };
-
-        let iter = input
-            .iter()
-            .copied()
-            .take(min_len)
-            .chain((0..extend).map(|_| extend_bit.to_owned()));
-
-        GenericIntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
-    }
-}
-
-impl<const N: usize, U: Sign> GenericIntGraphNodes<'_, N, L1GlweCiphertext, U> {
-    /// Convert this unpacked generic integer to packed form.
-    ///
-    /// # Remarks
-    /// This requires T be an [`L1GlweCiphertext`]. If required, use [`Self::convert`] to get into
-    /// this form.
-    pub fn pack(
-        &self,
-        ctx: &FheCircuitCtx,
-        enc: &Encryption,
-    ) -> PackedGenericIntGraphNode<N, L1GlweCiphertext, U> {
-        assert!(N <= enc.params.l1_poly_degree().0);
-        assert!(N > 0);
-
-        let log_n = N.next_power_of_two().ilog2();
-
-        // Multiply the i'th bit polynomial by x^1. When these resultant
-        // polynomials are summed, the i'th bit will appear in the x^i
-        // term.
-        let shifted = self
-            .bits
-            .iter()
-            .enumerate()
-            .map(|(i, x)| {
-                let mut circuit = ctx.circuit.borrow_mut();
-
-                if i > 0 {
-                    let rot = circuit.add_node(FheOp::MulXN(i));
-                    circuit.add_edge(x.node, rot, FheEdge::Unary);
-
-                    rot
-                } else {
-                    x.node
-                }
-            })
-            .collect::<Vec<_>>();
-
-        let mut reduction = shifted;
-
-        // Perform a tree reduction to sum the shifted ciphertexts.
-        for _ in 0..log_n {
-            assert!(reduction.len() > 1);
-
-            let next = reduction
-                .chunks(2)
-                .map(|x| {
-                    if x.len() == 1 {
-                        x[0]
-                    } else {
-                        let mut circuit = ctx.circuit.borrow_mut();
-
-                        let add = circuit.add_node(FheOp::GlweAdd);
-                        circuit.add_edge(x[0], add, FheEdge::Left);
-                        circuit.add_edge(x[1], add, FheEdge::Right);
-
-                        add
-                    }
-                })
-                .collect::<Vec<_>>();
-
-            reduction = next;
-        }
-
-        assert_eq!(reduction.len(), 1);
-
-        PackedGenericIntGraphNode {
-            id: reduction[0],
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<'a, const N: usize, V: Sign> GenericIntGraphNodes<'a, N, L1GgswCiphertext, V> {
-    pub(crate) fn cmp<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-        gt: bool,
-        eq: bool,
-    ) -> BitNode<OutCt> {
-        let max_len = M.max(N);
-        let mux_circuit = V::gen_compare_circuit(max_len, gt, eq);
-
-        let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
-
-        let interleaved = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .flat_map(|(a, b)| [a.node, b.node])
-            .chain(self.bits.iter().skip(M).flat_map(|x| [x.node, zero]))
-            .chain(other.bits.iter().skip(N).flat_map(|x| [zero, x.node]))
-            .collect::<Vec<_>>();
-
-        let cmp_result = ctx.circuit.borrow_mut().insert_mux_circuit(
-            &mux_circuit,
-            &interleaved,
-            OutCt::MUX_MODE,
-        );
-
-        BitNode {
-            node: cmp_result[0],
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Compute `self == other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn eq<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-    ) -> BitNode<OutCt> {
-        let max_len = M.max(N);
-        let mux_circuit = compare_equal(max_len);
-
-        let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
-
-        let interleaved = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .flat_map(|(a, b)| [a.node, b.node])
-            .chain(self.bits.iter().skip(M).flat_map(|x| [x.node, zero]))
-            .chain(other.bits.iter().skip(N).flat_map(|x| [zero, x.node]))
-            .collect::<Vec<_>>();
-
-        let eq = ctx.circuit.borrow_mut().insert_mux_circuit(
-            &mux_circuit,
-            &interleaved,
-            OutCt::MUX_MODE,
-        );
-
-        BitNode {
-            node: eq[0],
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Compute `self != other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn neq<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-    ) -> BitNode<OutCt> {
-        let max_len = M.max(N);
-        let mux_circuit = compare_not_equal(max_len);
-
-        let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
-
-        let interleaved = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .flat_map(|(a, b)| [a.node, b.node])
-            .chain(self.bits.iter().skip(M).flat_map(|x| [x.node, zero]))
-            .chain(other.bits.iter().skip(N).flat_map(|x| [zero, x.node]))
-            .collect::<Vec<_>>();
-
-        let eq = ctx.circuit.borrow_mut().insert_mux_circuit(
-            &mux_circuit,
-            &interleaved,
-            OutCt::MUX_MODE,
-        );
-
-        BitNode {
-            node: eq[0],
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Compute `self > other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn gt<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-    ) -> BitNode<OutCt> {
-        self.cmp(other, ctx, true, false)
-    }
-
-    /// Compute `self >= other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn ge<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-    ) -> BitNode<OutCt> {
-        self.cmp(other, ctx, true, true)
-    }
-
-    /// Compute `self < other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn lt<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-    ) -> BitNode<OutCt> {
-        self.cmp(other, ctx, false, false)
-    }
-
-    /// Compute `self <= other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn le<const M: usize, OutCt: Muxable>(
-        &self,
-        other: &GenericIntGraphNodes<M, L1GgswCiphertext, V>,
-        ctx: &FheCircuitCtx,
-    ) -> BitNode<OutCt> {
-        self.cmp(other, ctx, false, true)
-    }
-
-    /// Compute `self - other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn sub<OutCt: Muxable>(
-        &self,
-        other: &Self,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, OutCt, V> {
-        let mux_circuit = full_subtractor(N, false);
-
-        let interleaved = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .flat_map(|(a, b)| [a.node, b.node])
-            .collect::<Vec<_>>();
-
-        GenericIntGraphNodes::from_nodes(
-            ctx.circuit
-                .borrow_mut()
-                .insert_mux_circuit(&mux_circuit, &interleaved, OutCt::MUX_MODE)
-                .iter()
-                .copied()
-                .take(N),
-            &ctx.allocator,
-        )
-    }
-
-    /// Compute `self & other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn and<OutCt: Muxable>(
-        &self,
-        other: &Self,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, OutCt, V> {
-        let mux_circuit = make_and_circuit(N as u16);
-
-        let interleaved = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .flat_map(|(a, b)| [a.node, b.node])
-            .collect::<Vec<_>>();
-
-        GenericIntGraphNodes::from_nodes(
-            ctx.circuit
-                .borrow_mut()
-                .insert_mux_circuit(&mux_circuit, &interleaved, OutCt::MUX_MODE)
-                .iter()
-                .copied()
-                .take(N),
-            &ctx.allocator,
-        )
-    }
-
-    /// Compute `self + other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn add<OutCt: Muxable>(
-        &self,
-        other: &Self,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, OutCt, V> {
-        let mux_circuit = ripple_carry_adder(N, N, false);
-
-        let interleaved = self
-            .bits
-            .iter()
-            .zip(other.bits.iter())
-            .flat_map(|(a, b)| [a.node, b.node])
-            .collect::<Vec<_>>();
-
-        GenericIntGraphNodes::from_nodes(
-            ctx.circuit
-                .borrow_mut()
-                .insert_mux_circuit(&mux_circuit, &interleaved, OutCt::MUX_MODE)
-                .iter()
-                .copied()
-                .take(N),
-            &ctx.allocator,
-        )
-    }
-
-    /// Compute `self * other`.
-    ///
-    /// # Remarks
-    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
-    /// change to this type.
-    pub fn mul<OutCt: Muxable>(
-        &self,
-        other: &Self,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, OutCt, V> {
-        let a = self.bits.iter().map(|x| x.node).collect::<Vec<_>>();
-
-        let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
-
-        let mut circuit_mut = ctx.circuit.borrow_mut();
-
-        // TODO: introduce a mul_lo so we don't have to do this pruning in the first place.
-        let existing_outputs = circuit_mut
-            .node_indices()
-            .filter(|x| {
-                let node_type = matches!(
-                    circuit_mut.node_weight(*x).unwrap(),
-                    FheOp::OutputGgsw1(_)
-                        | FheOp::OutputGlev1(_)
-                        | FheOp::OutputGlwe1(_)
-                        | FheOp::OutputLwe0(_)
-                        | FheOp::OutputLwe1(_)
-                );
-
-                node_type
-                    && circuit_mut
-                        .neighbors_directed(*x, petgraph::Direction::Outgoing)
-                        .count()
-                        == 0
-            })
-            .collect::<Vec<_>>();
-
-        let (lo, _hi) = V::append_multiply::<OutCt>(&mut circuit_mut, &a, &b);
-
-        let to_keep = [lo.clone(), existing_outputs].concat();
-
-        let (pruned, rename) = prune(&circuit_mut, &to_keep);
-        circuit_mut.graph = pruned;
-
-        let lo = lo.into_iter().map(|x| *rename.get(&x).unwrap());
-
-        GenericIntGraphNodes::from_nodes(lo, &ctx.allocator)
-    }
-}
-
-/// Similar to [`GenericIntGraphNodes`] but without the size N generic parameter
 pub struct DynamicGenericIntGraphNodes<'a, T: CiphertextOps, U: Sign> {
-    /// The generic integer's [`BitNode`]s from least to most significant.
+    /// The dynamic generic integer's [`BitNode`]s from least to most significant.
     pub bits: &'a [BitNode<T>],
 
     _phantom: PhantomData<U>,
@@ -540,7 +68,7 @@ impl<'a, T: CiphertextOps, U: Sign> DynamicGenericIntGraphNodes<'a, T, U> {
         }
     }
 
-    pub(crate) fn from_bit_nodes<I: ExactSizeIterator<Item = BitNode<T>>>(
+    pub(super) fn from_bit_nodes<I: ExactSizeIterator<Item = BitNode<T>>>(
         iter: I,
         bump: &'a Bump,
     ) -> DynamicGenericIntGraphNodes<'a, T, U> {
@@ -556,7 +84,8 @@ impl<'a, T: CiphertextOps, U: Sign> DynamicGenericIntGraphNodes<'a, T, U> {
         }
     }
 
-    /// Similar to [`GenericIntGraphNodes::convert`], but works on [`DynamicGenericIntGraphNodes`]
+    /// Convert this [`DynamicGenericIntGraphNodes<T, U>`] to a [`DynamicGenericIntGraphNodes<V, U>`]. Usually, you'll use this
+    /// to convert to [`L1GgswCiphertext`] so you can perform arithmetic computation over integers.
     pub fn convert<V: CiphertextOps>(
         &self,
         graph: &'a FheCircuitCtx,
@@ -566,7 +95,18 @@ impl<'a, T: CiphertextOps, U: Sign> DynamicGenericIntGraphNodes<'a, T, U> {
         DynamicGenericIntGraphNodes::from_bit_nodes(iter, &graph.allocator)
     }
 
-    /// Similar to [`GenericIntGraphNodes::collect_outputs`], but works on [`DynamicGenericIntGraphNodes`]
+    /// Add output nodes to the computation for each of this dynamic generic integer's bits.
+    /// When the [`FheCircuitCtx`]'s DAG finishes computing, the returned [`DynamicGenericInt<T, U>`] will encrypt
+    /// the result of this dynamic generic integer's DAG nodes.
+    ///
+    /// # Remarks
+    /// The returned [`DynamicGenericInt`] has not yet been evaluated and will be a trivial zero until the
+    /// computation completes. You should generally submit the computation using
+    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
+    ///
+    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
+    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
+    /// is running.
     pub fn collect_outputs(
         &self,
         ctx: &FheCircuitCtx,
@@ -583,16 +123,48 @@ impl<'a, T: CiphertextOps, U: Sign> DynamicGenericIntGraphNodes<'a, T, U> {
 
         result
     }
+
+    /// Resize skeleton that uses the method provided by the sign
+    pub fn resize(
+        &self,
+        ctx: &'a FheCircuitCtx,
+        new_size: usize,
+    ) -> DynamicGenericIntGraphNodes<'a, T, U> {
+        let (min_len, extend, use_msb) = U::resize_config(self.bits.len(), new_size);
+
+        let input = self.bits;
+
+        let extend_bit = if use_msb {
+            input.last().unwrap()
+        } else {
+            &BitNode::zero(ctx)
+        };
+
+        let iter = input
+            .iter()
+            .copied()
+            .take(min_len)
+            .chain((0..extend).map(|_| extend_bit.to_owned()))
+            .collect::<Vec<_>>()
+            .into_iter();
+
+        DynamicGenericIntGraphNodes::from_bit_nodes(iter, &ctx.allocator)
+    }
 }
 
 impl<U: Sign> DynamicGenericIntGraphNodes<'_, L1GlweCiphertext, U> {
-    /// Similar to [`GenericIntGraphNodes::pack`] but works on [`DynamicGenericIntGraphNodes`]
+    /// Convert this unpacked dynamic generic integer to packed form.
+    ///
+    /// # Remarks
+    /// This requires T be an [`L1GlweCiphertext`]. If required, use [`Self::convert`] to get into
+    /// this form.
     pub fn pack(
         &self,
         ctx: &FheCircuitCtx,
         enc: &Encryption,
     ) -> PackedDynamicGenericIntGraphNode<L1GlweCiphertext, U> {
         let n = self.bits.len();
+
         assert!(n <= enc.params.l1_poly_degree().0);
         assert!(n > 0);
 
@@ -655,69 +227,353 @@ impl<U: Sign> DynamicGenericIntGraphNodes<'_, L1GlweCiphertext, U> {
     }
 }
 
-/// A graph node that represents a generic integer in packed form. See [`PackedGenericInt`] for a
-/// description of packing.
-pub struct PackedGenericIntGraphNode<
-    const N: usize,
-    T: CiphertextOps + PolynomialCiphertextOps,
-    U: Sign,
-> {
-    id: NodeIndex,
-    _phantom: PhantomData<(T, U)>,
-}
-
-impl<const N: usize, V: Sign> PackedGenericIntGraphNode<N, L1GlweCiphertext, V> {
-    /// Convert this integer into unpacked form, where each bit appears in a different ciphertext.
-    pub fn unpack<'a>(
+impl<'a, V: Sign> DynamicGenericIntGraphNodes<'a, L1GgswCiphertext, V> {
+    pub(crate) fn cmp<OutCt: Muxable>(
         &self,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, L1LweCiphertext, V> {
-        let nodes = (0..N).map(|i| {
-            let mut circuit = ctx.circuit.borrow_mut();
-
-            let se = circuit.add_node(FheOp::SampleExtract(i));
-            circuit.add_edge(self.id, se, FheEdge::Unary);
-
-            se
-        });
-
-        GenericIntGraphNodes::from_nodes(nodes, &ctx.allocator)
-    }
-}
-
-impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign>
-    PackedGenericIntGraphNode<N, T, U>
-{
-    /// Create an output node in the graph and return the ciphertext.
-    ///
-    /// # Remarks
-    /// The returned [`PackedGenericInt`] has not yet been evaluated and will be a trivial zero until the
-    /// computation completes. You should generally submit the computation using
-    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
-    ///
-    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
-    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
-    /// is running.
-    pub fn collect_output(
-        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
         ctx: &FheCircuitCtx,
-        enc: &Encryption,
-    ) -> PackedGenericInt<N, T, U> {
-        let result = Arc::new(AtomicRefCell::new(T::allocate(enc)));
+        gt: bool,
+        eq: bool,
+    ) -> BitNode<OutCt> {
+        let m = other.bits.len();
+        let n = self.bits.len();
 
-        let mut circuit = ctx.circuit.borrow_mut();
+        let max_len = m.max(n);
+        let mux_circuit = V::gen_compare_circuit(max_len, gt, eq);
 
-        let out_node = circuit.add_node(T::graph_output(&result));
-        circuit.add_edge(self.id, out_node, FheEdge::Unary);
+        let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
 
-        PackedGenericInt {
-            ct: result,
+        let interleaved = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .flat_map(|(a, b)| [a.node, b.node])
+            .chain(self.bits.iter().skip(m).flat_map(|x| [x.node, zero]))
+            .chain(other.bits.iter().skip(n).flat_map(|x| [zero, x.node]))
+            .collect::<Vec<_>>();
+
+        let cmp_result = ctx.circuit.borrow_mut().insert_mux_circuit(
+            &mux_circuit,
+            &interleaved,
+            OutCt::MUX_MODE,
+        );
+
+        BitNode {
+            node: cmp_result[0],
             _phantom: PhantomData,
         }
     }
+
+    /// Compute `self == other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn eq<OutCt: Muxable>(
+        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
+        ctx: &FheCircuitCtx,
+    ) -> BitNode<OutCt> {
+        let m = other.bits.len();
+        let n = self.bits.len();
+
+        let max_len = m.max(n);
+        let mux_circuit = compare_equal(max_len);
+
+        let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
+
+        let interleaved = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .flat_map(|(a, b)| [a.node, b.node])
+            .chain(self.bits.iter().skip(m).flat_map(|x| [x.node, zero]))
+            .chain(other.bits.iter().skip(n).flat_map(|x| [zero, x.node]))
+            .collect::<Vec<_>>();
+
+        let eq = ctx.circuit.borrow_mut().insert_mux_circuit(
+            &mux_circuit,
+            &interleaved,
+            OutCt::MUX_MODE,
+        );
+
+        BitNode {
+            node: eq[0],
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Compute `self != other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn neq<OutCt: Muxable>(
+        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
+        ctx: &FheCircuitCtx,
+    ) -> BitNode<OutCt> {
+        let m = other.bits.len();
+        let n = self.bits.len();
+
+        let max_len = m.max(n);
+        let mux_circuit = compare_not_equal(max_len);
+
+        let zero = ctx.circuit.borrow_mut().add_node(FheOp::ZeroGgsw1);
+
+        let interleaved = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .flat_map(|(a, b)| [a.node, b.node])
+            .chain(self.bits.iter().skip(m).flat_map(|x| [x.node, zero]))
+            .chain(other.bits.iter().skip(n).flat_map(|x| [zero, x.node]))
+            .collect::<Vec<_>>();
+
+        let eq = ctx.circuit.borrow_mut().insert_mux_circuit(
+            &mux_circuit,
+            &interleaved,
+            OutCt::MUX_MODE,
+        );
+
+        BitNode {
+            node: eq[0],
+            _phantom: PhantomData,
+        }
+    }
+
+    /// Compute `self > other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn gt<OutCt: Muxable>(
+        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
+        ctx: &FheCircuitCtx,
+    ) -> BitNode<OutCt> {
+        self.cmp(other, ctx, true, false)
+    }
+
+    /// Compute `self >= other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn ge<OutCt: Muxable>(
+        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
+        ctx: &FheCircuitCtx,
+    ) -> BitNode<OutCt> {
+        self.cmp(other, ctx, true, true)
+    }
+
+    /// Compute `self < other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn lt<OutCt: Muxable>(
+        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
+        ctx: &FheCircuitCtx,
+    ) -> BitNode<OutCt> {
+        self.cmp(other, ctx, false, false)
+    }
+
+    /// Compute `self <= other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn le<OutCt: Muxable>(
+        &self,
+        other: &DynamicGenericIntGraphNodes<L1GgswCiphertext, V>,
+        ctx: &FheCircuitCtx,
+    ) -> BitNode<OutCt> {
+        self.cmp(other, ctx, false, true)
+    }
+
+    /// Compute `self - other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn sub<OutCt: Muxable>(
+        &self,
+        other: &Self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, OutCt, V> {
+        let n = self.bits.len();
+
+        let mux_circuit = full_subtractor(n, false);
+
+        let interleaved = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .flat_map(|(a, b)| [a.node, b.node])
+            .collect::<Vec<_>>();
+
+        DynamicGenericIntGraphNodes::from_nodes(
+            ctx.circuit
+                .borrow_mut()
+                .insert_mux_circuit(&mux_circuit, &interleaved, OutCt::MUX_MODE)
+                .iter()
+                .copied()
+                .take(n),
+            &ctx.allocator,
+        )
+    }
+
+    /// Compute `self & other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn and<OutCt: Muxable>(
+        &self,
+        other: &Self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, OutCt, V> {
+        let n = self.bits.len();
+
+        let mux_circuit = make_and_circuit(n as u16);
+
+        let interleaved = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .flat_map(|(a, b)| [a.node, b.node])
+            .collect::<Vec<_>>();
+
+        DynamicGenericIntGraphNodes::from_nodes(
+            ctx.circuit
+                .borrow_mut()
+                .insert_mux_circuit(&mux_circuit, &interleaved, OutCt::MUX_MODE)
+                .iter()
+                .copied()
+                .take(n),
+            &ctx.allocator,
+        )
+    }
+
+    /// Compute `self + other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn add<OutCt: Muxable>(
+        &self,
+        other: &Self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, OutCt, V> {
+        let n = self.bits.len();
+
+        let mux_circuit = ripple_carry_adder(n, n, false);
+
+        let interleaved = self
+            .bits
+            .iter()
+            .zip(other.bits.iter())
+            .flat_map(|(a, b)| [a.node, b.node])
+            .collect::<Vec<_>>();
+
+        DynamicGenericIntGraphNodes::from_nodes(
+            ctx.circuit
+                .borrow_mut()
+                .insert_mux_circuit(&mux_circuit, &interleaved, OutCt::MUX_MODE)
+                .iter()
+                .copied()
+                .take(n),
+            &ctx.allocator,
+        )
+    }
+
+    /// Compute `self * other`.
+    ///
+    /// # Remarks
+    /// Requires `self` and `other` to be [`L1GgswCiphertext`]s. Use [`Self::convert`] to
+    /// change to this type.
+    pub fn mul<OutCt: Muxable>(
+        &self,
+        other: &Self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, OutCt, V> {
+        let a = self.bits.iter().map(|x| x.node).collect::<Vec<_>>();
+
+        let b = other.bits.iter().map(|x| x.node).collect::<Vec<_>>();
+
+        let mut circuit_mut = ctx.circuit.borrow_mut();
+
+        // TODO: introduce a mul_lo so we don't have to do this pruning in the first place.
+        let existing_outputs = circuit_mut
+            .node_indices()
+            .filter(|x| {
+                let node_type = matches!(
+                    circuit_mut.node_weight(*x).unwrap(),
+                    FheOp::OutputGgsw1(_)
+                        | FheOp::OutputGlev1(_)
+                        | FheOp::OutputGlwe1(_)
+                        | FheOp::OutputLwe0(_)
+                        | FheOp::OutputLwe1(_)
+                );
+
+                node_type
+                    && circuit_mut
+                        .neighbors_directed(*x, petgraph::Direction::Outgoing)
+                        .count()
+                        == 0
+            })
+            .collect::<Vec<_>>();
+
+        let (lo, _hi) = V::append_multiply::<OutCt>(&mut circuit_mut, &a, &b);
+
+        let to_keep = [lo.clone(), existing_outputs].concat();
+
+        let (pruned, rename) = prune(&circuit_mut, &to_keep);
+        circuit_mut.graph = pruned;
+
+        let lo = lo.into_iter().map(|x| *rename.get(&x).unwrap());
+
+        DynamicGenericIntGraphNodes::from_nodes(lo, &ctx.allocator)
+    }
 }
 
-/// Similar to [`PackedGenericIntGraphNode`] but without the size N generic parameter
+/// A collection of graph nodes with a constant size generic parameter, similar to [`DynamicGenericIntGraphNodes`]
+/// and uses it as the internal representation
+pub struct GenericIntGraphNodes<'a, const N: usize, T: CiphertextOps, U: Sign> {
+    inner: DynamicGenericIntGraphNodes<'a, T, U>,
+}
+
+impl<'a, const N: usize, T: CiphertextOps, U: Sign> Deref for GenericIntGraphNodes<'a, N, T, U> {
+    type Target = DynamicGenericIntGraphNodes<'a, T, U>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<'a, const N: usize, T: CiphertextOps, U: Sign> From<GenericIntGraphNodes<'a, N, T, U>>
+    for DynamicGenericIntGraphNodes<'a, T, U>
+{
+    fn from(value: GenericIntGraphNodes<'a, N, T, U>) -> DynamicGenericIntGraphNodes<'a, T, U> {
+        value.inner
+    }
+}
+
+impl<'a, const N: usize, T: CiphertextOps, U: Sign> From<DynamicGenericIntGraphNodes<'a, T, U>>
+    for GenericIntGraphNodes<'a, N, T, U>
+{
+    fn from(value: DynamicGenericIntGraphNodes<'a, T, U>) -> Self {
+        assert_eq!(value.bits.len(), N);
+
+        Self { inner: value }
+    }
+}
+
+/// A graph node that represents a dynamic generic integer in packed form. See [`PackedDynamicGenericInt`] for a
+/// description of packing.
 pub struct PackedDynamicGenericIntGraphNode<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> {
     bit_len: u32,
     id: NodeIndex,
@@ -725,7 +581,7 @@ pub struct PackedDynamicGenericIntGraphNode<T: CiphertextOps + PolynomialCiphert
 }
 
 impl<V: Sign> PackedDynamicGenericIntGraphNode<L1GlweCiphertext, V> {
-    /// Similar to [`PackedGenericIntGraphNode::unpack`] but works on [`PackedDynamicGenericIntGraphNode`]
+    /// Convert this integer node into unpacked form, where each bit appears in a different ciphertext.
     pub fn unpack<'a>(
         &self,
         ctx: &'a FheCircuitCtx,
@@ -744,7 +600,16 @@ impl<V: Sign> PackedDynamicGenericIntGraphNode<L1GlweCiphertext, V> {
 }
 
 impl<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> PackedDynamicGenericIntGraphNode<T, U> {
-    /// Similar to [`PackedGenericIntGraphNode::collect_output`] but works on [`PackedDynamicGenericIntGraphNode`]
+    /// Create an output node in the graph and return the ciphertext.
+    ///
+    /// # Remarks
+    /// The returned [`PackedDynamicGenericInt`] has not yet been evaluated and will be a trivial zero until the
+    /// computation completes. You should generally submit the computation using
+    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
+    ///
+    /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
+    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
+    /// is running.
     pub fn collect_output(
         &self,
         ctx: &FheCircuitCtx,
@@ -765,46 +630,69 @@ impl<T: CiphertextOps + PolynomialCiphertextOps, U: Sign> PackedDynamicGenericIn
     }
 }
 
+/// FIXME
+pub struct PackedGenericIntGraphNode<
+    const N: usize,
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+> {
+    inner: PackedDynamicGenericIntGraphNode<T, U>,
+}
+
+impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign> Deref
+    for PackedGenericIntGraphNode<N, T, U>
+{
+    type Target = PackedDynamicGenericIntGraphNode<T, U>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign>
+    From<PackedGenericIntGraphNode<N, T, U>> for PackedDynamicGenericIntGraphNode<T, U>
+{
+    fn from(value: PackedGenericIntGraphNode<N, T, U>) -> PackedDynamicGenericIntGraphNode<T, U> {
+        value.inner
+    }
+}
+
+impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign>
+    From<PackedDynamicGenericIntGraphNode<T, U>> for PackedGenericIntGraphNode<N, T, U>
+{
+    fn from(value: PackedDynamicGenericIntGraphNode<T, U>) -> Self {
+        assert_eq!(value.bit_len as usize, N);
+
+        Self { inner: value }
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
-/// A generic integer store in unpacked form. An `N`-bit generic integer encrypts its bits in
-/// `N` different ciphertexts of type `T`.
-pub struct GenericInt<const N: usize, T: CiphertextOps, U: Sign> {
-    /// The ciphertexts encrypting this generic integer's bits in least-to-most significant order.
+/// A dynamic generic integer stored in unpacked form. A dynamic generic integer encrypts its bits in
+/// a few different ciphertexts of type `T` where the number of bits also represent the bit width
+pub struct DynamicGenericInt<T: CiphertextOps, U: Sign> {
+    /// The ciphertexts encrypting this dynamic generic integer's bits in least-to-most significant order.
     pub bits: Vec<Arc<AtomicRefCell<T>>>,
     _phantom: PhantomData<U>,
 }
 
-impl<const N: usize, T: CiphertextOps, U: Sign> GetSize for GenericInt<N, T, U> {
-    fn get_size(params: &crate::Params) -> usize {
-        N * T::get_size(params) + size_of::<u64>()
-    }
-
-    fn check_is_valid(&self, params: &crate::Params) -> crate::Result<()> {
-        for b in &self.bits {
-            b.borrow().check_is_valid(params)?;
-        }
-
-        Ok(())
-    }
-}
-
-impl<const N: usize, T, U> GenericInt<N, T, U>
+impl<T, U> DynamicGenericInt<T, U>
 where
     T: CiphertextOps,
     U: Sign,
 {
-    /// Allocate a new GenericInt using trivial or precomputed (if T is [`L1GgswCiphertext`]) encryptions
+    /// Allocate a new [`DynamicGenericInt`] using trivial or precomputed (if T is [`L1GgswCiphertext`]) encryptions
     /// of zero.
-    pub fn new(enc: &Encryption) -> Self {
+    pub fn new(enc: &Encryption, n: usize) -> Self {
         Self {
-            bits: (0..N)
+            bits: (0..n)
                 .map(|_| Arc::new(AtomicRefCell::new(T::allocate(enc))))
                 .collect(),
             _phantom: PhantomData,
         }
     }
 
-    /// Create a [`GenericInt`] from a previously encrypted set of type `T` ciphertexts.
+    /// Create a [`DynamicGenericInt`] from a previously encrypted set of type `T` ciphertexts.
     ///
     /// # Remarks
     /// `bits` are ordered from least to most significant.
@@ -820,7 +708,7 @@ where
         }
     }
 
-    /// Create a [`GenericInt`] from The inner ref-counted set of `T` ciphertexts.
+    /// Create a [`DynamicGenericInt`] from The inner ref-counted set of `T` ciphertexts.
     ///
     /// # Remarks
     /// `bits` are ordered from least to most significant.
@@ -837,13 +725,13 @@ where
     ///
     /// # Panics
     /// If `val > 2^N`
-    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey) -> Self {
-        if N < 64 && val > 0x1 << N {
+    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
+        if n < 64 && val > 0x1 << n {
             panic!("Out of bounds");
         }
 
         Self {
-            bits: (0..N)
+            bits: (0..n)
                 .map(|i| {
                     let ct = T::encrypt_secret((val >> i) & 0x1 == 0x1, enc, sk);
                     Arc::new(AtomicRefCell::new(ct))
@@ -853,14 +741,17 @@ where
         }
     }
 
-    /// Decrypts this encrypted integer and returns the contained GenericInt message.
+    /// Decrypts this encrypted integer and returns the contained integer message.
     pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
         self.with_decryption_fn(|x| x.decrypt(enc, sk))
     }
 
     /// Add input nodes to the given [`FheCircuitCtx`].
-    pub fn graph_inputs<'a>(&self, ctx: &'a FheCircuitCtx) -> GenericIntGraphNodes<'a, N, T, U> {
-        GenericIntGraphNodes::from_nodes(
+    pub fn graph_inputs<'a>(
+        &self,
+        ctx: &'a FheCircuitCtx,
+    ) -> DynamicGenericIntGraphNodes<'a, T, U> {
+        DynamicGenericIntGraphNodes::from_nodes(
             self.bits
                 .iter()
                 .map(|b| ctx.circuit.borrow_mut().add_node(T::graph_input(b))),
@@ -885,13 +776,13 @@ where
     /// # Remarks
     /// If `T` is [`L1GgswCiphertext`], then the result will contain precomputed
     /// rather than trivial ciphertexts.
-    pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation) -> Self {
-        if val > 0x1 << N {
+    pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation, n: usize) -> Self {
+        if val > 0x1 << n {
             panic!("Out of bounds");
         }
 
         Self {
-            bits: (0..N)
+            bits: (0..n)
                 .map(|i| {
                     let ct = T::trivial_encryption((val >> i) & 0x1 == 0x1, enc, eval);
                     Arc::new(AtomicRefCell::new(ct))
@@ -903,81 +794,81 @@ where
 }
 
 #[derive(Clone, Serialize, Deserialize)]
-/// Similar to [`GenericInt`] but without the size N generic parameter
-pub struct DynamicGenericInt<T: CiphertextOps, U: Sign> {
-    /// The ciphertexts encrypting this generic integer's bits in least-to-most significant order.
-    pub bits: Vec<Arc<AtomicRefCell<T>>>,
-    _phantom: PhantomData<U>,
+/// A generic integer with a constant size generic parameter, similar to [`DynamicGenericInt`]
+/// and uses it as the internal representation
+pub struct GenericInt<const N: usize, T: CiphertextOps, U: Sign> {
+    inner: DynamicGenericInt<T, U>,
 }
 
-impl<T, U> DynamicGenericInt<T, U>
+impl<const N: usize, T: CiphertextOps, U: Sign> Deref for GenericInt<N, T, U> {
+    type Target = DynamicGenericInt<T, U>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<const N: usize, T: CiphertextOps, U: Sign> From<GenericInt<N, T, U>>
+    for DynamicGenericInt<T, U>
+{
+    fn from(value: GenericInt<N, T, U>) -> DynamicGenericInt<T, U> {
+        value.inner
+    }
+}
+
+impl<const N: usize, T: CiphertextOps, U: Sign> From<DynamicGenericInt<T, U>>
+    for GenericInt<N, T, U>
+{
+    fn from(value: DynamicGenericInt<T, U>) -> Self {
+        assert_eq!(value.bits.len(), N);
+
+        Self { inner: value }
+    }
+}
+
+impl<const N: usize, T: CiphertextOps, U: Sign> GetSize for GenericInt<N, T, U> {
+    fn get_size(params: &crate::Params) -> usize {
+        N * T::get_size(params) + size_of::<u64>()
+    }
+
+    fn check_is_valid(&self, params: &crate::Params) -> crate::Result<()> {
+        for b in &self.inner.bits {
+            b.borrow().check_is_valid(params)?;
+        }
+
+        Ok(())
+    }
+}
+
+impl<const N: usize, T, U> GenericInt<N, T, U>
 where
     T: CiphertextOps,
     U: Sign,
 {
-    /// Similar to [`GenericInt::new`] but generates [`DynamicGenericInt`]
-    pub fn new(enc: &Encryption, n: usize) -> Self {
-        Self {
-            bits: (0..n)
-                .map(|_| Arc::new(AtomicRefCell::new(T::allocate(enc))))
-                .collect(),
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Similar to [`GenericInt::from_bits_shallow`] but generates [`DynamicGenericInt`]
+    /// Create a [`GenericInt`] from the underlying bits
     pub fn from_bits_shallow(bits: Vec<Arc<AtomicRefCell<T>>>) -> Self {
         Self {
-            bits,
-            _phantom: PhantomData,
+            inner: DynamicGenericInt::from_bits_shallow(bits),
         }
     }
 
-    /// Similar to [`GenericInt::encrypt_secret`] but generates [`DynamicGenericInt`]
-    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
-        if n < 64 && val > 0x1 << n {
-            panic!("Out of bounds");
-        }
-
+    /// Encrypt the given integer
+    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey) -> Self {
         Self {
-            bits: (0..n)
-                .map(|i| {
-                    let ct = T::encrypt_secret((val >> i) & 0x1 == 0x1, enc, sk);
-                    Arc::new(AtomicRefCell::new(ct))
-                })
-                .collect(),
-            _phantom: PhantomData,
+            inner: DynamicGenericInt::encrypt_secret(val, enc, sk, N),
         }
     }
 
-    /// Similar to [`GenericInt::decrypt`] but works on [`DynamicGenericInt`]
+    /// Decrypts the encrypted integer
     pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
-        self.with_decryption_fn(|x| x.decrypt(enc, sk))
+        self.inner.decrypt(enc, sk)
     }
 
-    /// Similar to [`GenericInt::graph_inputs`] but generates [`DynamicGenericIntGraphNodes`]
-    pub fn graph_inputs<'a>(
-        &self,
-        ctx: &'a FheCircuitCtx,
-    ) -> DynamicGenericIntGraphNodes<'a, T, U> {
-        DynamicGenericIntGraphNodes::from_nodes(
-            self.bits
-                .iter()
-                .map(|b| ctx.circuit.borrow_mut().add_node(T::graph_input(b))),
-            &ctx.allocator,
-        )
-    }
-
-    /// Similar to [`GenericInt::with_decryption_fn`] but works on [`DynamicGenericInt`]
-    pub fn with_decryption_fn<F>(&self, f: F) -> u64
-    where
-        F: Fn(&T) -> bool,
-    {
-        self.bits.iter().enumerate().fold(0u64, |s, (i, x)| {
-            let x = AtomicRefCell::borrow(x);
-
-            s + ((f(&x) as u64) << i)
-        })
+    /// Trivially encrypt the given integer
+    pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation) -> Self {
+        Self {
+            inner: DynamicGenericInt::trivial(val, enc, eval, N),
+        }
     }
 }
 
@@ -993,7 +884,7 @@ where
 /// For integers greater than a few (e.g. 6) bits, packing integers reduces their size for
 /// transmission over the wire.
 ///
-/// Packed integers must be unpacked (with [`PackedGenericIntGraphNode::unpack`]) before you can perform
+/// Packed integers must be unpacked (with [`PackedDynamicGenericIntGraphNode::unpack`]) before you can perform
 /// computation.
 ///
 /// # Example
@@ -1024,111 +915,6 @@ where
 ///
 /// assert_eq!(as_unpacked.decrypt(&enc, &sk), 42);
 /// ```
-pub struct PackedGenericInt<const N: usize, T, U>
-where
-    T: CiphertextOps + PolynomialCiphertextOps,
-    U: Sign,
-{
-    ct: Arc<AtomicRefCell<T>>,
-    _phantom: PhantomData<U>,
-}
-
-impl<const N: usize, T, U> From<T> for PackedGenericInt<N, T, U>
-where
-    T: CiphertextOps + PolynomialCiphertextOps,
-    U: Sign,
-{
-    fn from(value: T) -> Self {
-        Self {
-            ct: Arc::new(AtomicRefCell::new(value)),
-            _phantom: PhantomData,
-        }
-    }
-}
-
-impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign> GetSize
-    for PackedGenericInt<N, T, U>
-{
-    fn get_size(params: &crate::Params) -> usize {
-        T::get_size(params)
-    }
-
-    fn check_is_valid(&self, params: &crate::Params) -> crate::Result<()> {
-        self.ct.borrow().check_is_valid(params)
-    }
-}
-
-impl<const N: usize, T, U> PackedGenericInt<N, T, U>
-where
-    T: CiphertextOps + PolynomialCiphertextOps,
-    U: Sign,
-{
-    /// Encrypt and pack the given `val` into a single `T` ciphertext.
-    /// See [`PackedGenericInt`] for more details on packing.
-    pub fn encrypt(val: u64, enc: &Encryption, pk: &PublicKey) -> Self {
-        let msg = Self::encode(val, enc);
-
-        Self {
-            ct: Arc::new(AtomicRefCell::new(T::encrypt(&msg, enc, pk))),
-            _phantom: PhantomData,
-        }
-    }
-
-    fn encode(val: u64, enc: &Encryption) -> Polynomial<u64> {
-        assert!(val < 0x1 << N);
-        assert!(N < T::poly_degree(&enc.params).0);
-
-        let mut msg = Polynomial::<u64>::zero(T::poly_degree(&enc.params).0);
-
-        for i in 0..N {
-            msg.coeffs_mut()[i] = (val >> i) & 0x1;
-        }
-
-        msg
-    }
-
-    /// Decrypt this packed encrypted generic integer.
-    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
-        assert!(N < T::poly_degree(&enc.params).0);
-        let mut val = 0;
-
-        let poly = <T as PolynomialCiphertextOps>::decrypt(&self.ct.borrow(), enc, sk);
-
-        for i in 0..N {
-            val += poly.coeffs()[i] << i;
-        }
-
-        val
-    }
-
-    /// Create input nodes in the [`FheCircuitCtx`] graph.
-    pub fn graph_input(&self, ctx: &FheCircuitCtx) -> PackedGenericIntGraphNode<N, T, U> {
-        PackedGenericIntGraphNode {
-            id: ctx.circuit.borrow_mut().add_node(T::graph_input(&self.ct)),
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Trivially encrypt the given value as a [`PackedGenericInt`].
-    pub fn trivial_encrypt(val: u64, enc: &Encryption) -> Self {
-        let msg = Self::encode(val, enc);
-
-        Self {
-            ct: Arc::new(AtomicRefCell::new(
-                <T as PolynomialCiphertextOps>::trivial_encryption(&msg, enc),
-            )),
-            _phantom: PhantomData,
-        }
-    }
-
-    /// Returns the inner ciphertext.
-    pub fn inner(&self) -> T {
-        self.ct.borrow().clone()
-    }
-}
-
-#[derive(Clone, Serialize, Deserialize)]
-/// Similar to [`PackedGenericInt`] but without the size N generic parameter
 pub struct PackedDynamicGenericInt<T, U>
 where
     T: CiphertextOps + PolynomialCiphertextOps,
@@ -1170,7 +956,8 @@ where
     T: CiphertextOps + PolynomialCiphertextOps,
     U: Sign,
 {
-    /// Similar to [`PackedGenericInt::encrypt`] but generates [`PackedDynamicGenericInt`]
+    /// Encrypt and pack the given `val` into a single `T` ciphertext.
+    /// See [`PackedDynamicGenericInt`] for more details on packing.
     pub fn encrypt(val: u64, enc: &Encryption, pk: &PublicKey, n: usize) -> Self {
         let msg = Self::encode(val, enc, n);
 
@@ -1193,16 +980,11 @@ where
 
         msg
     }
-}
 
-impl<T, U> PackedDynamicGenericInt<T, U>
-where
-    T: CiphertextOps + PolynomialCiphertextOps,
-    U: Sign,
-{
-    /// Similar to [`PackedGenericInt::graph_input`] but works on [`PackedDynamicGenericInt`]
+    /// Decrypt this packed encrypted dynamic generic integer.
     pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
         let n = self.bit_len as usize;
+
         assert!(n < T::poly_degree(&enc.params).0);
         let mut val = 0;
 
@@ -1215,7 +997,7 @@ where
         val
     }
 
-    /// Similar to [`PackedGenericInt::graph_input`] but works on [`PackedDynamicGenericInt`]
+    /// Create an input node in the [`FheCircuitCtx`] graph.
     pub fn graph_input(&self, ctx: &FheCircuitCtx) -> PackedDynamicGenericIntGraphNode<T, U> {
         PackedDynamicGenericIntGraphNode {
             bit_len: self.bit_len,
@@ -1224,7 +1006,7 @@ where
         }
     }
 
-    /// Similar to [`PackedGenericInt::trivial_encrypt`] but generates [`PackedDynamicGenericInt`]
+    /// Trivially encrypt the given value as a [`PackedDynamicGenericInt`].
     pub fn trivial_encrypt(val: u64, enc: &Encryption, n: usize) -> Self {
         let msg = Self::encode(val, enc, n);
 
@@ -1240,5 +1022,87 @@ where
     /// Returns the inner ciphertext.
     pub fn inner(&self) -> T {
         self.ct.borrow().clone()
+    }
+}
+
+#[derive(Clone, Serialize, Deserialize)]
+/// A generic integer in the packed form with a constant size generic parameter, similar to [`PackedDynamicGenericInt`]
+/// and uses it as the internal representation
+pub struct PackedGenericInt<const N: usize, T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    inner: PackedDynamicGenericInt<T, U>,
+}
+
+impl<const N: usize, T, U> Deref for PackedGenericInt<N, T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    type Target = PackedDynamicGenericInt<T, U>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.inner
+    }
+}
+
+impl<const N: usize, T, U> From<PackedGenericInt<N, T, U>> for PackedDynamicGenericInt<T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    fn from(value: PackedGenericInt<N, T, U>) -> PackedDynamicGenericInt<T, U> {
+        value.inner
+    }
+}
+
+impl<const N: usize, T, U> From<PackedDynamicGenericInt<T, U>> for PackedGenericInt<N, T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    fn from(value: PackedDynamicGenericInt<T, U>) -> Self {
+        assert_eq!(value.bit_len as usize, N);
+
+        Self { inner: value }
+    }
+}
+
+impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign> GetSize
+    for PackedGenericInt<N, T, U>
+{
+    fn get_size(params: &crate::Params) -> usize {
+        size_of::<u32>() + T::get_size(params)
+    }
+
+    fn check_is_valid(&self, params: &crate::Params) -> crate::Result<()> {
+        self.inner.ct.borrow().check_is_valid(params)
+    }
+}
+
+impl<const N: usize, T, U> PackedGenericInt<N, T, U>
+where
+    T: CiphertextOps + PolynomialCiphertextOps,
+    U: Sign,
+{
+    /// Encrypt the given integer
+    pub fn encrypt(val: u64, enc: &Encryption, pk: &PublicKey) -> Self {
+        Self {
+            inner: PackedDynamicGenericInt::encrypt(val, enc, pk, N),
+        }
+    }
+
+    /// Decrypts the encrypted integer
+    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
+        self.inner.decrypt(enc, sk)
+    }
+
+    /// Trivially encrypt the given integer
+    pub fn trivial_encrypt(val: u64, enc: &Encryption) -> Self {
+        Self {
+            inner: PackedDynamicGenericInt::trivial_encrypt(val, enc, N),
+        }
     }
 }
