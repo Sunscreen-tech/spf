@@ -5,7 +5,8 @@ use parasol_cpu::{
     Args, ArgsBuilder, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
 };
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey,
+    fluent::{DynamicUInt, UInt},
     metadata::print_system_info,
 };
 
@@ -40,7 +41,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
 fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Ptr32, Args<()>) {
     let data = std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(enc));
+    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::from(DynamicUInt::new(enc, 16)));
 
     let winner = memory.try_allocate_type(&winner).unwrap();
 
