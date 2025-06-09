@@ -61,8 +61,8 @@ fn bench_binary_function<const N: usize, F1, F2>(
     let a = UInt::<N, L1GlevCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
     let b = UInt::<N, L1GlevCiphertext>::encrypt_secret(35, &enc, &sk).graph_inputs(&ctx);
 
-    let a = a.convert::<L1GgswCiphertext>(&ctx);
-    let b = b.convert::<L1GgswCiphertext>(&ctx);
+    let a = a.convert::<L1GgswCiphertext>(&ctx).into();
+    let b = b.convert::<L1GgswCiphertext>(&ctx).into();
 
     op_glev(&ctx, &a, &b);
 
@@ -77,8 +77,8 @@ fn bench_binary_function<const N: usize, F1, F2>(
     let a = UInt::<N, L0LweCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
     let b = UInt::<N, L0LweCiphertext>::encrypt_secret(35, &enc, &sk).graph_inputs(&ctx);
 
-    let a = a.convert::<L1GgswCiphertext>(&ctx);
-    let b = b.convert::<L1GgswCiphertext>(&ctx);
+    let a = a.convert::<L1GgswCiphertext>(&ctx).into();
+    let b = b.convert::<L1GgswCiphertext>(&ctx).into();
 
     op_glwe(&ctx, &a, &b);
 
@@ -106,10 +106,10 @@ fn ops(c: &mut Criterion) {
             c,
             &format!("gt-{N}"),
             |ctx, x, y| {
-                x.gt::<N, L1GlevCiphertext>(y, ctx);
+                x.gt::<L1GlevCiphertext>(y, ctx);
             },
             |ctx, x, y| {
-                x.gt::<N, L1GlweCiphertext>(y, ctx);
+                x.gt::<L1GlweCiphertext>(y, ctx);
             },
         );
 

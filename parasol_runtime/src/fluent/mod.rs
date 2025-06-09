@@ -518,13 +518,13 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let expect_gt = a_input
-                .cmp::<16, OutCt>(&b_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&b_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
             let expect_lt = b_input
-                .cmp::<16, OutCt>(&a_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&a_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
             let expect_eq = b_input
-                .cmp::<16, OutCt>(&b_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&b_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -572,7 +572,7 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let calculated_eq = a_input
-                .eq::<16, OutCt>(&b_input, &ctx)
+                .eq::<OutCt>(&b_input, &ctx)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -612,7 +612,7 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let calculated_eq = a_input
-                .eq::<M, OutCt>(&b_input, &ctx)
+                .eq::<OutCt>(&b_input, &ctx)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -650,7 +650,7 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let calculated_neq = a_input
-                .neq::<16, OutCt>(&b_input, &ctx)
+                .neq::<OutCt>(&b_input, &ctx)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -689,7 +689,7 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let calculated_neq = a_input
-                .neq::<M, OutCt>(&b_input, &ctx)
+                .neq::<OutCt>(&b_input, &ctx)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -729,13 +729,13 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let expect_gt = a_input
-                .cmp::<M, OutCt>(&b_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&b_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
             let expect_lt = b_input
-                .cmp::<N, OutCt>(&a_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&a_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
             let expect_eq = b_input
-                .cmp::<M, OutCt>(&b_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&b_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -780,13 +780,13 @@ mod tests {
             let b_input = b.graph_inputs(&ctx);
 
             let expect_gt = a_input
-                .cmp::<16, OutCt>(&b_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&b_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
             let expect_lt = b_input
-                .cmp::<16, OutCt>(&a_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&a_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
             let expect_eq = b_input
-                .cmp::<16, OutCt>(&b_input, &ctx, gt, eq)
+                .cmp::<OutCt>(&b_input, &ctx, gt, eq)
                 .collect_output(&ctx, enc);
 
             uproc
@@ -840,10 +840,14 @@ mod tests {
             let sel_true =
                 Bit::<L1GgswCiphertext>::encrypt_secret(true, enc, &sk).graph_input(&ctx);
 
-            let a = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
-                .graph_inputs(&ctx);
-            let b = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
-                .graph_inputs(&ctx);
+            let a: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
+            let b: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
 
             let sel_false = sel_false.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
             let sel_true = sel_true.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
@@ -875,10 +879,14 @@ mod tests {
             let sel_true =
                 Bit::<L1GgswCiphertext>::trivial_encryption(true, enc, eval).graph_input(&ctx);
 
-            let a = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
-                .graph_inputs(&ctx);
-            let b = GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
-                .graph_inputs(&ctx);
+            let a: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
+            let b: GenericIntGraphNodes<'_, 16, L1GlweCiphertext, U> =
+                GenericInt::<16, L1GlweCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk)
+                    .graph_inputs(&ctx)
+                    .into();
 
             let sel_false = sel_false.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
             let sel_true = sel_true.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
@@ -963,7 +971,7 @@ mod tests {
             let val = GenericInt::<16, T, U>::encrypt_secret(test_vals.0, &enc, &sk);
             let res = val
                 .graph_inputs(&ctx)
-                .resize::<24>(&ctx)
+                .resize(&ctx, 24)
                 .collect_outputs(&ctx, &enc);
 
             proc.lock()
@@ -974,7 +982,7 @@ mod tests {
 
             let res = val
                 .graph_inputs(&ctx)
-                .resize::<8>(&ctx)
+                .resize(&ctx, 8)
                 .collect_outputs(&ctx, &enc);
 
             proc.lock()

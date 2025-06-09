@@ -312,7 +312,8 @@ impl FheComputer {
             .collect_output(&ctx, &self.processor.aux_data.enc);
 
         self.run_graph_blocking(&ctx.circuit.borrow());
-        packed_ct
+
+        PackedGenericInt::from(packed_ct)
     }
 
     /// Similar to [`FheComputer::pack_int`] but works on [`DynamicGenericInt`]
@@ -345,7 +346,8 @@ impl FheComputer {
             .collect_outputs(&ctx, &self.processor.aux_data.enc);
 
         self.run_graph_blocking(&ctx.circuit.borrow());
-        unpacked_ct
+
+        GenericInt::from(unpacked_ct)
     }
 
     /// Similar to [`FheComputer::unpack_int`] but works on [`PackedDynamicGenericInt`]

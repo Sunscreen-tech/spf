@@ -10,9 +10,10 @@ use super::{
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
 use petgraph::stable_graph::NodeIndex;
+use serde::{Deserialize, Serialize};
 
 /// Marker struct
-#[derive(Clone)]
+#[derive(Clone, Serialize, Deserialize)]
 pub struct Unsigned;
 
 impl Sign for Unsigned {

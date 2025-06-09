@@ -820,7 +820,7 @@ impl Page {
 mod tests {
     use parasol_runtime::{
         DEFAULT_128, Encryption, Evaluation,
-        fluent::UInt,
+        fluent::{DynamicUInt, UInt},
         test_utils::{get_encryption_128, get_evaluation_128, get_secret_keys_128},
     };
 
@@ -884,8 +884,10 @@ mod tests {
                 .try_store(ptr_plain.try_offset(b).unwrap(), Byte::Plaintext(b as u8))
                 .unwrap();
 
-            let byte_ct =
-                Byte::Ciphertext(UInt::<8, L1GlweCiphertext>::trivial(b as u64, &enc, &eval).bits);
+            let ct: DynamicUInt<L1GlweCiphertext> =
+                UInt::<8, L1GlweCiphertext>::trivial(b as u64, &enc, &eval).into();
+
+            let byte_ct = Byte::Ciphertext(ct.bits);
 
             memory.try_store(ptr_ct.try_offset(b).unwrap(), byte_ct);
         }
@@ -1015,10 +1017,9 @@ mod tests {
             let bytes_enc = bytes
                 .iter()
                 .map(|x| {
-                    Byte::try_from(
-                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).bits,
-                    )
-                    .unwrap()
+                    let ct: DynamicUInt<L1GlweCiphertext> =
+                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).into();
+                    Byte::try_from(ct.bits).unwrap()
                 })
                 .collect::<Vec<_>>();
 
@@ -1052,10 +1053,9 @@ mod tests {
             let bytes_enc = bytes
                 .iter()
                 .map(|x| {
-                    Byte::try_from(
-                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).bits,
-                    )
-                    .unwrap()
+                    let ct: DynamicUInt<L1GlweCiphertext> =
+                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).into();
+                    Byte::try_from(ct.bits).unwrap()
                 })
                 .collect::<Vec<_>>();
 
