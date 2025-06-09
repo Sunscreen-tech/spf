@@ -8,8 +8,6 @@ use sunscreen_tfhe::entities::{
     LweKeyswitchKeyRef, LweSecretKey, LweSecretKeyRef, RlwePublicKey, RlwePublicKeyRef,
     SchemeSwitchKey, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
 };
-#[cfg(feature = "fast_cbs")]
-use sunscreen_tfhe::entities::{AutmorphismKeyRef, AutomorphismKey};
 use sunscreen_tfhe::high_level::{fft, keygen};
 use sunscreen_tfhe::ops::automorphisms::generate_automorphism_key;
 use sunscreen_tfhe::ops::bootstrapping::generate_scheme_switch_key;
@@ -157,7 +155,6 @@ impl GetSize for ComputeKeyNonFft {
             size + AutmorphismKeyRef::<u64>::size((params.l1_params.dim, params.tr_radix.count));
 
         let size = size + 4;
-        
 
         size * size_of::<u64>()
     }

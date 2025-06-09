@@ -179,8 +179,6 @@ fn ggsw_fft_encryption(
         .encrypt(val, &params.l0_params, PlaintextBits(1))
         .0;
 
-    
-
     high_level::evaluation::circuit_bootstrap(
         &lwe0,
         &compute_key.cbs_key,

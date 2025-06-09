@@ -2,8 +2,7 @@ use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
-    dst::OverlaySize,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
     entities::GlweKeyswitchKeyFftRef,
 };
 

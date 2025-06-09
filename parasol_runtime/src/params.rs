@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
-    GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LWE_637_128, LweDef,
-    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
+    GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LWE_637_128, LweDef, PolynomialDegree,
+    RadixCount, RadixDecomposition, RadixLog,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]

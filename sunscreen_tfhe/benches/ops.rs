@@ -4,6 +4,7 @@ use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
 
+#[allow(deprecated)]
 use sunscreen_tfhe::{
     GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80,
     LWE_637_128, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
@@ -216,6 +217,7 @@ fn circuit_bootstrapping_via_pfks(c: &mut Criterion) {
 
     c.bench_function("Circuit bootstrap via PFKS", |b| {
         b.iter(|| {
+            #[allow(deprecated)]
             circuit_bootstrap_via_pfks(
                 &mut actual,
                 &ct,

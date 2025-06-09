@@ -6,10 +6,9 @@ use crate::{
     RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
-        AutmorphismKeyFftRef, BootstrapKeyFftRef,
-        CircuitBootstrappingKeyswitchKeysRef, GgswCiphertextFftRef, GgswCiphertextRef,
-        GlevCiphertextRef, GlweCiphertextRef, LweCiphertextListRef, LweCiphertextRef,
-        SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
+        AutmorphismKeyFftRef, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
+        GgswCiphertextFftRef, GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef,
+        LweCiphertextListRef, LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
     ops::{
         automorphisms::trace,
@@ -299,6 +298,7 @@ fn mod_switch_trace_and_rotate<S>(
     }
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Bootstraps an LWE ciphertext to a GGSW ciphertext. This allows homomorphic computation
 /// using CMux trees.
 ///

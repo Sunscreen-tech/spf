@@ -4,8 +4,7 @@ use sunscreen_tfhe::{
     entities::GlweCiphertextFft,
     ops::{
         bootstrapping::{
-            circuit_bootstrap_via_trace_and_scheme_switch,
-            rotate_glwe_positive_monomial_negacyclic,
+            circuit_bootstrap_via_trace_and_scheme_switch, rotate_glwe_positive_monomial_negacyclic,
         },
         ciphertext::sample_extract,
         fft_ops::{cmux, glev_cmux, glwe_ggsw_mad, scheme_switch_fft},
