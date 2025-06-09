@@ -66,7 +66,7 @@ pub struct Params {
     /// The low noise l2 GLWE parameters.
     pub l2_params: GlweDef,
 
-    /// The radix decompositon defining the shape of l1 GGSW ciphertexts (the result of circuit
+    /// The radix decomposition defining the shape of l1 GGSW ciphertexts (the result of circuit
     /// bootstrapping).
     pub cbs_radix: RadixDecomposition,
 

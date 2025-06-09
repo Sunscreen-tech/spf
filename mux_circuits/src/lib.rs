@@ -378,7 +378,7 @@ impl From<&[Bdd]> for MuxCircuit {
             let mut added_nodes = vec![];
 
             for node in ser.chunks(size_of::<u16>() + 2 * size_of::<u32>()) {
-                // Infallable since len = 3 * sizeof(u32)
+                // Infallible since len = 3 * sizeof(u32)
                 let var_id = u16::from_le_bytes(node[0..2].try_into().unwrap()) as u32;
                 let low_edge = u32::from_le_bytes(node[2..6].try_into().unwrap());
                 let high_edge = u32::from_le_bytes(node[6..10].try_into().unwrap());
@@ -444,7 +444,7 @@ impl From<&[Bdd]> for MuxCircuit {
     }
 }
 
-/// Run the given inputs through [`MuxCircuit`] and return the resuling output [`Bit`]s
+/// Run the given inputs through [`MuxCircuit`] and return the resulting output [`Bit`]s
 pub fn test_mux_circuit(circuit: &MuxCircuit, inputs: &[Bit]) -> Vec<Bit> {
     assert_eq!(
         inputs.len(),
