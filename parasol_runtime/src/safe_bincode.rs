@@ -29,9 +29,7 @@ pub fn deserialize<'a, T: GetSize + Deserialize<'a>>(data: &'a [u8], params: &Pa
 #[cfg(test)]
 mod tests {
     use crate::{
-        ComputeKey, ComputeKeyNonFft, DEFAULT_80, DEFAULT_128, Encryption, L0LweCiphertext,
-        L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey,
-        test_utils::{get_compute_key_80, get_secret_keys_80},
+        test_utils::{get_compute_key_128, get_compute_key_80, get_secret_keys_128, get_secret_keys_80}, ComputeKey, ComputeKeyNonFft, Encryption, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, DEFAULT_128, DEFAULT_80
     };
 
     use super::*;
@@ -83,21 +81,21 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_safe_deserialize_keys() {
-        let sk = get_secret_keys_80();
+        let sk = get_secret_keys_128();
         let ser = bincode::serialize(&sk).unwrap();
-        deserialize::<SecretKey>(&ser, &DEFAULT_80).unwrap();
+        deserialize::<SecretKey>(&ser, &DEFAULT_128).unwrap();
 
-        let compute = ComputeKeyNonFft::generate(&sk, &DEFAULT_80);
+        let compute = ComputeKeyNonFft::generate(&sk, &DEFAULT_128);
         let ser = bincode::serialize(&compute).unwrap();
-        deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_80).unwrap();
+        deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_128).unwrap();
 
-        let pk = PublicKey::generate(&DEFAULT_80, &sk);
+        let pk = PublicKey::generate(&DEFAULT_128, &sk);
         let ser = bincode::serialize(&pk).unwrap();
-        deserialize::<PublicKey>(&ser, &DEFAULT_80).unwrap();
+        deserialize::<PublicKey>(&ser, &DEFAULT_128).unwrap();
 
-        let compute = get_compute_key_80();
+        let compute = get_compute_key_128();
         let ser = bincode::serialize(&compute).unwrap();
-        deserialize::<ComputeKey>(&ser, &DEFAULT_80).unwrap();
+        deserialize::<ComputeKey>(&ser, &DEFAULT_128).unwrap();
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
@@ -120,21 +118,21 @@ mod tests {
         case!(SecretKey);
         case!(ComputeKeyNonFft);
 
-        let sk = get_secret_keys_80();
+        let sk = get_secret_keys_128();
 
         let ser = bincode::serialize(&sk).unwrap();
-        let result = deserialize::<SecretKey>(&ser, &DEFAULT_128);
+        let result = deserialize::<SecretKey>(&ser, &DEFAULT_80);
 
         assert!(result.is_err());
 
-        let ser = bincode::serialize(&ComputeKeyNonFft::generate(&sk, &DEFAULT_80)).unwrap();
-        let result = deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_128);
+        let ser = bincode::serialize(&ComputeKeyNonFft::generate(&sk, &DEFAULT_128)).unwrap();
+        let result = deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_80);
 
         assert!(result.is_err());
 
-        let pk = PublicKey::generate(&DEFAULT_80, &sk);
+        let pk = PublicKey::generate(&DEFAULT_128, &sk);
         let ser = bincode::serialize(&pk).unwrap();
-        let result = deserialize::<PublicKey>(&ser, &DEFAULT_128);
+        let result = deserialize::<PublicKey>(&ser, &DEFAULT_80);
 
         assert!(result.is_err());
     }
