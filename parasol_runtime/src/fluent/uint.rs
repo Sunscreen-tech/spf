@@ -1,4 +1,4 @@
-use crate::circuits::mul::append_uint_multiply;
+use crate::{L1GlweCiphertext, circuits::mul::append_uint_multiply};
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
@@ -57,6 +57,42 @@ pub type DynamicUInt<T> = DynamicGenericInt<T, Unsigned>;
 
 /// Unsigned variant for [`PackedDynamicGenericInt`]
 pub type PackedDynamicUInt<T> = PackedDynamicGenericInt<T, Unsigned>;
+
+/// Encrypted unsigned 8 bit integer. This is a specialization of [`UInt`] for 8 bits and [`L1GlweCiphertext`].
+pub type UInt8 = UInt<8, L1GlweCiphertext>;
+
+/// Encrypted unsigned 16 bit integer. This is a specialization of [`UInt`] for 16 bits and [`L1GlweCiphertext`].
+pub type UInt16 = UInt<16, L1GlweCiphertext>;
+
+/// Encrypted unsigned 32 bit integer. This is a specialization of [`UInt`] for 32 bits and [`L1GlweCiphertext`].
+pub type UInt32 = UInt<32, L1GlweCiphertext>;
+
+/// Encrypted unsigned 64 bit integer. This is a specialization of [`UInt`] for 64 bits and [`L1GlweCiphertext`].
+pub type UInt64 = UInt<64, L1GlweCiphertext>;
+
+/// Encrypted unsigned 128 bit integer. This is a specialization of [`UInt`] for 128 bits and [`L1GlweCiphertext`].
+pub type UInt128 = UInt<128, L1GlweCiphertext>;
+
+/// Encrypted unsigned 256 bit integer. This is a specialization of [`UInt`] for 256 bits and [`L1GlweCiphertext`].
+pub type UInt256 = UInt<256, L1GlweCiphertext>;
+
+/// Encrypted packed unsigned 8 bit integer. This is a specialization of [`PackedUInt`] for 8 bits and [`L1GlweCiphertext`].
+pub type PackedUInt8 = PackedUInt<8, L1GlweCiphertext>;
+
+/// Encrypted packed unsigned 16 bit integer. This is a specialization of [`PackedUInt`] for 16 bits and [`L1GlweCiphertext`].
+pub type PackedUInt16 = PackedUInt<16, L1GlweCiphertext>;
+
+/// Encrypted packed unsigned 32 bit integer. This is a specialization of [`PackedUInt`] for 32 bits and [`L1GlweCiphertext`].
+pub type PackedUInt32 = PackedUInt<32, L1GlweCiphertext>;
+
+/// Encrypted packed unsigned 64 bit integer. This is a specialization of [`PackedUInt`] for 64 bits and [`L1GlweCiphertext`].
+pub type PackedUInt64 = PackedUInt<64, L1GlweCiphertext>;
+
+/// Encrypted packed unsigned 128 bit integer. This is a specialization of [`PackedUInt`] for 128 bits and [`L1GlweCiphertext`].
+pub type PackedUInt128 = PackedUInt<128, L1GlweCiphertext>;
+
+/// Encrypted packed unsigned 256 bit integer. This is a specialization of [`PackedUInt`] for 256 bits and [`L1GlweCiphertext`].
+pub type PackedUInt256 = PackedUInt<256, L1GlweCiphertext>;
 
 #[cfg(test)]
 mod tests {

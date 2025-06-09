@@ -1,4 +1,4 @@
-use crate::circuits::mul::append_int_multiply;
+use crate::{L1GlweCiphertext, circuits::mul::append_int_multiply};
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
@@ -57,6 +57,42 @@ pub type DynamicInt<T> = DynamicGenericInt<T, Signed>;
 
 /// Signed variant for [`PackedDynamicGenericInt`]
 pub type PackedDynamicInt<T> = PackedDynamicGenericInt<T, Signed>;
+
+/// Encrypted signed 8 bit integer. This is a specialization of [`Int`] for 8 bits and [`L1GlweCiphertext`].
+pub type Int8 = Int<8, L1GlweCiphertext>;
+
+/// Encrypted signed 16 bit integer. This is a specialization of [`Int`] for 16 bits and [`L1GlweCiphertext`].
+pub type Int16 = Int<16, L1GlweCiphertext>;
+
+/// Encrypted signed 32 bit integer. This is a specialization of [`Int`] for 32 bits and [`L1GlweCiphertext`].
+pub type Int32 = Int<32, L1GlweCiphertext>;
+
+/// Encrypted signed 64 bit integer. This is a specialization of [`Int`] for 64 bits and [`L1GlweCiphertext`].
+pub type Int64 = Int<64, L1GlweCiphertext>;
+
+/// Encrypted signed 128 bit integer. This is a specialization of [`Int`] for 128 bits and [`L1GlweCiphertext`].
+pub type Int128 = Int<128, L1GlweCiphertext>;
+
+/// Encrypted signed 256 bit integer. This is a specialization of [`Int`] for 256 bits and [`L1GlweCiphertext`].
+pub type Int256 = Int<256, L1GlweCiphertext>;
+
+/// Encrypted packed signed 8 bit integer. This is a specialization of [`PackedInt`] for 8 bits and [`L1GlweCiphertext`].
+pub type PackedInt8 = PackedInt<8, L1GlweCiphertext>;
+
+/// Encrypted packed signed 16 bit integer. This is a specialization of [`PackedInt`] for 16 bits and [`L1GlweCiphertext`].
+pub type PackedInt16 = PackedInt<16, L1GlweCiphertext>;
+
+/// Encrypted packed signed 32 bit integer. This is a specialization of [`PackedInt`] for 32 bits and [`L1GlweCiphertext`].
+pub type PackedInt32 = PackedInt<32, L1GlweCiphertext>;
+
+/// Encrypted packed signed 64 bit integer. This is a specialization of [`PackedInt`] for 64 bits and [`L1GlweCiphertext`].
+pub type PackedInt64 = PackedInt<64, L1GlweCiphertext>;
+
+/// Encrypted packed signed 128 bit integer. This is a specialization of [`PackedInt`] for 128 bits and [`L1GlweCiphertext`].
+pub type PackedInt128 = PackedInt<128, L1GlweCiphertext>;
+
+/// Encrypted packed 256 bit integer. This is a specialization of [`PackedInt`] for 256 bits and [`L1GlweCiphertext`].
+pub type PackedInt256 = PackedInt<256, L1GlweCiphertext>;
 
 #[cfg(test)]
 mod tests {
