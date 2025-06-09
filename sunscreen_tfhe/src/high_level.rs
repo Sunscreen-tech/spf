@@ -950,7 +950,8 @@ pub mod evaluation {
     /// Additionally, `radix` must correspond to `b_fft`.
     ///
     /// For
-    /// [`GgswCiphertext`] resulting from [`circuit_bootstrap`] operations,
+    /// [`GgswCiphertext`](`crate::entities::GgswCiphertext`)s resulting from
+    /// [`circuit_bootstrap`] operations,
     /// `radix` must be the same as `cbs_radix` and `params` must be the same as
     /// `glwe_1`.
     ///
@@ -985,7 +986,8 @@ pub mod evaluation {
     /// Additionally, `radix` must correspond to `b_fft`.
     ///
     /// For
-    /// [`GgswCiphertext`] resulting from [`circuit_bootstrap`] operations,
+    /// [`GgswCiphertext`](crate::entities::GgswCiphertext)s resulting from
+    /// [`circuit_bootstrap`] operations,
     /// `radix` must be the same as `cbs_radix` and `params` must be the same as
     /// `glwe_1`.
     ///
@@ -1052,9 +1054,9 @@ pub mod evaluation {
     #[allow(clippy::too_many_arguments)]
     /// Perform a circuit bootstrapping operation. Circuit bootstrapping takes
     /// `input` [LweCiphertext] encrypted under a [LweSecretKey](crate::entities::LweSecretKey)
-    /// constructed with `lwe_0` parameters and produces a [GgswCiphertext] encrypted
-    /// under a [GlweSecretKey](crate::entities::GlweSecretKey) constructed with `glwe_1`
-    /// parameters.
+    /// constructed with `lwe_0` parameters and produces a [GgswCiphertext](crate::entities::GgswCiphertext)
+    /// encrypted under a [GlweSecretKey](crate::entities::GlweSecretKey) constructed
+    /// with `glwe_1` parameters.
     ///
     /// See also [generate_bootstrapping_key](super::keygen::generate_bootstrapping_key) and
     /// [generate_cbs_pfks](super::keygen::generate_cbs_ksk) for how to generate the required
@@ -1071,20 +1073,22 @@ pub mod evaluation {
     /// `cbs_radix.count * glwe_2.size + 1` [GlweCiphertext]s. The PFKS operations multiply each
     /// [GlevCiphertext] by the corresponding polynomial in
     /// the `glwe_1` [GlweSecretKey](crate::entities::GlweSecretKey) to create a valid
-    /// [GgswCiphertext].
+    /// [GgswCiphertext](crate::entities::GgswCiphertext).
     ///
     /// To summarize, we use PBS to turn an `lwe_0` LWE ciphertext into `glwe_2` LWE ciphertexts.
     /// We then use PFKS to turn the `glwe_2` LWE ciphertexts into `glwe_1` GLWE ciphertexts
-    /// arranged as a valid [GgswCiphertext] encrypting the same value as `input` as a constant
-    /// coefficient polynomial.
+    /// arranged as a valid [GgswCiphertext](crate::entities::GgswCiphertext)
+    /// encrypting the same value as `input` as a constant coefficient polynomial.
     ///
-    /// See [crate::ops::bootstrapping::circuit_bootstrap] for more details.
+    /// See [crate::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch]
+    /// for more details.
     ///
     /// `pbs_radix` parameterizes the bootstrapping operation (step 1).
     ///
     /// `pfks_radix` parameterizes the PFKS operation (step 2). These should
     ///
-    /// `cbs_radix` parameterizes the final decomposition of the resulting [`GgswCiphertext`]. This
+    /// `cbs_radix` parameterizes the final decomposition of the resulting
+    /// [`GgswCiphertext`](crate::entities::GgswCiphertext). This
     /// should match the radix used when creating the
     /// [CircuitBootstrappingKeyswitchKeys](crate::entities::CircuitBootstrappingKeyswitchKeys)
     ///

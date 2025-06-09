@@ -12,7 +12,7 @@ use crate::{
 
 dst! {
     /// Keys used for evaluating automorphisms on [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Typically used
-    /// to compute [`homomorphic_trace`]
+    /// to compute [`trace`](crate::ops::automorphisms::trace)
     AutomorphismKey,
     AutmorphismKeyRef,
     Torus,

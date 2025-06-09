@@ -14,7 +14,7 @@ use super::GlweCiphertextRef;
 dst! {
     /// Lookup table for a univariate function used during
     /// [`programmable_bootstrap_univariate`](crate::ops::bootstrapping::programmable_bootstrap_univariate)
-    /// and [`circuit_bootstrap`](crate::ops::bootstrapping::circuit_bootstrap).
+    /// and [`circuit_bootstrap_via_trace_and_scheme_switch`](crate::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch).
     UnivariateLookupTable,
     UnivariateLookupTableRef,
     Torus,

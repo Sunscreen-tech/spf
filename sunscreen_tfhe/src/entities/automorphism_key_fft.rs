@@ -10,8 +10,8 @@ use crate::{
 };
 
 dst! {
-    /// Keys used for evaluating automorphisms on [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Typically used
-    /// to compute [`homomorphic_trace`]
+    /// FFT versions of keys used for evaluating automorphisms on [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Typically used
+    /// to compute [`trace`](crate::ops::automorphisms::trace)
     AutomorphismKeyFft,
     AutmorphismKeyFftRef,
     NoWrapper,
@@ -39,7 +39,8 @@ impl AutomorphismKeyFft<Complex<f64>> {
 }
 
 impl AutmorphismKeyFftRef<Complex<f64>> {
-    /// Create an iterator over the contained [`GlweKeyswitchKeyRef`]s.
+    /// Create an iterator over the contained
+    /// [`GlweKeyswitchKey`](crate::entities::GlweKeyswitchKey)s.
     pub fn keyswitch_keys(
         &self,
         glwe: &GlweDef,
@@ -51,7 +52,8 @@ impl AutmorphismKeyFftRef<Complex<f64>> {
         )
     }
 
-    /// Create a mutable iterator over the contained [`GlweKeyswitchKeyRef`]s.
+    /// Create a mutable iterator over the contained
+    /// [`GlweKeyswitchKey`](crate::entities::GlweKeyswitchKey)s.
     pub fn keyswitch_keys_mut(
         &mut self,
         glwe: &GlweDef,

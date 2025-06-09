@@ -76,7 +76,7 @@ where
     }
 
     /// Takes the FFT of these keyswitch keys and write the result into the given
-    /// [`GlweKeyswitchKeyFft`].
+    /// [`GlweKeyswitchKeyFft`](crate::entities::GlweKeyswitchKeyFft).
     pub fn fft(
         &self,
         output: &mut GlweKeyswitchKeyFftRef<Complex<f64>>,

@@ -11,7 +11,7 @@ use crate::{
     scratch::allocate_scratch_ref,
 };
 
-/// Generate a new [`AutomorphismKey`](crate::entities::automorphism_key::AutomorphismKey) set for the given `glwe_sk`.
+/// Generate a new [`AutomorphismKey`](crate::entities::AutomorphismKey) set for the given `glwe_sk`.
 ///
 /// # Panics
 /// If the given entities are invalid for the given parameters.
@@ -43,7 +43,7 @@ pub fn generate_automorphism_key<S: TorusOps>(
     }
 }
 
-/// Compute the homomorphic trace on a given [`GlweCiphertext`]. This zeros all
+/// Compute the homomorphic trace on a given [`GlweCiphertext`](crate::entities::GlweCiphertext). This zeros all
 /// coefficients except the constant term, which is multiplied by N.
 ///
 /// # Panics

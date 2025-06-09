@@ -43,9 +43,9 @@ use crate::{
 /// As such, we mark this function as deprecated, but will likely never remove it.
 ///
 /// # Remarks
-/// The following diagram illustrates how circuit bootstrapping works
-///
-/// ![Circuit Bootstrapping](LINK TO GITHUB)
+/// This implements the revised circuit bootstrapping algorithm that bootstraps the
+/// radix decomposition with a single MultiPBS operation found in
+/// [CLO+21](https://eprint.iacr.org/2021/729).
 ///
 /// We perform `cbs_radix.count` programmable bootstrapping (PBS) operations to
 /// decompose the original message m under radix `2^cbs_radix.radix_log`. These PBS
@@ -302,10 +302,43 @@ fn mod_switch_trace_and_rotate<S>(
 /// Bootstraps an LWE ciphertext to a GGSW ciphertext. This allows homomorphic computation
 /// using CMux trees.
 ///
+/// This is the recommended provided circuit bootstrapping method.
+///
 /// # Remarks
-/// This technique comes from WHS+ (https://eprint.iacr.org/2024/1318.pdf) and is
+/// This technique comes from [WHS+24](https://eprint.iacr.org/2024/1318.pdf) and is
 /// significantly faster than [`circuit_bootstrap_via_pfks`] and has significantly
 /// smaller keys.
+///
+/// At a high level, we first use [`generalized_programmable_bootstrap`] with a LUT that
+/// simultaneously computes all `ℓ` decompositions of the binary message
+/// contained in `input` into the first `ℓ`coefficients of a
+/// [`GlweCiphertext`](crate::entities::GlweCiphertext).
+///
+/// Next, we [`glwe_mod_switch_and_expand_pow_2`] the first `ℓ` coefficients. This
+/// first mod switches from `q` down to `q / N`, where `N` is the GLWE polynomial degree
+/// before mod switching back to `q`. This has the practical effect of multiplying
+/// the message by `N^-1` in preparation for applying the homomorphic trace. When
+/// `q` is a power of two, both of these operations collectively amount to right
+/// shifting the coefficient by `log2(N)` places.
+///
+/// We then perform `ℓ` [`trace`] operations to extract these coefficients into their
+/// own [`GlweCiphertext`](crate::entities::GlweCiphertext) ciphertexts. Collectively,
+/// their base decomposed messages form a
+/// [`GlevCiphertext`](crate::entities::GlevCiphertext).
+///
+/// Finally, we apply a [`scheme_switch_fft`] operation to convert the GLEV ciphertext
+/// into a [`GgswCiphertextFft`](crate::entities::GgswCiphertextFft). Conveniently, this
+/// method naturally emits the GGSW result in FFT form, which is readily compatible with
+/// CMUX operations.
+///
+/// # versus [`circuit_bootstrap_via_pfks`]
+/// This algorithm features significantly smaller key sizes and is 2x faster than
+/// [`circuit_bootstrap_via_pfks`] in single-core benchmark. However, when incorporated
+/// into multi-threaded applications, this algorithm generally results in even higher
+/// performance and better thread scalability.
+///
+/// In fact, this algorithm's runtime is over 90% dominated by the programmable
+/// bootstrap operation even under agressive radix decompositions.
 pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
     output: &mut GgswCiphertextFftRef<Complex<f64>>,
     input: &LweCiphertextRef<S>,

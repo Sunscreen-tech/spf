@@ -263,8 +263,8 @@ where
 ///
 /// # Remarks
 /// This introduces noise in the most significant bits of the ciphertext, but shifts the message down
-/// by `log2(q) - log2(q')` places. This is the "preprocessing" step in WHS+2024 for fast
-/// circuit bootstrapping. See https://eprint.iacr.org/2024/1318.pdf.
+/// by `log2(q) - log2(q')` places. This is the "preprocessing" step in
+/// [WHS+24](https://eprint.iacr.org/2024/1318.pdf) for fast circuit bootstrapping.
 pub fn glwe_mod_switch_and_expand_pow_2<S>(
     y: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
@@ -281,7 +281,7 @@ pub fn glwe_mod_switch_and_expand_pow_2<S>(
 }
 
 /// Rotate all message coeficients by `rotation` amount. GLWE analoge of
-/// [crate::ops::homomorphisms::rotate].
+/// [crate::ops::homomorphisms::lwe_rotate].
 pub fn glwe_rotate<S>(
     y: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,

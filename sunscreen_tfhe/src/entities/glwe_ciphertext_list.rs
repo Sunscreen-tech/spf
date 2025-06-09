@@ -8,8 +8,8 @@ use crate::{
 };
 
 dst! {
-    /// A list of LWE ciphertexts. Used during
-    /// [`circuit_bootstrap`](crate::ops::bootstrapping::circuit_bootstrap).
+    /// A list of LWE ciphertexts. Used internally during
+    /// [`circuit_bootstrap_via_trace_and_scheme_switch`](crate::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch).
     GlweCiphertextList,
     GlweCiphertextListRef,
     Torus,
@@ -28,9 +28,6 @@ impl<S: TorusOps> OverlaySize for GlweCiphertextListRef<S> {
 
 impl<S: TorusOps> GlweCiphertextList<S> {
     /// Create a new zero [GlweCiphertextList] with the given parameters.
-    ///
-    /// This data structure represents is a list of LWE ciphertexts, used for
-    /// [`circuit_bootstrap`](crate::ops::bootstrapping::circuit_bootstrap).
     pub fn new(lwe: &GlweDef, count: usize) -> Self {
         Self {
             data: avec![Torus::zero(); GlweCiphertextListRef::<S>::size((lwe.dim, count))],

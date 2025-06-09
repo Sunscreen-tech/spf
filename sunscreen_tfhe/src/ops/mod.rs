@@ -1,4 +1,4 @@
-/// Apply automorphisms to [`GlweCiphertext`](crate::entities::glwe_ciphertext::GlweCiphertext)s.
+/// Apply automorphisms to [`GlweCiphertext`](crate::entities::GlweCiphertext)s.
 pub mod automorphisms;
 
 /// Ciphertext operations where one of the operands is in FFT form.

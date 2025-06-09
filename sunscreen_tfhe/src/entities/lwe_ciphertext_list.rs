@@ -9,8 +9,7 @@ use crate::{
 use super::{LweCiphertextIterator, LweCiphertextIteratorMut, LweCiphertextRef};
 
 dst! {
-    /// A list of LWE ciphertexts. Used during
-    /// [`circuit_bootstrap`](crate::ops::bootstrapping::circuit_bootstrap).
+    /// A list of [`LweCiphertext`](crate::entities::LweCiphertext)s stored contiguously in memory.
     LweCiphertextList,
     LweCiphertextListRef,
     Torus,
@@ -30,8 +29,9 @@ impl<S: TorusOps> OverlaySize for LweCiphertextListRef<S> {
 impl<S: TorusOps> LweCiphertextList<S> {
     /// Create a new zero [LweCiphertextList] with the given parameters.
     ///
-    /// This data structure represents is a list of LWE ciphertexts, used for
-    /// [`circuit_bootstrap`](crate::ops::bootstrapping::circuit_bootstrap).
+    /// # Remarks
+    /// This data structure represents is a list of LWE ciphertexts, used internally
+    /// during classic (and now deprecated) [`circuit_bootstrap_via_pfks`(crate::ops::bootstrapping::circuit_bootstrap_via_pfks).
     pub fn new(lwe: &LweDef, count: usize) -> Self {
         Self {
             data: avec![Torus::zero(); LweCiphertextListRef::<S>::size((lwe.dim, count))],

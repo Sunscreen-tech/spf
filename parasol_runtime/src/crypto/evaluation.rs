@@ -201,7 +201,7 @@ impl Evaluation {
     /// [`L1GgswCiphertext`].
     ///
     /// # See also
-    /// [`sunscreen_tfhe::ops::bootstrapping::circuit_bootstrap`]
+    /// [`sunscreen_tfhe::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch`]
     pub fn circuit_bootstrap(&self, output: &mut L1GgswCiphertext, input: &L0LweCiphertext) {
         circuit_bootstrap_via_trace_and_scheme_switch(
             &mut output.0,
