@@ -6,7 +6,7 @@ use crate::{
     RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
-        AutmorphismKeyFftRef, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
+        AutomorphismKeyFftRef, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
         GgswCiphertextFftRef, GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef,
         LweCiphertextListRef, LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
@@ -184,7 +184,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
     input.assert_is_valid(lwe_0.dim);
 
     // Step 1: use multi-functional PBS to emit the radix-decomposed message into the
-    // first \ell coefficients of `lo_noise_glwe`.
+    // first ℓ coefficients of `lo_noise_glwe`.
     allocate_scratch_ref!(lo_noise_glwe, GlweCiphertextRef<S>, (glwe_2.dim));
 
     hi_noise_lwe_to_lo_noise_glwe(
@@ -197,7 +197,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
         cbs_radix,
     );
 
-    // Step 2: Sample extract the first \ell coefficients to lo noise LWE ciphertexts
+    // Step 2: Sample extract the first ℓ coefficients to lo noise LWE ciphertexts
     // and undo our rotation.
     allocate_scratch_ref!(
         lo_noise_lwe_decomps,
@@ -220,7 +220,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
 }
 
 #[inline]
-/// Sample extract the first \ell coefficients out of the input GLWE and undo the rotation
+/// Sample extract the first ℓ coefficients out of the input GLWE and undo the rotation
 /// we applied when applying our functional bootstrap.
 fn extract_and_rotate_lo_noise_glwe<S>(
     lo_noise_lwe_decomps: &mut LweCiphertextListRef<S>,
@@ -253,15 +253,15 @@ fn extract_and_rotate_lo_noise_glwe<S>(
 }
 
 #[inline]
-/// Given a GLWE ciphertext with a radix decomposed message in the first \ell
+/// Given a GLWE ciphertext with a radix decomposed message in the first ℓ
 /// coefficients, mod switch the ciphertext to add an N^-1 term, then use
-/// homomorphic trace to extract the first \ell coefficients into their own
-/// GLWE ciphertext, then rotate each of their coefficients to undo the inital
-/// rotatiion added for the functional bootstrap.
+/// homomorphic trace to extract the first ℓ coefficients into their own
+/// GLWE ciphertexts, then rotate each of their coefficients to undo the initial
+/// rotation added for the functional bootstrap.
 fn mod_switch_trace_and_rotate<S>(
     lo_noise_glev: &mut GlevCiphertextRef<S>,
     lo_noise_glwe: &GlweCiphertextRef<S>,
-    ak: &AutmorphismKeyFftRef<Complex<f64>>,
+    ak: &AutomorphismKeyFftRef<Complex<f64>>,
     glwe: &GlweDef,
     trace_radix: &RadixDecomposition,
     cbs_radix: &RadixDecomposition,
@@ -291,9 +291,9 @@ fn mod_switch_trace_and_rotate<S>(
         // Mod shift to implicitly multiply by N^-1
         glwe_mod_switch_and_expand_pow_2(glwe_shifted, glwe_permuted, glwe, shift_amount);
 
-        // Compute a trace to 0 all but the constant term. A by-product of this multiplies
-        // the constant coefficient by N, but this cancels our N^-1 in the previous step,
-        // leaving us with the our message's i'th decomposition term.
+        // Compute a trace to zero all but the constant term. A by-product of this
+        // multiplies the constant coefficient by N, but this cancels our N^-1 in the
+        // previous step, leaving us with the our message's i'th decomposition term.
         trace(glev_i, glwe_shifted, ak, glwe, trace_radix);
     }
 }
@@ -311,7 +311,7 @@ fn mod_switch_trace_and_rotate<S>(
 ///
 /// At a high level, we first use [`generalized_programmable_bootstrap`] with a LUT that
 /// simultaneously computes all `ℓ` decompositions of the binary message
-/// contained in `input` into the first `ℓ`coefficients of a
+/// contained in `input` into the first `ℓ` coefficients of a
 /// [`GlweCiphertext`](crate::entities::GlweCiphertext).
 ///
 /// Next, we [`glwe_mod_switch_and_expand_pow_2`] the first `ℓ` coefficients. This
@@ -322,7 +322,7 @@ fn mod_switch_trace_and_rotate<S>(
 /// shifting the coefficient by `log2(N)` places.
 ///
 /// We then perform `ℓ` [`trace`] operations to extract these coefficients into their
-/// own [`GlweCiphertext`](crate::entities::GlweCiphertext) ciphertexts. Collectively,
+/// own [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Collectively,
 /// their base decomposed messages form a
 /// [`GlevCiphertext`](crate::entities::GlevCiphertext).
 ///
@@ -333,9 +333,10 @@ fn mod_switch_trace_and_rotate<S>(
 ///
 /// # versus [`circuit_bootstrap_via_pfks`]
 /// This algorithm features significantly smaller key sizes and is 2x faster than
-/// [`circuit_bootstrap_via_pfks`] in single-core benchmark. However, when incorporated
-/// into multi-threaded applications, this algorithm generally results in even higher
-/// performance and better thread scalability.
+/// [`circuit_bootstrap_via_pfks`] in single-core benchmark. Furthermore, when
+/// incorporate into multi-threaded applications, this algorithm generally results in
+/// even higher performance and better thread scalability due to reduced memory
+/// bandwidth bottlenecking.
 ///
 /// In fact, this algorithm's runtime is over 90% dominated by the programmable
 /// bootstrap operation even under agressive radix decompositions.
@@ -343,7 +344,7 @@ pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
     output: &mut GgswCiphertextFftRef<Complex<f64>>,
     input: &LweCiphertextRef<S>,
     bsk: &BootstrapKeyFftRef<Complex<f64>>,
-    ak: &AutmorphismKeyFftRef<Complex<f64>>,
+    ak: &AutomorphismKeyFftRef<Complex<f64>>,
     ssk: &SchemeSwitchKeyFftRef<Complex<f64>>,
     lwe_0: &LweDef,
     glwe_1: &GlweDef,

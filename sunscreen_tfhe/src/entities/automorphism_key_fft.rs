@@ -13,13 +13,13 @@ dst! {
     /// FFT versions of keys used for evaluating automorphisms on [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Typically used
     /// to compute [`trace`](crate::ops::automorphisms::trace)
     AutomorphismKeyFft,
-    AutmorphismKeyFftRef,
+    AutomorphismKeyFftRef,
     NoWrapper,
     (Clone, Debug, Serialize, Deserialize),
     ()
 }
 
-impl OverlaySize for AutmorphismKeyFftRef<Complex<f64>> {
+impl OverlaySize for AutomorphismKeyFftRef<Complex<f64>> {
     type Inputs = (GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
@@ -30,7 +30,7 @@ impl OverlaySize for AutmorphismKeyFftRef<Complex<f64>> {
 impl AutomorphismKeyFft<Complex<f64>> {
     /// Allocate a new [`AutomorphismKeyFft`] for the given parameters.
     pub fn new(glwe: &GlweDef, radix: &RadixDecomposition) -> Self {
-        let len = AutmorphismKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count));
+        let len = AutomorphismKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count));
 
         Self {
             data: avec![Complex::zero(); len],
@@ -38,7 +38,7 @@ impl AutomorphismKeyFft<Complex<f64>> {
     }
 }
 
-impl AutmorphismKeyFftRef<Complex<f64>> {
+impl AutomorphismKeyFftRef<Complex<f64>> {
     /// Create an iterator over the contained
     /// [`GlweKeyswitchKey`](crate::entities::GlweKeyswitchKey)s.
     pub fn keyswitch_keys(

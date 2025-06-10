@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use std::mem::size_of;
 use sunscreen_tfhe::OverlaySize;
 use sunscreen_tfhe::entities::{
-    AutmorphismKeyFftRef, AutmorphismKeyRef, AutomorphismKey, AutomorphismKeyFft, BootstrapKey,
+    AutomorphismKey, AutomorphismKeyFft, AutomorphismKeyFftRef, AutomorphismKeyRef, BootstrapKey,
     BootstrapKeyFft, BootstrapKeyRef, GlweSecretKey, GlweSecretKeyRef, LweKeyswitchKey,
     LweKeyswitchKeyRef, LweSecretKey, LweSecretKeyRef, RlwePublicKey, RlwePublicKeyRef,
     SchemeSwitchKey, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
@@ -134,7 +134,6 @@ pub struct ComputeKeyNonFft {
 
 impl GetSize for ComputeKeyNonFft {
     fn get_size(params: &Params) -> usize {
-        // The magic 4 is the lengths of the 4 serialized sequences.
         let size = BootstrapKeyRef::<u64>::size((
             params.l0_params.dim,
             params.l1_params.dim,
@@ -152,8 +151,10 @@ impl GetSize for ComputeKeyNonFft {
             size + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count));
 
         let size =
-            size + AutmorphismKeyRef::<u64>::size((params.l1_params.dim, params.tr_radix.count));
+            size + AutomorphismKeyRef::<u64>::size((params.l1_params.dim, params.tr_radix.count));
 
+        // The magic 4 accounts for the fact that we have 4 8-byte lengths, 1 for each
+        // key.
         let size = size + 4;
 
         size * size_of::<u64>()
@@ -292,22 +293,36 @@ pub struct ComputeKey {
 
 impl GetSize for ComputeKey {
     fn get_size(params: &Params) -> usize {
-        // The magic 4 is the lengths of the 4 serialized sequences.
-        (BootstrapKeyRef::<u64>::size((
+        let size = BootstrapKeyRef::<u64>::size((
             params.l0_params.dim,
             params.l1_params.dim,
             params.pbs_radix.count,
-        )) + LweKeyswitchKeyRef::<u64>::size((
-            params.l1_params.as_lwe_def().dim,
-            params.l0_params.dim,
-            params.ks_radix.count,
-        )) + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count))
-            + AutmorphismKeyFftRef::<Complex<f64>>::size((
+        ));
+
+        let size = size
+            + LweKeyswitchKeyRef::<u64>::size((
+                params.l1_params.as_lwe_def().dim,
+                params.l0_params.dim,
+                params.ks_radix.count,
+            ));
+
+        let size =
+            size + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count));
+
+        let size = size
+            + AutomorphismKeyFftRef::<Complex<f64>>::size((
                 params.l1_params.dim,
                 params.tr_radix.count,
-            )))
-            * size_of::<Complex<f64>>()
-            + 4 * size_of::<u64>()
+            ));
+
+        // All the keys are FFT'd, so scale the number of elements by the size
+        // of each element (a Complex<f64>).
+        let size = size * size_of::<Complex<f64>>();
+
+        // The magic 4 accounts for the 4 8-byte length fields, one for each key.
+        let size = size + 4 * size_of::<u64>();
+
+        size
     }
 
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {

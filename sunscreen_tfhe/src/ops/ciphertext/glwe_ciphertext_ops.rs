@@ -280,7 +280,7 @@ pub fn glwe_mod_switch_and_expand_pow_2<S>(
     polynomial_shr(y.b_mut(glwe), x.b(glwe), log_q_prime);
 }
 
-/// Rotate all message coeficients by `rotation` amount. GLWE analoge of
+/// Rotate all message coefficients by `rotation` amount. GLWE analoge of
 /// [crate::ops::homomorphisms::lwe_rotate].
 pub fn glwe_rotate<S>(
     y: &mut GlweCiphertextRef<S>,

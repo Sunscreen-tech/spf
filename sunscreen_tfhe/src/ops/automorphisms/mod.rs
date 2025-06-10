@@ -3,7 +3,7 @@ use num::Complex;
 use crate::{
     GlweDef, OverlaySize, RadixDecomposition, TorusOps,
     dst::FromMutSlice,
-    entities::{AutmorphismKeyFftRef, AutmorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef},
+    entities::{AutomorphismKeyFftRef, AutomorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef},
     ops::{
         ciphertext::glwe_add_assign, fft_ops::keyswitch_glwe_to_glwe,
         keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe, polynomial::polynomial_pow_k,
@@ -16,7 +16,7 @@ use crate::{
 /// # Panics
 /// If the given entities are invalid for the given parameters.
 pub fn generate_automorphism_key<S: TorusOps>(
-    ak: &mut AutmorphismKeyRef<S>,
+    ak: &mut AutomorphismKeyRef<S>,
     glwe_sk: &GlweSecretKeyRef<S>,
     glwe: &GlweDef,
     radix: &RadixDecomposition,
@@ -44,7 +44,8 @@ pub fn generate_automorphism_key<S: TorusOps>(
 }
 
 /// Compute the homomorphic trace on a given [`GlweCiphertext`](crate::entities::GlweCiphertext). This zeros all
-/// coefficients except the constant term, which is multiplied by N.
+/// coefficients except the constant term, which is multiplied by N
+/// (i.e. the GLWE polynomial degree).
 ///
 /// # Panics
 /// If the given parameters are invalid.
@@ -52,7 +53,7 @@ pub fn generate_automorphism_key<S: TorusOps>(
 pub fn trace<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
-    ak: &AutmorphismKeyFftRef<Complex<f64>>,
+    ak: &AutomorphismKeyFftRef<Complex<f64>>,
     glwe: &GlweDef,
     radix: &RadixDecomposition,
 ) {

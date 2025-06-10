@@ -3,7 +3,7 @@ use std::ops::Mul;
 use crate::{PlaintextBits, Torus, TorusOps, entities::PolynomialRef, simd::VectorOps};
 
 use num::traits::WrappingSub;
-use sunscreen_math::Zero;
+use sunscreen_math::{One, Zero};
 
 /// Encode a polynomial for encryption.
 ///
@@ -53,7 +53,7 @@ pub fn decode_polynomial<S>(
         .for_each(|(e, m)| *e = Torus::decode(m, plain_bits));
 }
 
-/// Transform a input polynomial `P[X]` into `P[X^k]`. This accounts for the negacyclic property
+/// Transform an input polynomial `P[X]` into `P[X^k]`. This accounts for the negacyclic property
 /// of `Z_q[X]/(X^N + 1)`.
 ///
 /// # Panics
@@ -62,14 +62,14 @@ pub fn decode_polynomial<S>(
 pub fn polynomial_pow_k<S, T>(p_k: &mut PolynomialRef<S>, p: &PolynomialRef<S>, k: usize)
 where
     S: Clone + Copy + Mul<T, Output = S>,
-    T: Clone + Copy + sunscreen_math::One + Zero + WrappingSub<Output = T>,
+    T: Clone + Copy + One + Zero + WrappingSub<Output = T>,
 {
     assert_eq!(p.len(), p_k.len());
     assert!(p.len().is_power_of_two());
 
     let degree = p.len();
     let one = T::one();
-    let minus_one = <T as sunscreen_math::Zero>::zero().wrapping_sub(&one);
+    let minus_one = T::zero().wrapping_sub(&one);
 
     for i in 0..degree {
         let i_k = i * k % degree;

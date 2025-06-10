@@ -328,10 +328,10 @@ pub mod keygen {
     }
 
     /// Generate a scheme switch key. This is used to turn a GLWE cipertext into a GLEV
-    /// cipehrtext.
+    /// ciphertext.
     ///
     /// # Panics
-    /// If `glwe` doesn't correspond with `sk`.
+    /// If `glwe` doesn't correspond to `sk`.
     pub fn generate_scheme_switch_key(
         sk: &GlweSecretKeyRef<u64>,
         glwe: &GlweDef,
@@ -817,7 +817,7 @@ pub mod fft {
     use crate::{
         GlweDef, LweDef, RadixDecomposition,
         entities::{
-            AutmorphismKeyRef, AutomorphismKeyFft, BootstrapKeyFft, BootstrapKeyRef,
+            AutomorphismKeyFft, AutomorphismKeyRef, BootstrapKeyFft, BootstrapKeyRef,
             GgswCiphertextFft, GgswCiphertextRef, GlweCiphertextFft, GlweCiphertextRef,
             SchemeSwitchKeyFft, SchemeSwitchKeyRef,
         },
@@ -907,12 +907,12 @@ pub mod fft {
         ssk_fft
     }
 
-    /// Take the Fourier transform of a [`SchemeSwitchKey`](crate::entities::SchemeSwitchKey).
+    /// Take the Fourier transform of a [`AutomorphismKey`](crate::entities::AutomorphismKey).
     ///
     /// # Panics
     /// If `glwe` or `radix` parameters don't correspond to `ssk`.
     pub fn fft_automorphism_key(
-        auto_key: &AutmorphismKeyRef<u64>,
+        auto_key: &AutomorphismKeyRef<u64>,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
     ) -> AutomorphismKeyFft<Complex<f64>> {
@@ -931,7 +931,7 @@ pub mod evaluation {
     use crate::{
         GlweDef, LweDef, RadixDecomposition,
         entities::{
-            AutmorphismKeyFftRef, BootstrapKeyFft, BootstrapKeyFftRef, GgswCiphertextFft,
+            AutomorphismKeyFftRef, BootstrapKeyFft, BootstrapKeyFftRef, GgswCiphertextFft,
             GgswCiphertextFftRef, GlevCiphertext, GlevCiphertextRef, GlweCiphertext,
             GlweCiphertextRef, LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef,
             SchemeSwitchKeyFft, UnivariateLookupTableRef,
@@ -1101,7 +1101,7 @@ pub mod evaluation {
     pub fn circuit_bootstrap(
         input: &LweCiphertextRef<u64>,
         bsk: &BootstrapKeyFftRef<Complex<f64>>,
-        ak: &AutmorphismKeyFftRef<Complex<f64>>,
+        ak: &AutomorphismKeyFftRef<Complex<f64>>,
         ss_key: &SchemeSwitchKeyFft<Complex<f64>>,
         lwe_0: &LweDef,
         glwe_1: &GlweDef,

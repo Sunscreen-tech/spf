@@ -14,13 +14,13 @@ dst! {
     /// Keys used for evaluating automorphisms on [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Typically used
     /// to compute [`trace`](crate::ops::automorphisms::trace)
     AutomorphismKey,
-    AutmorphismKeyRef,
+    AutomorphismKeyRef,
     Torus,
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps)
 }
 
-impl<S: TorusOps> OverlaySize for AutmorphismKeyRef<S> {
+impl<S: TorusOps> OverlaySize for AutomorphismKeyRef<S> {
     type Inputs = (GlweDimension, RadixCount);
 
     fn size(t: Self::Inputs) -> usize {
@@ -31,7 +31,7 @@ impl<S: TorusOps> OverlaySize for AutmorphismKeyRef<S> {
 impl<S: TorusOps> AutomorphismKey<S> {
     /// Allocate a new [`AutomorphismKey`] for the given parameters.
     pub fn new(glwe: &GlweDef, radix: &RadixDecomposition) -> Self {
-        let len = AutmorphismKeyRef::<S>::size((glwe.dim, radix.count));
+        let len = AutomorphismKeyRef::<S>::size((glwe.dim, radix.count));
 
         Self {
             data: avec![Torus::zero(); len],
@@ -39,7 +39,7 @@ impl<S: TorusOps> AutomorphismKey<S> {
     }
 }
 
-impl<S: TorusOps> AutmorphismKeyRef<S> {
+impl<S: TorusOps> AutomorphismKeyRef<S> {
     /// Create an iterator over the contained [`GlweKeyswitchKeyRef`]s.
     pub fn keyswitch_keys(
         &self,
