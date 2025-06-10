@@ -67,4 +67,8 @@ name = "hamming"
 
 [[bench]]
 harness = false
+name = "prng"
+
+[[bench]]
+harness = false
 name = "transfer"

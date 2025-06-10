@@ -18,7 +18,7 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let rng = memory
-        .try_allocate_type(&UInt::<16, _>::encrypt_secret(1234, &enc, &sk))
+        .try_allocate_type(&UInt::<16, _>::encrypt_secret(1234, &enc, sk))
         .unwrap();
 
     let args = ArgsBuilder::new().arg(rng).no_return_value();
