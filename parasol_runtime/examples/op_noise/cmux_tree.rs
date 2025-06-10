@@ -181,7 +181,7 @@ fn ggsw_fft_encryption(
 
     high_level::evaluation::circuit_bootstrap(
         &lwe0,
-        &compute_key.cbs_key,
+        &compute_key.bs_key,
         &compute_key.auto_key,
         &compute_key.ss_key,
         &params.l0_params,

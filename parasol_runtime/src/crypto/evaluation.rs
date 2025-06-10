@@ -165,7 +165,7 @@ impl Evaluation {
             circuit_bootstrap_via_trace_and_scheme_switch(
                 &mut output.0,
                 &lwe.0,
-                &compute_key.cbs_key,
+                &compute_key.bs_key,
                 &compute_key.auto_key,
                 &compute_key.ss_key,
                 &params.l0_params,
@@ -206,7 +206,7 @@ impl Evaluation {
         circuit_bootstrap_via_trace_and_scheme_switch(
             &mut output.0,
             &input.0,
-            &self.compute_key.cbs_key,
+            &self.compute_key.bs_key,
             &self.compute_key.auto_key,
             &self.compute_key.ss_key,
             &self.params.l0_params,

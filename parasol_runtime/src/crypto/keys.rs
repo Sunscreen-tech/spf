@@ -241,7 +241,7 @@ impl ComputeKeyNonFft {
             .fft(&mut auto_key_fft, &params.l1_params, &params.tr_radix);
 
         ComputeKey {
-            cbs_key: fft::fft_bootstrap_key(
+            bs_key: fft::fft_bootstrap_key(
                 &self.bs_key,
                 &params.l0_params,
                 &params.l1_params,
@@ -279,7 +279,7 @@ impl ComputeKeyNonFft {
 ///   to the same object.
 pub struct ComputeKey {
     /// The FFT'd circuit bootstrap key.
-    pub cbs_key: BootstrapKeyFft<Complex<f64>>,
+    pub bs_key: BootstrapKeyFft<Complex<f64>>,
 
     /// The keyswitch keys (not FFT'd).
     pub ks_key: LweKeyswitchKey<u64>,
@@ -326,7 +326,7 @@ impl GetSize for ComputeKey {
     }
 
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
-        self.cbs_key.check_is_valid((
+        self.bs_key.check_is_valid((
             params.l0_params.dim,
             params.l1_params.dim,
             params.pbs_radix.count,
