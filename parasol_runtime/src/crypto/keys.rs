@@ -320,9 +320,7 @@ impl GetSize for ComputeKey {
         let size = size * size_of::<Complex<f64>>();
 
         // The magic 4 accounts for the 4 8-byte length fields, one for each key.
-        let size = size + 4 * size_of::<u64>();
-
-        size
+        size + 4 * size_of::<u64>()
     }
 
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
