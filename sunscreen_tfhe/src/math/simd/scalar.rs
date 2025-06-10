@@ -1,4 +1,4 @@
-use std::ops::{Add, BitAnd, Shl, Shr, Sub};
+use std::ops::{Add, BitAnd, Shl, Shr};
 
 use num::{
     Complex, Float,
@@ -34,16 +34,16 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 }
 
 #[inline(always)]
-pub fn vector_add<T: Sized + Add<T, Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+pub fn vector_add<T: Sized + WrappingAdd<Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
-        *c = a + b;
+        *c = a.wrapping_add(&b);
     }
 }
 
 #[inline(always)]
-pub fn vector_sub<T: Sized + Sub<T, Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+pub fn vector_sub<T: Sized + WrappingSub<Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
-        *c = a - b;
+        *c = a.wrapping_sub(&b);
     }
 }
 
@@ -117,6 +117,7 @@ pub fn vector_mod_pow2_q_f64<T: FromF64>(c: &mut [T], a: &[f64], log2_q: u64) {
     }
 }
 
+#[inline(always)]
 pub fn vector_scalar_mad<S, T, U>(c: &mut [S], a: &[T], s: U)
 where
     S: Clone + Copy + Add<S, Output = S>,
@@ -125,6 +126,16 @@ where
 {
     for (c, a) in c.iter_mut().zip(a.iter()) {
         *c = a.mul_add(s, *c);
+    }
+}
+
+#[inline(always)]
+pub fn vector_shr<S>(c: &mut [S], a: &[S], n: u32)
+where
+    S: Clone + Copy + Shr<u32, Output = S>,
+{
+    for (c, a) in c.iter_mut().zip(a.iter()) {
+        *c = *a >> n;
     }
 }
 

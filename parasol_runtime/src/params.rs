@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
-    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LWE_637_128, LweDef,
-    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
+    GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LWE_637_128, LweDef, PolynomialDegree,
+    RadixCount, RadixDecomposition, RadixLog,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -63,9 +63,6 @@ pub struct Params {
     /// The medium noise l1 GLWE parameters.
     pub l1_params: GlweDef,
 
-    /// The low noise l2 GLWE parameters.
-    pub l2_params: GlweDef,
-
     /// The radix decompositon defining the shape of l1 GGSW ciphertexts (the result of circuit
     /// bootstrapping).
     pub cbs_radix: RadixDecomposition,
@@ -79,11 +76,11 @@ pub struct Params {
     /// The decomposition used during the private function keyswitch step of circuit bootstrapping.
     pub pfks_radix: RadixDecomposition,
 
-    /// Unused and will be removed.
-    pub pufks_radix_1: RadixDecomposition,
-
     /// The decomposition used during scheme switching (currently experimental and poorly documented)
     pub ss_radix: RadixDecomposition,
+
+    /// The automorphism key used for homomorphic traces during circuit bootstrapping.
+    pub tr_radix: RadixDecomposition,
 }
 
 impl Params {
@@ -105,8 +102,7 @@ impl Default for Params {
 /// Is *not* compatible with RLWE public-key encryption.
 pub const DEFAULT_80: Params = Params {
     l0_params: LWE_512_80,
-    l1_params: GLWE_1_1024_80,
-    l2_params: GLWE_5_256_80,
+    l1_params: GLWE_5_256_80,
     cbs_radix: RadixDecomposition {
         radix_log: RadixLog(7),
         count: RadixCount(2),
@@ -119,17 +115,17 @@ pub const DEFAULT_80: Params = Params {
         radix_log: RadixLog(15),
         count: RadixCount(2),
     },
-    pufks_radix_1: RadixDecomposition {
-        radix_log: RadixLog(15),
-        count: RadixCount(2),
-    },
     ks_radix: RadixDecomposition {
-        radix_log: RadixLog(1),
-        count: RadixCount(12),
+        radix_log: RadixLog(2),
+        count: RadixCount(5),
     },
     ss_radix: RadixDecomposition {
-        radix_log: RadixLog(3),
-        count: RadixCount(15),
+        radix_log: RadixLog(2),
+        count: RadixCount(17),
+    },
+    tr_radix: RadixDecomposition {
+        count: RadixCount(6),
+        radix_log: RadixLog(7),
     },
 };
 
@@ -144,10 +140,9 @@ pub const DEFAULT_80: Params = Params {
 pub const DEFAULT_128: Params = Params {
     l0_params: LWE_637_128,
     l1_params: GLWE_1_2048_128,
-    l2_params: GLWE_1_2048_128,
     cbs_radix: RadixDecomposition {
-        radix_log: RadixLog(7),
-        count: RadixCount(2),
+        radix_log: RadixLog(4),
+        count: RadixCount(4),
     },
     pbs_radix: RadixDecomposition {
         radix_log: RadixLog(16),
@@ -157,10 +152,6 @@ pub const DEFAULT_128: Params = Params {
         radix_log: RadixLog(17),
         count: RadixCount(2),
     },
-    pufks_radix_1: RadixDecomposition {
-        radix_log: RadixLog(15),
-        count: RadixCount(2),
-    },
     ks_radix: RadixDecomposition {
         radix_log: RadixLog(2),
         count: RadixCount(6),
@@ -168,5 +159,9 @@ pub const DEFAULT_128: Params = Params {
     ss_radix: RadixDecomposition {
         radix_log: RadixLog(3),
         count: RadixCount(15),
+    },
+    tr_radix: RadixDecomposition {
+        count: RadixCount(6),
+        radix_log: RadixLog(7),
     },
 };

@@ -26,4 +26,6 @@ where
     fn vector_next_decomp(c: &mut [Self], a: &mut [Self], radix_log: usize);
 
     fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self);
+
+    fn vector_shr(c: &mut [Self], a: &[Self], n: u32);
 }

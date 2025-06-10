@@ -6,7 +6,7 @@ use crate::{LweDef, OverlaySize, Torus, TorusOps, entities::LweCiphertextRef};
 /// # Remark
 /// Suppose we have plaintexts 0 and 1 that lie centered at 0 and q/2 respectively.
 /// If we rotate by q/4, then the 0 lies centered at q/4 and 1 lies at 3q/4 == -q/4.
-pub fn rotate<S: TorusOps>(
+pub fn lwe_rotate<S: TorusOps>(
     output: &mut LweCiphertextRef<S>,
     input: &LweCiphertextRef<S>,
     amount: Torus<S>,
@@ -27,7 +27,7 @@ mod tests {
         high_level::{TEST_LWE_DEF_1, keygen},
     };
 
-    use super::rotate;
+    use super::lwe_rotate;
 
     #[test]
     fn can_rotate() {
@@ -39,7 +39,7 @@ mod tests {
 
             let mut res = LweCiphertext::new(&lwe_params);
 
-            rotate(
+            lwe_rotate(
                 &mut res,
                 &val,
                 Torus::encode(1, PlaintextBits(2)),
@@ -52,7 +52,7 @@ mod tests {
 
             let val = sk.encrypt(1, &lwe_params, PlaintextBits(1)).0;
 
-            rotate(
+            lwe_rotate(
                 &mut res,
                 &val,
                 Torus::encode(1, PlaintextBits(2)),

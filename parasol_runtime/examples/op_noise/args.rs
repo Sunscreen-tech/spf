@@ -148,20 +148,28 @@ pub struct SearchSchemeSwitchCommand {
 #[derive(Debug, Args)]
 pub struct AnalyzeCbs {
     #[arg(default_value_t = 2, long)]
-    /// The radix decomposition count of the resulting GGSW.
-    pub pfks_radix_count: usize,
+    /// The radix decomposition count of the scheme switch operation.
+    pub ss_radix_count: usize,
 
     #[arg(default_value_t = 17, long)]
-    /// The radix decomposition base-log of the resulting GGSW.
-    pub pfks_radix_log: usize,
+    /// The radix decomposition base-log of the scheme switch operation.
+    pub ss_radix_log: usize,
 
     #[arg(default_value_t = 2, long)]
-    /// The radix decomposition count of the resulting GGSW.
+    /// The radix decomposition count of the pbs operation.
     pub pbs_radix_count: usize,
 
     #[arg(default_value_t = 16, long)]
-    /// The radix decomposition base-log of the resulting GGSW.
+    /// The radix decomposition base-log of the pbs operation.
     pub pbs_radix_log: usize,
+
+    #[arg(default_value_t = 2, long)]
+    /// The radix decomposition count of the tr operation.
+    pub tr_radix_count: usize,
+
+    #[arg(default_value_t = 16, long)]
+    /// The radix decomposition base-log of the tr operation.
+    pub tr_radix_log: usize,
 
     #[arg(default_value_t = 2, long)]
     /// The radix decomposition count of the resulting GGSW.
@@ -179,10 +187,6 @@ pub struct AnalyzeCbs {
     /// The std deviation of the L0 LWE instance.
     pub l1_sigma: f64,
 
-    #[arg(default_value_t = 0.00000000000000034667670193445625, long)]
-    /// The std deviation of the L0 LWE instance.
-    pub l2_sigma: f64,
-
     #[arg(default_value_t = 6.27510880527384e-05, long)]
     /// The std deviation given to the input L0 LWE ciphertext.
     pub input_sigma: f64,
@@ -190,14 +194,6 @@ pub struct AnalyzeCbs {
     #[arg(default_value_t = 637, long)]
     /// The number of polynomials in the GLWE problem instance.
     pub l0_lwe_size: usize,
-
-    #[arg(default_value_t = 1, long)]
-    /// The number of polynomials in the level 2 GLWE problem instance.
-    pub l2_glwe_size: usize,
-
-    #[arg(default_value_t = 2048, long)]
-    /// The polynomial degree to use in the level 2 GLWE problem instance.
-    pub l2_glwe_poly_degree: usize,
 
     #[arg(default_value_t = 1, long)]
     /// The number of polynomials in the level 1 GLWE problem instance.

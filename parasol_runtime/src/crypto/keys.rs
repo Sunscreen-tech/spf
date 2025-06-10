@@ -3,12 +3,13 @@ use serde::{Deserialize, Serialize};
 use std::mem::size_of;
 use sunscreen_tfhe::OverlaySize;
 use sunscreen_tfhe::entities::{
-    BootstrapKey, BootstrapKeyFft, BootstrapKeyRef, CircuitBootstrappingKeyswitchKeys,
-    CircuitBootstrappingKeyswitchKeysRef, GlweSecretKey, GlweSecretKeyRef, LweKeyswitchKey,
+    AutomorphismKey, AutomorphismKeyFft, AutomorphismKeyFftRef, AutomorphismKeyRef, BootstrapKey,
+    BootstrapKeyFft, BootstrapKeyRef, GlweSecretKey, GlweSecretKeyRef, LweKeyswitchKey,
     LweKeyswitchKeyRef, LweSecretKey, LweSecretKeyRef, RlwePublicKey, RlwePublicKeyRef,
     SchemeSwitchKey, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
 };
 use sunscreen_tfhe::high_level::{fft, keygen};
+use sunscreen_tfhe::ops::automorphisms::generate_automorphism_key;
 use sunscreen_tfhe::ops::bootstrapping::generate_scheme_switch_key;
 use sunscreen_tfhe::ops::encryption::rlwe_generate_public_key;
 
@@ -75,8 +76,6 @@ pub struct SecretKey {
     pub lwe_0: LweSecretKey<u64>,
     /// The internal [`GlweSecretKey`] under level-1 parameters.
     pub glwe_1: GlweSecretKey<u64>,
-    /// The internal [`GlweSecretKey`] under level-2 parameters.
-    pub glwe_2: GlweSecretKey<u64>,
 }
 
 impl GetSize for SecretKey {
@@ -84,7 +83,6 @@ impl GetSize for SecretKey {
         // The magic 3 is the length fields of the 3 serialized sequences.
         (LweSecretKeyRef::<u64>::size(params.l0_params.dim)
             + GlweSecretKeyRef::<u64>::size(params.l1_params.dim)
-            + GlweSecretKeyRef::<u64>::size(params.l2_params.dim)
             + 3)
             * size_of::<u64>()
     }
@@ -92,7 +90,6 @@ impl GetSize for SecretKey {
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
         self.lwe_0.check_is_valid(params.l0_params.dim)?;
         self.glwe_1.check_is_valid(params.l1_params.dim)?;
-        self.glwe_2.check_is_valid(params.l2_params.dim)?;
 
         Ok(())
     }
@@ -103,13 +100,8 @@ impl SecretKey {
     pub fn generate(params: &Params) -> Self {
         let lwe_0 = keygen::generate_binary_lwe_sk(&params.l0_params);
         let glwe_1 = keygen::generate_binary_glwe_sk(&params.l1_params);
-        let glwe_2 = keygen::generate_binary_glwe_sk(&params.l2_params);
 
-        Self {
-            lwe_0,
-            glwe_1,
-            glwe_2,
-        }
+        Self { lwe_0, glwe_1 }
     }
 
     /// Generate a [`SecretKey`] with the default parameter set
@@ -128,13 +120,13 @@ impl SecretKey {
 /// frequently share these.
 pub struct ComputeKeyNonFft {
     /// The bootstrapping key used internally in circuit bootstrapping operations.
-    pub cbs_key: BootstrapKey<u64>,
-
-    /// The private functional keyswitch keys used internally during circuit bootstrapping.
-    pub pfks_key: CircuitBootstrappingKeyswitchKeys<u64>,
+    pub bs_key: BootstrapKey<u64>,
 
     /// The keyswitch keys for converting L1 LWE ciphertexts to L0 LWE ciphertexts.
     pub ks_key: LweKeyswitchKey<u64>,
+
+    /// An automorphism key used as part of circuit bootstrapping.
+    pub auto_key: AutomorphismKey<u64>,
 
     /// Scheme switching keys used for turning L1 GLEV ciphertexts into L1 GGSW ciphertexts.
     pub ss_key: SchemeSwitchKey<u64>,
@@ -142,34 +134,37 @@ pub struct ComputeKeyNonFft {
 
 impl GetSize for ComputeKeyNonFft {
     fn get_size(params: &Params) -> usize {
-        // The magic 4 is the lengths of the 4 serialized sequences.
-        (BootstrapKeyRef::<u64>::size((
+        let size = BootstrapKeyRef::<u64>::size((
             params.l0_params.dim,
-            params.l2_params.dim,
-            params.pbs_radix.count,
-        )) + CircuitBootstrappingKeyswitchKeysRef::<u64>::size((
-            params.l2_params.as_lwe_def().dim,
             params.l1_params.dim,
-            params.pfks_radix.count,
-        )) + LweKeyswitchKeyRef::<u64>::size((
-            params.l1_params.as_lwe_def().dim,
-            params.l0_params.dim,
-            params.ks_radix.count,
-        )) + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count))
-            + 4)
-            * size_of::<u64>()
+            params.pbs_radix.count,
+        ));
+
+        let size = size
+            + LweKeyswitchKeyRef::<u64>::size((
+                params.l1_params.as_lwe_def().dim,
+                params.l0_params.dim,
+                params.ks_radix.count,
+            ));
+
+        let size =
+            size + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count));
+
+        let size =
+            size + AutomorphismKeyRef::<u64>::size((params.l1_params.dim, params.tr_radix.count));
+
+        // The magic 4 accounts for the fact that we have 4 8-byte lengths, 1 for each
+        // key.
+        let size = size + 4;
+
+        size * size_of::<u64>()
     }
 
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
-        self.cbs_key.check_is_valid((
+        self.bs_key.check_is_valid((
             params.l0_params.dim,
-            params.l2_params.dim,
-            params.pbs_radix.count,
-        ))?;
-        self.pfks_key.check_is_valid((
-            params.l2_params.as_lwe_def().dim,
             params.l1_params.dim,
-            params.pfks_radix.count,
+            params.pbs_radix.count,
         ))?;
         self.ks_key.check_is_valid((
             params.l1_params.as_lwe_def().dim,
@@ -178,6 +173,8 @@ impl GetSize for ComputeKeyNonFft {
         ))?;
         self.ss_key
             .check_is_valid((params.l1_params.dim, params.ss_radix.count))?;
+        self.auto_key
+            .check_is_valid((params.l1_params.dim, params.tr_radix.count))?;
 
         Ok(())
     }
@@ -189,11 +186,11 @@ impl ComputeKeyNonFft {
     /// # Remarks
     /// The params passed must be the same as those used during secret key generation.
     pub fn generate(secret_key: &SecretKey, params: &Params) -> Self {
-        let cbs_key = keygen::generate_bootstrapping_key(
+        let bs_key = keygen::generate_bootstrapping_key(
             &secret_key.lwe_0,
-            &secret_key.glwe_2,
+            &secret_key.glwe_1,
             &params.l0_params,
-            &params.l2_params,
+            &params.l1_params,
             &params.pbs_radix,
         );
 
@@ -205,14 +202,6 @@ impl ComputeKeyNonFft {
             &params.ks_radix,
         );
 
-        let pfks_key = keygen::generate_cbs_ksk(
-            secret_key.glwe_2.to_lwe_secret_key(),
-            &secret_key.glwe_1,
-            &params.l2_params.as_lwe_def(),
-            &params.l1_params,
-            &params.pfks_radix,
-        );
-
         let mut ss_key = SchemeSwitchKey::new(&params.l1_params, &params.ss_radix);
 
         generate_scheme_switch_key(
@@ -222,11 +211,20 @@ impl ComputeKeyNonFft {
             &params.ss_radix,
         );
 
+        let mut auto_key = AutomorphismKey::new(&params.l1_params, &params.tr_radix);
+
+        generate_automorphism_key(
+            &mut auto_key,
+            &secret_key.glwe_1,
+            &params.l1_params,
+            &params.tr_radix,
+        );
+
         Self {
             ks_key,
-            cbs_key,
-            pfks_key,
+            bs_key,
             ss_key,
+            auto_key,
         }
     }
 
@@ -237,16 +235,21 @@ impl ComputeKeyNonFft {
         self.ss_key
             .fft(&mut ssk_fft, &params.l1_params, &params.ss_radix);
 
+        let mut auto_key_fft = AutomorphismKeyFft::new(&params.l1_params, &params.tr_radix);
+
+        self.auto_key
+            .fft(&mut auto_key_fft, &params.l1_params, &params.tr_radix);
+
         ComputeKey {
-            cbs_key: fft::fft_bootstrap_key(
-                &self.cbs_key,
+            bs_key: fft::fft_bootstrap_key(
+                &self.bs_key,
                 &params.l0_params,
-                &params.l2_params,
-                &params.cbs_radix,
+                &params.l1_params,
+                &params.pbs_radix,
             ),
-            pfks_key: self.pfks_key.clone(),
             ks_key: self.ks_key.clone(),
             ss_key: ssk_fft,
+            auto_key: auto_key_fft,
         }
     }
 
@@ -276,48 +279,55 @@ impl ComputeKeyNonFft {
 ///   to the same object.
 pub struct ComputeKey {
     /// The FFT'd circuit bootstrap key.
-    pub cbs_key: BootstrapKeyFft<Complex<f64>>,
-
-    /// The private function keyswitch keys (not FFT'd).
-    pub pfks_key: CircuitBootstrappingKeyswitchKeys<u64>,
+    pub bs_key: BootstrapKeyFft<Complex<f64>>,
 
     /// The keyswitch keys (not FFT'd).
     pub ks_key: LweKeyswitchKey<u64>,
 
     /// The FFT'd scheme switch keys.
     pub ss_key: SchemeSwitchKeyFft<Complex<f64>>,
+
+    /// The FFT'd automorphism key.
+    pub auto_key: AutomorphismKeyFft<Complex<f64>>,
 }
 
 impl GetSize for ComputeKey {
     fn get_size(params: &Params) -> usize {
-        // The magic 4 is the lengths of the 4 serialized sequences.
-        (BootstrapKeyRef::<u64>::size((
+        let size = BootstrapKeyRef::<u64>::size((
             params.l0_params.dim,
-            params.l2_params.dim,
-            params.pbs_radix.count,
-        )) + CircuitBootstrappingKeyswitchKeysRef::<u64>::size((
-            params.l2_params.as_lwe_def().dim,
             params.l1_params.dim,
-            params.pfks_radix.count,
-        )) + LweKeyswitchKeyRef::<u64>::size((
-            params.l1_params.as_lwe_def().dim,
-            params.l0_params.dim,
-            params.ks_radix.count,
-        )) + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count)))
-            * size_of::<Complex<f64>>()
-            + 4 * size_of::<u64>()
+            params.pbs_radix.count,
+        ));
+
+        let size = size
+            + LweKeyswitchKeyRef::<u64>::size((
+                params.l1_params.as_lwe_def().dim,
+                params.l0_params.dim,
+                params.ks_radix.count,
+            ));
+
+        let size =
+            size + SchemeSwitchKeyRef::<u64>::size((params.l1_params.dim, params.ss_radix.count));
+
+        let size = size
+            + AutomorphismKeyFftRef::<Complex<f64>>::size((
+                params.l1_params.dim,
+                params.tr_radix.count,
+            ));
+
+        // All the keys are FFT'd, so scale the number of elements by the size
+        // of each element (a Complex<f64>).
+        let size = size * size_of::<Complex<f64>>();
+
+        // The magic 4 accounts for the 4 8-byte length fields, one for each key.
+        size + 4 * size_of::<u64>()
     }
 
     fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
-        self.cbs_key.check_is_valid((
+        self.bs_key.check_is_valid((
             params.l0_params.dim,
-            params.l2_params.dim,
-            params.pbs_radix.count,
-        ))?;
-        self.pfks_key.check_is_valid((
-            params.l2_params.as_lwe_def().dim,
             params.l1_params.dim,
-            params.pfks_radix.count,
+            params.pbs_radix.count,
         ))?;
         self.ks_key.check_is_valid((
             params.l1_params.as_lwe_def().dim,
@@ -326,6 +336,8 @@ impl GetSize for ComputeKey {
         ))?;
         self.ss_key
             .check_is_valid((params.l1_params.dim, params.ss_radix.count))?;
+        self.auto_key
+            .check_is_valid((params.l1_params.dim, params.tr_radix.count))?;
 
         Ok(())
     }

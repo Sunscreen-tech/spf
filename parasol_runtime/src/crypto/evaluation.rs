@@ -1,9 +1,11 @@
-use std::{borrow::BorrowMut, ops::Deref, sync::Arc};
+use std::{ops::Deref, sync::Arc};
 
 use sunscreen_tfhe::{
-    entities::{GgswCiphertext, GlweCiphertextFft},
+    entities::GlweCiphertextFft,
     ops::{
-        bootstrapping::{circuit_bootstrap, rotate_glwe_positive_monomial_negacyclic},
+        bootstrapping::{
+            circuit_bootstrap_via_trace_and_scheme_switch, rotate_glwe_positive_monomial_negacyclic,
+        },
         ciphertext::sample_extract,
         fft_ops::{cmux, glev_cmux, glwe_ggsw_mad, scheme_switch_fft},
         keyswitch::lwe_keyswitch::keyswitch_lwe_to_lwe,
@@ -158,24 +160,21 @@ impl Evaluation {
                 enc.trivial_lwe_l0_zero()
             };
 
-            let mut tmp = GgswCiphertext::new(&params.l1_params, &params.cbs_radix);
-
-            circuit_bootstrap(
-                &mut tmp,
-                &lwe.0,
-                &compute_key.cbs_key,
-                &compute_key.pfks_key,
-                &params.l0_params,
-                &params.l1_params,
-                &params.l2_params,
-                &params.pbs_radix,
-                &params.cbs_radix,
-                &params.pfks_radix,
-            );
-
             let mut output = enc.allocate_ggsw_l1();
 
-            tmp.fft(output.0.borrow_mut(), &params.l1_params, &params.cbs_radix);
+            circuit_bootstrap_via_trace_and_scheme_switch(
+                &mut output.0,
+                &lwe.0,
+                &compute_key.bs_key,
+                &compute_key.auto_key,
+                &compute_key.ss_key,
+                &params.l0_params,
+                &params.l1_params,
+                &params.pbs_radix,
+                &params.tr_radix,
+                &params.ss_radix,
+                &params.cbs_radix,
+            );
 
             output
         };
@@ -202,26 +201,19 @@ impl Evaluation {
     /// [`L1GgswCiphertext`].
     ///
     /// # See also
-    /// [`sunscreen_tfhe::ops::bootstrapping::circuit_bootstrap`]
+    /// [`sunscreen_tfhe::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch`]
     pub fn circuit_bootstrap(&self, output: &mut L1GgswCiphertext, input: &L0LweCiphertext) {
-        let mut tmp = GgswCiphertext::new(&self.params.l1_params, &self.params.cbs_radix);
-
-        circuit_bootstrap(
-            &mut tmp,
+        circuit_bootstrap_via_trace_and_scheme_switch(
+            &mut output.0,
             &input.0,
-            &self.compute_key.cbs_key,
-            &self.compute_key.pfks_key,
+            &self.compute_key.bs_key,
+            &self.compute_key.auto_key,
+            &self.compute_key.ss_key,
             &self.params.l0_params,
             &self.params.l1_params,
-            &self.params.l2_params,
             &self.params.pbs_radix,
-            &self.params.cbs_radix,
-            &self.params.pfks_radix,
-        );
-
-        tmp.fft(
-            output.0.borrow_mut(),
-            &self.params.l1_params,
+            &self.params.tr_radix,
+            &self.params.ss_radix,
             &self.params.cbs_radix,
         );
     }
