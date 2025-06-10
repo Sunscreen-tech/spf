@@ -38,8 +38,12 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     (sk, enc, eval)
 }
 
-fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Ptr32, Args<()>) {
-    let data = std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
+fn generate_args<const N: usize>(
+    memory: &Memory,
+    enc: &Encryption,
+    sk: &SecretKey,
+) -> (Ptr32, Args<()>) {
+    let data = std::array::from_fn::<_, N, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
     let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(enc));
 
     let winner = memory.try_allocate_type(&winner).unwrap();
@@ -54,33 +58,6 @@ fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Ptr32, A
             .arg(winner)
             .no_return_value(),
     )
-}
-
-fn auction_from_compiler(c: &mut Criterion) {
-    let mut group = c.benchmark_group("auction");
-    group.sample_size(10);
-
-    let (sk, enc, eval) = setup();
-
-    group.bench_function("auction_from_compiler", |bench| {
-        bench.iter_batched(
-            // Setup closure: runs before each iteration, not timed
-            || {
-                let memory = Arc::new(
-                    Memory::new_from_elf(include_bytes!("../tests/test_data/auction")).unwrap(),
-                );
-                let prog = memory.get_function_entry("auction").unwrap();
-                let (winner, args) = generate_args(&memory, &enc, &sk);
-                let proc = FheComputer::new(&enc, &eval);
-
-                (proc, args, prog, memory, winner)
-            },
-            |(mut proc, args, prog, memory, _winner)| {
-                proc.run_program(prog, &memory, args).unwrap();
-            },
-            criterion::BatchSize::PerIteration,
-        );
-    });
 }
 
 pub fn auction_test_program() -> Vec<IsaOp> {
@@ -135,12 +112,12 @@ fn auction_from_assembly(c: &mut Criterion) {
 
     let (sk, enc, eval) = setup();
 
-    group.bench_function("auction_from_assembly", |bench| {
+    group.bench_function("auction_from_assembly_8_bids", |bench| {
         bench.iter_batched(
             || {
                 let memory = Arc::new(Memory::new_default_stack());
                 let prog = memory.allocate_program(&auction_test_program());
-                let (winner, args) = generate_args(&memory, &enc, &sk);
+                let (winner, args) = generate_args::<8>(&memory, &enc, &sk);
                 let proc = FheComputer::new(&enc, &eval);
                 (proc, args, prog, memory, winner)
             },
@@ -152,5 +129,41 @@ fn auction_from_assembly(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, auction_from_compiler, auction_from_assembly);
+fn auction_n_bids<const N: usize>(c: &mut Criterion) {
+    let mut group = c.benchmark_group("auction");
+    group.sample_size(10);
+
+    let (sk, enc, eval) = setup();
+
+    let id = format!("auction_from_compiler_{}_bids", N);
+    group.bench_function(id, |bench| {
+        bench.iter_batched(
+            // Setup closure: runs before each iteration, not timed
+            || {
+                let memory = Arc::new(
+                    Memory::new_from_elf(include_bytes!("../tests/test_data/auction")).unwrap(),
+                );
+                let prog = memory.get_function_entry("auction").unwrap();
+                let (winner, args) = generate_args::<N>(&memory, &enc, &sk);
+                let proc = FheComputer::new(&enc, &eval);
+
+                (proc, args, prog, memory, winner)
+            },
+            |(mut proc, args, prog, memory, _winner)| {
+                proc.run_program(prog, &memory, args).unwrap();
+            },
+            criterion::BatchSize::PerIteration,
+        );
+    });
+}
+
+criterion_group!(
+    benches,
+    auction_from_assembly,
+    auction_n_bids::<2>,
+    auction_n_bids::<4>,
+    auction_n_bids::<8>,
+    auction_n_bids::<16>,
+    auction_n_bids::<32>
+);
 criterion_main!(benches);
