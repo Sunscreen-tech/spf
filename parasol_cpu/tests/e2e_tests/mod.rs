@@ -6,6 +6,7 @@ mod cmux;
 mod for_loop;
 mod hamming_distance;
 mod payment;
+mod prng;
 mod transfer;
 mod vector_add;
 mod zext_and_trunc;
