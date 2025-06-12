@@ -32,13 +32,10 @@ impl Task {
 
     #[inline]
     fn validate_op(&self, params: &Params) -> Result<(), RuntimeError> {
-        match &self.op {
-            FheOp::SampleExtract(x) => {
-                if *x >= params.l1_poly_degree().0 {
-                    return Err(RuntimeError::illegal_sample_extract(*x));
-                }
+        if let FheOp::SampleExtract(x) = &self.op {
+            if *x >= params.l1_poly_degree().0 {
+                return Err(RuntimeError::illegal_sample_extract(*x));
             }
-            _ => {}
         }
 
         Ok(())
@@ -79,7 +76,7 @@ impl Task {
             };
 
         if !is_valid {
-            Err(RuntimeError::invalid_ciphertext_kind(&self, ct, edge))
+            Err(RuntimeError::invalid_ciphertext_kind(self, ct, edge))
         } else {
             Ok(())
         }
@@ -104,7 +101,7 @@ impl Task {
             | FheOp::OneGlev1
             | FheOp::Nop
             | FheOp::Retire => {
-                if self.inputs.len() != 0 {
+                if !self.inputs.is_empty() {
                     Err(RuntimeError::invalid_node_inputs(self))?;
                 }
             }

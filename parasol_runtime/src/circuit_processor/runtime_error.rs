@@ -73,7 +73,7 @@ impl RuntimeError {
     }
 
     pub(crate) fn illegal_retire_op() -> Self {
-        let err = Self(format!("Encountered an illegal Retire operation"));
+        let err = Self("Encountered an illegal Retire operation".to_string());
 
         err.error_backtrace();
 
