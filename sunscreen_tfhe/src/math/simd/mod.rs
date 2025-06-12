@@ -27,5 +27,7 @@ where
 
     fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self);
 
-    fn vector_shr(c: &mut [Self], a: &[Self], n: u32);
+    /// Right shift each item in `a` by `n` places and round the result based on the
+    /// `n + 1`th bit.
+    fn vector_shr_round(c: &mut [Self], a: &[Self], n: u32);
 }

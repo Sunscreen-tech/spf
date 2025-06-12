@@ -86,12 +86,13 @@ where
     }
 }
 
-/// Logical right-shift all the coefficients by `n` places.
-pub fn polynomial_shr<S>(y: &mut PolynomialRef<S>, x: &PolynomialRef<S>, n: u32)
+/// Logical right-shift all the coefficients by `n` places. Rounds by adding
+/// the `n + 1`th place.
+pub fn polynomial_shr_round<S>(y: &mut PolynomialRef<S>, x: &PolynomialRef<S>, n: u32)
 where
     S: Clone + VectorOps,
 {
-    S::vector_shr(y.coeffs_mut(), x.coeffs(), n);
+    S::vector_shr_round(y.coeffs_mut(), x.coeffs(), n);
 }
 
 #[cfg(test)]
@@ -156,5 +157,15 @@ mod tests {
 
             assert_eq!(output.coeffs()[i], expected);
         }
+    }
+
+    #[test]
+    fn can_polynomial_shift_round() {
+        let poly = Polynomial::<u64>::new(&[0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        let mut result = Polynomial::zero(8);
+
+        polynomial_shr_round(&mut result, &poly, 2);
+
+        assert_eq!(result, Polynomial::new(&[0, 0, 1, 1, 1, 1, 2, 2]));
     }
 }
