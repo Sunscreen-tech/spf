@@ -24,15 +24,22 @@ use crate::{
     probability_away_from_mean_gaussian_log_binary,
 };
 
+const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
+
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Args, Hash)]
 pub struct CMuxTreeRunOptions {
     /// Number of times to run the cmux tree to measure the noise
     #[arg(long)]
     sample_count: usize,
 
-    /// The maximum level of the cmux tree to run
+    /// The maximum level of the cmux tree to run when estimating the drift.
     #[arg(long)]
-    depth: usize,
+    drift_depth: usize,
+
+    /// The maximum level of the cmux tree to run when estimating the change in
+    /// the standard deviation
+    #[arg(long)]
+    std_depth: usize,
 
     /// Whether to include the raw data in the output
     #[arg(long, default_value_t = false)]
@@ -49,6 +56,7 @@ pub struct CMuxTreeParameters {
 pub enum Method {
     /// The method used to run the cmux tree
     RandomSelectLinesCascadedDataLines,
+    RandomSelectLinesCascadedDataLinesWithDrift,
 }
 
 impl Method {
@@ -56,6 +64,9 @@ impl Method {
         match self {
             Method::RandomSelectLinesCascadedDataLines => {
                 "The 'random select lines, cascading data lines' method generates a set of GGSW ciphertexts for each level of the CMUX tree. At every level, two GGSWs are randomly selected—one encrypting a binary value and the other its complement—and used as select lines for CMUX operations on the data lines from the previous level. The outputs from the CMUX operations become the inputs for the next level. Noise is measured by keyswitching the resulting GLWE ciphertexts at each level into the L0 LWE key. This process helps determine the maximum CMUX tree depth that can be evaluated before bootstrapping is required to keep the probability of decryption failure below a chosen threshold (e.g., 2^-64)."
+            }
+            Method::RandomSelectLinesCascadedDataLinesWithDrift => {
+                "The 'random select lines, cascading data lines' method generates a set of GGSW ciphertexts for each level of the CMUX tree. At every level, two GGSWs are randomly selected—one encrypting a binary value and the other its complement—and used as select lines for CMUX operations on the data lines from the previous level. The outputs from the CMUX operations become the inputs for the next level. Noise is measured by keyswitching the resulting GLWE ciphertexts at each level into the L0 LWE key. In addition, the drift in the encoded position on the torus is calculated after each CMUX operation, which helps in understanding how the encoding drifts with each operation. Both the changes in the standard deviation and the drift helps determine the maximum CMUX tree depth that can be evaluated before bootstrapping is required to keep the probability of decryption failure below a chosen threshold (e.g., 2^-64)."
             }
         }
     }
@@ -102,8 +113,10 @@ pub struct CMuxTreeDataFile {
     pub system_info: SystemInfo,
     pub method: Method,
     pub fit: FitResults,
-    pub data: Vec<CMuxTreeDataPoint>,
-    pub raw: Vec<Vec<Option<f64>>>,
+    pub drift_data: Vec<(CMuxTreeDriftDataPoint, CMuxTreeDriftDataPoint)>,
+    pub drift_raw: Vec<Vec<(Option<f64>, Option<f64>)>>,
+    pub std_data: Vec<CMuxTreeStdDataPoint>,
+    pub std_raw: Vec<Vec<Option<f64>>>,
 }
 
 #[derive(Serialize, Clone)]
@@ -121,8 +134,23 @@ impl From<ProbabilityAwayMeanGaussianLog> for PredictedError {
     }
 }
 
+/// The linear fit to the drift of the CMUX tree.
 #[derive(Serialize, Clone)]
-pub struct CMuxTreeDataPoint {
+pub struct CMuxTreeDriftDataPoint {
+    /// Drift in the encoded position on the torus after performing the CMUX
+    /// operation. Units is normalized torus unit per CMUX operation (depth);
+    /// otherwise said, how much the encoding drifts after each CMUX operation.
+    drift: f64,
+
+    /// Offset of the drift; ideally should be close to zero.
+    offset: f64,
+
+    /// Max error in the calculated drift.
+    max_error: f64,
+}
+
+#[derive(Serialize, Clone)]
+pub struct CMuxTreeStdDataPoint {
     depth: usize,
     mean: f64,
     std: f64,
@@ -223,6 +251,37 @@ fn choose_permutation<T: Clone>(a: &[T], b: &[T]) -> Vec<(Order, T, T)> {
             }
         })
         .collect()
+}
+
+fn linear_regression(xs: &[f64], ys: &[f64]) -> (f64, f64, f64) {
+    if xs.len() != ys.len() || xs.is_empty() {
+        panic!("Input vectors must have the same non-zero length");
+    }
+
+    let n = xs.len() as f64;
+    let sum_x: f64 = xs.iter().sum();
+    let sum_y: f64 = ys.iter().sum();
+    let sum_xx: f64 = xs.iter().map(|x| x * x).sum();
+    let sum_xy: f64 = xs.iter().zip(ys.iter()).map(|(x, y)| x * y).sum();
+
+    let denominator = n * sum_xx - sum_x * sum_x;
+    if denominator == 0.0 {
+        return (f64::NAN, f64::NAN, f64::NAN);
+    }
+
+    let slope = (n * sum_xy - sum_x * sum_y) / denominator;
+    let intercept = (sum_y - slope * sum_x) / n;
+
+    let max_error = xs
+        .iter()
+        .zip(ys.iter())
+        .map(|(x, y)| {
+            let y_pred = slope * x + intercept;
+            (y_pred - y).abs() / y_pred
+        })
+        .fold(0.0, f64::max);
+
+    (slope, intercept, max_error)
 }
 
 fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
@@ -354,18 +413,11 @@ fn run_compute_tree(
     samples_per_level
 }
 
-const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
-
-pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
-    let system_info = print_system_info();
-
-    let cmux_tree_params_pretty_json = serde_json::to_string_pretty(cmux_tree_params).unwrap();
-    println!("Running with parameters:");
-    println!("{}", cmux_tree_params_pretty_json);
-
-    let run_options = cmux_tree_params.run_options;
-    let params = cmux_tree_params.parameter_set.clone();
-
+fn std_analysis(
+    sample_count: usize,
+    depth: usize,
+    params: &Params,
+) -> (Vec<CMuxTreeStdDataPoint>, Vec<Vec<Option<f64>>>) {
     // We will use the public key for the encryption because it might generate
     // different noise parameters.
     let secret_key = SecretKey::generate(&params);
@@ -374,10 +426,10 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
     // Generate all bootstraps in parallel and in advance. This could take a lot of memory.
     println!("Generating select lines");
     let now = std::time::Instant::now();
-    let progress = ProgressBar::new((run_options.depth * 2) as u64);
+    let progress = ProgressBar::new((depth * 2) as u64);
     progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
 
-    let zeros = (0..run_options.depth)
+    let zeros = (0..depth)
         .into_par_iter()
         .map(|_| {
             let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params));
@@ -387,7 +439,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         })
         .collect::<Vec<_>>();
 
-    let ones = (0..run_options.depth)
+    let ones = (0..depth)
         .into_par_iter()
         .map(|_| {
             let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params));
@@ -401,21 +453,14 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
     println!("Running each cmux tree");
     let now = std::time::Instant::now();
-    let progress = ProgressBar::new(run_options.sample_count as u64);
+    let progress = ProgressBar::new(sample_count as u64);
     progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
 
     // We have a vector of size sample_count, each containing a vector of size depth of noise.
-    let samples_per_run = (0..run_options.sample_count)
+    let samples_per_run = (0..sample_count)
         .into_par_iter()
         .map(|_| {
-            let run = run_compute_tree(
-                run_options.depth,
-                &ones,
-                &zeros,
-                &secret_key,
-                &compute_key,
-                &params,
-            );
+            let run = run_compute_tree(depth, &ones, &zeros, &secret_key, &compute_key, &params);
 
             progress.inc(1);
             run
@@ -459,7 +504,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
             let std = rmv.std();
             let predicted_err = probability_away_from_mean_gaussian_log_binary(std);
 
-            CMuxTreeDataPoint {
+            CMuxTreeStdDataPoint {
                 mean: rmv.mean(),
                 depth: i + 1,
                 std,
@@ -469,29 +514,139 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         })
         .collect::<Vec<_>>();
 
-    let (depths, base_2_error_rates) = data_points_per_level
+    let std_raw = samples_per_level_flattened
+        .into_iter()
+        .map(|level| level.into_iter().map(|res| res.ok()).collect())
+        .collect();
+
+    (data_points_per_level, std_raw)
+}
+
+fn drift_analysis(
+    sample_count: usize,
+    depth: usize,
+    params: &Params,
+) -> (
+    Vec<(CMuxTreeDriftDataPoint, CMuxTreeDriftDataPoint)>,
+    Vec<Vec<(Option<f64>, Option<f64>)>>,
+) {
+    let progress = ProgressBar::new(sample_count as u64);
+    progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
+
+    let samples_per_run = (0..sample_count)
+        .into_par_iter()
+        .map(|_| {
+            let secret_key = SecretKey::generate(&params);
+            let compute_key = ComputeKey::generate(&secret_key, &params);
+            let zeros = (0..depth)
+                .into_iter()
+                .map(|_| {
+                    let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params));
+
+                    ggsw
+                })
+                .collect::<Vec<_>>();
+
+            let ones = (0..depth)
+                .into_iter()
+                .map(|_| {
+                    let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params));
+
+                    ggsw
+                })
+                .collect::<Vec<_>>();
+
+            let run_results =
+                run_compute_tree(depth, &ones, &zeros, &secret_key, &compute_key, params);
+
+            let run_results = run_results
+                .into_iter()
+                .map(|(a, b)| (a.ok(), b.ok()))
+                .collect::<Vec<_>>();
+            progress.inc(1);
+
+            run_results
+        })
+        .collect::<Vec<_>>();
+    progress.finish_and_clear();
+
+    let xs = (1..=depth).map(|x| x as f64).collect::<Vec<_>>();
+    let samples_per_run_fit = samples_per_run
+        .iter()
+        .map(|samples_at_depth| {
+            // Not sure what to do about the two lines of output. I suppose handle them separately.
+            let top_tree_samples = samples_at_depth
+                .iter()
+                .map(|(a, _)| a.clone().unwrap())
+                .collect::<Vec<_>>();
+            let bottom_tree_samples = samples_at_depth
+                .iter()
+                .map(|(_, b)| b.clone().unwrap())
+                .collect::<Vec<_>>();
+
+            let (top_tree_drift, top_tree_offset, top_tree_max_error) =
+                linear_regression(&xs, &top_tree_samples);
+            let (bottom_tree_drift, bottom_tree_offset, bottom_tree_max_error) =
+                linear_regression(&xs, &bottom_tree_samples);
+
+            (
+                CMuxTreeDriftDataPoint {
+                    drift: top_tree_drift,
+                    offset: top_tree_offset,
+                    max_error: top_tree_max_error,
+                },
+                CMuxTreeDriftDataPoint {
+                    drift: bottom_tree_drift,
+                    offset: bottom_tree_offset,
+                    max_error: bottom_tree_max_error,
+                },
+            )
+        })
+        .collect::<Vec<_>>();
+
+    (samples_per_run_fit, samples_per_run)
+}
+
+pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
+    let system_info = print_system_info();
+
+    let cmux_tree_params_pretty_json = serde_json::to_string_pretty(cmux_tree_params).unwrap();
+    println!("Running with parameters:");
+    println!("{}", cmux_tree_params_pretty_json);
+
+    let run_options = cmux_tree_params.run_options;
+    let params = cmux_tree_params.parameter_set.clone();
+
+    println!("Running the drift analysis");
+    let (drift_data, drift_raw) =
+        drift_analysis(run_options.sample_count, run_options.drift_depth, &params);
+
+    println!("Running the standard deviation analysis");
+    let (std_data, std_raw) =
+        std_analysis(run_options.sample_count, run_options.std_depth, &params);
+
+    let (depths, base_2_error_rates) = std_data
         .iter()
         .map(|dp| (dp.depth, dp.predicted_err.base_2))
         .unzip::<usize, f64, Vec<_>, Vec<_>>();
 
-    let fit = fit_error_rate(&depths, &base_2_error_rates);
-
-    let raw = if run_options.include_raw {
-        samples_per_level_flattened
-            .into_iter()
-            .map(|level| level.into_iter().map(|res| res.ok()).collect())
-            .collect()
+    let std_raw = if run_options.include_raw {
+        std_raw
     } else {
         vec![]
     };
+
+    let fit = fit_error_rate(&depths, &base_2_error_rates);
 
     CMuxTreeDataFile {
         time: chrono::Local::now().to_string(),
         cmux_tree_parameters: cmux_tree_params.clone(),
         system_info,
-        method: Method::RandomSelectLinesCascadedDataLines,
+        method: Method::RandomSelectLinesCascadedDataLinesWithDrift,
         fit,
-        data: data_points_per_level,
-        raw,
+        drift_data,
+        drift_raw,
+        std_data,
+        std_raw,
     }
 }
