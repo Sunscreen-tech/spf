@@ -87,11 +87,11 @@ where
 }
 
 /// Logical right-shift all the coefficients by `n` places.
-pub fn polynomial_shr<S>(y: &mut PolynomialRef<S>, x: &PolynomialRef<S>, n: u32)
+pub fn polynomial_shr_round<S>(y: &mut PolynomialRef<S>, x: &PolynomialRef<S>, n: u32)
 where
     S: Clone + VectorOps,
 {
-    S::vector_shr(y.coeffs_mut(), x.coeffs(), n);
+    S::vector_shr_round(y.coeffs_mut(), x.coeffs(), n);
 }
 
 #[cfg(test)]

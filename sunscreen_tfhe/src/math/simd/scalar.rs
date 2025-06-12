@@ -4,6 +4,7 @@ use num::{
     Complex, Float,
     traits::{MulAdd, WrappingAdd, WrappingSub},
 };
+use sunscreen_math::One;
 
 use crate::{FromF64, FromU64};
 
@@ -130,12 +131,14 @@ where
 }
 
 #[inline(always)]
-pub fn vector_shr<S>(c: &mut [S], a: &[S], n: u32)
+pub fn vector_shr_round<S>(c: &mut [S], a: &[S], n: u32)
 where
-    S: Clone + Copy + Shr<u32, Output = S>,
+    S: Clone + Copy + Shr<u32, Output = S> + BitAnd<S, Output = S> + One + WrappingAdd<Output = S>,
 {
     for (c, a) in c.iter_mut().zip(a.iter()) {
-        *c = *a >> n;
+        let round_bit = (*a >> (n - 1)) & S::one();
+
+        *c = (*a >> n).wrapping_add(&round_bit);
     }
 }
 

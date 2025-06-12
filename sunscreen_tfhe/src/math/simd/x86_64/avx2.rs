@@ -126,12 +126,11 @@ pub fn vector_mod_pow2_q_f64_u64(c: &mut [u64], a: &[f64], log2_q: u64) {
 
 #[target_feature(enable = "avx2,fma")]
 #[inline]
-pub fn vector_shr<S>(c: &mut [S], a: &[S], n: u32)
-where
-    S: Clone + Copy + Shr<u32, Output = S>,
-{
+pub fn vector_shr_round(c: &mut [u64], a: &[u64], n: u32) {
     for (c, a) in c.iter_mut().zip(a.iter()) {
-        *c = *a >> n;
+        let round_bit = (*a >> (n - 1)) & 0x1;
+
+        *c = (*a >> n).wrapping_add(round_bit);
     }
 }
 

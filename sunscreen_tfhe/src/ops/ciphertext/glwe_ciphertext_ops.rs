@@ -4,7 +4,7 @@ use crate::{
     entities::{
         GgswCiphertextRef, GlweCiphertext, GlweCiphertextRef, LweCiphertextRef, PolynomialRef,
     },
-    ops::{ciphertext::decomposed_polynomial_glev_mad, polynomial::polynomial_shr},
+    ops::{ciphertext::decomposed_polynomial_glev_mad, polynomial::polynomial_shr_round},
     polynomial::{
         polynomial_add, polynomial_add_assign, polynomial_external_mad, polynomial_negate,
         polynomial_small_scalar_mad, polynomial_sub,
@@ -274,10 +274,10 @@ pub fn glwe_mod_switch_and_expand_pow_2<S>(
     S: TorusOps,
 {
     for (y, x) in y.a_mut(glwe).zip(x.a(glwe)) {
-        polynomial_shr(y, x, log_q_prime);
+        polynomial_shr_round(y, x, log_q_prime);
     }
 
-    polynomial_shr(y.b_mut(glwe), x.b(glwe), log_q_prime);
+    polynomial_shr_round(y.b_mut(glwe), x.b(glwe), log_q_prime);
 }
 
 /// Rotate all message coefficients by `rotation` amount. GLWE analoge of
