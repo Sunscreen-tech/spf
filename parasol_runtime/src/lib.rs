@@ -7,7 +7,7 @@
 //! for performing integer computation.
 //!
 //! Additionally, the [`fluent`] module provides convenient and readable builders for constructing
-//! circuits over integers that one can directly run on a [`UOpProcessor`] and perform low-level
+//! circuits over integers that one can directly run on a [`CircuitProcessor`] and perform low-level
 //! operations, such as ciphertext conversion.
 //!
 //! # Example
@@ -16,7 +16,7 @@
 //! use parasol_runtime::{
 //! fluent::{
 //!     FheCircuitCtx, PackedUInt}, ComputeKey, Encryption, Evaluation, L1GgswCiphertext,
-//!     L1GlweCiphertext, PublicKey, SecretKey, UOpProcessor, DEFAULT_128
+//!     L1GlweCiphertext, PublicKey, SecretKey, CircuitProcessor, DEFAULT_128
 //! };
 //! use std::sync::Arc;
 //!
@@ -28,7 +28,7 @@
 //! // Generate the things needed to encrypt data and run our circuit.
 //! let enc = Encryption::new(&DEFAULT_128);
 //! let eval = Evaluation::new(ck, &DEFAULT_128, &enc);
-//! let (mut proc, flow_control) = UOpProcessor::new(16384, None, &eval, &enc);
+//! let (mut proc, flow_control) = CircuitProcessor::new(16384, None, &eval, &enc);
 //!
 //! // Encrypt our 2 16-bit unsigned inputs, each packed into a single GLWE ciphertext.
 //! let a = PackedUInt::<16, L1GlweCiphertext>::encrypt(42, &enc, &pk);
@@ -79,7 +79,7 @@ pub mod test_utils;
 #[doc(hidden)]
 pub mod metadata;
 
-pub use circuit_processor::{CompletionHandler, UOpProcessor};
+pub use circuit_processor::{CircuitProcessor, CompletionHandler, RuntimeError};
 pub use crypto::{
     ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
     L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, TrivialOne,

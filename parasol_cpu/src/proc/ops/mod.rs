@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use crate::{Ciphertext, proc::DispatchIsaOp, tomasulo::tomasulo_processor::RetirementInfo};
+use crate::{Ciphertext, Error, proc::DispatchIsaOp, tomasulo::tomasulo_processor::RetirementInfo};
 
 use mux_circuits::convert_value_to_bits;
 use parasol_concurrency::AtomicRefCell;
@@ -115,8 +115,13 @@ pub(crate) fn trivially_encrypt_value_l1glwe(
 pub fn make_parent_op(retirement_info: &RetirementInfo<DispatchIsaOp>) -> Arc<CompletionHandler> {
     let retirement_info = retirement_info.clone();
 
-    Arc::new(CompletionHandler::new(move || {
-        FheProcessor::retire(&retirement_info, Ok(()))
+    Arc::new(CompletionHandler::new(move |err| {
+        let result = match err {
+            Some(e) => Err(Error::from(e)),
+            None => Ok(()),
+        };
+
+        FheProcessor::retire(&retirement_info, result)
     }))
 }
 

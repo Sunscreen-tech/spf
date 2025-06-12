@@ -151,7 +151,8 @@ mod tests {
         uproc
             .lock()
             .unwrap()
-            .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+            .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+            .unwrap();
 
         assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u64.pow(16) - 42);
     }
@@ -176,7 +177,8 @@ mod tests {
         uproc
             .lock()
             .unwrap()
-            .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+            .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+            .unwrap();
 
         assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u64.pow(16) - 42);
     }
@@ -199,7 +201,8 @@ mod tests {
         uproc
             .lock()
             .unwrap()
-            .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+            .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+            .unwrap();
 
         assert_eq!(actual.decrypt(&enc, &sk), 2u64.pow(15) - 42);
     }
@@ -222,7 +225,8 @@ mod tests {
         uproc
             .lock()
             .unwrap()
-            .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+            .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+            .unwrap();
 
         assert_eq!(actual.decrypt(&enc, &sk), 2u64.pow(15) - 42);
     }

@@ -3,7 +3,7 @@ use std::{
     sync::{
         Arc,
         atomic::{AtomicUsize, Ordering},
-        mpsc::{self, Receiver, SyncSender, sync_channel},
+        mpsc::{Receiver, SyncSender, sync_channel},
     },
 };
 
@@ -18,12 +18,16 @@ use rayon::{ThreadPool, spawn};
 
 use crate::{
     Encryption, Evaluation,
-    crypto::{
-        L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext,
-        ciphertext::Ciphertext,
-    },
+    crypto::{L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext},
     fhe_circuit::{FheCircuit, FheEdge, FheOp},
 };
+
+mod completion_handler;
+pub use completion_handler::*;
+mod runtime_error;
+pub use runtime_error::*;
+mod task;
+use task::*;
 
 #[cfg(test)]
 mod tests;
@@ -48,14 +52,14 @@ pub fn push_completed(id: usize) {
 /// callback when all complete, while the latter blocks until all tasks are complete.
 ///
 /// To limit memory usage, it features `flow_control` whereby the thread issuing
-/// tasks must pass the [`Receiver`] returned by [`UOpProcessor::new`] to the
+/// tasks must pass the [`Receiver`] returned by [`CircuitProcessor::new`] to the
 /// [`Self::spawn_graph`] and [`Self::run_graph_blocking`] methods, which will block the
 /// calling thread when the number of in-flight tasks exceeds the `flow_control` value passed to
-/// [`UOpProcessor::new`].
+/// [`CircuitProcessor::new`].
 ///
 /// The `thread_pool` argument is optional. When set, tasks will be scheduled on the specified
 /// threadpool. Otherwise, the global rayon threadpool will be used.
-pub struct UOpProcessor {
+pub struct CircuitProcessor {
     flow_control: SyncSender<()>,
     thread_pool: Option<Arc<ThreadPool>>,
     /// An [`Evaluation`] that can perform FHE operations.
@@ -73,8 +77,8 @@ pub struct UOpProcessor {
     one_glev1: L1GlevCiphertext,
 }
 
-impl UOpProcessor {
-    /// Create a new [`UOpProcessor`]. When `thread_pool` is [`None`], the global rayon threadpool
+impl CircuitProcessor {
+    /// Create a new [`CircuitProcessor`]. When `thread_pool` is [`None`], the global rayon threadpool
     /// will be used.
     pub fn new(
         flow_control_len: usize,
@@ -139,9 +143,6 @@ impl UOpProcessor {
             parent_op.dispatch();
         }
 
-        // Cmux has the most inputs at 3.
-        assert!(deps.len() <= 3);
-
         let mut inputs = vec![];
 
         for t in deps.iter() {
@@ -188,7 +189,11 @@ impl UOpProcessor {
         new_task
     }
 
-    fn execute_task(uproc: &Arc<Self>, task: Arc<Task>, parent_op: Arc<CompletionHandler>) {
+    fn execute_task(
+        uproc: &Arc<Self>,
+        task: Arc<Task>,
+        completion_handler: Arc<CompletionHandler>,
+    ) {
         trace!("Running task {} {:#?}", task.task_id, task.op);
 
         let uproc_clone = uproc.clone();
@@ -206,7 +211,16 @@ impl UOpProcessor {
             // that our dependencies called.
             std::sync::atomic::fence(Ordering::Acquire);
 
-            Self::exec_op(&uproc_clone, &task);
+            // If we've already errored, this task becomes a no-op. We'll continue
+            // processing our dependents and let them error to avoid memory leaks
+            // due to bad ref-counts.
+            if completion_handler.error.get().is_none() {
+                if let Err(e) = Self::exec_op(&uproc_clone, &task) {
+                    // If another thread errored and beat us, whatever. We'll use that
+                    // error.
+                    let _ = completion_handler.error.set(e);
+                }
+            }
 
             // Ensure that our output is visible to other threads. Acquiring the lock below
             // only installs an Acquire fence, so hardware can move the output write beyond
@@ -225,7 +239,7 @@ impl UOpProcessor {
             // available for use.
             while let Some(dep) = deps.pop() {
                 if dep.num_deps.fetch_sub(1, Ordering::Release) == 1 {
-                    Self::execute_task(&uproc_clone, dep, parent_op.clone());
+                    Self::execute_task(&uproc_clone, dep, completion_handler.clone());
                 }
             }
 
@@ -234,15 +248,15 @@ impl UOpProcessor {
             std::mem::forget(deps);
 
             uproc_clone.flow_control.send(()).unwrap();
-            parent_op.retire();
+            completion_handler.retire();
         });
     }
 
-    fn exec_op(proc: &UOpProcessor, task: &Task) {
+    fn exec_op(proc: &CircuitProcessor, task: &Task) -> Result<(), RuntimeError> {
+        task.validate(&proc.eval.params)?;
+
         match &task.op {
             FheOp::InputLwe0(x) => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
 
                 let x = AtomicRefCell::borrow(x);
@@ -250,8 +264,6 @@ impl UOpProcessor {
                 *output = Some(x.clone().into());
             }
             FheOp::InputLwe1(x) => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
 
                 let x = AtomicRefCell::borrow(x);
@@ -259,8 +271,6 @@ impl UOpProcessor {
                 *output = Some(x.clone().into());
             }
             FheOp::InputGlwe1(x) => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
 
                 let x = AtomicRefCell::borrow(x);
@@ -268,8 +278,6 @@ impl UOpProcessor {
                 *output = Some(x.clone().into());
             }
             FheOp::InputGgsw1(x) => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
 
                 let x = AtomicRefCell::borrow(x);
@@ -277,8 +285,6 @@ impl UOpProcessor {
                 *output = Some(x.clone().into());
             }
             FheOp::InputGlev1(x) => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
 
                 let x = AtomicRefCell::borrow(x);
@@ -286,9 +292,6 @@ impl UOpProcessor {
                 *output = Some(x.clone().into());
             }
             FheOp::OutputLwe0(x) => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let mut output = AtomicRefCell::borrow_mut(x);
 
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
@@ -296,9 +299,6 @@ impl UOpProcessor {
                 *output = input.clone().unwrap().try_into().unwrap();
             }
             FheOp::OutputLwe1(x) => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let mut output = AtomicRefCell::borrow_mut(x);
 
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
@@ -306,9 +306,6 @@ impl UOpProcessor {
                 *output = input.clone().unwrap().try_into().unwrap();
             }
             FheOp::OutputGlwe1(x) => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let mut output = AtomicRefCell::borrow_mut(x);
 
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
@@ -316,9 +313,6 @@ impl UOpProcessor {
                 *output = input.clone().unwrap().try_into().unwrap();
             }
             FheOp::OutputGgsw1(x) => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let mut output = AtomicRefCell::borrow_mut(x);
 
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
@@ -326,9 +320,6 @@ impl UOpProcessor {
                 *output = input.clone().unwrap().try_into().unwrap();
             }
             FheOp::OutputGlev1(x) => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let mut output = AtomicRefCell::borrow_mut(x);
 
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
@@ -336,9 +327,6 @@ impl UOpProcessor {
                 *output = input.clone().unwrap().try_into().unwrap();
             }
             FheOp::CircuitBootstrap => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
                 let input = input.as_ref().unwrap().borrow_lwe0();
 
@@ -351,9 +339,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::Not => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
                 let input = input.as_ref().unwrap().borrow_glwe1();
 
@@ -365,22 +350,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::GlweAdd => {
-                assert_eq!(task.inputs.len(), 2);
-                assert_eq!(
-                    task.inputs
-                        .iter()
-                        .filter(|x| matches!(x.1, FheEdge::Left))
-                        .count(),
-                    1
-                );
-                assert_eq!(
-                    task.inputs
-                        .iter()
-                        .filter(|x| matches!(x.1, FheEdge::Right))
-                        .count(),
-                    1
-                );
-
                 // Grab both operands. Since addition commutes, we won't concern ourselves
                 // with appropriately selecting the left and right, but just add them
                 // in arbitrary order.
@@ -397,8 +366,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::MultiplyGgswGlwe => {
-                assert_eq!(task.inputs.len(), 2);
-
                 let glwe = task
                     .inputs
                     .iter()
@@ -422,8 +389,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::CMux => {
-                assert_eq!(task.inputs.len(), 3);
-
                 let a = task
                     .inputs
                     .iter()
@@ -455,8 +420,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::GlevCMux => {
-                assert_eq!(task.inputs.len(), 3);
-
                 let a = task
                     .inputs
                     .iter()
@@ -488,9 +451,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::KeyswitchL1toL0 => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
                 let input = input.as_ref().unwrap().borrow_lwe1();
 
@@ -502,9 +462,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::SampleExtract(idx) => {
-                assert_eq!(task.inputs.len(), 1);
-                assert!(matches!(task.inputs[0].1, FheEdge::Unary));
-
                 let input = AtomicRefCell::borrow(&task.inputs[0].0);
                 let input = input.as_ref().unwrap().borrow_glwe1();
 
@@ -516,56 +473,38 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::ZeroLwe0 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.zero_lwe0.clone().into());
             }
             FheOp::OneLwe0 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.one_lwe0.clone().into());
             }
             FheOp::ZeroGlwe1 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.zero_glwe1.clone().into());
             }
             FheOp::OneGlwe1 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.one_glwe1.clone().into());
             }
             FheOp::ZeroGgsw1 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.zero_ggsw1.clone().into());
             }
             FheOp::OneGgsw1 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.one_ggsw1.clone().into());
             }
             FheOp::ZeroGlev1 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.zero_glev1.clone().into());
             }
             FheOp::OneGlev1 => {
-                assert_eq!(task.inputs.len(), 0);
-
                 let mut output = AtomicRefCell::borrow_mut(&task.output);
                 *output = Some(proc.one_glev1.clone().into());
             }
             FheOp::MulXN(n) => {
-                assert_eq!(task.inputs.len(), 1);
-
                 let input = &task
                     .inputs
                     .iter()
@@ -583,8 +522,6 @@ impl UOpProcessor {
                 *output = Some(res.into());
             }
             FheOp::SchemeSwitch => {
-                assert_eq!(task.inputs.len(), 1);
-
                 let input = &task
                     .inputs
                     .iter()
@@ -604,6 +541,8 @@ impl UOpProcessor {
             FheOp::Retire => {}
             FheOp::Nop => {}
         }
+
+        Ok(())
     }
 
     /// Dispatch a graph of tasks to execute subject to flow control.
@@ -624,6 +563,13 @@ impl UOpProcessor {
     /// read until you [`CompletionHandler`] is invoked, lest a race condition occurs.
     /// The underlying [`AtomicRefCell`]s at least ensure a panic occurs rather than
     /// undefined behavior.
+    ///
+    /// # Incorrect behavior
+    /// Passing a graph with a cycle will result in arbitrary behavior and may
+    /// give an incorrect answer or result in an error. However, the behavior will
+    /// comply with Rust soundness guarantees, won't panic, or leak memory.
+    ///
+    /// Furthermore, your input circuit must not contain any retire operations.
     pub fn spawn_graph(
         &mut self,
         circuit: &FheCircuit,
@@ -659,9 +605,16 @@ impl UOpProcessor {
 
             let op = circuit.graph.node_weight(idx).unwrap();
 
-            let task = self.dispatch(flow_control, op.clone(), &deps, on_completion.clone());
+            // User graphs should never have Retire in them. Error if we encounter one.
+            if matches!(op, FheOp::Retire) {
+                // Another thread may have beaten us in erroring and that's okay.
+                let _ = on_completion.error.set(RuntimeError::illegal_retire_op());
+                break;
+            } else {
+                let task = self.dispatch(flow_control, op.clone(), &deps, on_completion.clone());
 
-            tasks.insert(idx, (task, dep_count));
+                tasks.insert(idx, (task, dep_count));
+            }
         }
 
         // Dispatch a retire operation to indicate there will be no more operations
@@ -678,63 +631,26 @@ impl UOpProcessor {
     /// The same correctness conditions hold as with [`Self::spawn_graph`].
     /// However, reading circuit outputs before they're ready is significantly harder
     /// to accidentally do because this operation blocks.
-    pub fn run_graph_blocking(&mut self, circuit: &FheCircuit, flow_control: &Receiver<()>) {
+    ///
+    /// # Incorrect behavior
+    /// Passing a graph with a cycle will result in arbitrary behavior and may
+    /// give an incorrect answer or result in an error. However, the behavior will
+    /// comply with Rust soundness guarantees, won't panic, or leak memory.
+    ///
+    /// Furthermore, your input circuit must not contain any retire operations.
+    pub fn run_graph_blocking(
+        &mut self,
+        circuit: &FheCircuit,
+        flow_control: &Receiver<()>,
+    ) -> Result<(), RuntimeError> {
         let (on_completion, done) = CompletionHandler::new_notify();
 
         self.spawn_graph(circuit, flow_control, Arc::new(on_completion));
 
-        done.recv().unwrap()
-    }
-}
-
-/// A callback that fires when all the operations in an [`FheCircuit`] passed to
-/// [`UOpProcessor::spawn_graph`] or [`UOpProcessor::run_graph_blocking`] finish.
-pub struct CompletionHandler {
-    ops_remaining: AtomicUsize,
-    callback: Box<dyn Fn() + 'static + Sync + Send>,
-}
-
-impl CompletionHandler {
-    /// Create a [`CompletionHandler`] with the passed callback.
-    pub fn new<F>(callback: F) -> Self
-    where
-        F: Fn() + Sync + Send + 'static,
-    {
-        Self {
-            ops_remaining: AtomicUsize::new(1),
-            callback: Box::new(callback),
+        // Unwrap won't panic because both sides of the channel are alive.
+        match done.recv().unwrap() {
+            Some(e) => Err(e),
+            None => Ok(()),
         }
     }
-
-    pub(crate) fn dispatch(&self) {
-        self.ops_remaining.fetch_add(1, Ordering::Acquire);
-    }
-
-    pub(crate) fn retire(&self) {
-        if self.ops_remaining.fetch_sub(1, Ordering::Release) == 1 {
-            (self.callback)();
-        }
-    }
-
-    /// Creates a new [`CompletionHandler`] that notifies the returned recv on completion
-    pub fn new_notify() -> (Self, Receiver<()>) {
-        let (send, recv) = mpsc::channel();
-
-        (Self::new(move || send.send(()).unwrap()), recv)
-    }
-}
-
-pub struct Task {
-    task_id: usize,
-    num_deps: AtomicUsize,
-    op: FheOp,
-    output: Arc<AtomicRefCell<Option<Ciphertext>>>,
-    inputs: Vec<(Arc<AtomicRefCell<Option<Ciphertext>>>, FheEdge)>,
-
-    /// Here we use [`Mutex`] rather than a spinlock because we don't need to forcibly
-    /// unlock this object for reuse.
-    dependents: Spinlock<Vec<Arc<Task>>>,
-
-    #[cfg(feature = "debug")]
-    deps: Vec<Weak<Task>>,
 }
