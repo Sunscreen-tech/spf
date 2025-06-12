@@ -605,15 +605,15 @@ impl CircuitProcessor {
 
             let op = circuit.graph.node_weight(idx).unwrap();
 
-            // User graphs should never have Retire in them.
-            if !matches!(op, FheOp::Retire) {
-                let task = self.dispatch(flow_control, op.clone(), &deps, on_completion.clone());
-
-                tasks.insert(idx, (task, dep_count));
-            } else {
+            // User graphs should never have Retire in them. Error if we encounter one.
+            if matches!(op, FheOp::Retire) {
                 // Another thread may have beaten us in erroring and that's okay.
                 let _ = on_completion.error.set(RuntimeError::illegal_retire_op());
                 break;
+            } else {
+                let task = self.dispatch(flow_control, op.clone(), &deps, on_completion.clone());
+
+                tasks.insert(idx, (task, dep_count));
             }
         }
 
