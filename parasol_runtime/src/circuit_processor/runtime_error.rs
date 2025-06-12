@@ -3,7 +3,9 @@ use log::error;
 use crate::{FheEdge, circuit_processor::Task, crypto::ciphertext::Ciphertext};
 
 #[derive(thiserror::Error, Debug, Clone)]
-pub struct RuntimeError(String);
+/// An error that occurs when running an FHE circuit. These usually occur when a
+/// circuit is malformed (e.g. illegally connecting nodes, using edges incorrectly etc.).
+pub struct RuntimeError(pub String);
 
 impl std::fmt::Display for RuntimeError {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {

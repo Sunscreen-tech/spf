@@ -34,11 +34,11 @@ pub enum Ciphertext {
 impl Ciphertext {
     pub fn kind_str(&self) -> &str {
         match self {
-            Self::L0Lwe(l0_lwe_ciphertext) => "L0Lwe",
-            Self::L1Lwe(l1_lwe_ciphertext) => "L1Lwe",
-            Self::L1Glwe(l1_glwe_ciphertext) => "L1Glwe",
-            Self::L1Ggsw(l1_ggsw_ciphertext) => "L1Ggsw",
-            Self::L1Glev(l1_glev_ciphertext) => "L1Glev",
+            Self::L0Lwe(_) => "L0Lwe",
+            Self::L1Lwe(_) => "L1Lwe",
+            Self::L1Glwe(_) => "L1Glwe",
+            Self::L1Ggsw(_) => "L1Ggsw",
+            Self::L1Glev(_) => "L1Glev",
         }
     }
 

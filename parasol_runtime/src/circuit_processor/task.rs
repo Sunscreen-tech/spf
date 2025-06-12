@@ -1,4 +1,4 @@
-use std::sync::{atomic::AtomicUsize, Arc};
+use std::sync::{Arc, atomic::AtomicUsize};
 
 use parasol_concurrency::{AtomicRefCell, Spinlock};
 
@@ -46,33 +46,34 @@ impl Task {
 
     #[inline]
     fn validate_op_input(&self, edge: FheEdge, ct: &Ciphertext) -> Result<(), RuntimeError> {
-        let is_valid = match (&self.op, edge) {
-            (FheOp::OutputLwe0(_), FheEdge::Unary)
-            | (FheOp::CircuitBootstrap, FheEdge::Unary)  => ct.is_lwe0(),
-            (FheOp::OutputLwe1(_), FheEdge::Unary)
-            | (FheOp::KeyswitchL1toL0, FheEdge::Unary) => ct.is_lwe1(),
-            (FheOp::OutputGlwe1(_), FheEdge::Unary)
-            | (FheOp::SampleExtract(_), FheEdge::Unary)
-            | (FheOp::MulXN(_), FheEdge::Unary)
-            | (FheOp::Not, FheEdge::Unary)
-            | (FheOp::GlweAdd, FheEdge::Left)
-            | (FheOp::GlweAdd, FheEdge::Right)
-            | (FheOp::CMux, FheEdge::Low)
-            | (FheOp::CMux, FheEdge::High)
-            | (FheOp::MultiplyGgswGlwe, FheEdge::Glwe) => ct.is_glwe1(),
-            (FheOp::OutputGlev1(_), FheEdge::Unary)
-            | (FheOp::GlevCMux, FheEdge::Low)
-            | (FheOp::GlevCMux, FheEdge::High)
-            | (FheOp::SchemeSwitch, FheEdge::Unary) => ct.is_glev1(),
-            (FheOp::OutputGgsw1(_), FheEdge::Unary)
-            | (FheOp::CMux, FheEdge::Sel)
-            | (FheOp::GlevCMux, FheEdge::Sel)
-            | (FheOp::MultiplyGgswGlwe, FheEdge::Ggsw) => ct.is_ggsw1(),
-            _ => unreachable!()
-        };
+        let is_valid =
+            match (&self.op, edge) {
+                (FheOp::OutputLwe0(_), FheEdge::Unary)
+                | (FheOp::CircuitBootstrap, FheEdge::Unary) => ct.is_lwe0(),
+                (FheOp::OutputLwe1(_), FheEdge::Unary)
+                | (FheOp::KeyswitchL1toL0, FheEdge::Unary) => ct.is_lwe1(),
+                (FheOp::OutputGlwe1(_), FheEdge::Unary)
+                | (FheOp::SampleExtract(_), FheEdge::Unary)
+                | (FheOp::MulXN(_), FheEdge::Unary)
+                | (FheOp::Not, FheEdge::Unary)
+                | (FheOp::GlweAdd, FheEdge::Left)
+                | (FheOp::GlweAdd, FheEdge::Right)
+                | (FheOp::CMux, FheEdge::Low)
+                | (FheOp::CMux, FheEdge::High)
+                | (FheOp::MultiplyGgswGlwe, FheEdge::Glwe) => ct.is_glwe1(),
+                (FheOp::OutputGlev1(_), FheEdge::Unary)
+                | (FheOp::GlevCMux, FheEdge::Low)
+                | (FheOp::GlevCMux, FheEdge::High)
+                | (FheOp::SchemeSwitch, FheEdge::Unary) => ct.is_glev1(),
+                (FheOp::OutputGgsw1(_), FheEdge::Unary)
+                | (FheOp::CMux, FheEdge::Sel)
+                | (FheOp::GlevCMux, FheEdge::Sel)
+                | (FheOp::MultiplyGgswGlwe, FheEdge::Ggsw) => ct.is_ggsw1(),
+                _ => unreachable!(),
+            };
 
         if !is_valid {
-            return Err(RuntimeError::invalid_ciphertext_kind(&self, ct, edge))
+            return Err(RuntimeError::invalid_ciphertext_kind(&self, ct, edge));
         }
 
         Ok(())

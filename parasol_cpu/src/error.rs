@@ -6,6 +6,11 @@ use thiserror::Error;
 #[derive(Debug, Clone, Error)]
 /// Errors that can occur in this crate.
 pub enum Error {
+    /// An error occurred when processing a running a circuit on a
+    /// [`parasol_runtime::UOpProcessor`].
+    #[error("Circuit error: {0}")]
+    CircuitError(#[from] parasol_runtime::RuntimeError),
+
     /// Illegal instruction.
     #[error("Illegal instruction encountered at 0x{0:8x}")]
     IllegalInstruction(u32),

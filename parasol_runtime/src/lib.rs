@@ -79,7 +79,7 @@ pub mod test_utils;
 #[doc(hidden)]
 pub mod metadata;
 
-pub use circuit_processor::{CompletionHandler, UOpProcessor};
+pub use circuit_processor::{CompletionHandler, RuntimeError, UOpProcessor};
 pub use crypto::{
     ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
     L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, TrivialOne,

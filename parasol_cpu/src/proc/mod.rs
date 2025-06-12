@@ -292,18 +292,20 @@ impl FheComputer {
     }
 
     /// Run a graph in blocking mode.
-    pub(crate) fn run_graph_blocking(&mut self, circuit: &FheCircuit) {
+    pub(crate) fn run_graph_blocking(&mut self, circuit: &FheCircuit) -> Result<()> {
         let uproc = self.processor.aux_data.uop_processor.borrow_mut();
         let fc = &self.processor.aux_data.flow;
 
-        uproc.run_graph_blocking(circuit, fc);
+        uproc.run_graph_blocking(circuit, fc)?;
+
+        Ok(())
     }
 
     /// Packs a `GenericInt<N, L1GlweCiphertext, U>` into a `PackedGenericInt<N, L1GlweCiphertext, U>`.
     pub fn pack_int<const N: usize, U: Sign>(
         &mut self,
         input: GenericInt<N, L1GlweCiphertext, U>,
-    ) -> PackedGenericInt<N, L1GlweCiphertext, U> {
+    ) -> Result<PackedGenericInt<N, L1GlweCiphertext, U>> {
         let ctx = FheCircuitCtx::new();
 
         let packed_ct = input
@@ -311,16 +313,16 @@ impl FheComputer {
             .pack(&ctx, &self.processor.aux_data.enc)
             .collect_output(&ctx, &self.processor.aux_data.enc);
 
-        self.run_graph_blocking(&ctx.circuit.borrow());
+        self.run_graph_blocking(&ctx.circuit.borrow())?;
 
-        PackedGenericInt::from(packed_ct)
+        Ok(PackedGenericInt::from(packed_ct))
     }
 
     /// Similar to [`FheComputer::pack_int`] but works on [`DynamicGenericInt`]
     pub fn pack_int_dyn<U: Sign>(
         &mut self,
         input: DynamicGenericInt<L1GlweCiphertext, U>,
-    ) -> PackedDynamicGenericInt<L1GlweCiphertext, U> {
+    ) -> Result<PackedDynamicGenericInt<L1GlweCiphertext, U>> {
         let ctx = FheCircuitCtx::new();
 
         let packed_ct = input
@@ -328,15 +330,15 @@ impl FheComputer {
             .pack(&ctx, &self.processor.aux_data.enc)
             .collect_output(&ctx, &self.processor.aux_data.enc);
 
-        self.run_graph_blocking(&ctx.circuit.borrow());
-        packed_ct
+        self.run_graph_blocking(&ctx.circuit.borrow())?;
+        Ok(packed_ct)
     }
 
     /// Unpacks a `PackedGenericInt<N, L1GlweCiphertext, U>` into a `GenericInt<N, L1GlweCiphertext, U>`.
     pub fn unpack_int<const N: usize, U: Sign>(
         &mut self,
         input: PackedGenericInt<N, L1GlweCiphertext, U>,
-    ) -> GenericInt<N, L1GlweCiphertext, U> {
+    ) -> Result<GenericInt<N, L1GlweCiphertext, U>> {
         let ctx = FheCircuitCtx::new();
 
         let unpacked_ct = input
@@ -345,16 +347,16 @@ impl FheComputer {
             .convert(&ctx)
             .collect_outputs(&ctx, &self.processor.aux_data.enc);
 
-        self.run_graph_blocking(&ctx.circuit.borrow());
+        self.run_graph_blocking(&ctx.circuit.borrow())?;
 
-        GenericInt::from(unpacked_ct)
+        Ok(GenericInt::from(unpacked_ct))
     }
 
     /// Similar to [`FheComputer::unpack_int`] but works on [`PackedDynamicGenericInt`]
     pub fn unpack_int_dyn<U: Sign>(
         &mut self,
         input: PackedDynamicGenericInt<L1GlweCiphertext, U>,
-    ) -> DynamicGenericInt<L1GlweCiphertext, U> {
+    ) -> Result<DynamicGenericInt<L1GlweCiphertext, U>> {
         let ctx = FheCircuitCtx::new();
 
         let unpacked_ct = input
@@ -363,7 +365,7 @@ impl FheComputer {
             .convert(&ctx)
             .collect_outputs(&ctx, &self.processor.aux_data.enc);
 
-        self.run_graph_blocking(&ctx.circuit.borrow());
-        unpacked_ct
+        self.run_graph_blocking(&ctx.circuit.borrow())?;
+        Ok(unpacked_ct)
     }
 }

@@ -84,7 +84,9 @@ fn bench_binary_function<const N: usize, F1, F2>(
 
     crit.bench_function(&format!("{name} CBS+GLWECMux"), |bench| {
         bench.iter(|| {
-            uproc.run_graph_blocking(&ctx.circuit.borrow(), &fc);
+            uproc
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
         });
     });
 }
