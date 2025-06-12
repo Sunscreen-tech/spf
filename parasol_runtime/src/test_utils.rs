@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, OnceLock, mpsc::Receiver};
 
 use crate::{
-    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, SecretKey, CircuitProcessor,
+    CircuitProcessor, ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, SecretKey,
     crypto::PublicKey, params::DEFAULT_80,
 };
 

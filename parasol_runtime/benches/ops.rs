@@ -2,8 +2,8 @@ use std::sync::{Arc, OnceLock, mpsc::Receiver};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
-    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, L0LweCiphertext,
-    L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey, CircuitProcessor,
+    CircuitProcessor, ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation,
+    L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey,
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
 };
 

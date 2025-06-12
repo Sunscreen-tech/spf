@@ -42,7 +42,11 @@ impl Task {
     }
 
     #[inline]
-    fn validate_op_input(&self, edge: FheEdge, ct: &Option<Ciphertext>) -> Result<(), RuntimeError> {
+    fn validate_op_input(
+        &self,
+        edge: FheEdge,
+        ct: &Option<Ciphertext>,
+    ) -> Result<(), RuntimeError> {
         if ct.is_none() {
             return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Unary));
         }

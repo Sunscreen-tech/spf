@@ -4,8 +4,8 @@ use fhe_processor::FheProcessor;
 pub use fhe_processor::{RunProgramOptions, RunProgramOptionsBuilder};
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
-    Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
-    L1LweCiphertext, TrivialOne, TrivialZero, CircuitProcessor,
+    CircuitProcessor, Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext,
+    L1GlweCiphertext, L1LweCiphertext, TrivialOne, TrivialZero,
     fluent::{
         DynamicGenericInt, FheCircuitCtx, GenericInt, PackedDynamicGenericInt, PackedGenericInt,
         Sign,
