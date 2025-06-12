@@ -32,6 +32,36 @@ pub enum Ciphertext {
 }
 
 impl Ciphertext {
+    pub fn kind_str(&self) -> &str {
+        match self {
+            Self::L0Lwe(l0_lwe_ciphertext) => "L0Lwe",
+            Self::L1Lwe(l1_lwe_ciphertext) => "L1Lwe",
+            Self::L1Glwe(l1_glwe_ciphertext) => "L1Glwe",
+            Self::L1Ggsw(l1_ggsw_ciphertext) => "L1Ggsw",
+            Self::L1Glev(l1_glev_ciphertext) => "L1Glev",
+        }
+    }
+
+    pub fn is_lwe0(&self) -> bool {
+        matches!(self, Self::L0Lwe(_))
+    }
+
+    pub fn is_lwe1(&self) -> bool {
+        matches!(self, Self::L1Lwe(_))
+    }
+
+    pub fn is_glwe1(&self) -> bool {
+        matches!(self, Self::L1Glwe(_))
+    }
+
+    pub fn is_ggsw1(&self) -> bool {
+        matches!(self, Self::L1Ggsw(_))
+    }
+
+    pub fn is_glev1(&self) -> bool {
+        matches!(self, Self::L1Glev(_))
+    }
+
     pub fn borrow_lwe0(&self) -> &L0LweCiphertext {
         match self {
             Self::L0Lwe(x) => x,

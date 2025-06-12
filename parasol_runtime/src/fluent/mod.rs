@@ -432,7 +432,8 @@ mod tests {
         uproc
             .lock()
             .unwrap()
-            .run_graph_blocking(&graph.circuit.borrow(), &fc);
+            .run_graph_blocking(&graph.circuit.borrow(), &fc)
+            .unwrap();
 
         let actual = output.decrypt(&enc, &get_secret_keys_80());
         assert_eq!(actual, test_val);
@@ -479,7 +480,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&graph.circuit.borrow(), &fc);
+                .run_graph_blocking(&graph.circuit.borrow(), &fc)
+                .unwrap();
 
             let actual = outputs.decrypt(&enc, &sk);
             assert_eq!(actual, test_val);
@@ -530,7 +532,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(expect_gt.decrypt(enc, &sk), gt);
             assert_eq!(expect_lt.decrypt(enc, &sk), !gt);
@@ -578,7 +581,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(calculated_eq.decrypt(enc, &sk), eq);
         }
@@ -618,7 +622,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(calculated_eq.decrypt(enc, &sk), eq);
         }
@@ -656,7 +661,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(calculated_neq.decrypt(enc, &sk), neq);
         }
@@ -695,7 +701,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(calculated_neq.decrypt(enc, &sk), neq);
         }
@@ -741,7 +748,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(expect_gt.decrypt(enc, &sk), gt);
             assert_eq!(expect_lt.decrypt(enc, &sk), !gt);
@@ -792,7 +800,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(expect_gt.decrypt(enc, &sk), gt);
             assert_eq!(expect_lt.decrypt(enc, &sk), !gt);
@@ -855,7 +864,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(sel_false.decrypt(enc, &sk), test_vals.1);
             assert_eq!(sel_true.decrypt(enc, &sk), test_vals.0);
@@ -894,7 +904,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(sel_false.decrypt(enc, &sk), test_vals.1);
             assert_eq!(sel_true.decrypt(enc, &sk), test_vals.0);
@@ -922,7 +933,8 @@ mod tests {
             uproc
                 .lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(c.decrypt(enc, &sk), test_vals.2);
         }
@@ -976,7 +988,8 @@ mod tests {
 
             proc.lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(res.decrypt(&enc, &sk), test_vals.1);
 
@@ -987,7 +1000,8 @@ mod tests {
 
             proc.lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(res.decrypt(&enc, &sk), test_vals.2);
         }
@@ -1024,7 +1038,8 @@ mod tests {
 
             proc.lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(c.decrypt(&enc, &sk), test_vals.2);
         }
@@ -1054,7 +1069,8 @@ mod tests {
 
             proc.lock()
                 .unwrap()
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
 
             assert_eq!(c.decrypt(&enc, &sk), test_vals.2);
         }

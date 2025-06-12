@@ -1,7 +1,4 @@
-use std::sync::{
-    Arc,
-    atomic::{AtomicBool, Ordering},
-};
+use std::sync::Arc;
 
 use mux_circuits::and::make_and_circuit;
 use parasol_concurrency::AtomicRefCell;
@@ -15,42 +12,26 @@ use crate::{
     test_utils::{get_secret_keys_80, make_uproc_80, make_uproc_with_flow_control_len_80},
 };
 
-use super::CompletionHandler;
+mod faults;
 
 fn run_uop_program(graph: &FheCircuit) {
     let (processor, flow) = make_uproc_80();
 
-    let finished = Arc::new(AtomicBool::new(false));
-    let finished_2 = finished.clone();
-
-    let parent_op = Arc::new(CompletionHandler::new(move || {
-        finished_2.store(true, Ordering::Release);
-    }));
-
     processor
         .lock()
         .unwrap()
-        .spawn_graph(graph, &flow, parent_op);
-
-    while !finished.load(Ordering::Acquire) {}
+        .run_graph_blocking(graph, &flow)
+        .unwrap();
 }
 
 fn run_uop_program_with_fc_len(graph: &FheCircuit, fc_len: usize) {
     let (processor, flow) = make_uproc_with_flow_control_len_80(fc_len);
 
-    let finished = Arc::new(AtomicBool::new(false));
-    let finished_2 = finished.clone();
-
-    let parent_op = Arc::new(CompletionHandler::new(move || {
-        finished_2.store(true, Ordering::Release);
-    }));
-
     processor
         .lock()
         .unwrap()
-        .spawn_graph(graph, &flow, parent_op);
-
-    while !finished.load(Ordering::Acquire) {}
+        .run_graph_blocking(graph, &flow)
+        .unwrap();
 }
 
 fn encrypt_lwe0(val: bool) -> Arc<AtomicRefCell<L0LweCiphertext>> {
