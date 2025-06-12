@@ -28,9 +28,9 @@ const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {
 
 #[derive(Debug, Serialize, Deserialize, Clone, Copy, Args, Hash)]
 pub struct CMuxTreeRunOptions {
-    /// Number of times to run the cmux tree to measure the noise
+    /// Number of times to run the cmux tree to measure the noise in the drift.
     #[arg(long)]
-    sample_count: usize,
+    drift_sample_count: usize,
 
     /// The maximum level of the cmux tree to run when estimating the drift.
     #[arg(long)]
@@ -40,6 +40,11 @@ pub struct CMuxTreeRunOptions {
     /// the standard deviation
     #[arg(long)]
     std_depth: usize,
+
+    /// Number of times to run the cmux tree to measure the noise in the
+    /// standard deviation
+    #[arg(long)]
+    std_sample_count: usize,
 
     /// Whether to include the raw data in the output
     #[arg(long, default_value_t = false)]
@@ -618,12 +623,18 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
     let params = cmux_tree_params.parameter_set.clone();
 
     println!("Running the drift analysis");
-    let (drift_data, drift_raw) =
-        drift_analysis(run_options.sample_count, run_options.drift_depth, &params);
+    let (drift_data, drift_raw) = drift_analysis(
+        run_options.drift_sample_count,
+        run_options.drift_depth,
+        &params,
+    );
 
     println!("Running the standard deviation analysis");
-    let (std_data, std_raw) =
-        std_analysis(run_options.sample_count, run_options.std_depth, &params);
+    let (std_data, std_raw) = std_analysis(
+        run_options.drift_sample_count,
+        run_options.std_depth,
+        &params,
+    );
 
     let (depths, base_2_error_rates) = std_data
         .iter()
