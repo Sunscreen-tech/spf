@@ -86,7 +86,8 @@ where
     }
 }
 
-/// Logical right-shift all the coefficients by `n` places.
+/// Logical right-shift all the coefficients by `n` places. Rounds by adding
+/// the `n + 1`th place.
 pub fn polynomial_shr_round<S>(y: &mut PolynomialRef<S>, x: &PolynomialRef<S>, n: u32)
 where
     S: Clone + VectorOps,
