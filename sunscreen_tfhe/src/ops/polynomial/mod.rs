@@ -158,4 +158,14 @@ mod tests {
             assert_eq!(output.coeffs()[i], expected);
         }
     }
+
+    #[test]
+    fn can_polynomial_shift_round() {
+        let poly = Polynomial::<u64>::new(&[0, 1, 2, 3, 4, 5, 6, 7, 8]);
+        let mut result = Polynomial::zero(8);
+
+        polynomial_shr_round(&mut result, &poly, 2);
+
+        assert_eq!(result, Polynomial::new(&[0, 0, 1, 1, 1, 1, 2, 2]));
+    }
 }
