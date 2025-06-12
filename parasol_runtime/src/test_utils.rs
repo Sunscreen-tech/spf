@@ -1,7 +1,7 @@
 use std::sync::{Arc, Mutex, OnceLock, mpsc::Receiver};
 
 use crate::{
-    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, SecretKey, UOpProcessor,
+    ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, SecretKey, CircuitProcessor,
     crypto::PublicKey, params::DEFAULT_80,
 };
 
@@ -64,11 +64,11 @@ pub fn get_evaluation_80() -> Evaluation {
     Evaluation::new(get_compute_key_80(), &DEFAULT_80, &get_encryption_80())
 }
 
-pub fn make_uproc_80() -> (Mutex<UOpProcessor>, Receiver<()>) {
+pub fn make_uproc_80() -> (Mutex<CircuitProcessor>, Receiver<()>) {
     let enc = get_encryption_80();
     let eval = Evaluation::new(get_compute_key_80(), &DEFAULT_80, &enc);
 
-    let proc = UOpProcessor::new(16384, None, &eval, &enc);
+    let proc = CircuitProcessor::new(16384, None, &eval, &enc);
 
     (Mutex::new(proc.0), proc.1)
 }
@@ -77,22 +77,22 @@ pub fn get_evaluation_128() -> Evaluation {
     Evaluation::new(get_compute_key_128(), &DEFAULT_128, &get_encryption_128())
 }
 
-pub fn make_uproc_128() -> (Mutex<UOpProcessor>, Receiver<()>) {
+pub fn make_uproc_128() -> (Mutex<CircuitProcessor>, Receiver<()>) {
     let enc = get_encryption_128();
     let eval = Evaluation::new(get_compute_key_128(), &DEFAULT_128, &enc);
 
-    let proc = UOpProcessor::new(16384, None, &eval, &enc);
+    let proc = CircuitProcessor::new(16384, None, &eval, &enc);
 
     (Mutex::new(proc.0), proc.1)
 }
 
 pub fn make_uproc_with_flow_control_len_80(
     flow_control_len: usize,
-) -> (Mutex<UOpProcessor>, Receiver<()>) {
+) -> (Mutex<CircuitProcessor>, Receiver<()>) {
     let enc = get_encryption_80();
     let eval = Evaluation::new(get_compute_key_80(), &DEFAULT_80, &enc);
 
-    let proc = UOpProcessor::new(flow_control_len, None, &eval, &enc);
+    let proc = CircuitProcessor::new(flow_control_len, None, &eval, &enc);
 
     (Mutex::new(proc.0), proc.1)
 }

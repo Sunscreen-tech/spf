@@ -45,7 +45,13 @@ impl Task {
     }
 
     #[inline]
-    fn validate_op_input(&self, edge: FheEdge, ct: &Ciphertext) -> Result<(), RuntimeError> {
+    fn validate_op_input(&self, edge: FheEdge, ct: &Option<Ciphertext>) -> Result<(), RuntimeError> {
+        if ct.is_none() {
+            return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Unary));
+        }
+
+        let ct = ct.as_ref().unwrap();
+
         let is_valid =
             match (&self.op, edge) {
                 (FheOp::OutputLwe0(_), FheEdge::Unary)
@@ -73,10 +79,10 @@ impl Task {
             };
 
         if !is_valid {
-            return Err(RuntimeError::invalid_ciphertext_kind(&self, ct, edge));
+            Err(RuntimeError::invalid_ciphertext_kind(&self, ct, edge))
+        } else {
+            Ok(())
         }
-
-        Ok(())
     }
 
     #[inline]
@@ -99,7 +105,7 @@ impl Task {
             | FheOp::Nop
             | FheOp::Retire => {
                 if self.inputs.len() != 0 {
-                    return Err(RuntimeError::invalid_node_inputs(self));
+                    Err(RuntimeError::invalid_node_inputs(self))?;
                 }
             }
             FheOp::OutputLwe0(_)
@@ -114,40 +120,25 @@ impl Task {
             | FheOp::SchemeSwitch
             | FheOp::MulXN(_) => {
                 if self.inputs.len() != 1 || !matches!(self.inputs[0].1, FheEdge::Unary) {
-                    return Err(RuntimeError::invalid_node_inputs(self));
+                    Err(RuntimeError::invalid_node_inputs(self))?;
                 }
 
                 let input = self.inputs[0].0.borrow();
-
-                if input.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Unary));
-                }
-
-                self.validate_op_input(FheEdge::Unary, input.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Unary, &input)?;
             }
             FheOp::GlweAdd => {
                 let left = self.inputs.iter().find(|x| matches!(x.1, FheEdge::Left));
                 let right = self.inputs.iter().find(|x| matches!(x.1, FheEdge::Right));
 
                 if self.inputs.len() != 2 || left.is_none() || right.is_none() {
-                    return Err(RuntimeError::invalid_node_inputs(self));
+                    Err(RuntimeError::invalid_node_inputs(self))?;
                 }
 
                 let left = left.unwrap().0.borrow();
-
-                if left.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Left));
-                }
-
-                self.validate_op_input(FheEdge::Left, left.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Left, &left)?;
 
                 let right = right.unwrap().0.borrow();
-
-                if right.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Right));
-                }
-
-                self.validate_op_input(FheEdge::Right, right.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Right, &right)?;
             }
             FheOp::GlevCMux | FheOp::CMux => {
                 let sel = self.inputs.iter().find(|x| matches!(x.1, FheEdge::Sel));
@@ -155,56 +146,31 @@ impl Task {
                 let high = self.inputs.iter().find(|x| matches!(x.1, FheEdge::High));
 
                 if self.inputs.len() != 3 || sel.is_none() || low.is_none() || high.is_none() {
-                    return Err(RuntimeError::invalid_node_inputs(self));
+                    Err(RuntimeError::invalid_node_inputs(self))?;
                 }
 
                 let sel = sel.unwrap().0.borrow();
-
-                if sel.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Sel));
-                }
-
-                self.validate_op_input(FheEdge::Sel, sel.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Sel, &sel)?;
 
                 let low = low.unwrap().0.borrow();
-
-                if low.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Low));
-                }
-
-                self.validate_op_input(FheEdge::Low, low.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Low, &low)?;
 
                 let high = high.unwrap().0.borrow();
-
-                if high.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::High));
-                }
-
-                self.validate_op_input(FheEdge::High, high.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::High, &high)?;
             }
             FheOp::MultiplyGgswGlwe => {
                 let glwe = self.inputs.iter().find(|x| matches!(x.1, FheEdge::Glwe));
                 let ggsw = self.inputs.iter().find(|x| matches!(x.1, FheEdge::Ggsw));
 
                 if self.inputs.len() != 2 || glwe.is_none() || ggsw.is_none() {
-                    return Err(RuntimeError::invalid_node_inputs(self));
+                    Err(RuntimeError::invalid_node_inputs(self))?;
                 }
 
                 let glwe = glwe.unwrap().0.borrow();
-
-                if glwe.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Glwe));
-                }
-
-                self.validate_op_input(FheEdge::Glwe, glwe.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Glwe, &glwe)?;
 
                 let ggsw = ggsw.unwrap().0.borrow();
-
-                if ggsw.is_none() {
-                    return Err(RuntimeError::missing_ciphertext_input(self, FheEdge::Ggsw));
-                }
-
-                self.validate_op_input(FheEdge::Ggsw, ggsw.as_ref().unwrap())?;
+                self.validate_op_input(FheEdge::Ggsw, &ggsw)?;
             }
         }
 

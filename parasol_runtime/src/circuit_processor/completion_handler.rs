@@ -7,7 +7,7 @@ use std::sync::{
 use crate::circuit_processor::RuntimeError;
 
 /// A callback that fires when all the operations in an [`FheCircuit`] passed to
-/// [`UOpProcessor::spawn_graph`] or [`UOpProcessor::run_graph_blocking`] finish.
+/// [`CircuitProcessor::spawn_graph`] or [`CircuitProcessor::run_graph_blocking`] finish.
 pub struct CompletionHandler {
     pub(crate) ops_remaining: AtomicUsize,
     pub(crate) callback: Box<dyn Fn(Option<RuntimeError>) + 'static + Sync + Send>,

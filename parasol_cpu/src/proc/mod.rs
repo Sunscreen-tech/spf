@@ -5,7 +5,7 @@ pub use fhe_processor::{RunProgramOptions, RunProgramOptionsBuilder};
 use parasol_concurrency::AtomicRefCell;
 use parasol_runtime::{
     Encryption, Evaluation, FheCircuit, L0LweCiphertext, L1GgswCiphertext, L1GlweCiphertext,
-    L1LweCiphertext, TrivialOne, TrivialZero, UOpProcessor,
+    L1LweCiphertext, TrivialOne, TrivialZero, CircuitProcessor,
     fluent::{
         DynamicGenericInt, FheCircuitCtx, GenericInt, PackedDynamicGenericInt, PackedGenericInt,
         Sign,
@@ -213,7 +213,7 @@ pub fn register_to_l1glwe_by_trivial_lift(
 }
 
 pub(crate) struct FheProcessorAuxData {
-    uop_processor: UOpProcessor,
+    uop_processor: CircuitProcessor,
     flow: std::sync::mpsc::Receiver<()>,
     memory: Option<Arc<Memory>>,
     inflight_memory_ops: HashMap<Ptr32, ScoreboardEntryRef<DispatchIsaOp>>,
@@ -224,7 +224,7 @@ pub(crate) struct FheProcessorAuxData {
 
 impl FheProcessorAuxData {
     pub fn new(enc: &Encryption, eval: &Evaluation, thread_pool: Option<Arc<ThreadPool>>) -> Self {
-        let (uop_processor, flow) = UOpProcessor::new(1024, thread_pool, eval, enc);
+        let (uop_processor, flow) = CircuitProcessor::new(1024, thread_pool, eval, enc);
 
         let l1glwe_zero = L1GlweCiphertext::trivial_zero(enc);
         let l1glwe_one = L1GlweCiphertext::trivial_one(enc);

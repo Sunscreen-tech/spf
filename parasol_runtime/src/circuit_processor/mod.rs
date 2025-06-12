@@ -52,14 +52,14 @@ pub fn push_completed(id: usize) {
 /// callback when all complete, while the latter blocks until all tasks are complete.
 ///
 /// To limit memory usage, it features `flow_control` whereby the thread issuing
-/// tasks must pass the [`Receiver`] returned by [`UOpProcessor::new`] to the
+/// tasks must pass the [`Receiver`] returned by [`CircuitProcessor::new`] to the
 /// [`Self::spawn_graph`] and [`Self::run_graph_blocking`] methods, which will block the
 /// calling thread when the number of in-flight tasks exceeds the `flow_control` value passed to
-/// [`UOpProcessor::new`].
+/// [`CircuitProcessor::new`].
 ///
 /// The `thread_pool` argument is optional. When set, tasks will be scheduled on the specified
 /// threadpool. Otherwise, the global rayon threadpool will be used.
-pub struct UOpProcessor {
+pub struct CircuitProcessor {
     flow_control: SyncSender<()>,
     thread_pool: Option<Arc<ThreadPool>>,
     /// An [`Evaluation`] that can perform FHE operations.
@@ -77,8 +77,8 @@ pub struct UOpProcessor {
     one_glev1: L1GlevCiphertext,
 }
 
-impl UOpProcessor {
-    /// Create a new [`UOpProcessor`]. When `thread_pool` is [`None`], the global rayon threadpool
+impl CircuitProcessor {
+    /// Create a new [`CircuitProcessor`]. When `thread_pool` is [`None`], the global rayon threadpool
     /// will be used.
     pub fn new(
         flow_control_len: usize,
@@ -252,7 +252,7 @@ impl UOpProcessor {
         });
     }
 
-    fn exec_op(proc: &UOpProcessor, task: &Task) -> Result<(), RuntimeError> {
+    fn exec_op(proc: &CircuitProcessor, task: &Task) -> Result<(), RuntimeError> {
         task.validate(&proc.eval.params)?;
 
         match &task.op {

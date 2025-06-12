@@ -126,10 +126,10 @@ impl<T: CiphertextOps> BitNode<T> {
     /// # Remarks
     /// The returned [`Bit`] has not yet been evaluated and will be a trivial zero until the
     /// computation completes. You should generally submit the computation using
-    /// [`crate::UOpProcessor::run_graph_blocking`] before using the returned result.
+    /// [`crate::CircuitProcessor::run_graph_blocking`] before using the returned result.
     ///
     /// Ciphertexts internally use safeguards that will prevent data races, but you may incur
-    /// a panic if you attempt to read the ciphertext while [`crate::UOpProcessor::spawn_graph`]
+    /// a panic if you attempt to read the ciphertext while [`crate::CircuitProcessor::spawn_graph`]
     /// is running.
     pub fn collect_output(&self, ctx: &FheCircuitCtx, enc: &Encryption) -> Bit<T> {
         let mut circuit = ctx.circuit.borrow_mut();

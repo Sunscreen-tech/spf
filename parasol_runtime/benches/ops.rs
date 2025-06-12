@@ -3,14 +3,14 @@ use std::sync::{Arc, OnceLock, mpsc::Receiver};
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
     ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation, L0LweCiphertext,
-    L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey, UOpProcessor,
+    L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey, CircuitProcessor,
     fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
 };
 
 fn make_computer() -> (
     Encryption,
     Arc<SecretKey>,
-    UOpProcessor,
+    CircuitProcessor,
     Receiver<()>,
     Evaluation,
 ) {
@@ -32,7 +32,7 @@ fn make_computer() -> (
     let enc = Encryption::new(&DEFAULT_128);
     let eval = Evaluation::new(compute_key.to_owned(), &DEFAULT_128, &enc);
 
-    let (uproc, fc) = UOpProcessor::new(16384, None, &eval, &enc);
+    let (uproc, fc) = CircuitProcessor::new(16384, None, &eval, &enc);
 
     (enc, sk, uproc, fc, eval)
 }
