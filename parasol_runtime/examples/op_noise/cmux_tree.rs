@@ -130,7 +130,7 @@ pub struct CMuxTreeDataFile {
     pub method: Method,
     pub fit: FitResults,
     pub drift_data: Vec<CMuxTreeDriftDataPoint>,
-    pub drift_raw: Vec<Vec<(Option<f64>, Option<f64>)>>,
+    pub drift_raw: Vec<Vec<f64>>,
     pub std_data: Vec<CMuxTreeStdDataPoint>,
     pub std_raw: Vec<Vec<Option<f64>>>,
 }
@@ -140,7 +140,7 @@ impl CMuxTreeDataFile {
         cmux_tree_parameters: CMuxTreeParameters,
         fit: FitResults,
         drift_data: Vec<CMuxTreeDriftDataPoint>,
-        drift_raw: Vec<Vec<(Option<f64>, Option<f64>)>>,
+        drift_raw: Vec<Vec<f64>>,
         std_data: Vec<CMuxTreeStdDataPoint>,
         std_raw: Vec<Vec<Option<f64>>>,
     ) -> Self {
@@ -616,10 +616,7 @@ fn drift_analysis(
     sample_count: usize,
     depth: usize,
     params: &Params,
-) -> (
-    Vec<CMuxTreeDriftDataPoint>,
-    Vec<Vec<(Option<f64>, Option<f64>)>>,
-) {
+) -> (Vec<CMuxTreeDriftDataPoint>, Vec<Vec<f64>>) {
     let progress = ProgressBar::new(sample_count as u64);
     progress.set_style(ProgressStyle::with_template(PROGRESS_BAR_TEMPLATE).unwrap());
 
@@ -660,44 +657,41 @@ fn drift_analysis(
         .collect::<Vec<_>>();
     progress.finish_and_clear();
 
-    let xs = (1..=depth).map(|x| x as f64).collect::<Vec<_>>();
-
-    let samples_per_run_fit = samples_per_run
-        .iter()
-        // From what we have seen empirically, the two different trees are
-        // independent, so we can just flatten the results.
-        .flat_map(|samples_at_depth| {
-            // Not sure what to do about the two lines of output. I suppose handle them separately.
-            let top_tree_samples = samples_at_depth
+    let samples_per_tree = samples_per_run
+        .into_iter()
+        .flat_map(|x| {
+            let left = x
                 .iter()
-                .map(|(a, _)| a.clone().unwrap())
+                .map(|(a, _)| a.unwrap().clone())
                 .collect::<Vec<_>>();
-            let bottom_tree_samples = samples_at_depth
+            let right = x
                 .iter()
-                .map(|(_, b)| b.clone().unwrap())
+                .map(|(_, b)| b.unwrap().clone())
                 .collect::<Vec<_>>();
 
-            let (top_tree_drift, top_tree_offset, top_tree_max_error) =
-                linear_regression(&xs, &top_tree_samples);
-            let (bottom_tree_drift, bottom_tree_offset, bottom_tree_max_error) =
-                linear_regression(&xs, &bottom_tree_samples);
-
-            [
-                CMuxTreeDriftDataPoint {
-                    drift: top_tree_drift,
-                    offset: top_tree_offset,
-                    max_error: top_tree_max_error,
-                },
-                CMuxTreeDriftDataPoint {
-                    drift: bottom_tree_drift,
-                    offset: bottom_tree_offset,
-                    max_error: bottom_tree_max_error,
-                },
-            ]
+            [left, right]
         })
         .collect::<Vec<_>>();
 
-    (samples_per_run_fit, samples_per_run)
+    let xs = (1..=depth).map(|x| x as f64).collect::<Vec<_>>();
+
+    let samples_per_run_fit = samples_per_tree
+        .iter()
+        // From what we have seen empirically, the two different trees are
+        // independent, so we can just flatten the results.
+        .map(|samples| {
+            // Not sure what to do about the two lines of output. I suppose handle them separately.
+            let (drift, offset, max_error) = linear_regression(&xs, &samples);
+
+            CMuxTreeDriftDataPoint {
+                drift,
+                offset,
+                max_error,
+            }
+        })
+        .collect::<Vec<_>>();
+
+    (samples_per_run_fit, samples_per_tree)
 }
 
 pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
