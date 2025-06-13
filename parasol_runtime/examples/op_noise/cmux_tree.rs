@@ -6,7 +6,7 @@ use ndarray::{Array1, Array2};
 use num::Complex;
 use parasol_runtime::{
     ComputeKey, Params, SecretKey,
-    metadata::{SystemInfo, get_system_info, print_system_info},
+    metadata::{SystemInfo, get_system_info},
 };
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
@@ -21,7 +21,7 @@ use sunscreen_tfhe::{
 
 use crate::{
     ProbabilityAwayMeanGaussianLog, noise::measure_noise_by_keyswitch_glwe_to_lwe,
-    probability_away_from_mean_gaussian_log, probability_away_from_mean_gaussian_log_binary,
+    probability_away_from_mean_gaussian_log,
 };
 
 const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
@@ -52,12 +52,12 @@ pub struct CMuxTreeRunOptions {
 
     /// How many standard deviations away from the mean drift to assume for the
     /// worst case when performing the error fit.
-    #[arg(long, default_value_t = 3.0)]
+    #[arg(long, default_value_t = 5.0)]
     simulated_drift: f64,
 
     /// How many standard deviations away from the mean drift offset to
     /// assume for the worst case when performing the error fit.
-    #[arg(long, default_value_t = 3.0)]
+    #[arg(long, default_value_t = 5.0)]
     simulated_drift_offset: f64,
 }
 
