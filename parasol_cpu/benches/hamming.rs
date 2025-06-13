@@ -6,6 +6,7 @@ use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
+use rayon::ThreadPoolBuilder;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
@@ -175,5 +176,56 @@ fn hamming_from_assembly(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, hamming_from_compiler, hamming_from_assembly);
+fn hamming_thread_scaling(c: &mut Criterion) {
+    fn run_with_threads(c: &mut Criterion, num_threads: usize) {
+        let (sk, enc, eval) = setup();
+
+        c.bench_function(
+            &format!("Compiled Hamming distance ({num_threads} threads)"),
+            |bench| {
+                bench.iter_batched(
+                    // Setup closure: runs before each iteration, not timed
+                    || {
+                        let memory = Arc::new(
+                            Memory::new_from_elf(include_bytes!(
+                                "../tests/test_data/hamming_distance"
+                            ))
+                            .unwrap(),
+                        );
+                        let prog = memory.get_function_entry("hamming_distance").unwrap();
+                        let args = generate_args(&memory, &enc, &sk);
+
+                        let tp = ThreadPoolBuilder::new()
+                            .num_threads(num_threads)
+                            .build()
+                            .unwrap();
+
+                        let proc = FheComputer::new_with_threadpool(&enc, &eval, Arc::new(tp));
+
+                        (proc, args, prog, memory)
+                    },
+                    |(mut proc, args, prog, memory)| {
+                        proc.run_program(prog, &memory, args).unwrap();
+                    },
+                    criterion::BatchSize::PerIteration,
+                );
+            },
+        );
+    }
+
+    let mut num_threads = 1;
+
+    while num_threads <= num_cpus::get_physical() {
+        run_with_threads(c, num_threads);
+
+        num_threads = usize::min(num_threads * 2, num_cpus::get_physical());
+    }
+}
+
+criterion_group!(
+    benches,
+    hamming_from_compiler,
+    hamming_from_assembly,
+    hamming_thread_scaling
+);
 criterion_main!(benches);
