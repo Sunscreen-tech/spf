@@ -8,6 +8,7 @@ use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
+use rayon::ThreadPoolBuilder;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
@@ -176,9 +177,60 @@ fn chi_squared_from_assembly(c: &mut Criterion) {
     });
 }
 
+fn chi_squared_thread_scaling(c: &mut Criterion) {
+    fn run_with_threads(c: &mut Criterion, num_threads: usize) {
+        let mut group = c.benchmark_group("chi_squared");
+        group.sample_size(10);
+
+        let (sk, enc, eval) = setup();
+
+        group.bench_function(
+            &format!("Compiled chi squared ({num_threads} threads)"),
+            |bench| {
+                bench.iter_batched(
+                    // Setup closure: runs before each iteration, not timed
+                    || {
+                        let memory = Arc::new(
+                            Memory::new_from_elf(include_bytes!("../tests/test_data/chi_sq"))
+                                .unwrap(),
+                        );
+                        let prog = memory.get_function_entry("chi_sq").unwrap();
+                        let (args, _) = generate_args(&memory, &enc, &sk);
+                        let tp = ThreadPoolBuilder::new()
+                            .num_threads(num_threads)
+                            .build()
+                            .unwrap();
+                        let proc = FheComputer::new_with_threadpool(&enc, &eval, Arc::new(tp));
+
+                        (proc, args, prog, memory)
+                    },
+                    |(mut proc, args, prog, memory)| {
+                        proc.run_program(prog, &memory, args).unwrap();
+                    },
+                    criterion::BatchSize::PerIteration,
+                );
+            },
+        );
+    }
+
+    let mut num_threads = 1;
+    let num_cores = num_cpus::get_physical();
+
+    loop {
+        run_with_threads(c, num_threads);
+
+        if num_threads == num_cores {
+            break;
+        }
+
+        num_threads = usize::min(num_threads * 2, num_cpus::get_physical());
+    }
+}
+
 criterion_group!(
     benches,
     chi_squared_from_compiler,
-    chi_squared_from_assembly
+    chi_squared_from_assembly,
+    chi_squared_thread_scaling
 );
 criterion_main!(benches);

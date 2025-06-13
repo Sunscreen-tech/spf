@@ -6,6 +6,7 @@ use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
+use rayon::ThreadPoolBuilder;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
@@ -235,5 +236,59 @@ fn cardio_from_assembly(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, cardio_from_compiler, cardio_from_assembly);
+fn cardio_thread_scaling(c: &mut Criterion) {
+    fn run_with_threads(c: &mut Criterion, num_threads: usize) {
+        let mut group = c.benchmark_group("cardio");
+        group.sample_size(10);
+
+        let (sk, enc, eval) = setup();
+
+        group.bench_function(
+            &format!("Compiled Cardio ({num_threads} threads)"),
+            |bench| {
+                bench.iter_batched(
+                    || {
+                        let memory = Arc::new(
+                            Memory::new_from_elf(include_bytes!("../tests/test_data/cardio"))
+                                .unwrap(),
+                        );
+                        let prog = memory.get_function_entry("cardio").unwrap();
+                        let args = generate_args(&enc, &sk);
+                        let tp = ThreadPoolBuilder::new()
+                            .num_threads(num_threads)
+                            .build()
+                            .unwrap();
+                        let proc = FheComputer::new_with_threadpool(&enc, &eval, Arc::new(tp));
+
+                        (proc, args, prog, memory)
+                    },
+                    |(mut proc, args, prog, memory)| {
+                        proc.run_program(prog, &memory, args).unwrap();
+                    },
+                    criterion::BatchSize::PerIteration,
+                );
+            },
+        );
+    }
+
+    let mut num_threads = 1;
+    let num_cores = num_cpus::get_physical();
+
+    loop {
+        run_with_threads(c, num_threads);
+
+        if num_threads == num_cores {
+            break;
+        }
+
+        num_threads = usize::min(num_threads * 2, num_cpus::get_physical());
+    }
+}
+
+criterion_group!(
+    benches,
+    cardio_from_compiler,
+    cardio_from_assembly,
+    cardio_thread_scaling
+);
 criterion_main!(benches);

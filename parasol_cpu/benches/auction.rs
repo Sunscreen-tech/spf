@@ -8,6 +8,7 @@ use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
+use rayon::ThreadPoolBuilder;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
@@ -157,6 +158,53 @@ fn auction_n_bids<const N: usize>(c: &mut Criterion) {
     });
 }
 
+fn auction_thread_scaling(c: &mut Criterion) {
+    fn run_with_threads(c: &mut Criterion, num_threads: usize) {
+        let mut group = c.benchmark_group("auction");
+        group.sample_size(10);
+
+        let (sk, enc, eval) = setup();
+
+        let id = format!("Auction (32 bids, {num_threads} threads)");
+        group.bench_function(id, |bench| {
+            bench.iter_batched(
+                // Setup closure: runs before each iteration, not timed
+                || {
+                    let memory = Arc::new(
+                        Memory::new_from_elf(include_bytes!("../tests/test_data/auction")).unwrap(),
+                    );
+                    let prog = memory.get_function_entry("auction").unwrap();
+                    let (winner, args) = generate_args::<32>(&memory, &enc, &sk);
+                    let tp = ThreadPoolBuilder::new()
+                        .num_threads(num_threads)
+                        .build()
+                        .unwrap();
+                    let proc = FheComputer::new_with_threadpool(&enc, &eval, Arc::new(tp));
+
+                    (proc, args, prog, memory, winner)
+                },
+                |(mut proc, args, prog, memory, _winner)| {
+                    proc.run_program(prog, &memory, args).unwrap();
+                },
+                criterion::BatchSize::PerIteration,
+            );
+        });
+    }
+
+    let mut num_threads = 1;
+    let num_cores = num_cpus::get_physical();
+
+    loop {
+        run_with_threads(c, num_threads);
+
+        if num_threads == num_cores {
+            break;
+        }
+
+        num_threads = usize::min(num_threads * 2, num_cpus::get_physical());
+    }
+}
+
 criterion_group!(
     benches,
     auction_from_assembly,
@@ -164,6 +212,7 @@ criterion_group!(
     auction_n_bids::<4>,
     auction_n_bids::<8>,
     auction_n_bids::<16>,
-    auction_n_bids::<32>
+    auction_n_bids::<32>,
+    auction_thread_scaling
 );
 criterion_main!(benches);
