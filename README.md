@@ -1,6 +1,6 @@
 # Overview
 
-This repository contains Sunscreen's homomorphic processing unit (HPU), which allows users to run computations over encrypted data based specifically on our own variant of the torus fully homomorphic encryption scheme (TFHE).
+This repository contains Sunscreen's secure processing framework (SPF), which allows users to run computations over encrypted data based specifically on our own variant of the torus fully homomorphic encryption scheme (TFHE).
 
 Developer documentation is available [here](https://docs.sunscreen.tech/intro.html).
 
@@ -20,11 +20,11 @@ Crate `mux_circuits` includes the MUX circuits for the required computation such
 
 ## Processing Unit
 
-Crate `parasol_runtime`, `parasol_cpu_macros` and `parasol_cpu` include the core HPU libraries (such as fluent) and implementation of the instructions in the Parasol ISA. This includes key generation, ciphertext conversion, instruction scheduling and execution among other things.
+Crate `parasol_runtime`, `parasol_cpu_macros` and `parasol_cpu` include the core SPF libraries (such as fluent) and implementation of the instructions in the Parasol ISA. This includes key generation, ciphertext conversion, instruction scheduling and execution among other things.
 
 ## Misc
 
-Crate `parasol_concurrency` includes a few data structures such as spinlock and atomic refcell used by the HPU core. Directory `examples` includes crate `basic_add` as an example.
+Crate `parasol_concurrency` includes a few data structures such as spinlock and atomic refcell used by the SPF core. Directory `examples` includes crate `basic_add` as an example.
 
 # Installation
 
