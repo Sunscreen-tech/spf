@@ -26,7 +26,7 @@ use crate::{
 
 const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
 
-#[derive(Debug, Serialize, Deserialize, Clone, Copy, Args, Hash)]
+#[derive(Debug, Serialize, Deserialize, Clone, Copy, Args)]
 pub struct CMuxTreeRunOptions {
     /// Number of times to run the cmux tree to measure the noise in the drift.
     #[arg(long)]
@@ -49,6 +49,14 @@ pub struct CMuxTreeRunOptions {
     /// Whether to include the raw data in the output
     #[arg(long, default_value_t = false)]
     include_raw: bool,
+
+    /// Drift in the simulated drift, when performing the error rate fit.
+    #[arg(long, default_value_t = 3.0)]
+    simulated_drift: f64,
+
+    /// Offset of the simulated drift, when performing the error rate fit.
+    #[arg(long, default_value_t = 3.0)]
+    simulated_drift_offset: f64,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -150,7 +158,8 @@ pub struct CMuxTreeDriftDataPoint {
     /// Offset of the drift; ideally should be close to zero.
     offset: f64,
 
-    /// Max error in the calculated drift.
+    /// Max error in the calculated drift, calculated as the largest error in a
+    /// given data point versus the maximum value of the drift.
     max_error: f64,
 }
 
@@ -277,12 +286,14 @@ fn linear_regression(xs: &[f64], ys: &[f64]) -> (f64, f64, f64) {
     let slope = (n * sum_xy - sum_x * sum_y) / denominator;
     let intercept = (sum_y - slope * sum_x) / n;
 
+    let max_y = ys.iter().cloned().fold(f64::NEG_INFINITY, f64::max).abs();
+
     let max_error = xs
         .iter()
         .zip(ys.iter())
         .map(|(x, y)| {
             let y_pred = slope * x + intercept;
-            (y_pred - y).abs() / y_pred
+            (y_pred - y).abs() / max_y
         })
         .fold(0.0, f64::max);
 
