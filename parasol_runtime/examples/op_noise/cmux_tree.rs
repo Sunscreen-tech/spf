@@ -6,7 +6,7 @@ use ndarray::{Array1, Array2};
 use num::Complex;
 use parasol_runtime::{
     ComputeKey, Params, SecretKey,
-    metadata::{SystemInfo, print_system_info},
+    metadata::{SystemInfo, get_system_info, print_system_info},
 };
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
@@ -21,7 +21,7 @@ use sunscreen_tfhe::{
 
 use crate::{
     ProbabilityAwayMeanGaussianLog, noise::measure_noise_by_keyswitch_glwe_to_lwe,
-    probability_away_from_mean_gaussian_log_binary,
+    probability_away_from_mean_gaussian_log, probability_away_from_mean_gaussian_log_binary,
 };
 
 const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
@@ -50,11 +50,13 @@ pub struct CMuxTreeRunOptions {
     #[arg(long, default_value_t = false)]
     include_raw: bool,
 
-    /// Drift in the simulated drift, when performing the error rate fit.
+    /// How many standard deviations away from the mean drift to assume for the
+    /// worst case when performing the error fit.
     #[arg(long, default_value_t = 3.0)]
     simulated_drift: f64,
 
-    /// Offset of the simulated drift, when performing the error rate fit.
+    /// How many standard deviations away from the mean drift offset to
+    /// assume for the worst case when performing the error fit.
     #[arg(long, default_value_t = 3.0)]
     simulated_drift_offset: f64,
 }
@@ -111,7 +113,7 @@ pub enum FitResults {
         c: f64,
         equation: String,
         max_error: f64,
-        base_2_error_at_depth_1024: f64,
+        base_2_error_at_depth_256: f64,
     },
 
     #[serde(rename = "error_message")]
@@ -121,15 +123,40 @@ pub enum FitResults {
 
 #[derive(Serialize, Clone)]
 pub struct CMuxTreeDataFile {
+    pub version: u32,
     pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
     pub system_info: SystemInfo,
     pub method: Method,
     pub fit: FitResults,
-    pub drift_data: Vec<(CMuxTreeDriftDataPoint, CMuxTreeDriftDataPoint)>,
+    pub drift_data: Vec<CMuxTreeDriftDataPoint>,
     pub drift_raw: Vec<Vec<(Option<f64>, Option<f64>)>>,
     pub std_data: Vec<CMuxTreeStdDataPoint>,
     pub std_raw: Vec<Vec<Option<f64>>>,
+}
+
+impl CMuxTreeDataFile {
+    pub fn new(
+        cmux_tree_parameters: CMuxTreeParameters,
+        fit: FitResults,
+        drift_data: Vec<CMuxTreeDriftDataPoint>,
+        drift_raw: Vec<Vec<(Option<f64>, Option<f64>)>>,
+        std_data: Vec<CMuxTreeStdDataPoint>,
+        std_raw: Vec<Vec<Option<f64>>>,
+    ) -> Self {
+        Self {
+            version: 1,
+            time: chrono::Local::now().to_string(),
+            cmux_tree_parameters,
+            system_info: get_system_info(),
+            method: Method::RandomSelectLinesCascadedDataLinesWithDrift,
+            fit,
+            drift_data,
+            drift_raw,
+            std_data,
+            std_raw,
+        }
+    }
 }
 
 #[derive(Serialize, Clone)]
@@ -168,7 +195,6 @@ pub struct CMuxTreeStdDataPoint {
     depth: usize,
     mean: f64,
     std: f64,
-    predicted_err: PredictedError,
     measured_err: f64,
 }
 
@@ -300,9 +326,59 @@ fn linear_regression(xs: &[f64], ys: &[f64]) -> (f64, f64, f64) {
     (slope, intercept, max_error)
 }
 
-fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
+fn fit_error_rate(
+    depths: &[usize],
+    stds: &[f64],
+    drift_std: f64,
+    drift_offset_std: f64,
+    simulated_drift_deviation: f64,
+    simulated_drift_offset_deviation: f64,
+) -> FitResults {
     let depths = depths.iter().map(|&d| d as f64).collect::<Vec<_>>();
     let n = depths.len();
+
+    // Linear fit of the worst case drift as a function of depth. We are going
+    // to use only a positive linear function so we can assume the drift is
+    // always positive.
+    let drift_offset = |depth: f64| {
+        simulated_drift_offset_deviation * drift_offset_std.abs()
+            + simulated_drift_deviation * drift_std * depth
+    };
+
+    let corrected_base_2_error_rates: Vec<f64> = depths
+        .iter()
+        .zip(stds.iter())
+        .map(|(&depth, &std)| {
+            let left_error_distance = 0.25 + drift_offset(depth);
+            let right_error_distance = 0.25 - drift_offset(depth);
+
+            // The approximation fails when the ratio of the error distance to
+            // the standard deviation is too large.
+            let left_probability = if left_error_distance / std < 30.0 {
+                // The `probability_away_from_mean_gaussian_log` function
+                // returns the log of the probability of being away from the
+                // mean by the given distance in either tail of the
+                // distribution. We need to modify this to give us the
+                // probability of being away from _one of the tails_ to account
+                // for the drift, as we will now be adding two asymmetric tails.
+                // Hence we subtract 1.0 from the log value to get only one of
+                // the tails (in this case the smaller one).
+                (probability_away_from_mean_gaussian_log(left_error_distance, std).log_2() - 1.0)
+                    .powf(2.0)
+            } else {
+                0.0
+            };
+
+            let right_probability = if right_error_distance / std < 30.0 {
+                (probability_away_from_mean_gaussian_log(right_error_distance, std).log_2() - 1.0)
+                    .powf(2.0)
+            } else {
+                0.0
+            };
+
+            (left_probability + right_probability).log2()
+        })
+        .collect();
 
     let residuals = |params: &[f64], y: &[f64]| {
         let a = params[0];
@@ -327,7 +403,7 @@ fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
     // Initial guess for the parameters based on prior experiments.
     let initial_params = Array1::from_vec(vec![6e-5, 30.0, -3.0]);
 
-    let data = Array1::from_vec(base_2_error_rates.to_vec());
+    let data = Array1::from_vec(corrected_base_2_error_rates.to_vec());
 
     let results = bounded_least_squares(
         residuals,
@@ -345,7 +421,7 @@ fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
 
         let max_error = depths
             .iter()
-            .zip(base_2_error_rates.iter())
+            .zip(corrected_base_2_error_rates.iter())
             .map(|(x, y)| (y - function_to_fit(*x, a, b, c)).abs() / y.abs())
             .fold(f64::NEG_INFINITY, f64::max);
         (results, max_error)
@@ -358,8 +434,8 @@ fn fit_error_rate(depths: &[usize], base_2_error_rates: &[f64]) -> FitResults {
             c: results.x[2],
             equation: FUNCTION_TO_FIT_DESCRIPTION.to_string(),
             max_error,
-            base_2_error_at_depth_1024: function_to_fit(
-                1024.0,
+            base_2_error_at_depth_256: function_to_fit(
+                256.0,
                 results.x[0],
                 results.x[1],
                 results.x[2],
@@ -518,13 +594,11 @@ fn std_analysis(
             }
 
             let std = rmv.std();
-            let predicted_err = probability_away_from_mean_gaussian_log_binary(std);
 
             CMuxTreeStdDataPoint {
                 mean: rmv.mean(),
                 depth: i + 1,
                 std,
-                predicted_err: predicted_err.into(),
                 measured_err: n_errors as f64 / n_samples as f64,
             }
         })
@@ -543,7 +617,7 @@ fn drift_analysis(
     depth: usize,
     params: &Params,
 ) -> (
-    Vec<(CMuxTreeDriftDataPoint, CMuxTreeDriftDataPoint)>,
+    Vec<CMuxTreeDriftDataPoint>,
     Vec<Vec<(Option<f64>, Option<f64>)>>,
 ) {
     let progress = ProgressBar::new(sample_count as u64);
@@ -587,9 +661,12 @@ fn drift_analysis(
     progress.finish_and_clear();
 
     let xs = (1..=depth).map(|x| x as f64).collect::<Vec<_>>();
+
     let samples_per_run_fit = samples_per_run
         .iter()
-        .map(|samples_at_depth| {
+        // From what we have seen empirically, the two different trees are
+        // independent, so we can just flatten the results.
+        .flat_map(|samples_at_depth| {
             // Not sure what to do about the two lines of output. I suppose handle them separately.
             let top_tree_samples = samples_at_depth
                 .iter()
@@ -605,7 +682,7 @@ fn drift_analysis(
             let (bottom_tree_drift, bottom_tree_offset, bottom_tree_max_error) =
                 linear_regression(&xs, &bottom_tree_samples);
 
-            (
+            [
                 CMuxTreeDriftDataPoint {
                     drift: top_tree_drift,
                     offset: top_tree_offset,
@@ -616,7 +693,7 @@ fn drift_analysis(
                     offset: bottom_tree_offset,
                     max_error: bottom_tree_max_error,
                 },
-            )
+            ]
         })
         .collect::<Vec<_>>();
 
@@ -624,8 +701,6 @@ fn drift_analysis(
 }
 
 pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
-    let system_info = print_system_info();
-
     let cmux_tree_params_pretty_json = serde_json::to_string_pretty(cmux_tree_params).unwrap();
     println!("Running with parameters:");
     println!("{}", cmux_tree_params_pretty_json);
@@ -634,22 +709,46 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
     let params = cmux_tree_params.parameter_set.clone();
 
     println!("Running the drift analysis");
+    let now = std::time::Instant::now();
     let (drift_data, drift_raw) = drift_analysis(
         run_options.drift_sample_count,
         run_options.drift_depth,
         &params,
     );
+    println!("Time to run drift analysis: {:?}", now.elapsed());
+
+    // Calculate parameters for the error fit.
+    let drift_std = drift_data
+        .iter()
+        .fold(RunningMeanVariance::new(), |mut acc, dp| {
+            acc.add_sample(dp.drift);
+            acc
+        })
+        .std();
+
+    let drift_offset_std = drift_data
+        .iter()
+        .fold(RunningMeanVariance::new(), |mut acc, dp| {
+            acc.add_sample(dp.offset);
+            acc
+        })
+        .std();
 
     println!("Running the standard deviation analysis");
+    let now = std::time::Instant::now();
     let (std_data, std_raw) = std_analysis(
         run_options.drift_sample_count,
         run_options.std_depth,
         &params,
     );
+    println!(
+        "Time to run standard deviation analysis: {:?}",
+        now.elapsed()
+    );
 
-    let (depths, base_2_error_rates) = std_data
+    let (depths, stds) = std_data
         .iter()
-        .map(|dp| (dp.depth, dp.predicted_err.base_2))
+        .map(|dp| (dp.depth, dp.std))
         .unzip::<usize, f64, Vec<_>, Vec<_>>();
 
     let std_raw = if run_options.include_raw {
@@ -658,17 +757,21 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         vec![]
     };
 
-    let fit = fit_error_rate(&depths, &base_2_error_rates);
+    let fit = fit_error_rate(
+        &depths,
+        &stds,
+        drift_std,
+        drift_offset_std,
+        run_options.simulated_drift,
+        run_options.simulated_drift_offset,
+    );
 
-    CMuxTreeDataFile {
-        time: chrono::Local::now().to_string(),
-        cmux_tree_parameters: cmux_tree_params.clone(),
-        system_info,
-        method: Method::RandomSelectLinesCascadedDataLinesWithDrift,
+    CMuxTreeDataFile::new(
+        cmux_tree_params.clone(),
         fit,
         drift_data,
         drift_raw,
         std_data,
         std_raw,
-    }
+    )
 }
