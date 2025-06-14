@@ -144,7 +144,7 @@ pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
             let std = match std {
                 Ok(std) => std,
                 Err(e) => {
-                    eprintln!("Error measuring noise: {:?}", e);
+                    eprintln!("Error measuring noise: {e:?}");
                     continue;
                 }
             };

@@ -159,13 +159,13 @@ impl std::fmt::Debug for FheOp {
             Self::Retire => "Retire",
             Self::Nop => "Nop",
             Self::MulXN(amt) => {
-                write!(&mut potential_string, "Rotate({})", amt)?;
+                write!(&mut potential_string, "Rotate({amt})")?;
                 &potential_string
             }
             Self::SchemeSwitch => "SchemeSwitch",
         };
 
-        write!(f, "{}", op)
+        write!(f, "{op}")
     }
 }
 

@@ -19,7 +19,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     PRINTED_SYSTEM_INFO.get_or_init(|| {
         print_system_info();
         let params_json = serde_json::to_string_pretty(&DEFAULT_128).unwrap();
-        println!("{}", params_json);
+        println!("{params_json}");
     });
 
     let sk = SK
@@ -185,7 +185,7 @@ fn chi_squared_thread_scaling(c: &mut Criterion) {
         let (sk, enc, eval) = setup();
 
         group.bench_function(
-            &format!("Compiled chi squared ({num_threads} threads)"),
+            format!("Compiled chi squared ({num_threads} threads)"),
             |bench| {
                 bench.iter_batched(
                     // Setup closure: runs before each iteration, not timed

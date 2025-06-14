@@ -122,15 +122,14 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
 
                 assert_eq!(
                     expected, ans,
-                    "input_width: {}, output_width: {}",
-                    input_width, output_width
+                    "input_width: {input_width}, output_width: {output_width}"
                 );
             }
             (false, Err(_)) => {
                 // Expected error
                 continue;
             }
-            (true, Err(e)) => panic!("Unexpected error: {:?}", e),
+            (true, Err(e)) => panic!("Unexpected error: {e:?}"),
             (false, Ok(())) => panic!("Expected error"),
         }
     }

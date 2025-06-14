@@ -19,7 +19,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
         println!("Parameters (DEFAULT_128):");
         let params_json = serde_json::to_string_pretty(&DEFAULT_128).unwrap();
-        println!("{}", params_json);
+        println!("{params_json}");
     });
 
     let sk = SK
@@ -244,7 +244,7 @@ fn cardio_thread_scaling(c: &mut Criterion) {
         let (sk, enc, eval) = setup();
 
         group.bench_function(
-            &format!("Compiled Cardio ({num_threads} threads)"),
+            format!("Compiled Cardio ({num_threads} threads)"),
             |bench| {
                 bench.iter_batched(
                     || {

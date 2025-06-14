@@ -748,8 +748,8 @@ mod tests {
                     actual |= (val.0 as u128) << i;
                 }
 
-                println!("actual:   0b{:b}", actual);
-                println!("expected: 0b{:b}", expected);
+                println!("actual:   0b{actual:b}");
+                println!("expected: 0b{expected:b}");
 
                 assert_eq!(actual, expected);
             }

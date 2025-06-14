@@ -32,8 +32,7 @@ fn can_add_inputs() {
 
         assert_eq!(
             expected_sum, ans_sum,
-            "val1: {:#02x}, val2: {:#02x}, expected_sum: {:#02x}, ans_sum: {:#02x}, encrypted computation?: {}",
-            val1, val2, expected_sum, ans_sum, encrypted_computation
+            "val1: {val1:#02x}, val2: {val2:#02x}, expected_sum: {expected_sum:#02x}, ans_sum: {ans_sum:#02x}, encrypted computation?: {encrypted_computation}"
         );
     };
 
@@ -100,14 +99,12 @@ fn can_add_carry_inputs() {
 
         assert_eq!(
             expected_sum, ans_sum,
-            "val1: {:#02x}, val2: {:#02x}, input_carry: {:#02x}, expected_sum: {:#02x}, ans_sum: {:#02x}, encrypted computation?: {}",
-            val1, val2, input_carry, expected_sum, ans_sum, encrypted_computation
+            "val1: {val1:#02x}, val2: {val2:#02x}, input_carry: {input_carry:#02x}, expected_sum: {expected_sum:#02x}, ans_sum: {ans_sum:#02x}, encrypted computation?: {encrypted_computation}"
         );
 
         assert_eq!(
             expected_carry, ans_carry,
-            "val1: {:#02x}, val2: {:#02x}, input_carry: {:#02x}, expected_carry: {:#02x}, ans_carry: {:#02x}, encrypted computation?: {}",
-            val1, val2, input_carry, expected_carry, ans_carry, encrypted_computation
+            "val1: {val1:#02x}, val2: {val2:#02x}, input_carry: {input_carry:#02x}, expected_carry: {expected_carry:#02x}, ans_carry: {ans_carry:#02x}, encrypted computation?: {encrypted_computation}"
         );
     };
 

@@ -36,7 +36,7 @@ fn main() {
     let now = Instant::now();
     let encrypted_result = run_program(compute_key.clone(), FHE_FILE, "add", args).unwrap();
     let elapsed = now.elapsed();
-    println!("Time to run the program: {:?}", elapsed);
+    println!("Time to run the program: {elapsed:?}");
 
     // Decrypt the result.
     let result = encrypted_result.decrypt(&enc, &secret_key);

@@ -22,7 +22,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
         println!("Parameters (DEFAULT_128):");
         let params_json = serde_json::to_string_pretty(&DEFAULT_128).unwrap();
-        println!("{}", params_json);
+        println!("{params_json}");
     });
 
     let sk = SK
@@ -136,7 +136,7 @@ fn auction_n_bids<const N: usize>(c: &mut Criterion) {
 
     let (sk, enc, eval) = setup();
 
-    let id = format!("auction_from_compiler_{}_bids", N);
+    let id = format!("auction_from_compiler_{N}_bids");
     group.bench_function(id, |bench| {
         bench.iter_batched(
             // Setup closure: runs before each iteration, not timed

@@ -361,7 +361,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
     let cmux_tree_params_pretty_json = serde_json::to_string_pretty(cmux_tree_params).unwrap();
     println!("Running with parameters:");
-    println!("{}", cmux_tree_params_pretty_json);
+    println!("{cmux_tree_params_pretty_json}");
 
     let run_options = cmux_tree_params.run_options;
     let params = cmux_tree_params.parameter_set.clone();

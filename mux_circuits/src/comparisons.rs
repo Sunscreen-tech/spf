@@ -248,7 +248,7 @@ mod tests {
                 let expected = a == b;
                 let actual = res[0].0;
 
-                assert_eq!(expected, actual, "Failed case: {}", case);
+                assert_eq!(expected, actual, "Failed case: {case}");
             }
 
             // Cases that failed during initial testing, used to debug the circuit

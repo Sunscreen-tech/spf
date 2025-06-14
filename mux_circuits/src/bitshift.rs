@@ -56,10 +56,7 @@ pub fn bitshift(inputs: u16, shift_size: u16, dir: ShiftDirection, mode: ShiftMo
 
     assert!(
         shift_size >= used_shift_bits,
-        "Shift size must be at least the number of bits needed to represent the input size. Got {} shift bits, needed {} shift bits for input size {}.",
-        shift_size,
-        used_shift_bits,
-        inputs
+        "Shift size must be at least the number of bits needed to represent the input size. Got {shift_size} shift bits, needed {used_shift_bits} shift bits for input size {inputs}."
     );
 
     // To handle this case we would need a modulus circuit, which is

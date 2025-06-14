@@ -52,7 +52,7 @@ impl std::fmt::Display for GpuInfo {
             self.gpu_type,
             self.gpu_cores,
             self.gpu_memory_gb
-                .map(|gb| format!("{} GB", gb))
+                .map(|gb| format!("{gb} GB"))
                 .unwrap_or_else(|| "None".to_string())
         )
     }
@@ -295,7 +295,7 @@ pub fn print_system_info() -> SystemInfo {
     let info_json = serde_json::to_string_pretty(&info).unwrap();
 
     println!("System Information:");
-    println!("{}\n", info_json);
+    println!("{info_json}\n");
 
     info
 }

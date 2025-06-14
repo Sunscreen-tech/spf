@@ -20,7 +20,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
         println!("Parameters (DEFAULT_128):");
         let params_json = serde_json::to_string_pretty(&DEFAULT_128).unwrap();
-        println!("{}", params_json);
+        println!("{params_json}");
     });
 
     let sk = SK
@@ -185,7 +185,7 @@ fn hamming_thread_scaling(c: &mut Criterion) {
         g.sample_size(10);
 
         g.bench_function(
-            &format!("Compiled Hamming distance ({num_threads} threads)"),
+            format!("Compiled Hamming distance ({num_threads} threads)"),
             |bench| {
                 bench.iter_batched(
                     // Setup closure: runs before each iteration, not timed
@@ -238,7 +238,7 @@ fn hamming_input_scaling(c: &mut Criterion) {
 
         let (sk, enc, eval) = setup();
 
-        group.bench_function(&format!("Hamming input scaling ({len} inputs)"), |bench| {
+        group.bench_function(format!("Hamming input scaling ({len} inputs)"), |bench| {
             bench.iter_batched(
                 // Setup closure: runs before each iteration, not timed
                 || {
