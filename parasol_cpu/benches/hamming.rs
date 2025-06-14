@@ -6,6 +6,7 @@ use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
+use rayon::ThreadPoolBuilder;
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
@@ -19,7 +20,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
         println!("Parameters (DEFAULT_128):");
         let params_json = serde_json::to_string_pretty(&DEFAULT_128).unwrap();
-        println!("{}", params_json);
+        println!("{params_json}");
     });
 
     let sk = SK
@@ -40,6 +41,7 @@ fn generate_args(
     memory: &Memory,
     enc: &Encryption,
     sk: &SecretKey,
+    len: usize,
 ) -> Args<UInt<8, L1GlweCiphertext>> {
     let a = 0xFEEDF00D_CAFEBABEu64
         .to_le_bytes()
@@ -54,7 +56,7 @@ fn generate_args(
     ArgsBuilder::new()
         .arg(a)
         .arg(b)
-        .arg(8)
+        .arg(len as u8)
         .return_value::<UInt<8, _>>()
 }
 
@@ -73,7 +75,7 @@ fn hamming_from_compiler(c: &mut Criterion) {
                         .unwrap(),
                 );
                 let prog = memory.get_function_entry("hamming_distance").unwrap();
-                let args = generate_args(&memory, &enc, &sk);
+                let args = generate_args(&memory, &enc, &sk, 8);
                 let proc = FheComputer::new(&enc, &eval);
 
                 (proc, args, prog, memory)
@@ -163,7 +165,7 @@ fn hamming_from_assembly(c: &mut Criterion) {
             || {
                 let memory = Arc::new(Memory::new_default_stack());
                 let prog = memory.allocate_program(&hamming_test_program());
-                let args = generate_args(&memory, &enc, &sk);
+                let args = generate_args(&memory, &enc, &sk, 8);
                 let proc = FheComputer::new(&enc, &eval);
                 (proc, args, prog, memory)
             },
@@ -175,5 +177,100 @@ fn hamming_from_assembly(c: &mut Criterion) {
     });
 }
 
-criterion_group!(benches, hamming_from_compiler, hamming_from_assembly);
+fn hamming_thread_scaling(c: &mut Criterion) {
+    fn run_with_threads(c: &mut Criterion, num_threads: usize) {
+        let (sk, enc, eval) = setup();
+
+        let mut g = c.benchmark_group("Thread scaling");
+        g.sample_size(10);
+
+        g.bench_function(
+            format!("Compiled Hamming distance ({num_threads} threads)"),
+            |bench| {
+                bench.iter_batched(
+                    // Setup closure: runs before each iteration, not timed
+                    || {
+                        let memory = Arc::new(
+                            Memory::new_from_elf(include_bytes!(
+                                "../tests/test_data/hamming_distance"
+                            ))
+                            .unwrap(),
+                        );
+                        let prog = memory.get_function_entry("hamming_distance").unwrap();
+                        let args = generate_args(&memory, &enc, &sk, 8);
+
+                        let tp = ThreadPoolBuilder::new()
+                            .num_threads(num_threads)
+                            .build()
+                            .unwrap();
+
+                        let proc = FheComputer::new_with_threadpool(&enc, &eval, Arc::new(tp));
+
+                        (proc, args, prog, memory)
+                    },
+                    |(mut proc, args, prog, memory)| {
+                        proc.run_program(prog, &memory, args).unwrap();
+                    },
+                    criterion::BatchSize::PerIteration,
+                );
+            },
+        );
+    }
+
+    let mut num_threads = 1;
+    let num_cores = num_cpus::get_physical();
+
+    loop {
+        run_with_threads(c, num_threads);
+
+        if num_threads == num_cores {
+            break;
+        }
+
+        num_threads = usize::min(num_threads * 2, num_cpus::get_physical());
+    }
+}
+
+fn hamming_input_scaling(c: &mut Criterion) {
+    fn run_input_len(c: &mut Criterion, len: usize) {
+        let mut group = c.benchmark_group("hamming");
+        group.sample_size(10);
+
+        let (sk, enc, eval) = setup();
+
+        group.bench_function(format!("Hamming input scaling ({len} inputs)"), |bench| {
+            bench.iter_batched(
+                // Setup closure: runs before each iteration, not timed
+                || {
+                    let memory = Arc::new(
+                        Memory::new_from_elf(include_bytes!("../tests/test_data/hamming_distance"))
+                            .unwrap(),
+                    );
+                    let prog = memory.get_function_entry("hamming_distance").unwrap();
+                    let args = generate_args(&memory, &enc, &sk, len);
+                    let proc = FheComputer::new(&enc, &eval);
+
+                    (proc, args, prog, memory)
+                },
+                |(mut proc, args, prog, memory)| {
+                    proc.run_program(prog, &memory, args).unwrap();
+                },
+                criterion::BatchSize::PerIteration,
+            );
+        });
+    }
+
+    run_input_len(c, 1);
+    run_input_len(c, 2);
+    run_input_len(c, 4);
+    run_input_len(c, 8);
+}
+
+criterion_group!(
+    benches,
+    hamming_from_compiler,
+    hamming_from_assembly,
+    hamming_thread_scaling,
+    hamming_input_scaling
+);
 criterion_main!(benches);

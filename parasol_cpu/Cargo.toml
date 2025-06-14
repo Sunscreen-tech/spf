@@ -43,6 +43,7 @@ debug = []
 [dev-dependencies]
 criterion = { workspace = true }
 env_logger = { workspace = true }
+num_cpus = { workspace = true }
 itertools = { workspace = true }
 serde_json = { workspace = true }
 

@@ -53,8 +53,7 @@ fn run_single_test(
 
     assert_eq!(
         expected, ans,
-        "value: {:#08b}, shift: {}, expected: {:#08b}, actual: {:#08b}",
-        value, shift, expected, ans
+        "value: {value:#08b}, shift: {shift}, expected: {expected:#08b}, actual: {ans:#08b}"
     );
 }
 

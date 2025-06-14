@@ -19,7 +19,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
         println!("Parameters (DEFAULT_128):");
         let params_json = serde_json::to_string_pretty(&DEFAULT_128).unwrap();
-        println!("{}", params_json);
+        println!("{params_json}");
     });
 
     let sk = SK

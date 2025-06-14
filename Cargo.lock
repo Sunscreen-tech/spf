@@ -1865,6 +1865,7 @@ dependencies = [
  "log",
  "mux_circuits",
  "num",
+ "num_cpus",
  "parasol_concurrency",
  "parasol_cpu_macros",
  "parasol_runtime",

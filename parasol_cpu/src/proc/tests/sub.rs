@@ -32,8 +32,7 @@ fn can_sub_inputs() {
 
         assert_eq!(
             expected_sum, ans_sum,
-            "val1: {:#02x}, val2: {:#02x}, expected_sum: {:#02x}, ans_sum: {:#02x}, encrypted computation?: {}",
-            val1, val2, expected_sum, ans_sum, encrypted_computation
+            "val1: {val1:#02x}, val2: {val2:#02x}, expected_sum: {expected_sum:#02x}, ans_sum: {ans_sum:#02x}, encrypted computation?: {encrypted_computation}"
         );
     };
 
@@ -102,14 +101,12 @@ fn can_sub_borrow_inputs() {
 
         assert_eq!(
             expected_sum, ans_diff,
-            "val1: {:#02x}, val2: {:#02x}, input_borrow: {:#02x}, expected_sum: {:#02x}, ans_sum: {:#02x}, encrypted computation?: {}",
-            val1, val2, input_borrow, expected_sum, ans_diff, encrypted_computation
+            "val1: {val1:#02x}, val2: {val2:#02x}, input_borrow: {input_borrow:#02x}, expected_sum: {expected_sum:#02x}, ans_sum: {ans_diff:#02x}, encrypted computation?: {encrypted_computation}"
         );
 
         assert_eq!(
             expected_borrow, ans_borrow,
-            "val1: {:#02x}, val2: {:#02x}, input_borrow: {:#02x}, expected_borrow: {:#02x}, ans_borrow: {:#02x}, encrypted computation?: {}",
-            val1, val2, input_borrow, expected_borrow, ans_borrow, encrypted_computation
+            "val1: {val1:#02x}, val2: {val2:#02x}, input_borrow: {input_borrow:#02x}, expected_borrow: {expected_borrow:#02x}, ans_borrow: {ans_borrow:#02x}, encrypted computation?: {encrypted_computation}"
         );
     };
 

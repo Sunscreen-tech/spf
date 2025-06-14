@@ -59,7 +59,7 @@ fn main() {
         }
         Command::AnalyzeCmux(cmd) => {
             if let Err(e) = cmd.load_config() {
-                eprintln!("Error loading configuration: {}", e);
+                eprintln!("Error loading configuration: {e}");
                 return;
             }
             let result = analyze_cmux(&cmd);

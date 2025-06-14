@@ -854,7 +854,7 @@ impl Tomasulo for FheProcessor {
         use DispatchIsaOp::*;
 
         if options.log_instruction_execution {
-            debug!("executing pc={pc} id={instruction_id} {:#?}", instruction);
+            debug!("executing pc={pc} id={instruction_id} {instruction:#?}");
         }
 
         match instruction {

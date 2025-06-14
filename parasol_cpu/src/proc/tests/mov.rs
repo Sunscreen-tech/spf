@@ -40,8 +40,7 @@ fn can_mov() {
 
         assert_eq!(
             src_val, ret_val,
-            "src_val: {:#02x}, ans_sum: {:#02x}, [unimportant from here] src_enc: {}, dst_val: {:#02x}, dst_enc; {}",
-            src_val, ret_val, src_enc, dst_val, dst_enc
+            "src_val: {src_val:#02x}, ans_sum: {ret_val:#02x}, [unimportant from here] src_enc: {src_enc}, dst_val: {dst_val:#02x}, dst_enc; {dst_enc}"
         );
     };
 

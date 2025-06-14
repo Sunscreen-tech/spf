@@ -19,7 +19,7 @@ impl ProbabilityAwayMeanGaussianLog {
 impl Display for ProbabilityAwayMeanGaussianLog {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         let log_10 = self.log_10();
-        write!(f, "10^{:.2}", log_10)
+        write!(f, "10^{log_10:.2}")
     }
 }
 
