@@ -121,6 +121,16 @@ pub enum FitResults {
     FitErrorMessage(String),
 }
 
+#[derive(Debug, Serialize, Clone)]
+pub struct Drift {
+    /// The standard deviation of the drift in the encoded position on the torus
+    /// after performing the CMUX operation.
+    pub drift_std: f64,
+
+    /// The offset of the drift; ideally should be close to zero.
+    pub drift_offset_std: f64,
+}
+
 #[derive(Serialize, Clone)]
 pub struct CMuxTreeDataFile {
     pub version: u32,
@@ -128,6 +138,7 @@ pub struct CMuxTreeDataFile {
     pub cmux_tree_parameters: CMuxTreeParameters,
     pub system_info: SystemInfo,
     pub method: Method,
+    pub drift: Drift,
     pub fit: FitResults,
     pub drift_data: Vec<CMuxTreeDriftDataPoint>,
     pub drift_raw: Vec<Vec<f64>>,
@@ -138,6 +149,7 @@ pub struct CMuxTreeDataFile {
 impl CMuxTreeDataFile {
     pub fn new(
         cmux_tree_parameters: CMuxTreeParameters,
+        drift: Drift,
         fit: FitResults,
         drift_data: Vec<CMuxTreeDriftDataPoint>,
         drift_raw: Vec<Vec<f64>>,
@@ -150,6 +162,7 @@ impl CMuxTreeDataFile {
             cmux_tree_parameters,
             system_info: get_system_info(),
             method: Method::RandomSelectLinesCascadedDataLinesWithDrift,
+            drift,
             fit,
             drift_data,
             drift_raw,
@@ -363,15 +376,18 @@ fn fit_error_rate(
                 // for the drift, as we will now be adding two asymmetric tails.
                 // Hence we subtract 1.0 from the log value to get only one of
                 // the tails (in this case the smaller one).
-                (probability_away_from_mean_gaussian_log(left_error_distance, std).log_2() - 1.0)
-                    .powf(2.0)
+                (2.0f64).powf(
+                    probability_away_from_mean_gaussian_log(left_error_distance, std).log_2() - 1.0,
+                )
             } else {
                 0.0
             };
 
             let right_probability = if right_error_distance / std < 30.0 {
-                (probability_away_from_mean_gaussian_log(right_error_distance, std).log_2() - 1.0)
-                    .powf(2.0)
+                (2.0f64).powf(
+                    probability_away_from_mean_gaussian_log(right_error_distance, std).log_2()
+                        - 1.0,
+                )
             } else {
                 0.0
             };
@@ -728,6 +744,11 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         })
         .std();
 
+    let drift = Drift {
+        drift_std,
+        drift_offset_std,
+    };
+
     println!("Running the standard deviation analysis");
     let now = std::time::Instant::now();
     let (std_data, std_raw) = std_analysis(
@@ -762,6 +783,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
     CMuxTreeDataFile::new(
         cmux_tree_params.clone(),
+        drift,
         fit,
         drift_data,
         drift_raw,
