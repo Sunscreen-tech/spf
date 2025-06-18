@@ -3,7 +3,7 @@ use std::sync::{Arc, OnceLock};
 use parasol_runtime::{
     DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
     fluent::{Int, UInt},
-    test_utils::{get_compute_key_128, get_encryption_128, get_evaluation_128},
+    test_utils::get_compute_key_128,
 };
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use sunscreen_tfhe::entities::Polynomial;

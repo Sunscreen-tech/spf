@@ -5,9 +5,6 @@ use crate::{
     crypto::PublicKey,
 };
 
-static SECRET_KEYS_80: OnceLock<Arc<SecretKey>> = OnceLock::new();
-static COMPUTE_KEYS_80: OnceLock<Arc<ComputeKey>> = OnceLock::new();
-
 static SECRET_KEYS_128: OnceLock<Arc<SecretKey>> = OnceLock::new();
 static COMPUTE_KEYS_128: OnceLock<Arc<ComputeKey>> = OnceLock::new();
 static PUBLIC_KEYS_128: OnceLock<Arc<PublicKey>> = OnceLock::new();
