@@ -7,7 +7,7 @@ use crate::{
     ArgsBuilder, FheComputer, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedInt, MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedInt, MaybeEncryptedUInt, make_computer_128},
 };
 
 use parasol_runtime::test_utils::get_secret_keys_128;
@@ -70,7 +70,7 @@ fn run_comparison_test(
     isa_op: IsaOp,
     encrypted_computation: bool,
 ) {
-    let (mut proc, enc) = make_computer_80();
+    let (mut proc, enc) = make_computer_128();
 
     for _ in 0..=5 {
         let val1 = thread_rng().next_u64() as u32;

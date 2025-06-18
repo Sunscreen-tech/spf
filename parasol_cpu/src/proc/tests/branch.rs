@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
+use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128};
 
 #[test]
 fn can_branch_zero() {
-    let (mut proc, _enc) = make_computer_80();
+    let (mut proc, _enc) = make_computer_128();
 
     let args = ArgsBuilder::new()
         .arg(0u32)
@@ -40,7 +40,7 @@ fn can_branch_zero() {
 
 #[test]
 fn can_branch_nonzero() {
-    let (mut proc, _enc) = make_computer_80();
+    let (mut proc, _enc) = make_computer_128();
 
     let args = ArgsBuilder::new().arg(5u32).arg(1u32).return_value::<u32>();
 
@@ -69,7 +69,7 @@ fn can_branch_nonzero() {
 
 #[test]
 fn can_unconditional_branch() {
-    let (mut proc, _enc) = make_computer_80();
+    let (mut proc, _enc) = make_computer_128();
 
     let args = ArgsBuilder::new().arg(5u32).arg(1u32).return_value::<u32>();
 

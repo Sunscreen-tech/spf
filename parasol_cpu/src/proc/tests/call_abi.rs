@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::{ArgsBuilder, IsaOp, Memory, register_names::*, test_utils::make_computer_80};
+use crate::{ArgsBuilder, IsaOp, Memory, register_names::*, test_utils::make_computer_128};
 
 #[test]
 fn unsigned_values_zero_extend_4_byte() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -23,7 +23,7 @@ fn unsigned_values_zero_extend_4_byte() {
 
 #[test]
 fn signed_values_sign_extend_4_byte() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -42,7 +42,7 @@ fn signed_values_sign_extend_4_byte() {
 
 #[test]
 fn eight_byte_vals_2_registers() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -59,7 +59,7 @@ fn eight_byte_vals_2_registers() {
 
 #[test]
 fn eight_4_byte_args() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -92,7 +92,7 @@ fn eight_4_byte_args() {
 
 #[test]
 fn four_8_byte_args() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -122,7 +122,7 @@ fn four_8_byte_args() {
 
 #[test]
 fn large_return_value() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -152,7 +152,7 @@ fn large_return_value() {
 
 #[test]
 fn two_large_parameters() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
     let x = std::array::from_fn::<_, 16, _>(|x| x as u8);
     let y = x.map(|x| x << 4);
 
@@ -179,7 +179,7 @@ fn two_large_parameters() {
 
 #[test]
 fn pass_on_stack_wide() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 

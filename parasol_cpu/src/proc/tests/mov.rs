@@ -4,7 +4,7 @@ use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedUInt, make_computer_128},
 };
 
 use parasol_runtime::test_utils::get_secret_keys_128;
@@ -12,7 +12,7 @@ use parasol_runtime::test_utils::get_secret_keys_128;
 #[test]
 fn can_mov() {
     let test = |src_val, src_enc, dst_val, dst_enc| {
-        let (mut proc, enc) = make_computer_80();
+        let (mut proc, enc) = make_computer_128();
         let sk = get_secret_keys_128();
 
         let memory = Memory::new_default_stack();

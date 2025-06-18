@@ -7,7 +7,7 @@ use crate::{
     ArgsBuilder, FheComputer, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedUInt, make_computer_128},
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -63,7 +63,7 @@ fn run_shift_test(
     encrypted_value: bool,
     encrypted_shift: bool,
 ) {
-    let (mut proc, enc) = make_computer_80();
+    let (mut proc, enc) = make_computer_128();
 
     let mask = 0b111;
 

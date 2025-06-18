@@ -7,7 +7,7 @@ use crate::{
     ArgsBuilder, Byte, Memory, ToArg,
     proc::IsaOp,
     register_names::*,
-    test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80},
+    test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_128},
 };
 
 use parasol_runtime::{Encryption, SecretKey, test_utils::get_secret_keys_128};
@@ -41,7 +41,7 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
         // a valid program is passed in. We should enable resetting the
         // processor on failure. In the meantime, we can just create a new
         // processor for each loop.
-        let (mut proc, enc) = make_computer_80();
+        let (mut proc, enc) = make_computer_128();
         let sk = get_secret_keys_128();
         let enc = &enc;
 

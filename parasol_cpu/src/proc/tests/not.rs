@@ -8,11 +8,11 @@ use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedUInt, make_computer_128},
 };
 
 fn can_not(val: u32, encrypted_computation: bool) {
-    let (mut proc, enc) = make_computer_80();
+    let (mut proc, enc) = make_computer_128();
     let sk = get_secret_keys_128();
 
     let expected = !val;

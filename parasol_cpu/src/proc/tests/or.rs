@@ -2,13 +2,13 @@ use std::sync::Arc;
 
 use rand::{RngCore, thread_rng};
 
-use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
+use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128};
 
 use parasol_runtime::{fluent::UInt, test_utils::get_secret_keys_128};
 
 #[test]
 fn can_or_plaintext_inputs() {
-    let (mut proc, _enc) = make_computer_80();
+    let (mut proc, _enc) = make_computer_128();
 
     let val1 = 14u32;
     let val2 = 7u32;
@@ -27,7 +27,7 @@ fn can_or_plaintext_inputs() {
 
 #[test]
 fn can_or_ciphertext_inputs() {
-    let (mut proc, enc) = make_computer_80();
+    let (mut proc, enc) = make_computer_128();
     let sk = get_secret_keys_128();
 
     let mut test = |val1: u8, val2: u8| {
