@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
 use clap::{Args, Parser, Subcommand};
-use parasol_runtime::{DEFAULT_80, DEFAULT_128, Params};
+use parasol_runtime::{DEFAULT_128, Params};
 use serde::{Deserialize, Serialize};
 
 use crate::cmux_tree::CMuxTreeParameters;
@@ -305,7 +305,6 @@ impl AnalyzeCMuxTreeSource {
             } => {
                 let parameter_set = match parameter_set_name.to_lowercase().as_str() {
                     "default" => Params::default(),
-                    "default_80" => DEFAULT_80,
                     "default_128" => DEFAULT_128,
                     _ => Err(anyhow!("Invalid parameter set"))?,
                 };

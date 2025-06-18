@@ -9,7 +9,7 @@ use crate::{
     test_utils::{MaybeEncryptedUInt, make_computer_80},
 };
 
-use parasol_runtime::test_utils::get_secret_keys_80;
+use parasol_runtime::test_utils::get_secret_keys_128;
 
 fn cmux_test_program() -> Vec<IsaOp> {
     vec![
@@ -22,7 +22,7 @@ fn cmux_test_program() -> Vec<IsaOp> {
 
 fn can_cmux(encrypted_computation: bool) {
     let (mut proc, enc) = make_computer_80();
-    let sk = get_secret_keys_80();
+    let sk = get_secret_keys_128();
 
     // Make an array of size 10 of random numbers modulo 20
     let random_conditions = (0..10).map(|_| thread_rng().next_u32() % 20);

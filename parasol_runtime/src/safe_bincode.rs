@@ -29,8 +29,8 @@ pub fn deserialize<'a, T: GetSize + Deserialize<'a>>(data: &'a [u8], params: &Pa
 #[cfg(test)]
 mod tests {
     use crate::{
-        ComputeKey, ComputeKeyNonFft, DEFAULT_80, DEFAULT_128, Encryption, L0LweCiphertext,
-        L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey,
+        ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, L0LweCiphertext, L1GlevCiphertext,
+        L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey,
         test_utils::{get_compute_key_128, get_secret_keys_128},
     };
 
@@ -64,15 +64,8 @@ mod tests {
                 let res = deserialize::<$ct_ty>(&ser, &DEFAULT_128);
 
                 assert!(res.is_err());
-
-                let ser = bincode::serialize::<$ct_ty>($val).unwrap();
-                let res = deserialize::<$ct_ty>(&ser, &DEFAULT_80);
-
-                assert!(res.is_err());
             };
         }
-
-        let enc = Encryption::new(&DEFAULT_128);
 
         case!(L0LweCiphertext, &enc.trivial_lwe_l0_one());
         case!(L1LweCiphertext, &enc.trivial_lwe_l1_one());
@@ -119,23 +112,5 @@ mod tests {
         case!(PublicKey);
         case!(SecretKey);
         case!(ComputeKeyNonFft);
-
-        let sk = get_secret_keys_128();
-
-        let ser = bincode::serialize(&sk).unwrap();
-        let result = deserialize::<SecretKey>(&ser, &DEFAULT_80);
-
-        assert!(result.is_err());
-
-        let ser = bincode::serialize(&ComputeKeyNonFft::generate(&sk, &DEFAULT_128)).unwrap();
-        let result = deserialize::<ComputeKeyNonFft>(&ser, &DEFAULT_80);
-
-        assert!(result.is_err());
-
-        let pk = PublicKey::generate(&DEFAULT_128, &sk);
-        let ser = bincode::serialize(&pk).unwrap();
-        let result = deserialize::<PublicKey>(&ser, &DEFAULT_80);
-
-        assert!(result.is_err());
     }
 }

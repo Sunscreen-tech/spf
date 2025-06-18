@@ -10,7 +10,7 @@ use crate::{
     test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80},
 };
 
-use parasol_runtime::{Encryption, SecretKey, test_utils::get_secret_keys_80};
+use parasol_runtime::{Encryption, SecretKey, test_utils::get_secret_keys_128};
 
 enum CastType {
     ZeroExtension,
@@ -42,7 +42,7 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
         // processor on failure. In the meantime, we can just create a new
         // processor for each loop.
         let (mut proc, enc) = make_computer_80();
-        let sk = get_secret_keys_80();
+        let sk = get_secret_keys_128();
         let enc = &enc;
 
         // Get a random 32 bit value

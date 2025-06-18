@@ -113,11 +113,11 @@ impl GlweCiphertextFftRef<Complex<f64>> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{GLWE_1_1024_80, PlaintextBits, entities::Polynomial, high_level::*};
+    use crate::{GLWE_1_2048_128, PlaintextBits, entities::Polynomial, high_level::*};
 
     #[test]
     fn can_decrypt_glwe_after_fft_roundtrip() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
         let bits = PlaintextBits(4);
 
         let sk = keygen::generate_binary_glwe_sk(&params);

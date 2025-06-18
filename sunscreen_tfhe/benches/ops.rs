@@ -6,9 +6,8 @@ use criterion::{
 
 #[allow(deprecated)]
 use sunscreen_tfhe::{
-    GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, GlweDef, GlweDimension, GlweSize, LWE_512_80,
-    LWE_637_128, LweDef, LweDimension, PlaintextBits, PolynomialDegree, RadixCount,
-    RadixDecomposition, RadixLog, Torus,
+    GLWE_1_2048_128, GlweDef, GlweDimension, GlweSize, LWE_637_128, LweDef, LweDimension,
+    PlaintextBits, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus,
     entities::{
         AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlevCiphertext,
         GlweCiphertext, Polynomial, PolynomialRef, PublicFunctionalKeyswitchKey, SchemeSwitchKey,
@@ -307,7 +306,7 @@ fn scheme_switch(c: &mut Criterion) {
         radix_log: RadixLog(11),
     };
 
-    let params = GLWE_1_1024_80;
+    let params = GLWE_1_2048_128;
     let polynomial_degree = params.dim.polynomial_degree.0;
 
     // Generate the keys
@@ -347,13 +346,13 @@ fn scheme_switch(c: &mut Criterion) {
 fn keygen(c: &mut Criterion) {
     c.bench_function("LWE Secret keygen", |b| {
         b.iter(|| {
-            let _ = high_level::keygen::generate_binary_lwe_sk(&LWE_512_80);
+            let _ = high_level::keygen::generate_binary_lwe_sk(&LWE_637_128);
         })
     });
 
     c.bench_function("GLWE Secret keygen", |b| {
         b.iter(|| {
-            let _ = high_level::keygen::generate_binary_glwe_sk(&GLWE_5_256_80);
+            let _ = high_level::keygen::generate_binary_glwe_sk(&GLWE_1_2048_128);
         })
     });
 
@@ -363,30 +362,30 @@ fn keygen(c: &mut Criterion) {
     };
 
     c.bench_function("BSK keygen", |b| {
-        let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&LWE_512_80);
-        let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&GLWE_5_256_80);
+        let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&LWE_637_128);
+        let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&GLWE_1_2048_128);
 
         b.iter(|| {
             let _ = high_level::keygen::generate_bootstrapping_key(
                 &lwe_sk,
                 &glwe_sk,
-                &LWE_512_80,
-                &GLWE_5_256_80,
+                &LWE_637_128,
+                &GLWE_1_2048_128,
                 &radix,
             );
         })
     });
 
     c.bench_function("CBS PFKS keyswitch keygen", |b| {
-        let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&LWE_512_80);
-        let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&GLWE_5_256_80);
+        let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&LWE_637_128);
+        let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&GLWE_1_2048_128);
 
         b.iter(|| {
             let _ = high_level::keygen::generate_cbs_ksk(
                 &lwe_sk,
                 &glwe_sk,
-                &LWE_512_80,
-                &GLWE_5_256_80,
+                &LWE_637_128,
+                &GLWE_1_2048_128,
                 &radix,
             );
         });
@@ -395,7 +394,7 @@ fn keygen(c: &mut Criterion) {
 
 fn public_functional_keyswitching(c: &mut Criterion) {
     c.bench_function("Public functional keyswitching", |b| {
-        let glwe = high_level::keygen::generate_binary_glwe_sk(&GLWE_1_1024_80);
+        let glwe = high_level::keygen::generate_binary_glwe_sk(&GLWE_1_2048_128);
 
         let radix = RadixDecomposition {
             count: RadixCount(8),
@@ -403,8 +402,8 @@ fn public_functional_keyswitching(c: &mut Criterion) {
         };
 
         let mut puksk = PublicFunctionalKeyswitchKey::new(
-            &GLWE_1_1024_80.as_lwe_def(),
-            &GLWE_1_1024_80,
+            &GLWE_1_2048_128.as_lwe_def(),
+            &GLWE_1_2048_128,
             &radix,
         );
 
@@ -412,8 +411,8 @@ fn public_functional_keyswitching(c: &mut Criterion) {
             &mut puksk,
             glwe.to_lwe_secret_key(),
             &glwe,
-            &GLWE_1_1024_80.as_lwe_def(),
-            &GLWE_1_1024_80,
+            &GLWE_1_2048_128.as_lwe_def(),
+            &GLWE_1_2048_128,
             &radix,
         );
 
@@ -422,14 +421,14 @@ fn public_functional_keyswitching(c: &mut Criterion) {
                 high_level::encryption::encrypt_lwe_secret(
                     0,
                     glwe.to_lwe_secret_key(),
-                    &GLWE_1_1024_80.as_lwe_def(),
+                    &GLWE_1_2048_128.as_lwe_def(),
                     PlaintextBits(1),
                 )
             })
             .collect::<Vec<_>>();
 
         b.iter(|| {
-            let mut output = GlweCiphertext::new(&GLWE_1_1024_80);
+            let mut output = GlweCiphertext::new(&GLWE_1_2048_128);
 
             let f = |poly: &mut PolynomialRef<Torus<u64>>, tori: &[Torus<u64>]| {
                 for (c, t) in poly.coeffs_mut().iter_mut().zip(tori.iter()) {
@@ -444,8 +443,8 @@ fn public_functional_keyswitching(c: &mut Criterion) {
                 &lwe_refs,
                 &puksk,
                 f,
-                &GLWE_1_1024_80.as_lwe_def(),
-                &GLWE_1_1024_80,
+                &GLWE_1_2048_128.as_lwe_def(),
+                &GLWE_1_2048_128,
                 &radix,
             );
         });

@@ -4,7 +4,7 @@ use crate::{
     ArgsBuilder, Byte, Error, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80,
 };
 
-use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_80};
+use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_128};
 
 #[test]
 fn can_load_store_plain_bit_width() {
@@ -57,7 +57,7 @@ fn can_load_store_plain_bit_width() {
 #[test]
 fn can_load_store_ciphertext_bit_width() {
     let (mut proc, enc) = make_computer_80();
-    let sk = get_secret_keys_80();
+    let sk = get_secret_keys_128();
 
     let mut case = |width| {
         let plain_values = (1..=16).collect::<Vec<_>>();

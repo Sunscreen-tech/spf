@@ -589,7 +589,7 @@ mod tests {
     use crate::{
         high_level::*,
         zkp::{num_private, num_public},
-        LweDef, LweDimension, LWE_512_80,
+        LweDef, LweDimension, LWE_512_128,
     };
 
     use super::*;
@@ -598,7 +598,7 @@ mod tests {
     fn can_compute_a_column_offsets() {
         let lwe = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
         let lwe_dimension = lwe.dim.0;
 
@@ -668,7 +668,7 @@ mod tests {
     fn num_messages_works() {
         let lwe = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
 
         let sk = keygen::generate_binary_lwe_sk(&lwe);
@@ -711,7 +711,7 @@ mod tests {
     fn one_secret_key() {
         let params = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
 
         let sk = keygen::generate_binary_lwe_sk(&params);
@@ -739,7 +739,7 @@ mod tests {
     fn two_secret_key() {
         let params = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
         let bits = PlaintextBits(1);
 
@@ -783,7 +783,7 @@ mod tests {
     fn one_public_key() {
         let params = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
         let bits = PlaintextBits(1);
 
@@ -811,7 +811,7 @@ mod tests {
     fn two_public_key() {
         let params = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
         let bits = PlaintextBits(1);
 
@@ -850,7 +850,7 @@ mod tests {
     fn one_public_one_private() {
         let params = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
         let bits = PlaintextBits(1);
 
@@ -896,7 +896,7 @@ mod tests {
     fn complex_examples() {
         let params = LweDef {
             dim: LweDimension(4),
-            ..LWE_512_80
+            ..LWE_512_128
         };
         let bits = PlaintextBits(1);
 

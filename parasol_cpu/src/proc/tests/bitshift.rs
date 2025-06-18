@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use parasol_runtime::{Encryption, test_utils::get_secret_keys_80};
+use parasol_runtime::{Encryption, test_utils::get_secret_keys_128};
 use rand::{RngCore, thread_rng};
 
 use crate::{
@@ -21,7 +21,7 @@ fn run_single_test(
     value: u8,
     shift: u8,
 ) {
-    let sk = get_secret_keys_80();
+    let sk = get_secret_keys_128();
     let expected = operation(value, shift);
 
     let memory = Memory::new_default_stack();

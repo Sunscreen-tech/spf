@@ -4,7 +4,7 @@ use rand::{RngCore, thread_rng};
 
 use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
 
-use parasol_runtime::{fluent::UInt, test_utils::get_secret_keys_80};
+use parasol_runtime::{fluent::UInt, test_utils::get_secret_keys_128};
 
 #[test]
 fn can_or_plaintext_inputs() {
@@ -28,7 +28,7 @@ fn can_or_plaintext_inputs() {
 #[test]
 fn can_or_ciphertext_inputs() {
     let (mut proc, enc) = make_computer_80();
-    let sk = get_secret_keys_80();
+    let sk = get_secret_keys_128();
 
     let mut test = |val1: u8, val2: u8| {
         let expected = val1 | val2;

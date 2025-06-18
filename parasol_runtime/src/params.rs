@@ -1,7 +1,7 @@
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
-    GLWE_1_2048_128, GLWE_5_256_80, GlweDef, LWE_512_80, LWE_637_128, LweDef, PolynomialDegree,
-    RadixCount, RadixDecomposition, RadixLog,
+    GLWE_1_2048_128, GlweDef, LWE_637_128, LweDef, PolynomialDegree, RadixCount,
+    RadixDecomposition, RadixLog,
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -95,39 +95,6 @@ impl Default for Params {
         DEFAULT_128
     }
 }
-
-/// A < 80-bit secure parameter set. These numbers are out of date.
-///
-/// # Remarks
-/// Is *not* compatible with RLWE public-key encryption.
-pub const DEFAULT_80: Params = Params {
-    l0_params: LWE_512_80,
-    l1_params: GLWE_5_256_80,
-    cbs_radix: RadixDecomposition {
-        radix_log: RadixLog(7),
-        count: RadixCount(2),
-    },
-    pbs_radix: RadixDecomposition {
-        radix_log: RadixLog(17),
-        count: RadixCount(2),
-    },
-    pfks_radix: RadixDecomposition {
-        radix_log: RadixLog(15),
-        count: RadixCount(2),
-    },
-    ks_radix: RadixDecomposition {
-        radix_log: RadixLog(2),
-        count: RadixCount(5),
-    },
-    ss_radix: RadixDecomposition {
-        radix_log: RadixLog(2),
-        count: RadixCount(17),
-    },
-    tr_radix: RadixDecomposition {
-        count: RadixCount(6),
-        radix_log: RadixLog(7),
-    },
-};
 
 /// The standard 128-bit secure parameter set.
 ///

@@ -1,21 +1,20 @@
-use std::sync::Arc;
+use std::sync::{Arc, Mutex};
 
 use mux_circuits::and::make_and_circuit;
 use parasol_concurrency::AtomicRefCell;
 use sunscreen_tfhe::entities::Polynomial;
 
 use crate::{
-    Encryption, FheEdge,
+    CircuitProcessor, DEFAULT_128, FheEdge,
     crypto::{L0LweCiphertext, L1GlweCiphertext},
     fhe_circuit::{FheCircuit, FheOp},
-    params::DEFAULT_80,
-    test_utils::{get_secret_keys_80, make_uproc_80, make_uproc_with_flow_control_len_80},
+    test_utils::{get_encryption_128, get_evaluation_128, get_secret_keys_128, make_uproc_128},
 };
 
 mod faults;
 
 fn run_uop_program(graph: &FheCircuit) {
-    let (processor, flow) = make_uproc_80();
+    let (processor, flow) = make_uproc_128();
 
     processor
         .lock()
@@ -25,7 +24,10 @@ fn run_uop_program(graph: &FheCircuit) {
 }
 
 fn run_uop_program_with_fc_len(graph: &FheCircuit, fc_len: usize) {
-    let (processor, flow) = make_uproc_with_flow_control_len_80(fc_len);
+    let (processor, flow) =
+        CircuitProcessor::new(fc_len, None, &get_evaluation_128(), &get_encryption_128());
+
+    let processor = Mutex::new(processor);
 
     processor
         .lock()
@@ -35,7 +37,7 @@ fn run_uop_program_with_fc_len(graph: &FheCircuit, fc_len: usize) {
 }
 
 fn encrypt_lwe0(val: bool) -> Arc<AtomicRefCell<L0LweCiphertext>> {
-    let ct = Encryption::new(&DEFAULT_80).encrypt_lwe_l0_secret(val, &get_secret_keys_80());
+    let ct = get_encryption_128().encrypt_lwe_l0_secret(val, &get_secret_keys_128());
 
     Arc::new(AtomicRefCell::new(ct))
 }
@@ -43,7 +45,7 @@ fn encrypt_lwe0(val: bool) -> Arc<AtomicRefCell<L0LweCiphertext>> {
 fn encrypt_glwe1(val: &[u64]) -> Arc<AtomicRefCell<L1GlweCiphertext>> {
     let poly = Polynomial::new(val);
 
-    let ct = Encryption::new(&DEFAULT_80).encrypt_glwe_l1_secret(&poly, &get_secret_keys_80());
+    let ct = get_encryption_128().encrypt_glwe_l1_secret(&poly, &get_secret_keys_128());
 
     Arc::new(AtomicRefCell::new(ct))
 }
@@ -69,7 +71,7 @@ fn can_copy_lwe0() {
 
 #[test]
 fn glwe_zero() {
-    let enc = Encryption::new(&DEFAULT_80);
+    let enc = get_encryption_128();
 
     let output = Arc::new(AtomicRefCell::new(enc.allocate_glwe_l1()));
 
@@ -89,7 +91,7 @@ fn glwe_zero() {
 
 #[test]
 fn glwe_one() {
-    let enc = Encryption::new(&DEFAULT_80);
+    let enc = get_encryption_128();
 
     let output = Arc::new(AtomicRefCell::new(enc.allocate_glwe_l1()));
 
@@ -109,7 +111,7 @@ fn glwe_one() {
 
 #[test]
 fn can_sample_extract() {
-    let enc = Encryption::new(&DEFAULT_80);
+    let enc = get_encryption_128();
 
     let output = Arc::new(AtomicRefCell::new(enc.allocate_lwe_l1()));
 
@@ -131,8 +133,8 @@ fn can_sample_extract() {
 
 #[test]
 fn can_keyswitch() {
-    let enc = Encryption::new(&DEFAULT_80);
-    let secret_key = get_secret_keys_80();
+    let enc = get_encryption_128();
+    let secret_key = get_secret_keys_128();
 
     let input = Arc::new(AtomicRefCell::new(
         enc.encrypt_lwe_l1_secret(true, &secret_key),
@@ -155,12 +157,12 @@ fn can_keyswitch() {
 
 #[test]
 fn can_cmux() {
-    let secret = get_secret_keys_80();
-    let enc = Encryption::new(&DEFAULT_80);
+    let secret = get_secret_keys_128();
+    let enc = get_encryption_128();
 
-    let a = encrypt_glwe1(&vec![0; DEFAULT_80.l1_poly_degree().0]);
+    let a = encrypt_glwe1(&vec![0; DEFAULT_128.l1_poly_degree().0]);
 
-    let b = encrypt_glwe1(&vec![1; DEFAULT_80.l1_poly_degree().0]);
+    let b = encrypt_glwe1(&vec![1; DEFAULT_128.l1_poly_degree().0]);
 
     let sel = encrypt_lwe0(true);
 
@@ -184,7 +186,7 @@ fn can_cmux() {
     run_uop_program(&graph);
 
     assert_eq!(
-        Polynomial::new(&vec![1; DEFAULT_80.l1_poly_degree().0]),
+        Polynomial::new(&vec![1; DEFAULT_128.l1_poly_degree().0]),
         enc.decrypt_glwe_l1(&AtomicRefCell::borrow(&output), &secret)
     );
 }
@@ -221,8 +223,8 @@ fn flow_control_still_allows_forward_progress() {
 
 #[test]
 fn can_and() {
-    let enc = Encryption::new(&DEFAULT_80);
-    let secret = get_secret_keys_80();
+    let enc = get_encryption_128();
+    let secret = get_secret_keys_128();
 
     let width = 4;
 
@@ -231,8 +233,8 @@ fn can_and() {
 
     let expected = a_plaintext.iter().zip(b_plaintext).map(|(x, y)| x & y);
 
-    let a = a_plaintext.map(|x| encrypt_glwe1(&vec![x; DEFAULT_80.l1_poly_degree().0]));
-    let b = b_plaintext.map(|x| encrypt_glwe1(&vec![x; DEFAULT_80.l1_poly_degree().0]));
+    let a = a_plaintext.map(|x| encrypt_glwe1(&vec![x; DEFAULT_128.l1_poly_degree().0]));
+    let b = b_plaintext.map(|x| encrypt_glwe1(&vec![x; DEFAULT_128.l1_poly_degree().0]));
 
     let mut graph = FheCircuit::new();
     let and_circuit = make_and_circuit(width as u16);

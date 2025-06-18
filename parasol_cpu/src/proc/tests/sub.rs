@@ -7,13 +7,13 @@ use crate::{
     test_utils::{MaybeEncryptedUInt, make_computer_80},
 };
 
-use parasol_runtime::test_utils::get_secret_keys_80;
+use parasol_runtime::test_utils::get_secret_keys_128;
 
 #[test]
 fn can_sub_inputs() {
     let test = |((val1, enc1), (val2, enc2), expected_sum)| {
         let (mut proc, enc) = make_computer_80();
-        let sk = get_secret_keys_80();
+        let sk = get_secret_keys_128();
 
         let encrypted_computation = enc1 || enc2;
 
@@ -60,7 +60,7 @@ fn can_sub_borrow_inputs() {
         expected_borrow,
     )| {
         let (mut proc, enc) = make_computer_80();
-        let sk = get_secret_keys_80();
+        let sk = get_secret_keys_128();
 
         let encrypted_computation = enc1 || enc2 || enc_input_borrow;
 

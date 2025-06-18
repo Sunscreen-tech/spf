@@ -265,39 +265,6 @@ pub const GLWE_1_2048_128: GlweDef = GlweDef {
     std: Stddev(7e-16),
 };
 
-/// < 80-bit secure parameters for an LWE instance with a dimension of 512.
-///
-/// # Security
-/// The security of these parameters is out of date
-pub const LWE_512_80: LweDef = LweDef {
-    dim: LweDimension(512),
-    std: Stddev(0.000001842343446823844),
-};
-
-/// < 80-bit secure parameters for a GLWE instance with 5 polynomials of degree 256.
-///
-/// # Security
-/// The security of these parameters is out of date
-pub const GLWE_5_256_80: GlweDef = GlweDef {
-    dim: GlweDimension {
-        size: GlweSize(5),
-        polynomial_degree: PolynomialDegree(256),
-    },
-    std: Stddev(0.0000000000000007794169597948335),
-};
-
-/// < 80-bit secure parameters for a GLWE instance with 1 polynomial of degree 1024.
-///
-/// # Security
-/// The security of these parameters is out of date
-pub const GLWE_1_1024_80: GlweDef = GlweDef {
-    dim: GlweDimension {
-        size: GlweSize(1),
-        polynomial_degree: PolynomialDegree(1024),
-    },
-    std: Stddev(0.0000000000010900242107812643),
-};
-
 #[cfg(test)]
 mod tests {
 
@@ -328,18 +295,6 @@ mod tests {
         let actual_glwe_std = lwe_security_level_to_std(2048, 128.0).unwrap();
         println!("GLWE 1 2048 128: {}", actual_glwe_std);
         GLWE_1_2048_128.assert_security_level(128);
-
-        let actual_lwe_std = lwe_security_level_to_std(512, 80.0).unwrap();
-        println!("LWE 512 80: {}", actual_lwe_std);
-        LWE_512_80.assert_security_level(80);
-
-        let actual_glwe_std = lwe_security_level_to_std(5 * 256, 80.0).unwrap();
-        println!("GLWE 5 256 80: {}", actual_glwe_std);
-        GLWE_5_256_80.assert_security_level(80);
-
-        let actual_glwe_std = lwe_security_level_to_std(1024, 80.0).unwrap();
-        println!("GLWE 1 1024 80: {}", actual_glwe_std);
-        GLWE_1_1024_80.assert_security_level(80);
 
         let actual_glwe_std = lwe_security_level_to_std(512, 128.0).unwrap();
         println!("GLWE 1 512 128: {}", actual_glwe_std);

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use rand::{RngCore, thread_rng};
 
-use parasol_runtime::test_utils::get_secret_keys_80;
+use parasol_runtime::test_utils::get_secret_keys_128;
 
 use crate::{
     ArgsBuilder, Memory,
@@ -13,7 +13,7 @@ use crate::{
 
 fn can_not(val: u32, encrypted_computation: bool) {
     let (mut proc, enc) = make_computer_80();
-    let sk = get_secret_keys_80();
+    let sk = get_secret_keys_128();
 
     let expected = !val;
 
