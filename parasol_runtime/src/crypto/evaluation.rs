@@ -266,9 +266,7 @@ mod tests {
 
     use crate::{
         DEFAULT_128,
-        test_utils::{
-            get_compute_key_128, get_encryption_128, get_evaluation_128, get_secret_keys_128,
-        },
+        test_utils::{get_encryption_128, get_evaluation_128, get_secret_keys_128},
     };
 
     use super::*;
@@ -276,7 +274,6 @@ mod tests {
     #[test]
     fn can_circuit_bootstrap() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -295,7 +292,6 @@ mod tests {
     #[test]
     fn can_lwe_keyswitch() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -316,7 +312,6 @@ mod tests {
     #[test]
     fn can_cmux() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -341,7 +336,6 @@ mod tests {
     #[test]
     fn can_sample_extract() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -360,7 +354,6 @@ mod tests {
     #[test]
     fn can_not() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -391,7 +384,6 @@ mod tests {
     #[test]
     fn can_xor() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -441,7 +433,6 @@ mod tests {
     #[test]
     fn can_multiply_glwe_ggsw() {
         let secret = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -471,7 +462,6 @@ mod tests {
     #[test]
     fn can_mul_xn() {
         let sk = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
@@ -498,7 +488,6 @@ mod tests {
     #[test]
     fn can_scheme_switch() {
         let sk = get_secret_keys_128();
-        let compute = get_compute_key_128();
 
         let enc = get_encryption_128();
         let eval = get_evaluation_128();
