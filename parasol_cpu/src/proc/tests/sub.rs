@@ -4,16 +4,16 @@ use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedUInt, make_computer_128},
 };
 
-use parasol_runtime::test_utils::get_secret_keys_80;
+use parasol_runtime::test_utils::get_secret_keys_128;
 
 #[test]
 fn can_sub_inputs() {
     let test = |((val1, enc1), (val2, enc2), expected_sum)| {
-        let (mut proc, enc) = make_computer_80();
-        let sk = get_secret_keys_80();
+        let (mut proc, enc) = make_computer_128();
+        let sk = get_secret_keys_128();
 
         let encrypted_computation = enc1 || enc2;
 
@@ -59,8 +59,8 @@ fn can_sub_borrow_inputs() {
         expected_sum,
         expected_borrow,
     )| {
-        let (mut proc, enc) = make_computer_80();
-        let sk = get_secret_keys_80();
+        let (mut proc, enc) = make_computer_128();
+        let sk = get_secret_keys_128();
 
         let encrypted_computation = enc1 || enc2 || enc_input_borrow;
 
@@ -175,7 +175,7 @@ fn can_sub_borrow_inputs() {
 
 #[test]
 fn sub_use_same_dst_and_src() {
-    let (mut proc, _enc) = make_computer_80();
+    let (mut proc, _enc) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 

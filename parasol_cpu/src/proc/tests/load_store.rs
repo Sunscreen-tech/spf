@@ -1,14 +1,14 @@
 use std::sync::Arc;
 
 use crate::{
-    ArgsBuilder, Byte, Error, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80,
+    ArgsBuilder, Byte, Error, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128,
 };
 
-use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_80};
+use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_128};
 
 #[test]
 fn can_load_store_plain_bit_width() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let mut case = |width| {
         let memory = Arc::new(Memory::new_default_stack());
@@ -56,8 +56,8 @@ fn can_load_store_plain_bit_width() {
 
 #[test]
 fn can_load_store_ciphertext_bit_width() {
-    let (mut proc, enc) = make_computer_80();
-    let sk = get_secret_keys_80();
+    let (mut proc, enc) = make_computer_128();
+    let sk = get_secret_keys_128();
 
     let mut case = |width| {
         let plain_values = (1..=16).collect::<Vec<_>>();
@@ -112,7 +112,7 @@ fn can_load_store_ciphertext_bit_width() {
 
 #[test]
 fn can_load_immediate() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -138,7 +138,7 @@ fn can_load_immediate() {
 
 #[test]
 fn load_immediate_fails_out_of_range() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
 
@@ -161,7 +161,7 @@ fn load_immediate_fails_out_of_range() {
 
 #[test]
 fn can_offset_load() {
-    let (mut proc, _) = make_computer_80();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
     let src = memory

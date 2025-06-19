@@ -208,8 +208,8 @@ pub(crate) fn generate_lut<S, F>(
 ///   entities::{UnivariateLookupTable, LweCiphertext},
 ///   ops::bootstrapping::programmable_bootstrap_univariate,
 ///   params::{
-///     GLWE_1_1024_80,
-///     LWE_512_80,
+///     GLWE_1_2048_128,
+///     LWE_512_128,
 ///     CarryBits,
 ///     PlaintextBits,
 ///     RadixDecomposition,
@@ -219,8 +219,8 @@ pub(crate) fn generate_lut<S, F>(
 /// };
 ///
 /// // Parameters defining the scheme we are using
-/// let lwe_params = LWE_512_80;
-/// let glwe_params = GLWE_1_1024_80;
+/// let lwe_params = LWE_512_128;
+/// let glwe_params = GLWE_1_2048_128;
 /// let radix = RadixDecomposition {
 ///     count: RadixCount(3),
 ///     radix_log: RadixLog(4),
@@ -478,8 +478,8 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///   entities::{BivariateLookupTable, LweCiphertext},
 ///   ops::bootstrapping::programmable_bootstrap_bivariate,
 ///   params::{
-///     GLWE_1_1024_80,
-///     LWE_512_80,
+///     GLWE_1_2048_128,
+///     LWE_512_128,
 ///     CarryBits,
 ///     PlaintextBits,
 ///     RadixDecomposition,
@@ -489,8 +489,8 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 /// };
 ///
 /// // Parameters defining the scheme we are using
-/// let lwe_params = LWE_512_80;
-/// let glwe_params = GLWE_1_1024_80;
+/// let lwe_params = LWE_512_128;
+/// let glwe_params = GLWE_1_2048_128;
 /// let radix = RadixDecomposition {
 ///     count: RadixCount(3),
 ///     radix_log: RadixLog(4),
@@ -626,7 +626,7 @@ pub fn programmable_bootstrap_bivariate<S>(
 mod tests {
 
     use crate::{
-        GLWE_1_1024_80, LWE_512_80, RoundedDiv,
+        GLWE_1_2048_128, LWE_637_128, RoundedDiv,
         entities::{
             BivariateLookupTable, BootstrapKey, BootstrapKeyFft, GlweCiphertext, LweCiphertext,
             LweKeyswitchKey, UnivariateLookupTable,
@@ -711,7 +711,7 @@ mod tests {
     fn bootstrap_helper(map: impl Fn(u64) -> u64) {
         let bits = PlaintextBits(3);
         let lwe = TEST_LWE_DEF_1;
-        let glwe = GLWE_1_1024_80;
+        let glwe = GLWE_1_2048_128;
         let radix = TEST_RADIX;
 
         let original_sk = keygen::generate_binary_lwe_sk(&lwe);
@@ -927,8 +927,8 @@ mod tests {
     #[test]
     fn can_generalized_bootstrap() {
         let radix = &TEST_RADIX;
-        let lwe = &LWE_512_80;
-        let glwe = &GLWE_1_1024_80;
+        let lwe = &LWE_637_128;
+        let glwe = &GLWE_1_2048_128;
 
         // 1 message bit + 1 padding
         let bits = PlaintextBits(1);

@@ -96,7 +96,7 @@ impl<S: TorusOps> LweCiphertextRef<S> {
 
 #[cfg(test)]
 mod tests {
-    use crate::{LWE_512_80, PlaintextBits, high_level::*};
+    use crate::{LWE_512_128, PlaintextBits, high_level::*};
     use proptest::prelude::*;
 
     // Test that the negation of a ciphertext is the same as the negation of the
@@ -106,7 +106,7 @@ mod tests {
     fn negation_homomorphism(a in any::<u64>()) {
         let bits = PlaintextBits(4);
 
-        let params = LWE_512_80;
+        let params = LWE_512_128;
 
         let sk = keygen::generate_binary_lwe_sk(&params);
         let a_enc = encryption::encrypt_lwe_secret(a, &sk, &params, bits);
@@ -122,7 +122,7 @@ mod tests {
     proptest! {
     #[test]
     fn additive_homomorphism(a in any::<u64>(), b in any::<u64>()) {
-        let params = LWE_512_80;
+        let params = LWE_512_128;
         let sk = keygen::generate_binary_lwe_sk(&params);
 
         let bits = PlaintextBits(4);
@@ -141,7 +141,7 @@ mod tests {
     proptest! {
     #[test]
     fn subtraction_homomorphism(a in any::<u64>(), b in any::<u64>()) {
-        let params = LWE_512_80;
+        let params = LWE_512_128;
         let sk = keygen::generate_binary_lwe_sk(&params);
 
         let bits = PlaintextBits(4);
@@ -160,7 +160,7 @@ mod tests {
     proptest! {
     #[test]
     fn add_negative_is_subtraction(a in any::<u64>(), b in any::<u64>()) {
-        let params = LWE_512_80;
+        let params = LWE_512_128;
         let sk = keygen::generate_binary_lwe_sk(&params);
 
         let bits = PlaintextBits(4);

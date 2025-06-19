@@ -6,7 +6,7 @@ use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_80, make_computer_128},
+    test_utils::{Bits, BitsUnsigned, MaybeEncryptedUInt, make_computer_128},
 };
 
 use parasol_runtime::test_utils::get_secret_keys_128;
@@ -22,7 +22,7 @@ fn get_mask(width: u32) -> u128 {
 #[test]
 fn can_unsigned_mul_plain_plain() {
     let case = |a: u128, b: u128, width| {
-        let (mut proc, _) = make_computer_80();
+        let (mut proc, _) = make_computer_128();
 
         let memory = Arc::new(Memory::new_default_stack());
         let a_ptr = memory.try_allocate_type(&a).unwrap();

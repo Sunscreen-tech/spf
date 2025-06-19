@@ -4,17 +4,16 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug unit tests in library 'concurrency'",
+            "name": "Debug executable 'hello-world'",
             "cargo": {
                 "args": [
-                    "test",
-                    "--no-run",
-                    "--lib",
-                    "--package=concurrency"
+                    "build",
+                    "--bin=hello-world",
+                    "--package=hello-world"
                 ],
                 "filter": {
-                    "name": "concurrency",
-                    "kind": "lib"
+                    "name": "hello-world",
+                    "kind": "bin"
                 }
             },
             "args": [],
@@ -23,17 +22,17 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug benchmark 'mutex'",
+            "name": "Debug unit tests in executable 'hello-world'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--bench=mutex",
-                    "--package=concurrency"
+                    "--bin=hello-world",
+                    "--package=hello-world"
                 ],
                 "filter": {
-                    "name": "mutex",
-                    "kind": "bench"
+                    "name": "hello-world",
+                    "kind": "bin"
                 }
             },
             "args": [],
@@ -61,17 +60,55 @@
         {
             "type": "lldb",
             "request": "launch",
-            "name": "Debug integration test 'examples'",
+            "name": "Debug integration test 'e2e'",
             "cargo": {
                 "args": [
                     "test",
                     "--no-run",
-                    "--test=examples",
+                    "--test=e2e",
                     "--package=parasol_cpu"
                 ],
                 "filter": {
-                    "name": "examples",
+                    "name": "e2e",
                     "kind": "test"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'auction'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=auction",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "auction",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'cardio'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=cardio",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "cardio",
+                    "kind": "bench"
                 }
             },
             "args": [],
@@ -90,6 +127,63 @@
                 ],
                 "filter": {
                     "name": "chi_squared",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'hamming'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=hamming",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "hamming",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'prng'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=prng",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "prng",
+                    "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'transfer'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=transfer",
+                    "--package=parasol_cpu"
+                ],
+                "filter": {
+                    "name": "transfer",
                     "kind": "bench"
                 }
             },
@@ -166,6 +260,44 @@
                 "filter": {
                     "name": "sunscreen_math",
                     "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'parasol_concurrency'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=parasol_concurrency"
+                ],
+                "filter": {
+                    "name": "parasol_concurrency",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug benchmark 'mutex'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--bench=mutex",
+                    "--package=parasol_concurrency"
+                ],
+                "filter": {
+                    "name": "mutex",
+                    "kind": "bench"
                 }
             },
             "args": [],

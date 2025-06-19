@@ -6,14 +6,14 @@ use crate::{
     ArgsBuilder, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedUInt, make_computer_128},
 };
 
-use parasol_runtime::test_utils::get_secret_keys_80;
+use parasol_runtime::test_utils::get_secret_keys_128;
 
 fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
-    let (mut proc, enc) = make_computer_80();
-    let sk = get_secret_keys_80();
+    let (mut proc, enc) = make_computer_128();
+    let sk = get_secret_keys_128();
 
     let expected = val1 ^ val2;
 

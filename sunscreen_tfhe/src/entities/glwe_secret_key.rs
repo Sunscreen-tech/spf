@@ -171,13 +171,13 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{GLWE_1_1024_80, high_level::*};
+    use crate::{GLWE_1_2048_128, high_level::*};
 
     use num::traits::{WrappingAdd, WrappingNeg, WrappingSub};
 
     #[test]
     fn secret_key_dimensions() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_binary_glwe_sk(&params);
 
@@ -196,7 +196,7 @@ mod tests {
 
     #[test]
     fn add_secret_keys() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -215,7 +215,7 @@ mod tests {
 
     #[test]
     fn add_assign_secret_keys() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let mut sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -234,7 +234,7 @@ mod tests {
 
     #[test]
     fn add_secret_key_refs() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -253,7 +253,7 @@ mod tests {
 
     #[test]
     fn wrapping_add_secret_keys() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -274,7 +274,7 @@ mod tests {
 
     #[test]
     fn sub_secret_keys() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -293,7 +293,7 @@ mod tests {
 
     #[test]
     fn sub_assign_secret_keys() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let mut sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -312,7 +312,7 @@ mod tests {
 
     #[test]
     fn sub_secret_key_refs() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -331,7 +331,7 @@ mod tests {
 
     #[test]
     fn wrapping_sub_secret_keys() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
         let sk2 = keygen::generate_uniform_glwe_sk(&params);
@@ -352,7 +352,7 @@ mod tests {
 
     #[test]
     fn neg_secret_key() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
 
@@ -364,7 +364,7 @@ mod tests {
 
     #[test]
     fn neg_secret_key_ref() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_uniform_glwe_sk(&params);
 
@@ -376,7 +376,7 @@ mod tests {
 
     #[test]
     fn wrapping_neg_secret_key() {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
 
         let sk = keygen::generate_binary_glwe_sk(&params);
 

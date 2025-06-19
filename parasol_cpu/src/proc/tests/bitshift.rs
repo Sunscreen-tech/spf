@@ -1,13 +1,13 @@
 use std::sync::Arc;
 
-use parasol_runtime::{Encryption, test_utils::get_secret_keys_80};
+use parasol_runtime::{Encryption, test_utils::get_secret_keys_128};
 use rand::{RngCore, thread_rng};
 
 use crate::{
     ArgsBuilder, FheComputer, Memory,
     proc::IsaOp,
     register_names::*,
-    test_utils::{MaybeEncryptedUInt, make_computer_80},
+    test_utils::{MaybeEncryptedUInt, make_computer_128},
 };
 
 #[allow(clippy::too_many_arguments)]
@@ -21,7 +21,7 @@ fn run_single_test(
     value: u8,
     shift: u8,
 ) {
-    let sk = get_secret_keys_80();
+    let sk = get_secret_keys_128();
     let expected = operation(value, shift);
 
     let memory = Memory::new_default_stack();
@@ -63,7 +63,7 @@ fn run_shift_test(
     encrypted_value: bool,
     encrypted_shift: bool,
 ) {
-    let (mut proc, enc) = make_computer_80();
+    let (mut proc, enc) = make_computer_128();
 
     let mask = 0b111;
 

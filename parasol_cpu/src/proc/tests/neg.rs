@@ -1,10 +1,10 @@
 use std::sync::Arc;
 
-use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_80};
+use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128};
 
 #[test]
 fn can_neg_plaintext_inputs() {
-    let (mut proc, _enc) = make_computer_80();
+    let (mut proc, _enc) = make_computer_128();
 
     let val1 = 14u8;
     let expected = val1.wrapping_neg();

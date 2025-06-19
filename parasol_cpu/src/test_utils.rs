@@ -1,9 +1,9 @@
 use std::sync::{Arc, OnceLock};
 
 use parasol_runtime::{
-    DEFAULT_80, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
+    DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
     fluent::{Int, UInt},
-    test_utils::{get_compute_key_80, get_compute_key_128},
+    test_utils::get_compute_key_128,
 };
 use rayon::{ThreadPool, ThreadPoolBuilder};
 use sunscreen_tfhe::entities::Polynomial;
@@ -34,18 +34,6 @@ pub fn get_thread_pool() -> Arc<ThreadPool> {
             )
         })
         .clone()
-}
-
-/// Create a computer with the default encryption and evaluation.
-pub fn make_computer_80() -> (FheComputer, Encryption) {
-    let compute_key = get_compute_key_80();
-    let enc = Encryption::new(&DEFAULT_80);
-    let eval = Evaluation::new(compute_key, &DEFAULT_80, &enc);
-
-    (
-        FheComputer::new_with_threadpool(&enc, &eval, get_thread_pool()),
-        enc,
-    )
 }
 
 pub fn make_computer_128() -> (FheComputer, Encryption) {
@@ -268,14 +256,14 @@ where
 
 #[cfg(test)]
 mod tests {
-    use parasol_runtime::test_utils::{get_encryption_80, get_secret_keys_80};
+    use parasol_runtime::test_utils::{get_encryption_128, get_secret_keys_128};
 
     use super::{MaybeEncryptedInt, MaybeEncryptedUInt};
 
     #[test]
     fn can_roundtrip_maybeuint() {
-        let enc = get_encryption_80();
-        let sk = get_secret_keys_80();
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
 
         for i in 0..10 {
             let val = MaybeEncryptedUInt::<8>::new(i, &enc, &sk, i % 2 == 0);
@@ -285,8 +273,8 @@ mod tests {
 
     #[test]
     fn can_roundtrip_maybeint() {
-        let enc = get_encryption_80();
-        let sk = get_secret_keys_80();
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
 
         for i in 118..138 {
             let val = MaybeEncryptedInt::<8>::new(i, &enc, &sk, i % 2 == 0);

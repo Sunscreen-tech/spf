@@ -366,19 +366,15 @@ mod tests {
     use rand::{RngCore, thread_rng};
     use uint::UInt;
 
-    use crate::{
-        DEFAULT_80,
-        test_utils::{
-            get_encryption_80, get_encryption_128, get_evaluation_80, get_secret_keys_80,
-            get_secret_keys_128, make_uproc_80, make_uproc_128,
-        },
+    use crate::test_utils::{
+        get_encryption_128, get_evaluation_128, get_secret_keys_128, make_uproc_128,
     };
 
     use super::*;
 
     fn roundtrip<T: CiphertextOps, U: Sign>() {
-        let sk = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let sk = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         for _ in 0..32 {
             // Make 16-bit integers.
@@ -415,13 +411,13 @@ mod tests {
     }
 
     fn input_output<T: CiphertextOps, U: Sign>(test_val: u64) {
-        let (uproc, fc) = make_uproc_80();
-        let enc = get_encryption_80();
+        let (uproc, fc) = make_uproc_128();
+        let enc = get_encryption_128();
 
         let input = GenericInt::<16, T, U>::encrypt_secret(
             test_val,
-            &get_encryption_80(),
-            &get_secret_keys_80(),
+            &get_encryption_128(),
+            &get_secret_keys_128(),
         );
 
         let graph = FheCircuitCtx::new();
@@ -435,7 +431,7 @@ mod tests {
             .run_graph_blocking(&graph.circuit.borrow(), &fc)
             .unwrap();
 
-        let actual = output.decrypt(&enc, &get_secret_keys_80());
+        let actual = output.decrypt(&enc, &get_secret_keys_128());
         assert_eq!(actual, test_val);
     }
 
@@ -467,9 +463,9 @@ mod tests {
     fn can_convert_ciphertexts() {
         fn convert_test<T: CiphertextOps, U: CiphertextOps, V: Sign>(test_val: u64) {
             let graph = FheCircuitCtx::new();
-            let enc = get_encryption_80();
-            let (uproc, fc) = make_uproc_80();
-            let sk = get_secret_keys_80();
+            let enc = get_encryption_128();
+            let (uproc, fc) = make_uproc_128();
+            let sk = get_secret_keys_128();
 
             let val = GenericInt::<16, T, V>::encrypt_secret(test_val, &enc, &sk);
 
@@ -508,10 +504,10 @@ mod tests {
     #[test]
     fn can_cmp() {
         fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (u64, u64)) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk);
             let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
@@ -563,10 +559,10 @@ mod tests {
     #[test]
     fn can_eq() {
         fn case<OutCt: Muxable, U: Sign>(eq: bool, test_vals: (u64, u64)) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk);
             let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
@@ -602,10 +598,10 @@ mod tests {
     #[test]
     fn can_eq_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(eq: bool) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let (val_a, val_b) = if eq { (43, 43) } else { (43, 42) };
 
@@ -643,10 +639,10 @@ mod tests {
     #[test]
     fn can_neq() {
         fn case<OutCt: Muxable, U: Sign>(neq: bool, test_vals: (u64, u64)) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk);
             let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
@@ -681,10 +677,10 @@ mod tests {
     #[test]
     fn can_neq_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(neq: bool) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let (val_a, val_b) = if neq { (43, 42) } else { (43, 43) };
 
@@ -724,10 +720,10 @@ mod tests {
     #[test]
     fn can_cmp_size_mismatch() {
         fn case<const N: usize, const M: usize, OutCt: Muxable>(gt: bool, eq: bool) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let a = UInt::<N, L1GgswCiphertext>::encrypt_secret(43, enc, &sk);
             let b = UInt::<M, L1GgswCiphertext>::encrypt_secret(42, enc, &sk);
@@ -775,11 +771,11 @@ mod tests {
     #[test]
     fn can_cmp_trivial_nontrivial_ggsw() {
         fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (u64, u64)) {
-            let enc = &get_encryption_80();
-            let eval = &get_evaluation_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let eval = &get_evaluation_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let a = GenericInt::<16, L1GgswCiphertext, U>::trivial(test_vals.0, enc, eval);
             let b = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.1, enc, &sk);
@@ -839,10 +835,10 @@ mod tests {
     #[test]
     fn can_select() {
         fn case<U: Sign>(test_vals: (u64, u64)) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let sel_false =
                 Bit::<L1GgswCiphertext>::encrypt_secret(false, enc, &sk).graph_input(&ctx);
@@ -878,11 +874,11 @@ mod tests {
     #[test]
     fn can_select_plain() {
         fn case<U: Sign>(test_vals: (u64, u64)) {
-            let enc = &get_encryption_80();
-            let eval = &get_evaluation_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let eval = &get_evaluation_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let sel_false =
                 Bit::<L1GgswCiphertext>::trivial_encryption(false, enc, eval).graph_input(&ctx);
@@ -918,10 +914,10 @@ mod tests {
     #[test]
     fn can_sub() {
         fn case<OutCt: Muxable, U: Sign>(test_vals: (u64, u64, u64)) {
-            let enc = &get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = &get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (uproc, fc) = make_uproc_80();
+            let (uproc, fc) = make_uproc_128();
 
             let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, enc, &sk)
                 .graph_inputs(&ctx);
@@ -951,9 +947,9 @@ mod tests {
     #[test]
     fn trivial_generic_int_encryption() {
         fn case<T: CiphertextOps, U: Sign>() {
-            let enc = get_encryption_80();
-            let eval = &get_evaluation_80();
-            let sk = get_secret_keys_80();
+            let enc = get_encryption_128();
+            let eval = &get_evaluation_128();
+            let sk = get_secret_keys_128();
 
             let expected = thread_rng().next_u64() % (0x1 << 32);
 
@@ -975,10 +971,10 @@ mod tests {
     #[test]
     fn can_resize() {
         fn case<T: CiphertextOps, U: Sign>(test_vals: (u64, u64, u64)) {
-            let enc = get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (proc, fc) = make_uproc_80();
+            let (proc, fc) = make_uproc_128();
 
             let val = GenericInt::<16, T, U>::encrypt_secret(test_vals.0, &enc, &sk);
             let res = val
@@ -1022,10 +1018,10 @@ mod tests {
     #[test]
     fn can_add() {
         fn case<OutCt: Muxable, U: Sign>(test_vals: (u64, u64, u64)) {
-            let enc = get_encryption_80();
-            let sk = get_secret_keys_80();
+            let enc = get_encryption_128();
+            let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
-            let (proc, fc) = make_uproc_80();
+            let (proc, fc) = make_uproc_128();
 
             let a = GenericInt::<16, L1GgswCiphertext, U>::encrypt_secret(test_vals.0, &enc, &sk)
                 .graph_inputs(&ctx);

@@ -502,7 +502,7 @@ mod tests {
     use rand::{RngCore, thread_rng};
 
     use crate::{
-        GLWE_1_1024_80, PlaintextBits, RadixCount, RadixLog, Torus,
+        GLWE_1_2048_128, PlaintextBits, RadixCount, RadixLog, Torus,
         entities::{
             GgswCiphertext, GgswCiphertextFft, GlevCiphertext, GlweCiphertext, GlweCiphertextFft,
             GlweKeyswitchKey, GlweKeyswitchKeyFft, GlweSecretKey, Polynomial, SchemeSwitchKey,
@@ -703,7 +703,7 @@ mod tests {
     }
 
     fn _scheme_switch_fft_correct_message(message: u64) -> Duration {
-        let params = GLWE_1_1024_80;
+        let params = GLWE_1_2048_128;
         let polynomial_degree = params.dim.polynomial_degree.0;
 
         // Create the message polynomial

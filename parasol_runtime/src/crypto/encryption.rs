@@ -520,15 +520,18 @@ impl GetSize for L1GlevCiphertext {
 
 #[cfg(test)]
 mod tests {
-    use crate::{params::DEFAULT_80, test_utils::get_secret_keys_80};
+    use crate::{
+        DEFAULT_128,
+        test_utils::{get_encryption_128, get_secret_keys_128},
+    };
 
     use super::*;
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_roundtrip_l0_lwe() {
-        let sk = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let sk = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let lwe = enc.encrypt_lwe_l0_secret(false, &sk);
         assert!(!enc.decrypt_lwe_l0(&lwe, &sk));
@@ -540,8 +543,8 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn can_roundtrip_l1_lwe() {
-        let sk = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let sk = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let lwe = enc.encrypt_lwe_l1_secret(false, &sk);
         assert!(!enc.decrypt_lwe_l1(&lwe, &sk));
@@ -553,13 +556,13 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_glwe1() {
-        let secret = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let zero = enc.trivial_glwe_l1_zero();
 
         let actual = enc.decrypt_glwe_l1(&zero, &secret);
-        let expected = Polynomial::zero(DEFAULT_80.l1_poly_degree().0);
+        let expected = Polynomial::zero(DEFAULT_128.l1_poly_degree().0);
 
         assert_eq!(actual, expected);
     }
@@ -567,13 +570,13 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_glwe1() {
-        let secret = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let zero = enc.trivial_glwe_l1_one();
 
         let actual = enc.decrypt_glwe_l1(&zero, &secret);
-        let mut expected = Polynomial::zero(DEFAULT_80.l1_poly_degree().0);
+        let mut expected = Polynomial::zero(DEFAULT_128.l1_poly_degree().0);
         expected.coeffs_mut()[0] = 1;
 
         assert_eq!(actual, expected);
@@ -582,8 +585,8 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_lwe0() {
-        let secret = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let zero = enc.trivial_lwe_l0_zero();
 
@@ -595,8 +598,8 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_lwe0() {
-        let secret = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let one = enc.trivial_lwe_l0_one();
 
@@ -608,27 +611,27 @@ mod tests {
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_zero_glev1() {
-        let secret = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let one = enc.trivial_glev_l1_zero();
 
         let actual = enc.decrypt_glev_l1(&one, &secret);
 
-        assert_eq!(actual, Polynomial::zero(DEFAULT_80.l1_poly_degree().0));
+        assert_eq!(actual, Polynomial::zero(DEFAULT_128.l1_poly_degree().0));
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
     #[test]
     fn trivial_one_glev1() {
-        let secret = get_secret_keys_80();
-        let enc = Encryption::new(&DEFAULT_80);
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
 
         let one = enc.trivial_glev_l1_one();
 
         let actual = enc.decrypt_glev_l1(&one, &secret);
 
-        let mut expected = Polynomial::zero(DEFAULT_80.l1_poly_degree().0);
+        let mut expected = Polynomial::zero(DEFAULT_128.l1_poly_degree().0);
         expected.coeffs_mut()[0] = 1;
 
         assert_eq!(actual, expected);

@@ -92,9 +92,8 @@ use crate::{
 ///   entities::GgswCiphertext,
 ///   ops::bootstrapping::circuit_bootstrap_via_pfks,
 ///   params::{
-///     GLWE_5_256_80,
-///     GLWE_1_1024_80,
-///     LWE_512_80,
+///     GLWE_1_2048_128,
+///     LWE_512_128,
 ///     PlaintextBits,
 ///     RadixDecomposition,
 ///     RadixCount,
@@ -115,9 +114,9 @@ use crate::{
 ///   radix_log: RadixLog(11),
 /// };
 ///
-/// let level_2_params = GLWE_5_256_80;
-/// let level_1_params = GLWE_1_1024_80;
-/// let level_0_params = LWE_512_80;
+/// let level_2_params = GLWE_1_2048_128;
+/// let level_1_params = GLWE_1_2048_128;
+/// let level_0_params = LWE_512_128;
 ///
 /// let sk_0 = keygen::generate_binary_lwe_sk(&level_0_params);
 /// let sk_1 = keygen::generate_binary_glwe_sk(&level_1_params);
@@ -519,8 +518,7 @@ mod tests {
     use rand::{RngCore, thread_rng};
 
     use crate::{
-        GLWE_1_1024_80, GLWE_1_2048_128, GLWE_5_256_80, LWE_512_80, LWE_637_128, PlaintextBits,
-        RadixCount, RadixDecomposition, RadixLog,
+        GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
         dst::AsSlice,
         entities::{
             AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlweCiphertext,
@@ -545,7 +543,7 @@ mod tests {
             radix_log: RadixLog(5),
         };
 
-        let glwe_params = GLWE_5_256_80;
+        let glwe_params = GLWE_1_2048_128;
 
         let mut lo_noise_glwe = GlweCiphertext::<u64>::new(&glwe_params);
         let mut low_noise_lwe_decomp =
@@ -649,9 +647,9 @@ mod tests {
             radix_log: RadixLog(11),
         };
 
-        let level_2_params = GLWE_5_256_80;
-        let level_1_params = GLWE_1_1024_80;
-        let level_0_params = LWE_512_80;
+        let level_2_params = GLWE_1_2048_128;
+        let level_1_params = GLWE_1_2048_128;
+        let level_0_params = LWE_637_128;
 
         let sk_0 = keygen::generate_binary_lwe_sk(&level_0_params);
         let sk_1 = keygen::generate_binary_glwe_sk(&level_1_params);

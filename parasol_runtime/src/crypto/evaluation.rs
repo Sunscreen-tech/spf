@@ -265,20 +265,18 @@ mod tests {
     use sunscreen_tfhe::entities::Polynomial;
 
     use crate::{
-        crypto::encryption::Encryption,
-        params::DEFAULT_80,
-        test_utils::{get_compute_key_80, get_secret_keys_80},
+        DEFAULT_128,
+        test_utils::{get_encryption_128, get_evaluation_128, get_secret_keys_128},
     };
 
     use super::*;
 
     #[test]
     fn can_circuit_bootstrap() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
         let mut ggsw = enc.allocate_ggsw_l1();
 
@@ -293,11 +291,10 @@ mod tests {
 
     #[test]
     fn can_lwe_keyswitch() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
         let mut lwe_0 = enc.allocate_lwe_l0();
 
@@ -314,11 +311,10 @@ mod tests {
 
     #[test]
     fn can_cmux() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
         let mut ggsw = enc.allocate_ggsw_l1();
         let mut result = enc.allocate_glwe_l1();
@@ -339,13 +335,12 @@ mod tests {
 
     #[test]
     fn can_sample_extract() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
-        let mut poly = vec![0; DEFAULT_80.l1_poly_degree().0];
+        let mut poly = vec![0; DEFAULT_128.l1_poly_degree().0];
         poly[1] = 1;
         let poly = Polynomial::new(&poly);
 
@@ -358,16 +353,15 @@ mod tests {
 
     #[test]
     fn can_not() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
         let mut output = enc.allocate_glwe_l1();
 
         // Test negating one
-        let poly = vec![0; DEFAULT_80.l1_poly_degree().0];
+        let poly = vec![0; DEFAULT_128.l1_poly_degree().0];
         let poly = Polynomial::new(&poly);
         let input = enc.encrypt_glwe_l1_secret(&poly, &secret);
 
@@ -376,7 +370,7 @@ mod tests {
         assert_eq!(enc.decrypt_glwe_l1(&output, &secret).coeffs()[0], 1);
 
         // Test negating zero
-        let mut poly = vec![0; DEFAULT_80.l1_poly_degree().0];
+        let mut poly = vec![0; DEFAULT_128.l1_poly_degree().0];
         poly[0] = 1;
         let poly = Polynomial::new(&poly);
 
@@ -389,18 +383,17 @@ mod tests {
 
     #[test]
     fn can_xor() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
         let mut output = enc.allocate_glwe_l1();
 
-        let zero_poly = vec![0; DEFAULT_80.l1_poly_degree().0];
+        let zero_poly = vec![0; DEFAULT_128.l1_poly_degree().0];
         let zero_poly = Polynomial::new(&zero_poly);
 
-        let mut one_poly = vec![0; DEFAULT_80.l1_poly_degree().0];
+        let mut one_poly = vec![0; DEFAULT_128.l1_poly_degree().0];
         one_poly[0] = 1;
         let one_poly = Polynomial::new(&one_poly);
 
@@ -439,11 +432,10 @@ mod tests {
 
     #[test]
     fn can_multiply_glwe_ggsw() {
-        let secret = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let secret = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
         for a in [false, true] {
             for b in [false, true] {
@@ -469,13 +461,12 @@ mod tests {
 
     #[test]
     fn can_mul_xn() {
-        let sk = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let sk = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
-        let mut msg = Polynomial::<u64>::zero(DEFAULT_80.l1_params.dim.polynomial_degree.0);
+        let mut msg = Polynomial::<u64>::zero(DEFAULT_128.l1_params.dim.polynomial_degree.0);
 
         msg.coeffs_mut()[0] = 1;
         msg.coeffs_mut()[2] = 1;
@@ -487,7 +478,7 @@ mod tests {
 
         let ans = enc.decrypt_glwe_l1(&output, &sk);
 
-        for i in 0..DEFAULT_80.l1_poly_degree().0 {
+        for i in 0..DEFAULT_128.l1_poly_degree().0 {
             let expected = if i == 5 || i == 7 { 1 } else { 0 };
 
             assert_eq!(ans.coeffs()[i], expected);
@@ -496,13 +487,12 @@ mod tests {
 
     #[test]
     fn can_scheme_switch() {
-        let sk = get_secret_keys_80();
-        let compute = get_compute_key_80();
+        let sk = get_secret_keys_128();
 
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = Evaluation::new(compute, &DEFAULT_80, &enc);
+        let enc = get_encryption_128();
+        let eval = get_evaluation_128();
 
-        let mut msg = Polynomial::zero(DEFAULT_80.l1_poly_degree().0);
+        let mut msg = Polynomial::zero(DEFAULT_128.l1_poly_degree().0);
         msg.coeffs_mut()[0] = 1;
 
         let glev = enc.encrypt_glev_l1_secret(&msg, &sk);
@@ -515,12 +505,12 @@ mod tests {
 
     #[test]
     fn can_otp_transcipher() {
-        let enc = Encryption::new(&DEFAULT_80);
-        let eval = KeylessEvaluation::new(&DEFAULT_80, &enc);
-        let sk = get_secret_keys_80();
+        let enc = get_encryption_128();
+        let eval = KeylessEvaluation::new(&DEFAULT_128, &enc);
+        let sk = get_secret_keys_128();
 
         let msg = Polynomial::new(
-            &(0..DEFAULT_80.l1_poly_degree().0)
+            &(0..DEFAULT_128.l1_poly_degree().0)
                 .map(|_| thread_rng().next_u64() % 2)
                 .collect::<Vec<_>>(),
         );
@@ -528,7 +518,7 @@ mod tests {
         let ct = enc.encrypt_glwe_l1_secret(&msg, &sk);
 
         let otp = Polynomial::new(
-            &(0..DEFAULT_80.l1_poly_degree().0)
+            &(0..DEFAULT_128.l1_poly_degree().0)
                 .map(|_| thread_rng().next_u64() % 2)
                 .collect::<Vec<_>>(),
         );
