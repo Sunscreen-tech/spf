@@ -159,7 +159,7 @@ impl FheProcessor {
         //
         // If none exist, then this instruction has no memory dependencies and is free to execute
         // immediately.
-        let mut update_memory_deps = |reg: &Register, width: u32| {
+        let mut update_memory_deps = |reg: &Register, width: u32, offset: i32| {
             // Add any existing load/store operations to the same addresses this operation touches
             // as dependencies.
             match reg {
@@ -168,11 +168,11 @@ impl FheProcessor {
 
                     let num_bytes = width / 8;
 
-                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
-                        return Err(Error::UnalignedAccess(base_addr));
-                    }
+                    let base_addr = Ptr32::from(base_addr).try_signed_offset(offset)?;
 
-                    let base_addr = Ptr32::from(base_addr);
+                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
+                        return Err(Error::UnalignedAccess(base_addr.0));
+                    }
 
                     for i in 0..num_bytes {
                         let ptr = base_addr.try_offset(i).unwrap();
@@ -196,15 +196,15 @@ impl FheProcessor {
         };
 
         match &scoreboard_entry.instruction.borrow().as_ref().unwrap() {
-            DispatchIsaOp::Store(dst, _, width) => {
+            DispatchIsaOp::Store(dst, _, width, offset) => {
                 unwrap_registers!((dst));
 
-                update_memory_deps(dst, *width)?
+                update_memory_deps(dst, *width, *offset)?
             }
-            DispatchIsaOp::Load(_, src, width) => {
+            DispatchIsaOp::Load(_, src, width, offset) => {
                 unwrap_registers!((src));
 
-                update_memory_deps(src, *width)?
+                update_memory_deps(src, *width, *offset)?
             }
             _ => {}
         };
@@ -724,12 +724,13 @@ impl Tomasulo for FheProcessor {
         }
 
         match instruction {
-            Load(dst, src, width) => {
+            Load(dst, src, width, offset) => {
                 self.load(
                     retirement_info,
                     &memory,
                     src,
                     dst,
+                    offset,
                     width,
                     instruction_id,
                     pc,
@@ -738,12 +739,13 @@ impl Tomasulo for FheProcessor {
             LoadI(dst, imm, width) => {
                 self.loadi(retirement_info, dst, imm, width, instruction_id, pc);
             }
-            Store(dst, src, width) => {
+            Store(dst, src, width, offset) => {
                 self.store(
                     retirement_info,
                     &memory,
                     src,
                     dst,
+                    offset,
                     width,
                     instruction_id,
                     pc,

@@ -10,6 +10,14 @@ fn width_enc(input: u64) -> u64 {
     if input == 128 { 0 } else { input }
 }
 
+fn offset_dec(input: u64) -> u64 {
+    input as u32 as i32 as u64
+}
+
+fn offset_enc(input: u64) -> u64 {
+    input
+}
+
 /// Define the list of opcodes for the processors ISA.
 #[macro_export]
 macro_rules! define_op {
@@ -354,10 +362,10 @@ define_op! {
     (Register, 64, X),
 
     // Store
-    [0x01 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x01 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (cmeta offset, 32, i32, offset_dec, offset_enc)],
 
     // Load
-    [0x09 Load (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x09 Load (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (cmeta offset, 32, i32, offset_dec, offset_enc)],
 
     // Load immediate
     [0x0A LoadI (dst dst, 0, Register) (meta imm, 32, u32) (cmeta width, 7, u32, width_dec, width_enc)],

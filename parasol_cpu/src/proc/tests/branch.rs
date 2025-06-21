@@ -26,10 +26,14 @@ fn can_branch_zero() {
     // }
     // a
     let program = memory.allocate_program(&[
-        IsaOp::Add(A0, A0, A1),
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Load(T1, SP, 32, 4),
+        IsaOp::Load(T2, SP, 32, 8),
+        IsaOp::Add(T0, T0, T1),
         // Have we hit A2?
-        IsaOp::CmpEq(T0, A0, A2),
-        IsaOp::BranchZero(T0, -16),
+        IsaOp::CmpEq(T3, T0, T2),
+        IsaOp::BranchZero(T3, -16),
+        IsaOp::Store(A0, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 
@@ -57,8 +61,11 @@ fn can_branch_nonzero() {
     // }
     // a
     let program = memory.allocate_program(&[
-        IsaOp::Sub(A0, A0, A1),
-        IsaOp::BranchNonZero(A0, -8),
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Load(T1, SP, 32, 4),
+        IsaOp::Sub(T0, T0, T1),
+        IsaOp::BranchNonZero(T0, -8),
+        IsaOp::Store(A0, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 
@@ -82,9 +89,10 @@ fn can_unconditional_branch() {
     // END:
     // return x;
     let program = memory.allocate_program(&[
-        IsaOp::LoadI(A0, 42, 32),
+        IsaOp::LoadI(T0, 42, 32),
         IsaOp::Branch(16), // Skip next instruction
-        IsaOp::LoadI(A0, 0, 32),
+        IsaOp::LoadI(T0, 0, 32),
+        IsaOp::Store(A0, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 

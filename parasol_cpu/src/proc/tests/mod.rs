@@ -1,7 +1,7 @@
-// mod add;
-// mod and;
-// mod bitshift;
-// mod branch;
+mod add;
+mod and;
+mod bitshift;
+mod branch;
 mod call_abi;
 // mod casting;
 // mod cmux;

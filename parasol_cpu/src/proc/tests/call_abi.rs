@@ -14,27 +14,19 @@ fn can_pass_args_small_to_large() {
     let memory = Arc::new(Memory::new_default_stack());
     let prog = memory.allocate_program(&[
         // Check the u8 argument
-        IsaOp::Load(T0, SP, 8),
+        IsaOp::Load(T0, SP, 8, 0),
         IsaOp::Dbg(T0, 0),
         // Check the u16 arg
-        IsaOp::LoadI(T1, 2, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 16),
+        IsaOp::Load(T0, SP, 16, 2),
         IsaOp::Dbg(T0, 1),
         // Check the u32 arg
-        IsaOp::LoadI(T1, 4, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 32),
+        IsaOp::Load(T0, SP, 32, 4),
         IsaOp::Dbg(T0, 2),
         // Check the u64 arg
-        IsaOp::LoadI(T1, 8, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 64),
+        IsaOp::Load(T0, SP, 64, 8),
         IsaOp::Dbg(T0, 3),
         // Check the u128 arg
-        IsaOp::LoadI(T1, 16, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 128),
+        IsaOp::Load(T0, SP, 128, 16),
         IsaOp::Dbg(T0, 4),
         IsaOp::Ret(),
     ]);
@@ -96,27 +88,19 @@ fn can_pass_args_large_to_small() {
     let memory = Arc::new(Memory::new_default_stack());
     let prog = memory.allocate_program(&[
         // Check the u128 argument
-        IsaOp::Load(T0, SP, 128),
+        IsaOp::Load(T0, SP, 128, 0),
         IsaOp::Dbg(T0, 0),
         // Check the u64 arg
-        IsaOp::LoadI(T1, 16, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 64),
+        IsaOp::Load(T0, SP, 64, 16),
         IsaOp::Dbg(T0, 1),
         // Check the u32 arg
-        IsaOp::LoadI(T1, 24, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 32),
+        IsaOp::Load(T0, SP, 32, 24),
         IsaOp::Dbg(T0, 2),
         // Check the u16 arg
-        IsaOp::LoadI(T1, 28, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 16),
+        IsaOp::Load(T0, SP, 16, 28),
         IsaOp::Dbg(T0, 3),
         // Check the u8 arg
-        IsaOp::LoadI(T1, 30, 32),
-        IsaOp::Add(T1, SP, T1),
-        IsaOp::Load(T0, T1, 8),
+        IsaOp::Load(T0, SP, 8, 30),
         IsaOp::Dbg(T0, 4),
         IsaOp::Ret(),
     ]);
@@ -177,9 +161,9 @@ fn return_val() {
 
     let memory = Arc::new(Memory::new_default_stack());
     let prog = memory.allocate_program(&[
-        IsaOp::Load(T0, SP, 8),
+        IsaOp::Load(T0, SP, 8, 0),
         IsaOp::Zext(T0, T0, 16),
-        IsaOp::Store(A0, T0, 16),
+        IsaOp::Store(A0, T0, 16, 0),
         IsaOp::Ret(),
     ]);
 

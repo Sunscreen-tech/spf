@@ -19,7 +19,13 @@ fn can_add_inputs() {
 
         let memory = Memory::new_default_stack();
 
-        let program = memory.allocate_program(&[IsaOp::Add(A0, A0, A1), IsaOp::Ret()]);
+        let program = memory.allocate_program(&[
+            IsaOp::Load(T0, SP, 32, 0),
+            IsaOp::Load(T1, SP, 32, 4),
+            IsaOp::Add(T0, T0, T1),
+            IsaOp::Store(A0, T0, 32, 0),
+            IsaOp::Ret(),
+        ]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
@@ -75,9 +81,14 @@ fn can_add_carry_inputs() {
         let memory = Memory::new_default_stack();
 
         let prog_ptr = memory.allocate_program(&[
-            IsaOp::Trunc(A2, A2, 1),
-            IsaOp::AddC(A0, A1, A0, A1, A2),
-            IsaOp::Zext(A1, A1, 32),
+            IsaOp::Load(T0, SP, 32, 0),
+            IsaOp::Load(T1, SP, 32, 4),
+            IsaOp::Load(T2, SP, 8, 8),
+            IsaOp::Trunc(T2, T2, 1),
+            IsaOp::AddC(T0, T1, T0, T1, T2),
+            IsaOp::Zext(T1, T1, 32),
+            IsaOp::Store(A0, T0, 32, 0),
+            IsaOp::Store(A0, T1, 32, 4),
             IsaOp::Ret(),
         ]);
 
@@ -181,7 +192,12 @@ fn add_use_same_dst_and_src() {
     let (mut proc, _enc) = make_computer_128();
 
     let memory = Memory::new_default_stack();
-    let program_ptr = memory.allocate_program(&[IsaOp::Add(A0, A0, A0), IsaOp::Ret()]);
+    let program_ptr = memory.allocate_program(&[
+        IsaOp::Load(T0, SP, 16, 0),
+        IsaOp::Add(T0, T0, T0),
+        IsaOp::Store(A0, T0, 16, 0),
+        IsaOp::Ret(),
+    ]);
 
     let args = ArgsBuilder::new().arg(10u16).return_value::<u16>();
 
