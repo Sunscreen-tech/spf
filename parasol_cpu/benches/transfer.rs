@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use parasol_cpu::{Args, ArgsBuilder, FheComputer, Memory};
+use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory};
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
     metadata::print_system_info,
@@ -36,7 +36,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     (sk, enc, eval)
 }
 
-fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> Args<()> {
+fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> CallData<()> {
     let sender = memory
         .try_allocate_type(&UInt::<32, _>::encrypt_secret(42, enc, sk))
         .unwrap();

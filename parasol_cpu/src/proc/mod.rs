@@ -274,7 +274,7 @@ impl FheComputer {
         &mut self,
         initial_pc: Ptr32,
         memory: &Arc<Memory>,
-        args: Args<T>,
+        args: CallData<T>,
         options: &RunProgramOptions,
     ) -> Result<(u32, T)> {
         self.processor
@@ -286,7 +286,7 @@ impl FheComputer {
         &mut self,
         initial_pc: Ptr32,
         memory: &Arc<Memory>,
-        args: Args<T>,
+        args: CallData<T>,
     ) -> Result<T> {
         self.processor.run_program(memory, initial_pc, &args)
     }

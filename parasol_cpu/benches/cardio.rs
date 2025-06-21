@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use parasol_cpu::{Args, ArgsBuilder, FheComputer, Memory, assembly::IsaOp, register_names::*};
+use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
@@ -36,7 +36,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     (sk, enc, eval)
 }
 
-fn generate_args(enc: &Encryption, sk: &SecretKey) -> Args<UInt<8, L1GlweCiphertext>> {
+fn generate_args(enc: &Encryption, sk: &SecretKey) -> CallData<UInt<8, L1GlweCiphertext>> {
     let man = false;
     let smoking = false;
     let diabetic = true;

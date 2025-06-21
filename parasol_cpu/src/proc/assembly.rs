@@ -460,6 +460,9 @@ define_op! {
 
     // Raw cmux
     [0xC1 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // If the a debug handler with the given id is installed, call it passing the `src` register's value.
+    [0xF0 Dbg (src src, 0, Register) (meta handler_id, 32, u32)]
 }
 
 pub mod register_names {
@@ -479,14 +482,7 @@ pub mod register_names {
     def_alias!(T0, X5, "Temporary register.");
     def_alias!(T1, X6, "Temporary register.");
     def_alias!(T2, X7, "Temporary register.");
-    def_alias!(A0, X10, "Function argument/return values.");
-    def_alias!(A1, X11, "Function argument/return values.");
-    def_alias!(A2, X12, "Function argument.");
-    def_alias!(A3, X13, "Function argument.");
-    def_alias!(A4, X14, "Function argument.");
-    def_alias!(A5, X15, "Function argument.");
-    def_alias!(A6, X16, "Function argument.");
-    def_alias!(A7, X17, "Function argument.");
+    def_alias!(A0, X10, "Return values pointer.");
     def_alias!(T3, X28, "Temporary register.");
     def_alias!(T4, X29, "Temporary register.");
     def_alias!(T5, X30, "Temporary register.");

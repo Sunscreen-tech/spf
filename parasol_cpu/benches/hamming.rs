@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use parasol_cpu::{Args, ArgsBuilder, FheComputer, Memory, assembly::IsaOp, register_names::*};
+use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
@@ -42,7 +42,7 @@ fn generate_args(
     enc: &Encryption,
     sk: &SecretKey,
     len: usize,
-) -> Args<UInt<8, L1GlweCiphertext>> {
+) -> CallData<UInt<8, L1GlweCiphertext>> {
     let a = 0xFEEDF00D_CAFEBABEu64
         .to_le_bytes()
         .map(|x| UInt::<8, _>::encrypt_secret(x as u64, enc, sk));

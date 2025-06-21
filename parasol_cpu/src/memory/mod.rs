@@ -186,10 +186,6 @@ impl ToArg for Ptr32 {
         u32::size()
     }
 
-    fn is_signed() -> bool {
-        false
-    }
-
     fn to_bytes(&self) -> Vec<Byte> {
         self.0.to_bytes()
     }

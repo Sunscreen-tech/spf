@@ -18,6 +18,7 @@ mod bitshift;
 mod casting;
 mod cmux;
 mod comparisons;
+mod dbg;
 mod load;
 mod loadi;
 mod mov;

@@ -2,7 +2,7 @@ use std::sync::Arc;
 
 use parasol_runtime::{ComputeKey, Encryption, Evaluation};
 
-use crate::{Args, Error, FheComputer, Memory, ToArg, error::Result};
+use crate::{CallData, Error, FheComputer, Memory, ToArg, error::Result};
 
 /// Runs a program by generating a new [`crate::FheComputer`]. This function is meant
 /// for simple testing of a program; for full applications see the
@@ -11,7 +11,7 @@ pub fn run_program<T: ToArg>(
     compute_key: ComputeKey,
     elf_file: &[u8],
     program_name: &str,
-    arguments: Args<T>,
+    arguments: CallData<T>,
 ) -> Result<T> {
     let memory = Arc::new(Memory::new_from_elf(elf_file)?);
     let enc = Encryption::default();

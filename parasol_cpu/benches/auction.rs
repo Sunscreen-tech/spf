@@ -2,7 +2,7 @@ use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{
-    Args, ArgsBuilder, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
+    ArgsBuilder, CallData, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
 };
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
@@ -43,7 +43,7 @@ fn generate_args<const N: usize>(
     memory: &Memory,
     enc: &Encryption,
     sk: &SecretKey,
-) -> (Ptr32, Args<()>) {
+) -> (Ptr32, CallData<()>) {
     let data = std::array::from_fn::<_, N, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
     let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(enc));
 
