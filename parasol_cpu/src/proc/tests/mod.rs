@@ -3,7 +3,7 @@ mod and;
 mod bitshift;
 mod branch;
 mod call_abi;
-// mod casting;
+mod casting;
 // mod cmux;
 // mod comparisons;
 mod dbg;
