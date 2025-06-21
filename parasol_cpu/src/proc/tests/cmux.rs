@@ -13,9 +13,13 @@ use parasol_runtime::test_utils::get_secret_keys_128;
 
 fn cmux_test_program() -> Vec<IsaOp> {
     vec![
-        IsaOp::LoadI(T0, 10, 32),
-        IsaOp::CmpGt(T0, A0, T0),
-        IsaOp::Cmux(A0, T0, A1, A2),
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Load(T1, SP, 32, 4),
+        IsaOp::Load(T2, SP, 32, 8),
+        IsaOp::LoadI(T3, 10, 32),
+        IsaOp::CmpGt(T3, T0, T3),
+        IsaOp::Cmux(T0, T3, T1, T2),
+        IsaOp::Store(A0, T0, 32, 0),
         IsaOp::Ret(),
     ]
 }
