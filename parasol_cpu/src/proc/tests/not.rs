@@ -28,7 +28,12 @@ fn can_not(val: u32, encrypted_computation: bool) {
         ))
         .return_value::<MaybeEncryptedUInt<32>>();
 
-    let program = memory.allocate_program(&[IsaOp::Not(A0, A0), IsaOp::Ret()]);
+    let program = memory.allocate_program(&[
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Not(T0, T0),
+        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Ret(),
+    ]);
 
     let ans = proc.run_program(program, &memory, args).unwrap();
     let ans = ans.get(&enc, &sk);

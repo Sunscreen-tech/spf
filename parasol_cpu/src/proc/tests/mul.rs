@@ -30,10 +30,13 @@ fn can_unsigned_mul_plain_plain() {
         let c_ptr = memory.try_allocate(16).unwrap();
 
         let program = memory.allocate_program(&vec![
-            IsaOp::Load(T0, A0, width),
-            IsaOp::Load(T1, A1, width),
+            IsaOp::Load(T0, SP, 32, 0),
+            IsaOp::Load(T1, SP, 32, 4),
+            IsaOp::Load(T2, SP, 32, 8),
+            IsaOp::Load(T0, T0, width, 0),
+            IsaOp::Load(T1, T1, width, 0),
             IsaOp::Mul(T0, T0, T1),
-            IsaOp::Store(A2, T0, width),
+            IsaOp::Store(T2, T0, width, 0),
             IsaOp::Ret(),
         ]);
 
@@ -79,7 +82,13 @@ where
 
         let memory = Arc::new(Memory::new_default_stack());
 
-        let program = memory.allocate_program(&[IsaOp::Mul(A0, A1, A0), IsaOp::Ret()]);
+        let program = memory.allocate_program(&[
+            IsaOp::Load(T0, SP, N as u32, 0),
+            IsaOp::Load(T1, SP, N as u32, (N / 8) as i32),
+            IsaOp::Mul(T0, T0, T1),
+            IsaOp::Store(A0, T0, N as u32, 0),
+            IsaOp::Ret()
+            ]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<N>::new(a, &enc, &sk, a_enc))

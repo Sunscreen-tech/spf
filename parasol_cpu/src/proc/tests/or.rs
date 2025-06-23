@@ -16,7 +16,13 @@ fn can_or_plaintext_inputs() {
 
     let memory = Arc::new(Memory::new_default_stack());
 
-    let program = memory.allocate_program(&[IsaOp::Or(A0, A0, A1), IsaOp::Ret()]);
+    let program = memory.allocate_program(&[
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Load(T1, SP, 32, 4),
+        IsaOp::Or(T0, T0, T1),
+        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Ret(),
+    ]);
 
     let args = ArgsBuilder::new().arg(val1).arg(val2).return_value::<u32>();
 
@@ -35,7 +41,13 @@ fn can_or_ciphertext_inputs() {
 
         let memory = Arc::new(Memory::new_default_stack());
 
-        let program = memory.allocate_program(&[IsaOp::Or(A0, A0, A1), IsaOp::Ret()]);
+        let program = memory.allocate_program(&[
+            IsaOp::Load(T0, SP, 8, 0),
+            IsaOp::Load(T1, SP, 8, 1),
+            IsaOp::Or(T0, T0, T1),
+            IsaOp::Store(A0, T0, 8, 0),
+            IsaOp::Ret(),
+        ]);
 
         let args = ArgsBuilder::new()
             .arg(UInt::<8, _>::encrypt_secret(val1 as u64, &enc, &sk))
