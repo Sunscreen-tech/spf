@@ -21,7 +21,8 @@ fn can_mov() {
             IsaOp::Load(T0, SP, 32, 4),
             IsaOp::Move(T1, T0),
             IsaOp::Store(A0, T1, 32, 0),
-            IsaOp::Ret()]);
+            IsaOp::Ret(),
+        ]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(

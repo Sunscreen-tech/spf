@@ -29,7 +29,8 @@ fn can_sub_inputs() {
             IsaOp::Load(T1, SP, 32, 4),
             IsaOp::Sub(T0, T0, T1),
             IsaOp::Store(A0, T0, 32, 0),
-            IsaOp::Ret()]);
+            IsaOp::Ret(),
+        ]);
 
         let ans_sum = proc.run_program(program, &memory, args).unwrap();
 

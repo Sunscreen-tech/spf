@@ -87,8 +87,8 @@ where
             IsaOp::Load(T1, SP, N as u32, (N / 8) as i32),
             IsaOp::Mul(T0, T0, T1),
             IsaOp::Store(A0, T0, N as u32, 0),
-            IsaOp::Ret()
-            ]);
+            IsaOp::Ret(),
+        ]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<N>::new(a, &enc, &sk, a_enc))
