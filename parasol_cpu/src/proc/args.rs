@@ -481,7 +481,7 @@ impl ArgsBuilder {
         }
     }
 
-    /// Create the [`Args`] object from this builder, ignoring any value the program returns (if any).
+    /// Create the [`CallData`] object from this builder, ignoring any value the program returns (if any).
     pub fn no_return_value(self) -> CallData<()> {
         self.return_value::<()>()
     }
