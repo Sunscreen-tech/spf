@@ -7,7 +7,7 @@ use crate::{
 
 #[test]
 fn can_pass_args_small_to_large() {
-    let (mut proc, enc) = make_computer_128();
+    let (mut proc, _) = make_computer_128();
 
     // Check that there is no padding between arguments.
     let memory = Arc::new(Memory::new_default_stack());
@@ -82,7 +82,7 @@ fn can_pass_args_small_to_large() {
 
 #[test]
 fn can_pass_args_large_to_small() {
-    let (mut proc, enc) = make_computer_128();
+    let (mut proc, _) = make_computer_128();
 
     let memory = Arc::new(Memory::new_default_stack());
     let prog = memory.allocate_program(&[

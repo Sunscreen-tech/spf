@@ -125,7 +125,7 @@ where
         Receiver<InstructionOperation<DispatchIsaOp>>,
     ),
 
-    pub debug_handlers: Vec<Arc<dyn Fn(usize, u32, &Register) + 'static>>,
+    pub debug_handlers: Vec<DebugHandler>,
 }
 
 impl FheProcessor {
