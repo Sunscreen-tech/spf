@@ -19,13 +19,15 @@ use std::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
+type DebugHandler = Arc<dyn Fn(usize, u32, &Register) + 'static>;
+
 /// Options for running [`FheComputer::run_program_with_options`]
 #[derive(Clone, Default)]
 pub struct RunProgramOptions {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
     log_register_info: bool,
-    debug_handlers: Vec<Arc<dyn Fn(usize, u32, &Register) + 'static>>,
+    debug_handlers: Vec<DebugHandler>,
 }
 
 impl RunProgramOptions {
@@ -46,7 +48,7 @@ pub struct RunProgramOptionsBuilder {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
     log_register_info: bool,
-    debug_handlers: Vec<Arc<dyn Fn(usize, u32, &Register)>>,
+    debug_handlers: Vec<DebugHandler>,
 }
 
 impl RunProgramOptionsBuilder {

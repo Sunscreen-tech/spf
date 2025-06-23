@@ -95,7 +95,7 @@ pub fn chi_sq_test_program() -> Vec<IsaOp> {
     vec![
         // Load our inputs.
         IsaOp::Load(n_0, SP, width, 0),
-        IsaOp::Load(n_1, SP, width, (1 * width / 8) as i32),
+        IsaOp::Load(n_1, SP, width, (width / 8) as i32),
         IsaOp::Load(n_2, SP, width, (2 * width / 8) as i32),
         //
 
@@ -125,10 +125,10 @@ pub fn chi_sq_test_program() -> Vec<IsaOp> {
         //
 
         // res->b_1 = 2 * x * x;
-        IsaOp::Mul(T4, x, x),                                // T4 = x * x
-        IsaOp::LoadI(T6, 2, width),                          // T6 = 2
-        IsaOp::Mul(T4, T4, T6),                              // T4 = (x * x) * 2
-        IsaOp::Store(RP, T4, width, (1 * width / 8) as i32), // res->b_1 = T4
+        IsaOp::Mul(T4, x, x),                            // T4 = x * x
+        IsaOp::LoadI(T6, 2, width),                      // T6 = 2
+        IsaOp::Mul(T4, T4, T6),                          // T4 = (x * x) * 2
+        IsaOp::Store(RP, T4, width, (width / 8) as i32), // res->b_1 = T4
         //
 
         // res->b_2 = x * y;

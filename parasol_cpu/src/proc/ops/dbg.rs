@@ -22,6 +22,6 @@ impl FheProcessor {
             self.debug_handlers[handler_id](instruction_id, pc, src);
         }
 
-        FheProcessor::retire(&retirement_info, Ok(()));
+        FheProcessor::retire(retirement_info, Ok(()));
     }
 }
