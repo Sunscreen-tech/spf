@@ -19,7 +19,7 @@ fn cmux_test_program() -> Vec<IsaOp> {
         IsaOp::LoadI(T3, 10, 32),
         IsaOp::CmpGt(T3, T0, T3),
         IsaOp::Cmux(T0, T3, T1, T2),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]
 }

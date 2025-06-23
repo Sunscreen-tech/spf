@@ -16,7 +16,7 @@ fn can_neg_plaintext_inputs() {
     let program = memory.allocate_program(&[
         IsaOp::Load(T0, SP, 8, 0),
         IsaOp::Neg(T0, T0),
-        IsaOp::Store(A0, T0, 8, 0),
+        IsaOp::Store(RP, T0, 8, 0),
         IsaOp::Ret(),
     ]);
 

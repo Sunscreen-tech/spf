@@ -23,7 +23,7 @@ fn can_add_inputs() {
             IsaOp::Load(T0, SP, 32, 0),
             IsaOp::Load(T1, SP, 32, 4),
             IsaOp::Add(T0, T0, T1),
-            IsaOp::Store(A0, T0, 32, 0),
+            IsaOp::Store(RP, T0, 32, 0),
             IsaOp::Ret(),
         ]);
 
@@ -87,8 +87,8 @@ fn can_add_carry_inputs() {
             IsaOp::Trunc(T2, T2, 1),
             IsaOp::AddC(T0, T1, T0, T1, T2),
             IsaOp::Zext(T1, T1, 32),
-            IsaOp::Store(A0, T0, 32, 0),
-            IsaOp::Store(A0, T1, 32, 4),
+            IsaOp::Store(RP, T0, 32, 0),
+            IsaOp::Store(RP, T1, 32, 4),
             IsaOp::Ret(),
         ]);
 
@@ -195,7 +195,7 @@ fn add_use_same_dst_and_src() {
     let program_ptr = memory.allocate_program(&[
         IsaOp::Load(T0, SP, 16, 0),
         IsaOp::Add(T0, T0, T0),
-        IsaOp::Store(A0, T0, 16, 0),
+        IsaOp::Store(RP, T0, 16, 0),
         IsaOp::Ret(),
     ]);
 

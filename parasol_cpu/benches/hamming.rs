@@ -92,7 +92,7 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
     let instruction_size = 8;
 
     // Argument registers
-    let a_ptr = A0;
+    let a_ptr = RP;
     let b_ptr = A1;
     let len = A2;
 
@@ -147,7 +147,7 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
         IsaOp::Add(i, i, one_u32),                                // > i += 1
         IsaOp::CmpLt(i_compare, i, len),                          // > i < len
         IsaOp::BranchNonZero(i_compare, -22 * instruction_size),  //** Loop I end
-        IsaOp::Move(A0, distance),                                // Move result to output register
+        IsaOp::Move(RP, distance),                                // Move result to output register
         IsaOp::Ret(),
     ];
 

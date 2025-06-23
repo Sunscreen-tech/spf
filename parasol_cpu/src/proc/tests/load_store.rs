@@ -135,7 +135,7 @@ fn can_load_immediate() {
         let program = memory.allocate_program(&[
             IsaOp::LoadI(T0, val, width),
             IsaOp::Zext(T0, T0, 32),
-            IsaOp::Store(A0, T0, 32, 0),
+            IsaOp::Store(RP, T0, 32, 0),
             IsaOp::Ret(),
         ]);
 
@@ -156,7 +156,7 @@ fn load_immediate_fails_out_of_range() {
         let args = ArgsBuilder::new().return_value::<u32>();
 
         let result = proc.run_program(
-            memory.allocate_program(&[IsaOp::LoadI(A0, val, width), IsaOp::Ret()]),
+            memory.allocate_program(&[IsaOp::LoadI(RP, val, width), IsaOp::Ret()]),
             &memory,
             args,
         );
@@ -184,7 +184,7 @@ fn can_offset_load() {
             memory.allocate_program(&[
                 IsaOp::Load(T0, SP, 32, 0),
                 IsaOp::Load(T0, T0, 16, 2),
-                IsaOp::Store(A0, T0, 16, 0),
+                IsaOp::Store(RP, T0, 16, 0),
                 IsaOp::Ret(),
             ]),
             &memory,

@@ -28,7 +28,7 @@ fn can_sub_inputs() {
             IsaOp::Load(T0, SP, 32, 0),
             IsaOp::Load(T1, SP, 32, 4),
             IsaOp::Sub(T0, T0, T1),
-            IsaOp::Store(A0, T0, 32, 0),
+            IsaOp::Store(RP, T0, 32, 0),
             IsaOp::Ret(),
         ]);
 
@@ -79,8 +79,8 @@ fn can_sub_borrow_inputs() {
             IsaOp::Trunc(T2, T2, 1),
             IsaOp::SubB(T0, T1, T0, T1, T2),
             IsaOp::Zext(T1, T1, 8),
-            IsaOp::Store(A0, T0, 32, 0),
-            IsaOp::Store(A0, T1, 8, 4),
+            IsaOp::Store(RP, T0, 32, 0),
+            IsaOp::Store(RP, T1, 8, 4),
             IsaOp::Ret(),
         ]);
 
@@ -194,7 +194,7 @@ fn sub_use_same_dst_and_src() {
 
     let ans = proc
         .run_program(
-            memory.allocate_program(&[IsaOp::Sub(A0, A0, A0), IsaOp::Ret()]),
+            memory.allocate_program(&[IsaOp::Sub(RP, RP, RP), IsaOp::Ret()]),
             &memory,
             args,
         )

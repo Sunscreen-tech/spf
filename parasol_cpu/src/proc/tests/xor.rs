@@ -23,7 +23,7 @@ fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
         IsaOp::Load(T0, SP, 32, 0),
         IsaOp::Load(T1, SP, 32, 4),
         IsaOp::Xor(T0, T0, T1),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 

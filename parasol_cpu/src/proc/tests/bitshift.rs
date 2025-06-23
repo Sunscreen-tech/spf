@@ -30,7 +30,7 @@ fn run_single_test(
         IsaOp::Load(T0, SP, 8, 0),
         IsaOp::Load(T1, SP, 8, 1),
         isa_op,
-        IsaOp::Store(A0, T0, 8, 0),
+        IsaOp::Store(RP, T0, 8, 0),
         IsaOp::Ret(),
     ]);
 

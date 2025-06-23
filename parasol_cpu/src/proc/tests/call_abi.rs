@@ -4,7 +4,6 @@ use crate::{
     ArgsBuilder, IsaOp, Memory, Register, RunProgramOptionsBuilder, register_names::*,
     test_utils::make_computer_128,
 };
-use parasol_runtime::test_utils::get_secret_keys_128;
 
 #[test]
 fn can_pass_args_small_to_large() {
@@ -163,7 +162,7 @@ fn return_val() {
     let prog = memory.allocate_program(&[
         IsaOp::Load(T0, SP, 8, 0),
         IsaOp::Zext(T0, T0, 16),
-        IsaOp::Store(A0, T0, 16, 0),
+        IsaOp::Store(RP, T0, 16, 0),
         IsaOp::Ret(),
     ]);
 

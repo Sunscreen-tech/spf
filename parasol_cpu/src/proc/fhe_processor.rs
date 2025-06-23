@@ -1,5 +1,5 @@
 use crate::{
-    Byte, Extend, INSTRUCTION_SIZE, Memory, Result, Word,
+    Byte, INSTRUCTION_SIZE, Memory, Result,
     register_names::*,
     tomasulo::{
         registers::{RegisterFile, RegisterName, RobEntryRef},
@@ -558,7 +558,7 @@ impl FheProcessor {
             Ptr32(0)
         };
 
-        let rob_a0 = self.registers.rename(A0, None);
+        let rob_a0 = self.registers.rename(RP, None);
         let rob_sp = self.registers.rename(SP, None);
 
         unwrap_registers!((mut rob_a0));

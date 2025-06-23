@@ -20,7 +20,7 @@ fn can_or_plaintext_inputs() {
         IsaOp::Load(T0, SP, 32, 0),
         IsaOp::Load(T1, SP, 32, 4),
         IsaOp::Or(T0, T0, T1),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 
@@ -45,7 +45,7 @@ fn can_or_ciphertext_inputs() {
             IsaOp::Load(T0, SP, 8, 0),
             IsaOp::Load(T1, SP, 8, 1),
             IsaOp::Or(T0, T0, T1),
-            IsaOp::Store(A0, T0, 8, 0),
+            IsaOp::Store(RP, T0, 8, 0),
             IsaOp::Ret(),
         ]);
 

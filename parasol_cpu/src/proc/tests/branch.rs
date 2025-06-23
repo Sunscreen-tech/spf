@@ -33,7 +33,7 @@ fn can_branch_zero() {
         // Have we hit A2?
         IsaOp::CmpEq(T3, T0, T2),
         IsaOp::BranchZero(T3, -16),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 
@@ -65,7 +65,7 @@ fn can_branch_nonzero() {
         IsaOp::Load(T1, SP, 32, 4),
         IsaOp::Sub(T0, T0, T1),
         IsaOp::BranchNonZero(T0, -8),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 
@@ -92,7 +92,7 @@ fn can_unconditional_branch() {
         IsaOp::LoadI(T0, 42, 32),
         IsaOp::Branch(16), // Skip next instruction
         IsaOp::LoadI(T0, 0, 32),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 

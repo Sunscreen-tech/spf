@@ -20,7 +20,7 @@ fn can_mov() {
         let program = memory.allocate_program(&[
             IsaOp::Load(T0, SP, 32, 4),
             IsaOp::Move(T1, T0),
-            IsaOp::Store(A0, T1, 32, 0),
+            IsaOp::Store(RP, T1, 32, 0),
             IsaOp::Ret(),
         ]);
 

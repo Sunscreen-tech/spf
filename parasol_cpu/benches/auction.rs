@@ -65,7 +65,7 @@ pub fn auction_test_program() -> Vec<IsaOp> {
     let instruction_size = 8;
 
     // Argument registers
-    let bids_ptr = A0; // Pointer to bids array
+    let bids_ptr = RP; // Pointer to bids array
     let len = A1; // Length of array
     let winner_output_ptr = A2; // Pointer to Winner struct
 

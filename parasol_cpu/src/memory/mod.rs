@@ -46,7 +46,9 @@ pub(crate) const INSTRUCTION_SIZE: u32 = 8;
 //   - Added rotl, rotr, neg, xor, addc, subb
 //   - Note that addc and subb are not currently implemented in the backend, but
 //     they do have defined opcodes.
-pub(crate) const SUPPORTED_ABI_VERSION: u8 = 2;
+// 2: RISC-V calling convention
+// 3: Stack-based calling convention.
+pub(crate) const SUPPORTED_ABI_VERSION: u8 = 3;
 
 /// An encrypted or unencrypted 32-bit value.
 ///

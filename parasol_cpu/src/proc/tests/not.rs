@@ -31,7 +31,7 @@ fn can_not(val: u32, encrypted_computation: bool) {
     let program = memory.allocate_program(&[
         IsaOp::Load(T0, SP, 32, 0),
         IsaOp::Not(T0, T0),
-        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Store(RP, T0, 32, 0),
         IsaOp::Ret(),
     ]);
 

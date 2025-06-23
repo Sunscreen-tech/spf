@@ -490,7 +490,7 @@ pub mod register_names {
     def_alias!(T0, X5, "Temporary register.");
     def_alias!(T1, X6, "Temporary register.");
     def_alias!(T2, X7, "Temporary register.");
-    def_alias!(A0, X10, "Return values pointer.");
+    def_alias!(RP, X10, "Return value pointer.");
     def_alias!(T3, X28, "Temporary register.");
     def_alias!(T4, X29, "Temporary register.");
     def_alias!(T5, X30, "Temporary register.");
