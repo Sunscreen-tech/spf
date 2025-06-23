@@ -22,8 +22,10 @@ fn can_load_store_plain_bit_width() {
         }
 
         let program = memory.allocate_program(&[
-            IsaOp::Load(T0, A0, width),
-            IsaOp::Store(A1, T0, width),
+            IsaOp::Load(T0, SP, 32, 0),
+            IsaOp::Load(T1, SP, 32, 4),
+            IsaOp::Load(T0, T0, width, 0),
+            IsaOp::Store(T1, T0, width, 0),
             IsaOp::Ret(),
         ]);
 
@@ -64,8 +66,10 @@ fn can_load_store_ciphertext_bit_width() {
 
         let memory = Arc::new(Memory::new_default_stack());
         let program = memory.allocate_program(&[
-            IsaOp::Load(T0, A0, width),
-            IsaOp::Store(A1, T0, width),
+            IsaOp::Load(T0, SP, 32, 0),
+            IsaOp::Load(T1, SP, 32, 4),
+            IsaOp::Load(T0, T0, width, 0),
+            IsaOp::Store(T1, T0, width, 0),
             IsaOp::Ret(),
         ]);
 
@@ -128,7 +132,12 @@ fn can_load_immediate() {
     ] {
         let args = ArgsBuilder::new().return_value::<u32>();
 
-        let program = memory.allocate_program(&[IsaOp::LoadI(A0, val, width), IsaOp::Ret()]);
+        let program = memory.allocate_program(&[
+            IsaOp::LoadI(T0, val, width),
+            IsaOp::Zext(T0, T0, 32),
+            IsaOp::Store(A0, T0, 32, 0),
+            IsaOp::Ret(),
+        ]);
 
         let result = proc.run_program(program, &memory, args).unwrap();
 
@@ -173,9 +182,9 @@ fn can_offset_load() {
     let actual = proc
         .run_program(
             memory.allocate_program(&[
-                IsaOp::LoadI(T0, 2, 32),
-                IsaOp::Add(A0, A0, T0),
-                IsaOp::Load(A0, A0, 16),
+                IsaOp::Load(T0, SP, 32, 0),
+                IsaOp::Load(T0, T0, 16, 2),
+                IsaOp::Store(A0, T0, 16, 0),
                 IsaOp::Ret(),
             ]),
             &memory,

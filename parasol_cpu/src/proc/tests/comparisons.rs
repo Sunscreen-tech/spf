@@ -25,7 +25,14 @@ fn run_single_test(
     let expected = comparison(val1, val2);
     let memory = Arc::new(Memory::new_default_stack());
 
-    let program = memory.allocate_program(&[isa_op, IsaOp::Zext(A0, A0, 32), IsaOp::Ret()]);
+    let program = memory.allocate_program(&[
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Load(T1, SP, 32, 4),
+        isa_op,
+        IsaOp::Zext(T0, T0, 32),
+        IsaOp::Store(A0, T0, 32, 0),
+        IsaOp::Ret(),
+    ]);
 
     let args = if matches!(
         isa_op,
@@ -103,59 +110,59 @@ fn run_comparison_test(
 
 #[test]
 fn can_equal_plaintext_inputs() {
-    run_comparison_test(|val1, val2| val1 == val2, IsaOp::CmpEq(A0, A0, A1), false);
+    run_comparison_test(|val1, val2| val1 == val2, IsaOp::CmpEq(T0, T0, T1), false);
 }
 
 #[test]
 fn can_equal_ciphertext_inputs() {
-    run_comparison_test(|val1, val2| val1 == val2, IsaOp::CmpEq(A0, A0, A1), true);
+    run_comparison_test(|val1, val2| val1 == val2, IsaOp::CmpEq(T0, T0, T1), true);
 }
 
 #[test]
 fn can_greater_than_plaintext_inputs() {
-    run_comparison_test(|val1, val2| val1 > val2, IsaOp::CmpGt(A0, A0, A1), false);
+    run_comparison_test(|val1, val2| val1 > val2, IsaOp::CmpGt(T0, T0, T1), false);
 }
 
 #[test]
 fn can_greater_than_ciphertext_inputs() {
-    run_comparison_test(|val1, val2| val1 > val2, IsaOp::CmpGt(A0, A0, A1), true);
+    run_comparison_test(|val1, val2| val1 > val2, IsaOp::CmpGt(T0, T0, T1), true);
 }
 
 #[test]
 fn can_greater_than_or_equal_plaintext_inputs() {
-    run_comparison_test(|val1, val2| val1 >= val2, IsaOp::CmpGe(A0, A0, A1), false);
+    run_comparison_test(|val1, val2| val1 >= val2, IsaOp::CmpGe(T0, T0, T1), false);
 }
 
 #[test]
 fn can_greater_than_or_equal_ciphertext_inputs() {
-    run_comparison_test(|val1, val2| val1 >= val2, IsaOp::CmpGe(A0, A0, A1), true);
+    run_comparison_test(|val1, val2| val1 >= val2, IsaOp::CmpGe(T0, T0, T1), true);
 }
 
 #[test]
 fn can_less_than_plaintext_inputs() {
-    run_comparison_test(|val1, val2| val1 < val2, IsaOp::CmpLt(A0, A0, A1), false);
+    run_comparison_test(|val1, val2| val1 < val2, IsaOp::CmpLt(T0, T0, T1), false);
 }
 
 #[test]
 fn can_less_than_ciphertext_inputs() {
-    run_comparison_test(|val1, val2| val1 < val2, IsaOp::CmpLt(A0, A0, A1), true);
+    run_comparison_test(|val1, val2| val1 < val2, IsaOp::CmpLt(T0, T0, T1), true);
 }
 
 #[test]
 fn can_less_than_or_equal_plaintext_inputs() {
-    run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(A0, A0, A1), false);
+    run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(T0, T0, T1), false);
 }
 
 #[test]
 fn can_less_than_or_equal_ciphertext_inputs() {
-    run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(A0, A0, A1), true);
+    run_comparison_test(|val1, val2| val1 <= val2, IsaOp::CmpLe(T0, T0, T1), true);
 }
 
 #[test]
 fn can_greater_than_signed_plaintext_inputs() {
     run_comparison_test(
         |val1, val2| val1 as i32 > val2 as i32,
-        IsaOp::CmpGtS(A0, A0, A1),
+        IsaOp::CmpGtS(T0, T0, T1),
         false,
     );
 }
@@ -164,7 +171,7 @@ fn can_greater_than_signed_plaintext_inputs() {
 fn can_greater_than_signed_ciphertext_inputs() {
     run_comparison_test(
         |val1, val2| val1 as i32 > val2 as i32,
-        IsaOp::CmpGtS(A0, A0, A1),
+        IsaOp::CmpGtS(T0, T0, T1),
         true,
     );
 }
@@ -173,7 +180,7 @@ fn can_greater_than_signed_ciphertext_inputs() {
 fn can_greater_than_or_equal_signed_plaintext_inputs() {
     run_comparison_test(
         |val1, val2| val1 as i32 >= val2 as i32,
-        IsaOp::CmpGeS(A0, A0, A1),
+        IsaOp::CmpGeS(T0, T0, T1),
         false,
     );
 }
@@ -182,7 +189,7 @@ fn can_greater_than_or_equal_signed_plaintext_inputs() {
 fn can_greater_than_or_equal_signed_ciphertext_inputs() {
     run_comparison_test(
         |val1, val2| val1 as i32 >= val2 as i32,
-        IsaOp::CmpGeS(A0, A0, A1),
+        IsaOp::CmpGeS(T0, T0, T1),
         true,
     );
 }
@@ -191,7 +198,7 @@ fn can_greater_than_or_equal_signed_ciphertext_inputs() {
 fn can_less_than_signed_plaintext_inputs() {
     run_comparison_test(
         |val1, val2| (val1 as i32) < (val2 as i32),
-        IsaOp::CmpLtS(A0, A0, A1),
+        IsaOp::CmpLtS(T0, T0, T1),
         false,
     );
 }
@@ -200,7 +207,7 @@ fn can_less_than_signed_plaintext_inputs() {
 fn can_less_than_signed_ciphertext_inputs() {
     run_comparison_test(
         |val1, val2| (val1 as i32) < (val2 as i32),
-        IsaOp::CmpLtS(A0, A0, A1),
+        IsaOp::CmpLtS(T0, T0, T1),
         true,
     );
 }
@@ -209,7 +216,7 @@ fn can_less_than_signed_ciphertext_inputs() {
 fn can_less_than_or_equal_signed_plaintext_inputs() {
     run_comparison_test(
         |val1, val2| val1 as i32 <= val2 as i32,
-        IsaOp::CmpLeS(A0, A0, A1),
+        IsaOp::CmpLeS(T0, T0, T1),
         false,
     );
 }
@@ -218,7 +225,7 @@ fn can_less_than_or_equal_signed_plaintext_inputs() {
 fn can_less_than_or_equal_signed_ciphertext_inputs() {
     run_comparison_test(
         |val1, val2| val1 as i32 <= val2 as i32,
-        IsaOp::CmpLeS(A0, A0, A1),
+        IsaOp::CmpLeS(T0, T0, T1),
         true,
     );
 }
