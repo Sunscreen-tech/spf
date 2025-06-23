@@ -858,6 +858,9 @@ mod tests {
         }
     }
 
+    // TODO: re-enable the following tests after we update our compiler's
+    // calling convention
+    #[ignore]
     #[test]
     fn can_create_memory() {
         let memory = Memory::new_from_elf(CARDIO).unwrap();
@@ -865,6 +868,7 @@ mod tests {
         validate_loader(&memory, CARDIO);
     }
 
+    #[ignore]
     #[test]
     fn can_allocate_and_write_memory() {
         // Load an ELF file's segments into memory and then allocate additional user buffers
