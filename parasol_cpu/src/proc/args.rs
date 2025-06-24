@@ -425,7 +425,14 @@ impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
 /// and first stack frame according to Parasol ABI's calling convention.
 ///
 /// # Remarks
-/// Parasol's calling convention is similar to x86's cdecl
+/// Parasol's calling convention is similar to x86's cdecl. We first allocate stack space for
+/// storing all arguments and the return value as well as padding to maintain alignment
+/// requirements for each argument and the return value. Furthermore, the stack pointer must be
+/// 16-byte aligned after pushing all the call data. Arguments are stored in reverse order
+/// (i.e. the first argument appears at SP+0 while the second at SP+sizeof(arg1), and so-on),
+/// followed by the return value.
+///
+/// Parasol stacks grow downwards, while arguments and values within a frame grow upwards.
 pub struct ArgsBuilder {
     args: Vec<Arg>,
 }
