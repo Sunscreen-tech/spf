@@ -6,6 +6,7 @@ mod call_abi;
 mod casting;
 mod cmux;
 mod comparisons;
+mod dbg;
 mod load_store;
 mod mov;
 mod mul;

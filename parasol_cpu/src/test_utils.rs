@@ -143,10 +143,6 @@ where
         <BitsUnsigned as Bits<N>>::PlaintextType::size()
     }
 
-    fn is_signed() -> bool {
-        false
-    }
-
     fn to_bytes(&self) -> Vec<Byte> {
         match self {
             Self::Plain(x) => x.to_bytes(),
@@ -231,10 +227,6 @@ where
 
     fn size() -> usize {
         <BitsSigned as Bits<N>>::PlaintextType::size()
-    }
-
-    fn is_signed() -> bool {
-        true
     }
 
     fn to_bytes(&self) -> Vec<Byte> {

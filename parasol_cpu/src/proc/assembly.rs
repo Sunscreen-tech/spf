@@ -10,6 +10,14 @@ fn width_enc(input: u64) -> u64 {
     if input == 128 { 0 } else { input }
 }
 
+fn offset_dec(input: u64) -> u64 {
+    input as u32 as i32 as u64
+}
+
+fn offset_enc(input: u64) -> u64 {
+    input
+}
+
 /// Define the list of opcodes for the processors ISA.
 #[macro_export]
 macro_rules! define_op {
@@ -354,10 +362,10 @@ define_op! {
     (Register, 64, X),
 
     // Store
-    [0x01 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x01 Store (src dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (cmeta offset, 32, i32, offset_dec, offset_enc)],
 
     // Load
-    [0x09 Load (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc)],
+    [0x09 Load (dst dst, 0, Register) (src src, 0, Register) (cmeta width, 7, u32, width_dec, width_enc) (cmeta offset, 32, i32, offset_dec, offset_enc)],
 
     // Load immediate
     [0x0A LoadI (dst dst, 0, Register) (meta imm, 32, u32) (cmeta width, 7, u32, width_dec, width_enc)],
@@ -460,6 +468,9 @@ define_op! {
 
     // Raw cmux
     [0xC1 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
+
+    // If the a debug handler with the given id is installed, call it passing the `src` register's value.
+    [0xF0 Dbg (src src, 0, Register) (meta handler_id, 32, u32)]
 }
 
 pub mod register_names {
@@ -479,14 +490,7 @@ pub mod register_names {
     def_alias!(T0, X5, "Temporary register.");
     def_alias!(T1, X6, "Temporary register.");
     def_alias!(T2, X7, "Temporary register.");
-    def_alias!(A0, X10, "Function argument/return values.");
-    def_alias!(A1, X11, "Function argument/return values.");
-    def_alias!(A2, X12, "Function argument.");
-    def_alias!(A3, X13, "Function argument.");
-    def_alias!(A4, X14, "Function argument.");
-    def_alias!(A5, X15, "Function argument.");
-    def_alias!(A6, X16, "Function argument.");
-    def_alias!(A7, X17, "Function argument.");
+    def_alias!(RP, X10, "Return value pointer.");
     def_alias!(T3, X28, "Temporary register.");
     def_alias!(T4, X29, "Temporary register.");
     def_alias!(T5, X30, "Temporary register.");

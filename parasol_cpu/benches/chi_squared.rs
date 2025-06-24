@@ -2,10 +2,10 @@ use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{
-    Args, ArgsBuilder, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
+    ArgsBuilder, CallData, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
 };
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;
@@ -36,7 +36,11 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     (sk, enc, eval)
 }
 
-fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Args<()>, Ptr32) {
+fn generate_args(
+    memory: &Memory,
+    enc: &Encryption,
+    sk: &SecretKey,
+) -> (CallData<[UInt<16, L1GlweCiphertext>; 4]>, Ptr32) {
     let result = memory
         .try_allocate(std::mem::size_of::<[u16; 4]>() as u32)
         .unwrap();
@@ -45,13 +49,12 @@ fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> (Args<()>
         .arg(UInt::<16, _>::encrypt_secret(2, enc, sk))
         .arg(UInt::<16, _>::encrypt_secret(7, enc, sk))
         .arg(UInt::<16, _>::encrypt_secret(9, enc, sk))
-        .arg(result)
-        .no_return_value();
+        .return_value::<[UInt<16, _>; 4]>();
 
     (args, result)
 }
 
-fn chi_squared_from_compiler(c: &mut Criterion) {
+fn _chi_squared_from_compiler(c: &mut Criterion) {
     let mut group = c.benchmark_group("chi_squared");
     group.sample_size(10);
 
@@ -84,18 +87,16 @@ pub fn chi_sq_test_program() -> Vec<IsaOp> {
     let n_0 = X18; // n_0
     let n_1 = X19; // n_1
     let n_2 = X20; // n_2
-    let result = X21; // result
 
     let a = X22;
     let x = X23;
     let y = X24;
 
     vec![
-        // Load all the arguments into registers by truncation
-        IsaOp::Trunc(n_0, A0, width),
-        IsaOp::Trunc(n_1, A1, width),
-        IsaOp::Trunc(n_2, A2, width),
-        IsaOp::Move(result, A3),
+        // Load our inputs.
+        IsaOp::Load(n_0, SP, width, 0),
+        IsaOp::Load(n_1, SP, width, (width / 8) as i32),
+        IsaOp::Load(n_2, SP, width, (2 * width / 8) as i32),
         //
 
         // a = 4 * n_0 * n_2 - n_1 * n_1;
@@ -119,35 +120,27 @@ pub fn chi_sq_test_program() -> Vec<IsaOp> {
         //
 
         // res->alpha = a * a;
-        IsaOp::Mul(T3, a, a),        // T3 = a * a
-        IsaOp::LoadI(T0, 0, 32),     // T0 = 0
-        IsaOp::Add(T0, result, T0),  // T0 = res->alpha
-        IsaOp::Store(T0, T3, width), // store
+        IsaOp::Mul(T3, a, a),           // T3 = a * a
+        IsaOp::Store(RP, T3, width, 0), // res->alpha = T3
         //
 
         // res->b_1 = 2 * x * x;
-        IsaOp::Mul(T4, x, x),        // T4 = x * x
-        IsaOp::LoadI(T6, 2, width),  // T6 = 2
-        IsaOp::Mul(T4, T4, T6),      // T4 = (x * x) * 2
-        IsaOp::LoadI(T0, 2, 32),     // T0 = 2
-        IsaOp::Add(T0, result, T0),  // T0 = res->b_1
-        IsaOp::Store(T0, T4, width), // res->b_1
+        IsaOp::Mul(T4, x, x),                            // T4 = x * x
+        IsaOp::LoadI(T6, 2, width),                      // T6 = 2
+        IsaOp::Mul(T4, T4, T6),                          // T4 = (x * x) * 2
+        IsaOp::Store(RP, T4, width, (width / 8) as i32), // res->b_1 = T4
         //
 
         // res->b_2 = x * y;
-        IsaOp::Mul(T5, x, y),        // T5 = x * y
-        IsaOp::LoadI(T0, 4, 32),     // T0 = 4
-        IsaOp::Add(T0, result, T0),  // T0 = res->b_2
-        IsaOp::Store(T0, T5, width), // res->b_2
+        IsaOp::Mul(T5, x, y),                                // T5 = x * y
+        IsaOp::Store(RP, T5, width, (2 * width / 8) as i32), // res->b_2 = T5
         //
 
         // res->b_3 = 2 * y * y;
-        IsaOp::Mul(T6, y, y),        // T6 = y * y
-        IsaOp::LoadI(T5, 2, width),  // T5 = 2
-        IsaOp::Mul(T6, T5, T6),      // T6 = (y * y) * 2
-        IsaOp::LoadI(T0, 6, 32),     // T0 = 6
-        IsaOp::Add(T0, result, T0),  // T0 = res->b_3
-        IsaOp::Store(T0, T6, width), // res->b_3
+        IsaOp::Mul(T6, y, y),                                // T6 = y * y
+        IsaOp::LoadI(T5, 2, width),                          // T5 = 2
+        IsaOp::Mul(T6, T5, T6),                              // T6 = (y * y) * 2
+        IsaOp::Store(RP, T6, width, (3 * width / 8) as i32), // res->b_3
         //
         IsaOp::Ret(),
     ]
@@ -170,14 +163,20 @@ fn chi_squared_from_assembly(c: &mut Criterion) {
                 (proc, args, prog, memory)
             },
             |(mut proc, args, prog, memory)| {
-                proc.run_program(prog, &memory, args).unwrap();
+                let _ = proc.run_program(prog, &memory, args).unwrap();
+
+                // Check that we got the right answer.
+                // assert_eq!(result[0].decrypt(&enc, &sk), 529);
+                // assert_eq!(result[1].decrypt(&enc, &sk), 242);
+                // assert_eq!(result[2].decrypt(&enc, &sk), 275);
+                // assert_eq!(result[3].decrypt(&enc, &sk), 1250);
             },
             criterion::BatchSize::PerIteration,
         );
     });
 }
 
-fn chi_squared_thread_scaling(c: &mut Criterion) {
+fn _chi_squared_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let mut group = c.benchmark_group("chi_squared");
         group.sample_size(10);
@@ -227,10 +226,11 @@ fn chi_squared_thread_scaling(c: &mut Criterion) {
     }
 }
 
+// TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
-    chi_squared_from_compiler,
+    // chi_squared_from_compiler,
     chi_squared_from_assembly,
-    chi_squared_thread_scaling
+    // chi_squared_thread_scaling
 );
 criterion_main!(benches);

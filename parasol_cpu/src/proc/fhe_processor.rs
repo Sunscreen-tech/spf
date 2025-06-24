@@ -1,5 +1,5 @@
 use crate::{
-    Allocation, Byte, Extend, INSTRUCTION_SIZE, Memory, Result, Word,
+    Byte, INSTRUCTION_SIZE, Memory, Result,
     register_names::*,
     tomasulo::{
         registers::{RegisterFile, RegisterName, RobEntryRef},
@@ -19,12 +19,15 @@ use std::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
+type DebugHandler = Arc<dyn Fn(usize, u32, &Register) + 'static>;
+
 /// Options for running [`FheComputer::run_program_with_options`]
-#[derive(Debug, Clone, PartialEq, Default)]
+#[derive(Clone, Default)]
 pub struct RunProgramOptions {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
     log_register_info: bool,
+    debug_handlers: Vec<DebugHandler>,
 }
 
 impl RunProgramOptions {
@@ -40,11 +43,12 @@ impl RunProgramOptions {
 }
 
 /// Builder pattern for [`RunProgramOptions`]
-#[derive(Debug, Default)]
+#[derive(Default)]
 pub struct RunProgramOptionsBuilder {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
     log_register_info: bool,
+    debug_handlers: Vec<DebugHandler>,
 }
 
 impl RunProgramOptionsBuilder {
@@ -79,12 +83,19 @@ impl RunProgramOptionsBuilder {
         self
     }
 
+    /// Install a debug handler that gets invoked on hitting a `Dbg` instruction.
+    pub fn debug_handler<F: Fn(usize, u32, &Register) + 'static>(mut self, f: F) -> Self {
+        self.debug_handlers.push(Arc::new(f));
+        self
+    }
+
     /// Build the run program options into a [`RunProgramOptions`] struct.
     pub fn build(self) -> RunProgramOptions {
         RunProgramOptions {
             gas_limit: self.gas_limit,
             log_instruction_execution: self.log_instruction_execution,
             log_register_info: self.log_register_info,
+            debug_handlers: self.debug_handlers,
         }
     }
 }
@@ -113,6 +124,8 @@ where
         Sender<InstructionOperation<DispatchIsaOp>>,
         Receiver<InstructionOperation<DispatchIsaOp>>,
     ),
+
+    pub debug_handlers: Vec<DebugHandler>,
 }
 
 impl FheProcessor {
@@ -126,6 +139,7 @@ impl FheProcessor {
             current_instruction: 0,
             instructions_inflight: 0,
             ready_instructions: mpsc::channel(),
+            debug_handlers: vec![],
         }
     }
 
@@ -147,7 +161,7 @@ impl FheProcessor {
         //
         // If none exist, then this instruction has no memory dependencies and is free to execute
         // immediately.
-        let mut update_memory_deps = |reg: &Register, width: u32| {
+        let mut update_memory_deps = |reg: &Register, width: u32, offset: i32| {
             // Add any existing load/store operations to the same addresses this operation touches
             // as dependencies.
             match reg {
@@ -156,11 +170,11 @@ impl FheProcessor {
 
                     let num_bytes = width / 8;
 
-                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
-                        return Err(Error::UnalignedAccess(base_addr));
-                    }
+                    let base_addr = Ptr32::from(base_addr).try_signed_offset(offset)?;
 
-                    let base_addr = Ptr32::from(base_addr);
+                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
+                        return Err(Error::UnalignedAccess(base_addr.0));
+                    }
 
                     for i in 0..num_bytes {
                         let ptr = base_addr.try_offset(i).unwrap();
@@ -184,15 +198,15 @@ impl FheProcessor {
         };
 
         match &scoreboard_entry.instruction.borrow().as_ref().unwrap() {
-            DispatchIsaOp::Store(dst, _, width) => {
+            DispatchIsaOp::Store(dst, _, width, offset) => {
                 unwrap_registers!((dst));
 
-                update_memory_deps(dst, *width)?
+                update_memory_deps(dst, *width, *offset)?
             }
-            DispatchIsaOp::Load(_, src, width) => {
+            DispatchIsaOp::Load(_, src, width, offset) => {
                 unwrap_registers!((src));
 
-                update_memory_deps(src, *width)?
+                update_memory_deps(src, *width, *offset)?
             }
             _ => {}
         };
@@ -213,7 +227,7 @@ impl FheProcessor {
         match dispatched_op {
             // instructions that do not compute anything are assigned trivial gas cost
             Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) | Branch(..)
-            | Move(..) => 1,
+            | Move(..) | Dbg(..) => 1,
 
             // instructions that compute on one input source, but gas does not rely on it
             Sext(..) | Zext(..) | Trunc(..) => 1,
@@ -495,137 +509,71 @@ impl FheProcessor {
         Ok(())
     }
 
-    fn set_up_return<T>(
-        &mut self,
-        memory: &Memory,
-        ret_info: &ReturnValue<T>,
-    ) -> Result<(Option<Allocation>, Ptr32, usize)> {
-        // If our return value is larger than 8 bytes, allocate space for it
-        // on the heap and pass a pointer to it in x10.
-        let result = if ret_info.size > 8 {
-            let (new_allocation, return_ptr) = Allocation::try_allocate(
-                None,
-                memory,
-                ret_info.size as u32,
-                ret_info.alignment as u32,
-            )?;
-
-            let reg = self.registers.rename(A0, None);
-
-            unwrap_registers!((mut reg));
-
-            let word =
-                Word::try_from_bytes(&return_ptr.to_bytes(), Extend::Zero, &self.aux_data.enc)?;
-
-            *reg = Register::from_word(&word);
-
-            (Some(new_allocation), return_ptr, 11)
-        } else {
-            (None, Ptr32(0), 10)
-        };
-
-        Ok(result)
-    }
-
-    fn write_to_register(&mut self, reg_name: usize, data: &[Byte], extend: Extend) -> Result<()> {
-        let reg = self.registers.rename(RegisterName::new(reg_name), None);
-
-        unwrap_registers!((mut reg));
-
-        let word = Word::try_from_bytes(data, extend, &self.aux_data.enc)?;
-
-        *reg = Register::from_word(&word);
-
-        Ok(())
-    }
-
-    /// Set up the stack and registers according to the RISC-V soft float calling convention.
+    /// Does the following:
+    /// * Allocate space for the return value (if sized).
+    /// * Push all the given args onto the stack.
+    /// * Write the address of the return value to A0.
+    /// * Align the stack to a 16-byte boundary and write it to SP.
+    /// * Returns the return value address.
     ///
     /// # Remarks
-    /// Returns a pointer to the function's return value, or none if the return
-    /// value was smaller than 8 bytes.
-    fn set_up_function_call<T>(&mut self, memory: &Memory, args: &Args<T>) -> Result<Ptr32> {
-        // Allocate space for our return value if it needs more than 8 bytes.
-        let (mut allocation, return_ptr, mut cur_register) =
-            self.set_up_return(memory, &args.return_value)?;
+    /// Parasol stacks grow down.
+    ///
+    /// If a return value exists, first push space for it on the stack. Then arguments
+    /// are pushed in reverse order so the first argument is closest to the
+    /// top of the stack. Padding may be introduces to respect argument's alignment
+    /// requirements.
+    ///
+    /// The final stack location will be 16-byte aligned to allow the callee to correctly
+    /// use it without dealing with misaligned accesses.
+    ///
+    /// If the size of the return value is 0, the return pointer's contents are undefined.
+    fn set_up_function_call<T>(&mut self, memory: &Memory, args: &CallData<T>) -> Result<Ptr32> {
+        let call_data_size = args.alloc_size();
 
-        // Pad our stack
-        let stack_padding = (0..args.stack_padding())
-            .map(|_| Byte::from(0))
-            .collect::<Vec<_>>();
         memory.try_push_arg_onto_stack(&Arg {
+            bytes: vec![Byte::Plaintext(0); call_data_size],
             alignment: 1,
-            is_signed: false,
-            bytes: stack_padding,
         })?;
 
-        // Allocate our arguments.
+        let sp = memory.stack_ptr();
+        let mut after_call_data = sp;
+
+        // First write our arguments to our stack allocation
         for arg in args.args.iter() {
-            let extend = if arg.is_signed {
-                Extend::Signed
-            } else {
-                Extend::Zero
-            };
+            // Align our object
+            let align = arg.alignment as u32;
+            after_call_data.0 += (align - after_call_data.0 % align) % align;
 
-            match arg.bytes.len() {
-                0 => {}
-                1..=4 => {
-                    if cur_register < 18 {
-                        self.write_to_register(cur_register, &arg.bytes, extend)?;
-                        cur_register += 1;
-                    } else {
-                        memory.try_push_arg_onto_stack(arg)?;
-                    }
-                }
-                5..=8 => {
-                    let (lo, hi) = arg.bytes.split_at(4);
-
-                    if cur_register < 17 {
-                        self.write_to_register(cur_register, lo, Extend::Zero)?;
-                        self.write_to_register(cur_register + 1, hi, extend)?;
-                        cur_register += 2;
-                    } else if cur_register < 18 {
-                        self.write_to_register(cur_register, lo, Extend::Zero)?;
-                        memory.try_push_arg_onto_stack(&Arg {
-                            alignment: 4,
-                            is_signed: arg.is_signed,
-                            bytes: hi.to_owned(),
-                        })?;
-                    } else {
-                        memory.try_push_arg_onto_stack(arg)?;
-                    }
-                }
-                _ => {
-                    let (new_alloc, ptr) = Allocation::try_allocate(
-                        allocation,
-                        memory,
-                        arg.bytes.len() as u32,
-                        arg.alignment as u32,
-                    )?;
-                    allocation = Some(new_alloc);
-
-                    for (i, b) in arg.bytes.iter().enumerate() {
-                        memory.try_store(ptr.try_offset(i as u32).unwrap(), b.clone())?;
-                    }
-
-                    // Now pass the reference to our allocation.
-                    if cur_register < 18 {
-                        self.write_to_register(cur_register, &ptr.to_bytes(), Extend::Zero)?;
-
-                        cur_register += 1;
-                    } else {
-                        memory.try_push_arg_onto_stack(&Arg {
-                            alignment: Ptr32::alignment(),
-                            is_signed: false,
-                            bytes: ptr.to_bytes(),
-                        })?;
-                    }
-                }
+            for b in arg.bytes.iter() {
+                memory.try_store(after_call_data, b.clone())?;
+                after_call_data = after_call_data.try_offset(1)?;
             }
         }
 
-        // Set the stack pointer (x2)
-        self.write_to_register(2, &memory.stack_ptr().to_bytes(), Extend::Zero)?;
+        // Allocate space for our return value.
+        let return_ptr = if args.return_value.size > 0 {
+            let align = args.return_value.alignment as u32;
+            after_call_data.0 += (align - after_call_data.0 % align) % align;
+            after_call_data
+        } else {
+            Ptr32(0)
+        };
+
+        let rob_a0 = self.registers.rename(RP, None);
+        let rob_sp = self.registers.rename(SP, None);
+
+        unwrap_registers!((mut rob_a0));
+        unwrap_registers!((mut rob_sp));
+
+        *rob_a0 = Register::Plaintext {
+            val: return_ptr.0.into(),
+            width: 32,
+        };
+        *rob_sp = Register::Plaintext {
+            val: sp.0.into(),
+            width: 32,
+        };
 
         Ok(return_ptr)
     }
@@ -640,107 +588,26 @@ impl FheProcessor {
             *rob = Register::Plaintext { val: 0, width: 32 }
         }
 
+        self.debug_handlers = vec![];
+
         Ok(())
     }
 
     fn try_capture_return_value<T: ToArg>(
         &self,
         memory: &Arc<Memory>,
-        args: &Args<T>,
-        return_data: Ptr32,
+        args: &CallData<T>,
+        return_value_ptr: Ptr32,
     ) -> Result<T> {
+        // If our return value is a ZST, just return a vec of 0 bytes.
         if args.return_value.size == 0 {
             T::try_from_bytes(vec![])
-        } else if args.return_value.size <= 4 {
-            let x10 = self.registers.map_entry(A0).unwrap();
-
-            unwrap_registers!((x10));
-
-            let val = match x10 {
-                Register::Plaintext { val, width: _ } => {
-                    let data = val
-                        .to_le_bytes()
-                        .iter()
-                        .take(T::size())
-                        .copied()
-                        .map(Byte::from)
-                        .collect::<Vec<_>>();
-
-                    T::try_from_bytes(data)?
-                }
-                Register::Ciphertext(vals) => {
-                    let data = vals
-                        .unwrap_l1glwe()
-                        .chunks(8)
-                        .take(T::size())
-                        .map(|x| Byte::try_from(x.to_owned()).unwrap())
-                        .collect::<Vec<_>>();
-
-                    T::try_from_bytes(data)?
-                }
-            };
-
-            Ok(val)
-        } else if args.return_value.size <= 8 {
-            let x10 = self.registers.map_entry(A0).unwrap();
-            let x11 = self.registers.map_entry(A1).unwrap();
-
-            unwrap_registers!((x10)(x11));
-
-            let val = match (x10, x11) {
-                (
-                    Register::Plaintext { val: x10, width: _ },
-                    Register::Plaintext { val: x11, width: _ },
-                ) => {
-                    let mut data = x10
-                        .to_le_bytes()
-                        .into_iter()
-                        .take(4)
-                        .map(Byte::from)
-                        .collect::<Vec<_>>();
-
-                    if data.len() != 4 {
-                        return Err(Error::TypeSizeMismatch);
-                    }
-
-                    let mut x11 = x11
-                        .to_le_bytes()
-                        .into_iter()
-                        .take(T::size() - 4)
-                        .map(Byte::from)
-                        .collect::<Vec<_>>();
-
-                    data.append(&mut x11);
-
-                    T::try_from_bytes(data)?
-                }
-                (
-                    Register::Ciphertext(Ciphertext::L1Glwe { data: x10 }),
-                    Register::Ciphertext(Ciphertext::L1Glwe { data: x11 }),
-                ) => {
-                    if x10.len() != 32 {
-                        return Err(Error::TypeSizeMismatch);
-                    }
-
-                    let data = x10
-                        .chunks(8)
-                        .map(|x| Byte::try_from(x.to_vec()))
-                        .chain(x11.chunks(8).map(|x| Byte::try_from(x.to_vec())))
-                        .take(T::size())
-                        .collect::<Result<Vec<_>>>()?;
-
-                    T::try_from_bytes(data)?
-                }
-                _ => return Err(Error::EncryptionMismatch),
-            };
-
-            Ok(val)
         } else {
-            // Read our return value from the heap.
+            // Read our return value from the return pointer.
             let mut data = Vec::with_capacity(args.return_value.size);
 
             for i in 0..args.return_value.size {
-                data.push(memory.try_load(return_data.try_offset(i as u32)?)?);
+                data.push(memory.try_load(return_value_ptr.try_offset(i as u32)?)?);
             }
 
             Ok(T::try_from_bytes(data)?)
@@ -754,7 +621,7 @@ impl FheProcessor {
         &mut self,
         memory: &Arc<Memory>,
         initial_pc: Ptr32,
-        args: &Args<T>,
+        args: &CallData<T>,
         options: &RunProgramOptions,
     ) -> Result<(u32, T)> {
         let gas_limit = options.gas_limit();
@@ -762,6 +629,7 @@ impl FheProcessor {
         self.reset()?;
         let return_data = self.set_up_function_call(memory, args)?;
         self.aux_data.memory = Some(memory.clone());
+        self.debug_handlers = options.debug_handlers.clone();
 
         let mut run_program_impl = || {
             self.pc = initial_pc.0;
@@ -817,7 +685,7 @@ impl FheProcessor {
         &mut self,
         memory: &Arc<Memory>,
         initial_pc: Ptr32,
-        args: &Args<T>,
+        args: &CallData<T>,
     ) -> Result<T> {
         self.run_program_with_options(
             memory,
@@ -858,12 +726,13 @@ impl Tomasulo for FheProcessor {
         }
 
         match instruction {
-            Load(dst, src, width) => {
+            Load(dst, src, width, offset) => {
                 self.load(
                     retirement_info,
                     &memory,
                     src,
                     dst,
+                    offset,
                     width,
                     instruction_id,
                     pc,
@@ -872,12 +741,13 @@ impl Tomasulo for FheProcessor {
             LoadI(dst, imm, width) => {
                 self.loadi(retirement_info, dst, imm, width, instruction_id, pc);
             }
-            Store(dst, src, width) => {
+            Store(dst, src, width, offset) => {
                 self.store(
                     retirement_info,
                     &memory,
                     src,
                     dst,
+                    offset,
                     width,
                     instruction_id,
                     pc,
@@ -1002,6 +872,9 @@ impl Tomasulo for FheProcessor {
             }
             Ret() => {
                 Self::retire(&retirement_info, Ok(()));
+            }
+            Dbg(src, handler_id) => {
+                self.dbg(&retirement_info, src, handler_id, instruction_id, pc);
             }
         }
     }

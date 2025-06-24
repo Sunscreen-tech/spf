@@ -3,7 +3,7 @@
 //! This crate provides the Parasol processor for running programs over encrypted data. The general
 //! workflow for using it is:
 //! * Compile a program using Parasol-clang
-//! * Encrypt our data and create an [`Args`] object.
+//! * Encrypt our data and create an [`CallData`] object.
 //! * Call [`FheComputer::run_program`], passing our key, program binary, the name of
 //!   the program we want to run, and args.
 //! * Return or decrypt your program's result.

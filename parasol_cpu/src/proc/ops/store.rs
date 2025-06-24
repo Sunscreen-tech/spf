@@ -14,6 +14,7 @@ impl FheProcessor {
         memory: &Memory,
         src: RobEntryRef<Register>,
         dst: RobEntryRef<Register>,
+        offset: i32,
         width: u32,
         instruction_id: usize,
         pc: u32,
@@ -30,11 +31,11 @@ impl FheProcessor {
 
                     let num_bytes = width / 8;
 
-                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
-                        return Err(Error::UnalignedAccess(base_addr));
-                    }
+                    let base_addr = Ptr32::from(base_addr).try_signed_offset(offset)?;
 
-                    let base_addr = Ptr32::from(base_addr);
+                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
+                        return Err(Error::UnalignedAccess(base_addr.0));
+                    }
 
                     for i in 0..num_bytes {
                         let byte = match src {

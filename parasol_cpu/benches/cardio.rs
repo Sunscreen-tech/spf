@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use parasol_cpu::{Args, ArgsBuilder, FheComputer, Memory, assembly::IsaOp, register_names::*};
+use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
@@ -36,7 +36,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     (sk, enc, eval)
 }
 
-fn generate_args(enc: &Encryption, sk: &SecretKey) -> Args<UInt<8, L1GlweCiphertext>> {
+fn generate_args(enc: &Encryption, sk: &SecretKey) -> CallData<UInt<8, L1GlweCiphertext>> {
     let man = false;
     let smoking = false;
     let diabetic = true;
@@ -59,7 +59,7 @@ fn generate_args(enc: &Encryption, sk: &SecretKey) -> Args<UInt<8, L1GlweCiphert
         .return_value::<UInt<8, _>>()
 }
 
-fn cardio_from_compiler(c: &mut Criterion) {
+fn _cardio_from_compiler(c: &mut Criterion) {
     let mut group = c.benchmark_group("cardio");
     group.sample_size(10);
 
@@ -89,13 +89,13 @@ pub fn cardio_test_program() -> Vec<IsaOp> {
     let width = 8;
 
     // Argument registers
-    let flags = A0;
-    let age = A1;
-    let hdl = A2;
-    let weight = A3;
-    let height = A4;
-    let physical_activity = A5;
-    let glasses_alcohol = A6;
+    let flags = X33;
+    let age = X34;
+    let hdl = X35;
+    let weight = X36;
+    let height = X37;
+    let physical_activity = X38;
+    let glasses_alcohol = X39;
 
     // Working registers
     let man = X18;
@@ -118,6 +118,13 @@ pub fn cardio_test_program() -> Vec<IsaOp> {
     let shift_amount = X32;
 
     vec![
+        IsaOp::Load(flags, SP, 8, 0),
+        IsaOp::Load(age, SP, 8, 1),
+        IsaOp::Load(hdl, SP, 8, 2),
+        IsaOp::Load(weight, SP, 8, 3),
+        IsaOp::Load(height, SP, 8, 4),
+        IsaOp::Load(physical_activity, SP, 8, 5),
+        IsaOp::Load(glasses_alcohol, SP, 8, 6),
         // Truncate the inputs to the specified width
         IsaOp::Trunc(flags, flags, width),
         IsaOp::Trunc(age, age, width),
@@ -205,7 +212,7 @@ pub fn cardio_test_program() -> Vec<IsaOp> {
         IsaOp::Add(result, result, cond9),
         IsaOp::Add(result, result, cond10),
         // Return result in A0
-        IsaOp::Move(A0, result),
+        IsaOp::Store(RP, result, 8, 0),
         IsaOp::Ret(),
     ]
 }
@@ -227,7 +234,7 @@ fn cardio_from_assembly(c: &mut Criterion) {
                 (proc, args, prog, memory)
             },
             |(mut proc, args, prog, memory)| {
-                let _ = proc.run_program(prog, &memory, args).unwrap();
+                proc.run_program(prog, &memory, args).unwrap();
                 // Check that we get the right answer
                 // assert_eq!(result.decrypt(&enc, &sk), 3);
             },
@@ -236,7 +243,7 @@ fn cardio_from_assembly(c: &mut Criterion) {
     });
 }
 
-fn cardio_thread_scaling(c: &mut Criterion) {
+fn _cardio_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let mut group = c.benchmark_group("cardio");
         group.sample_size(10);
@@ -285,10 +292,11 @@ fn cardio_thread_scaling(c: &mut Criterion) {
     }
 }
 
+// TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
-    cardio_from_compiler,
+    //cardio_from_compiler,
     cardio_from_assembly,
-    cardio_thread_scaling
+    //cardio_thread_scaling
 );
 criterion_main!(benches);

@@ -27,9 +27,10 @@ fn run_single_test(
     let memory = Memory::new_default_stack();
 
     let program = memory.allocate_program(&[
-        IsaOp::Trunc(A0, A0, 8),
-        IsaOp::Trunc(A1, A1, 8),
+        IsaOp::Load(T0, SP, 8, 0),
+        IsaOp::Load(T1, SP, 8, 1),
         isa_op,
+        IsaOp::Store(RP, T0, 8, 0),
         IsaOp::Ret(),
     ]);
 
@@ -88,7 +89,7 @@ fn run_shift_test(
 fn can_shift_right_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value >> shift,
-        IsaOp::Shr(A0, A0, A1),
+        IsaOp::Shr(T0, T0, T1),
         false,
         false,
     );
@@ -98,7 +99,7 @@ fn can_shift_right_plain_value_plain_shift() {
 fn can_shift_right_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value >> shift,
-        IsaOp::Shr(A0, A0, A1),
+        IsaOp::Shr(T0, T0, T1),
         true,
         false,
     );
@@ -108,7 +109,7 @@ fn can_shift_right_encrypted_value_plain_shift() {
 fn can_shift_right_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value >> shift,
-        IsaOp::Shr(A0, A0, A1),
+        IsaOp::Shr(T0, T0, T1),
         false,
         true,
     );
@@ -118,7 +119,7 @@ fn can_shift_right_plain_value_encrypted_shift() {
 fn can_shift_right_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value >> shift,
-        IsaOp::Shr(A0, A0, A1),
+        IsaOp::Shr(T0, T0, T1),
         true,
         true,
     );
@@ -127,7 +128,7 @@ fn can_shift_right_encrypted_value_encrypted_shift() {
 fn can_arith_shift_right_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
-        IsaOp::Shra(A0, A0, A1),
+        IsaOp::Shra(T0, T0, T1),
         false,
         false,
     );
@@ -137,7 +138,7 @@ fn can_arith_shift_right_plain_value_plain_shift() {
 fn can_arith_shift_right_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
-        IsaOp::Shra(A0, A0, A1),
+        IsaOp::Shra(T0, T0, T1),
         true,
         false,
     );
@@ -147,7 +148,7 @@ fn can_arith_shift_right_encrypted_value_plain_shift() {
 fn can_arith_shift_right_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
-        IsaOp::Shra(A0, A0, A1),
+        IsaOp::Shra(T0, T0, T1),
         false,
         true,
     );
@@ -157,7 +158,7 @@ fn can_arith_shift_right_plain_value_encrypted_shift() {
 fn can_arith_shift_right_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| ((value as i8) >> shift) as u8,
-        IsaOp::Shra(A0, A0, A1),
+        IsaOp::Shra(T0, T0, T1),
         true,
         true,
     );
@@ -167,7 +168,7 @@ fn can_arith_shift_right_encrypted_value_encrypted_shift() {
 fn can_shift_left_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value << shift,
-        IsaOp::Shl(A0, A0, A1),
+        IsaOp::Shl(T0, T0, T1),
         false,
         false,
     );
@@ -177,7 +178,7 @@ fn can_shift_left_plain_value_plain_shift() {
 fn can_shift_left_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value << shift,
-        IsaOp::Shl(A0, A0, A1),
+        IsaOp::Shl(T0, T0, T1),
         true,
         false,
     );
@@ -187,7 +188,7 @@ fn can_shift_left_encrypted_value_plain_shift() {
 fn can_shift_left_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value << shift,
-        IsaOp::Shl(A0, A0, A1),
+        IsaOp::Shl(T0, T0, T1),
         false,
         true,
     );
@@ -197,7 +198,7 @@ fn can_shift_left_plain_value_encrypted_shift() {
 fn can_shift_left_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value << shift,
-        IsaOp::Shl(A0, A0, A1),
+        IsaOp::Shl(T0, T0, T1),
         true,
         true,
     );
@@ -207,7 +208,7 @@ fn can_shift_left_encrypted_value_encrypted_shift() {
 fn can_rotate_right_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
-        IsaOp::Rotr(A0, A0, A1),
+        IsaOp::Rotr(T0, T0, T1),
         false,
         false,
     );
@@ -217,7 +218,7 @@ fn can_rotate_right_plain_value_plain_shift() {
 fn can_rotate_right_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
-        IsaOp::Rotr(A0, A0, A1),
+        IsaOp::Rotr(T0, T0, T1),
         true,
         false,
     );
@@ -227,7 +228,7 @@ fn can_rotate_right_encrypted_value_plain_shift() {
 fn can_rotate_right_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
-        IsaOp::Rotr(A0, A0, A1),
+        IsaOp::Rotr(T0, T0, T1),
         false,
         true,
     );
@@ -237,7 +238,7 @@ fn can_rotate_right_plain_value_encrypted_shift() {
 fn can_rotate_right_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_right(shift as u32),
-        IsaOp::Rotr(A0, A0, A1),
+        IsaOp::Rotr(T0, T0, T1),
         true,
         true,
     );
@@ -247,7 +248,7 @@ fn can_rotate_right_encrypted_value_encrypted_shift() {
 fn can_rotate_left_plain_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
-        IsaOp::Rotl(A0, A0, A1),
+        IsaOp::Rotl(T0, T0, T1),
         false,
         false,
     );
@@ -257,7 +258,7 @@ fn can_rotate_left_plain_value_plain_shift() {
 fn can_rotate_left_encrypted_value_plain_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
-        IsaOp::Rotl(A0, A0, A1),
+        IsaOp::Rotl(T0, T0, T1),
         true,
         false,
     );
@@ -267,7 +268,7 @@ fn can_rotate_left_encrypted_value_plain_shift() {
 fn can_rotate_left_plain_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
-        IsaOp::Rotl(A0, A0, A1),
+        IsaOp::Rotl(T0, T0, T1),
         false,
         true,
     );
@@ -277,7 +278,7 @@ fn can_rotate_left_plain_value_encrypted_shift() {
 fn can_rotate_left_encrypted_value_encrypted_shift() {
     run_shift_test(
         |value, shift| value.rotate_left(shift as u32),
-        IsaOp::Rotl(A0, A0, A1),
+        IsaOp::Rotl(T0, T0, T1),
         true,
         true,
     );

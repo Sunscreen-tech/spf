@@ -1,7 +1,7 @@
 use std::sync::{Arc, OnceLock};
 
 use criterion::{Criterion, criterion_group, criterion_main};
-use parasol_cpu::{Args, ArgsBuilder, FheComputer, Memory, assembly::IsaOp, register_names::*};
+use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
     metadata::print_system_info,
@@ -42,7 +42,7 @@ fn generate_args(
     enc: &Encryption,
     sk: &SecretKey,
     len: usize,
-) -> Args<UInt<8, L1GlweCiphertext>> {
+) -> CallData<UInt<8, L1GlweCiphertext>> {
     let a = 0xFEEDF00D_CAFEBABEu64
         .to_le_bytes()
         .map(|x| UInt::<8, _>::encrypt_secret(x as u64, enc, sk));
@@ -60,7 +60,7 @@ fn generate_args(
         .return_value::<UInt<8, _>>()
 }
 
-fn hamming_from_compiler(c: &mut Criterion) {
+fn _hamming_from_compiler(c: &mut Criterion) {
     let mut group = c.benchmark_group("hamming");
     group.sample_size(10);
 
@@ -92,9 +92,9 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
     let instruction_size = 8;
 
     // Argument registers
-    let a_ptr = A0;
-    let b_ptr = A1;
-    let len = A2;
+    let a_ptr = T0;
+    let b_ptr = T1;
+    let len = T2;
 
     // Working registers
     let i = X32;
@@ -117,6 +117,11 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
     let j_compare = X46;
 
     let instructions = vec![
+        // Load our inputs
+        IsaOp::Load(a_ptr, SP, 32, 0),
+        IsaOp::Load(b_ptr, SP, 32, 4),
+        IsaOp::Load(len, SP, 8, 8), // Load 8-bit len then zext it to 32-bit
+        IsaOp::Zext(len, len, 32),
         // Initialize values
         IsaOp::LoadI(zero_u8, 0, 8),
         IsaOp::LoadI(one_u8, 1, 8),
@@ -126,8 +131,8 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
         IsaOp::LoadI(i, 0, 32),    // Loop I initialization
         IsaOp::Add(a_i, a_ptr, i), //** LOOP_I
         IsaOp::Add(b_i, b_ptr, i),
-        IsaOp::Load(a_i, a_i, 8),                 // Load a[i]
-        IsaOp::Load(b_i, b_i, 8),                 // Load b[i]
+        IsaOp::Load(a_i, a_i, 8, 0),              // Load a[i]
+        IsaOp::Load(b_i, b_i, 8, 0),              // Load b[i]
         IsaOp::LoadI(j, 0, 32),                   // Loop J initialization
         IsaOp::Shr(a_i_j, a_i, j),                // |** LOOP_J
         IsaOp::Trunc(a_i_j, a_i_j, 8),            // |
@@ -147,7 +152,7 @@ pub fn hamming_test_program() -> Vec<IsaOp> {
         IsaOp::Add(i, i, one_u32),                                // > i += 1
         IsaOp::CmpLt(i_compare, i, len),                          // > i < len
         IsaOp::BranchNonZero(i_compare, -22 * instruction_size),  //** Loop I end
-        IsaOp::Move(A0, distance),                                // Move result to output register
+        IsaOp::Store(RP, distance, 8, 0),                         // Move result to output register
         IsaOp::Ret(),
     ];
 
@@ -177,7 +182,7 @@ fn hamming_from_assembly(c: &mut Criterion) {
     });
 }
 
-fn hamming_thread_scaling(c: &mut Criterion) {
+fn _hamming_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let (sk, enc, eval) = setup();
 
@@ -209,7 +214,10 @@ fn hamming_thread_scaling(c: &mut Criterion) {
                         (proc, args, prog, memory)
                     },
                     |(mut proc, args, prog, memory)| {
-                        proc.run_program(prog, &memory, args).unwrap();
+                        let _ = proc.run_program(prog, &memory, args).unwrap();
+
+                        // Check that we get the right answer.
+                        // assert_eq!(result.decrypt(&enc, &sk), 34);
                     },
                     criterion::BatchSize::PerIteration,
                 );
@@ -231,7 +239,7 @@ fn hamming_thread_scaling(c: &mut Criterion) {
     }
 }
 
-fn hamming_input_scaling(c: &mut Criterion) {
+fn _hamming_input_scaling(c: &mut Criterion) {
     fn run_input_len(c: &mut Criterion, len: usize) {
         let mut group = c.benchmark_group("hamming");
         group.sample_size(10);
@@ -266,11 +274,12 @@ fn hamming_input_scaling(c: &mut Criterion) {
     run_input_len(c, 8);
 }
 
+// TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
-    hamming_from_compiler,
+    // hamming_from_compiler,
     hamming_from_assembly,
-    hamming_thread_scaling,
-    hamming_input_scaling
+    // hamming_thread_scaling,
+    // hamming_input_scaling
 );
 criterion_main!(benches);

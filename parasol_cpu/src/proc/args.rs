@@ -1,6 +1,6 @@
 use std::marker::PhantomData;
 
-use crate::{Byte, Ptr32};
+use crate::Byte;
 use crate::{Error, Result};
 use parasol_runtime::{
     L1GlweCiphertext,
@@ -21,15 +21,11 @@ where
     /// The number of bytes this type takes. Should be no greater than `u32::MAX`.
     fn size() -> usize;
 
-    /// Whether this type needs to be sign extended or not.
-    fn is_signed() -> bool;
-
     /// Convert a byte array and metadata into an [`Arg`] indicating the alignment,
-    /// size, and how to extend the given value.
-    fn bytes_to_arg(bytes: Vec<Byte>, is_signed: bool) -> Arg {
+    /// size.
+    fn bytes_to_arg(bytes: Vec<Byte>) -> Arg {
         Arg {
             alignment: Self::alignment(),
-            is_signed,
             bytes,
         }
     }
@@ -54,7 +50,7 @@ where
 
         assert_eq!(bytes.len(), Self::size());
 
-        Self::bytes_to_arg(bytes, Self::is_signed())
+        Self::bytes_to_arg(bytes)
     }
 
     /// Describe this type when it appears in the return value of a function call.
@@ -111,7 +107,6 @@ where
 
         Arg {
             alignment: self.alignment(),
-            is_signed: Self::is_signed(),
             bytes,
         }
     }
@@ -121,7 +116,7 @@ where
 }
 
 macro_rules! primitive_impl_to_arg {
-    ($t:ty,$signed:literal) => {
+    ($t:ty) => {
         paste! {
             impl ToArg for $t {
                 fn alignment() -> usize {
@@ -130,10 +125,6 @@ macro_rules! primitive_impl_to_arg {
 
                 fn size() -> usize {
                     std::mem::size_of::<$t>()
-                }
-
-                fn is_signed() -> bool {
-                    $signed
                 }
 
                 fn to_bytes(&self) -> Vec<Byte> {
@@ -186,16 +177,16 @@ macro_rules! primitive_impl_to_arg {
     };
 }
 
-primitive_impl_to_arg!(u8, false);
-primitive_impl_to_arg!(u16, false);
-primitive_impl_to_arg!(u32, false);
-primitive_impl_to_arg!(u64, false);
-primitive_impl_to_arg!(u128, false);
-primitive_impl_to_arg!(i8, true);
-primitive_impl_to_arg!(i16, true);
-primitive_impl_to_arg!(i32, true);
-primitive_impl_to_arg!(i64, true);
-primitive_impl_to_arg!(i128, true);
+primitive_impl_to_arg!(u8);
+primitive_impl_to_arg!(u16);
+primitive_impl_to_arg!(u32);
+primitive_impl_to_arg!(u64);
+primitive_impl_to_arg!(u128);
+primitive_impl_to_arg!(i8);
+primitive_impl_to_arg!(i16);
+primitive_impl_to_arg!(i32);
+primitive_impl_to_arg!(i64);
+primitive_impl_to_arg!(i128);
 
 impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
     fn alignment() -> usize {
@@ -204,10 +195,6 @@ impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
 
     fn size() -> usize {
         N / 8
-    }
-
-    fn is_signed() -> bool {
-        false
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
@@ -248,10 +235,6 @@ impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
         N / 8
     }
 
-    fn is_signed() -> bool {
-        true
-    }
-
     fn to_bytes(&self) -> Vec<Byte> {
         assert!(N.is_power_of_two() && N % 8 == 0);
 
@@ -288,10 +271,6 @@ impl<const N: usize, T: ToArg> ToArg for [T; N] {
 
     fn size() -> usize {
         T::size().next_multiple_of(T::alignment()) * N
-    }
-
-    fn is_signed() -> bool {
-        false
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
@@ -350,10 +329,6 @@ impl ToArg for () {
 
     fn size() -> usize {
         0
-    }
-
-    fn is_signed() -> bool {
-        false
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
@@ -450,29 +425,14 @@ impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
 /// and first stack frame according to Parasol ABI's calling convention.
 ///
 /// # Remarks
-/// Parasol follows the ILP32 RISC-V [calling convention](https://drive.google.com/file/d/1Ja_Tpp_5Me583CGVD-BIZMlgGBnlKU4R/view?pli=1).
+/// Parasol's calling convention is similar to x86's cdecl. We first allocate stack space for
+/// storing all arguments and the return value as well as padding to maintain alignment
+/// requirements for each argument and the return value. Furthermore, the stack pointer must be
+/// 16-byte aligned after pushing all the call data. Arguments are stored in reverse order
+/// (i.e. the first argument appears at SP+0 while the second at SP+sizeof(arg1), and so-on),
+/// followed by the return value.
 ///
-/// 4-byte or smaller scalars go in the next available a0-a7 register. Smaller signed/unsigned
-///  scalars are sign/zero extended to 32-bit (respectively). If no registers remain, they get
-/// pushed on the stack. In this case, values are aligned, but not sign extended.
-///
-/// 5-8 byte scalars go in the next 2 available registers. The lo word
-/// goes into the first and the high word into the second. Signed/unsigned scalars are
-/// sign/zero extended to 32-bits (respectively). If one register remains, the lo word goes into the
-/// register while the high word goes on the stack. If no registers remain, they both get pushed onto
-/// the stack, where they will be aligned but not extended.
-///
-/// 1-4 byte aggregates get packed into a single register (if available) or placed
-/// on the stack according to its alignment requirements.
-///
-/// 5-8 byte aggregate values get packed into 2 registers (if available). If
-/// only one register is available, the lo 32-bits go in the register while the high
-/// bits go on the stack. If no registers are available, both words get pushed on
-/// the stack.
-///
-/// Scalars or aggregates larger than 64-bits will be transparently allocated on the
-/// Parasol heap and passed by reference (i.e. a 32-bit pointer will be passed for the corresponding
-/// register/stack argument).
+/// Parasol stacks grow downwards, while arguments and values within a frame grow upwards.
 pub struct ArgsBuilder {
     args: Vec<Arg>,
 }
@@ -509,16 +469,16 @@ impl ArgsBuilder {
     /// If an FHE program returns a value greater than 8 bytes, you must specify this, even if you
     /// don't use it.
     /// Failure to do so will result in incorrect execution.
-    pub fn return_value<T: ToArg>(self) -> Args<T> {
-        Args {
+    pub fn return_value<T: ToArg>(self) -> CallData<T> {
+        CallData {
             args: self.args,
             return_value: T::to_return_value(),
         }
     }
 
     /// Specify a generic return value type for an FHE program
-    pub fn return_value_raw(self, align: usize, num_bytes: usize) -> Args<Vec<Byte>> {
-        Args {
+    pub fn return_value_raw(self, align: usize, num_bytes: usize) -> CallData<Vec<Byte>> {
+        CallData {
             args: self.args,
             return_value: ReturnValue {
                 alignment: align,
@@ -528,8 +488,8 @@ impl ArgsBuilder {
         }
     }
 
-    /// Create the [`Args`] object from this builder, ignoring any value the program returns (if any).
-    pub fn no_return_value(self) -> Args<()> {
+    /// Create the [`CallData`] object from this builder, ignoring any value the program returns (if any).
+    pub fn no_return_value(self) -> CallData<()> {
         self.return_value::<()>()
     }
 }
@@ -538,9 +498,6 @@ impl ArgsBuilder {
 pub struct Arg {
     /// The alignment of the argument.
     pub alignment: usize,
-
-    /// Whether the argument should be sign extended or not.
-    pub is_signed: bool,
 
     /// The bytes of the argument.
     pub bytes: Vec<Byte>,
@@ -558,69 +515,32 @@ pub struct ReturnValue<T> {
 }
 
 /// Arguments passed to an FHE program when calling [`crate::FheComputer::run_program`].
-pub struct Args<T> {
+pub struct CallData<T> {
     pub(crate) return_value: ReturnValue<T>,
     pub(crate) args: Vec<Arg>,
 }
 
-impl<T> Args<T> {
-    /// Return the number of padding bytes that need to be allocated to align the
-    /// stack to the required 16-byte boundary.
-    ///
-    /// # Remarks
-    /// In accordance with RISC-V ILP32 calling convention.
-    pub fn stack_padding(&self) -> u32 {
-        let mut stack_size = 0usize;
-        let mut free_regs = 8;
+impl<T> CallData<T> {
+    /// Returns the required size for this call data, including aligning the stack pointer
+    /// to a 16-byte boundary
+    pub fn alloc_size(&self) -> usize {
+        let mut ptr = 0;
 
-        // TODO: I don't think the math is quite right for aggregate types.
-        // In particular, consider `struct { char a; short b; char c; };`.
-        // If we're already using 7 registers, then a, b can appear in x17,
-        // then c spills onto the stack taking only 1 byte. If the next argument
-        // is a char, it should immediately get placed on the stack with no padding.
-        for a in self.args.iter() {
-            match a.bytes.len() {
-                0 => {} // ZSTs are never actually manifested.
-                1..=4 => {
-                    // 1-4 byte values pack into a register. Failing that, they get written
-                    // to the stack.
-                    if free_regs > 0 {
-                        free_regs -= 1;
-                    } else {
-                        stack_size = stack_size.next_multiple_of(a.alignment);
-                        stack_size += a.bytes.len();
-                    }
-                }
-                5..=8 => {
-                    // 5-8 byte values get passed in 2 registers, overflowing any excess onto the
-                    // stack
-                    if free_regs > 1 {
-                        free_regs -= 2;
-                    } else if free_regs > 0 {
-                        // If 1 register is available, the upper 5-8 bytes get written to the
-                        // stack.
-                        stack_size = stack_size.next_multiple_of(4);
-                        stack_size += a.bytes.len() - 4;
-                        free_regs -= 1;
-                    } else {
-                        stack_size = stack_size.next_multiple_of(a.alignment);
-                        stack_size += a.bytes.len();
-                    }
-                }
-                _ => {
-                    // > 8 byte values are allocated by the caller and passed by reference.
-                    // Thus, each of these arguments requires 4-bytes for the pointer.
-                    if free_regs > 1 {
-                        free_regs -= 1;
-                    } else {
-                        stack_size = stack_size.next_multiple_of(Ptr32::alignment());
-                        stack_size += Ptr32::size();
-                    }
-                }
-            }
+        for arg in self.args.iter() {
+            // Account for this argument's alignment
+            ptr += (arg.alignment - ptr % arg.alignment) % arg.alignment;
+            ptr += arg.bytes.len();
         }
 
-        (stack_size.next_multiple_of(16) - stack_size) as u32
+        if self.return_value.size > 0 {
+            ptr += (self.return_value.alignment - ptr % self.return_value.alignment)
+                % self.return_value.alignment;
+            ptr += self.return_value.size;
+        }
+
+        ptr += (16 - ptr % 16) % 16;
+
+        ptr
     }
 }
 

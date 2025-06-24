@@ -14,6 +14,7 @@ impl FheProcessor {
         memory: &Memory,
         src: RobEntryRef<Register>,
         dst: RobEntryRef<Register>,
+        offset: i32,
         width: u32,
         instruction_id: usize,
         pc: u32,
@@ -23,15 +24,13 @@ impl FheProcessor {
 
             match src {
                 Register::Plaintext { val: ptr, width: _ } => {
-                    let base_addr = *ptr as u32;
-
                     let num_bytes = width / 8;
 
-                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
-                        return Err(Error::UnalignedAccess(base_addr));
-                    }
+                    let base_addr = Ptr32::from(*ptr as u32).try_signed_offset(offset)?;
 
-                    let base_addr = Ptr32::from(base_addr);
+                    if is_invalid_load_store_alignment(base_addr, num_bytes) {
+                        return Err(Error::UnalignedAccess(base_addr.0));
+                    }
 
                     // Load the first byte and check its type. Then, ensure each subsequent byte
                     // matches the same time.

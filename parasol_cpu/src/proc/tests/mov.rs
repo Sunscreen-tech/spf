@@ -17,7 +17,12 @@ fn can_mov() {
 
         let memory = Memory::new_default_stack();
 
-        let program = memory.allocate_program(&[IsaOp::Move(A0, A1), IsaOp::Ret()]);
+        let program = memory.allocate_program(&[
+            IsaOp::Load(T0, SP, 32, 4),
+            IsaOp::Move(T1, T0),
+            IsaOp::Store(RP, T1, 32, 0),
+            IsaOp::Ret(),
+        ]);
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(

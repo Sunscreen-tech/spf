@@ -1,6 +1,8 @@
 use std::sync::Arc;
 
-use crate::{Ciphertext, Error, proc::DispatchIsaOp, tomasulo::tomasulo_processor::RetirementInfo};
+use crate::{
+    Ciphertext, Error, Ptr32, proc::DispatchIsaOp, tomasulo::tomasulo_processor::RetirementInfo,
+};
 
 use mux_circuits::convert_value_to_bits;
 use parasol_concurrency::AtomicRefCell;
@@ -18,6 +20,7 @@ mod bitshift;
 mod casting;
 mod cmux;
 mod comparisons;
+mod dbg;
 mod load;
 mod loadi;
 mod mov;
@@ -125,8 +128,8 @@ pub fn make_parent_op(retirement_info: &RetirementInfo<DispatchIsaOp>) -> Arc<Co
     }))
 }
 
-pub(crate) fn is_invalid_load_store_alignment(base_addr: u32, num_bytes: u32) -> bool {
-    num_bytes == 0 || base_addr % num_bytes != 0 || num_bytes > 16 || !num_bytes.is_power_of_two()
+pub(crate) fn is_invalid_load_store_alignment(addr: Ptr32, num_bytes: u32) -> bool {
+    num_bytes == 0 || addr.0 % num_bytes != 0 || num_bytes > 16 || !num_bytes.is_power_of_two()
 }
 
 #[macro_export]

@@ -13,7 +13,12 @@ fn can_neg_plaintext_inputs() {
 
     let args = ArgsBuilder::new().arg(val1).return_value::<u8>();
 
-    let program = memory.allocate_program(&[IsaOp::Neg(A0, A0), IsaOp::Ret()]);
+    let program = memory.allocate_program(&[
+        IsaOp::Load(T0, SP, 8, 0),
+        IsaOp::Neg(T0, T0),
+        IsaOp::Store(RP, T0, 8, 0),
+        IsaOp::Ret(),
+    ]);
 
     let ans = proc.run_program(program, &memory, args).unwrap();
 
