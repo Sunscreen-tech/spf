@@ -19,7 +19,7 @@ use std::sync::{
     mpsc::{self, Receiver, Sender},
 };
 
-type DebugHandler = Arc<dyn Fn(usize, u32, &Register) + 'static>;
+type DebugHandler = Arc<dyn Fn(usize, u32, &Register) + Send + Sync + 'static>;
 
 /// Options for running [`FheComputer::run_program_with_options`]
 #[derive(Clone, Default)]
@@ -84,7 +84,10 @@ impl RunProgramOptionsBuilder {
     }
 
     /// Install a debug handler that gets invoked on hitting a `Dbg` instruction.
-    pub fn debug_handler<F: Fn(usize, u32, &Register) + 'static>(mut self, f: F) -> Self {
+    pub fn debug_handler<F: Fn(usize, u32, &Register) + Send + Sync + 'static>(
+        mut self,
+        f: F,
+    ) -> Self {
         self.debug_handlers.push(Arc::new(f));
         self
     }
