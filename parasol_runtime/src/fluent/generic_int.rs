@@ -736,9 +736,9 @@ where
     /// Encrypts the given integer.
     ///
     /// # Panics
-    /// If `val > 2^N`
+    /// If `val >= 2^n` (only when `n` is 63 or smaller)
     pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
-        if n < 64 && val > 0x1 << n {
+        if n < 64 && val >= 0x1 << n {
             panic!("Out of bounds");
         }
 
@@ -788,8 +788,11 @@ where
     /// # Remarks
     /// If `T` is [`L1GgswCiphertext`], then the result will contain precomputed
     /// rather than trivial ciphertexts.
+    ///
+    /// # Panics
+    /// If `val >= 2^n` (only when `n` is 63 or smaller)
     pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation, n: usize) -> Self {
-        if val > 0x1 << n {
+        if n < 64 && val >= 0x1 << n {
             panic!("Out of bounds");
         }
 
@@ -989,7 +992,7 @@ where
     }
 
     fn encode(val: u64, enc: &Encryption, n: usize) -> Polynomial<u64> {
-        assert!(val < 0x1 << n);
+        assert!(n >= 64 || val < 0x1 << n);
         assert!(n < T::poly_degree(&enc.params).0);
 
         let mut msg = Polynomial::<u64>::zero(T::poly_degree(&enc.params).0);
