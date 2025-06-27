@@ -4,7 +4,7 @@ use parasol_runtime::{ComputeKey, SecretKey};
 
 // TODO: Need to update compiler calling convention and recompile to
 // fix these tests.
-// mod e2e_tests;
+mod e2e_tests;
 
 pub fn get_sk() -> &'static SecretKey {
     static SK: OnceLock<SecretKey> = OnceLock::new();

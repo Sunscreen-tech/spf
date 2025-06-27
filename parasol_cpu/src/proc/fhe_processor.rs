@@ -536,7 +536,7 @@ impl FheProcessor {
 
         memory.try_push_arg_onto_stack(&Arg {
             bytes: vec![Byte::Plaintext(0); call_data_size],
-            alignment: 1,
+            alignment: 16,
         })?;
 
         let sp = memory.stack_ptr();
