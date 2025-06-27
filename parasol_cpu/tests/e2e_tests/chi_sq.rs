@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
+use parasol_cpu::{ArgsBuilder, FheComputer, Memory, RunProgramOptionsBuilder};
 use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
 
 use crate::{get_ck, get_sk};
@@ -17,22 +17,25 @@ fn can_run_from_elf() {
 
     let mut proc = FheComputer::new(&enc, &eval);
 
-    let result = memory
-        .try_allocate(std::mem::size_of::<[u16; 4]>() as u32)
-        .unwrap();
-
     let args = ArgsBuilder::new()
         .arg(UInt::<16, _>::encrypt_secret(2, &enc, sk))
         .arg(UInt::<16, _>::encrypt_secret(7, &enc, sk))
         .arg(UInt::<16, _>::encrypt_secret(9, &enc, sk))
-        .arg(result)
-        .no_return_value();
+        .return_value::<[UInt<16, _>; 4]>();
 
     let prog = memory.get_function_entry("chi_sq").unwrap();
 
-    proc.run_program(prog, &memory, args).unwrap();
-
-    let result = memory.try_load_type::<[UInt<16, _>; 4]>(result).unwrap();
+    let (_, result) = proc
+        .run_program_with_options(
+            prog,
+            &memory,
+            args,
+            &RunProgramOptionsBuilder::new()
+                .log_register_info(true)
+                .log_instruction_execution(true)
+                .build(),
+        )
+        .unwrap();
 
     assert_eq!(result[0].decrypt(&enc, sk), 529);
     assert_eq!(result[1].decrypt(&enc, sk), 242);
