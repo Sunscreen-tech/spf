@@ -738,14 +738,14 @@ where
     /// # Panics
     /// If `val >= 2^n` (only when `n` is 63 or smaller)
     pub fn encrypt_secret(val: u128, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
-        if n < 64 && val as u128 >= 0x1 << n {
+        if n < 64 && val >= 0x1 << n {
             panic!("Out of bounds");
         }
 
         Self {
             bits: (0..n)
                 .map(|i| {
-                    let ct = T::encrypt_secret((val as u128 >> i) & 0x1 == 0x1, enc, sk);
+                    let ct = T::encrypt_secret((val >> i) & 0x1 == 0x1, enc, sk);
                     Arc::new(AtomicRefCell::new(ct))
                 })
                 .collect(),
