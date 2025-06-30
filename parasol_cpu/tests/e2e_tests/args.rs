@@ -1,9 +1,9 @@
 use std::sync::Arc;
 
-use parasol_cpu::{ArgsBuilder, Byte, FheComputer, Memory, RunProgramOptionsBuilder, ToArg};
+use parasol_cpu::{ArgsBuilder, Byte, FheComputer, Memory, ToArg};
 use parasol_runtime::{
     Encryption, Evaluation,
-    fluent::{Int8, Int16, Int32, Int64, UInt, UInt8, UInt16, UInt32, UInt64},
+    fluent::{Int8, Int16, Int32, Int64, UInt8, UInt16, UInt32, UInt64},
 };
 
 use crate::{get_ck, get_sk};
