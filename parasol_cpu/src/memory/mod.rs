@@ -266,6 +266,12 @@ pub struct MemoryConfigBuilder {
     config: MemoryConfig,
 }
 
+impl Default for MemoryConfigBuilder {
+    fn default() -> Self {
+        Self::new()
+    }
+}
+
 impl MemoryConfigBuilder {
     /// Create a new [`MemoryConfigBuilder`].
     pub fn new() -> Self {
