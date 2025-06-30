@@ -81,7 +81,7 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
         ]);
 
         // Use the largest case to store our initial value.
-        let input = MaybeEncryptedUInt::<32>::new(value as u64, enc, &sk, encrypted_computation);
+        let input = MaybeEncryptedUInt::<32>::new(value as u128, enc, &sk, encrypted_computation);
 
         let input_ptr = memory.try_allocate(64).unwrap();
         let output_ptr = memory.try_allocate(64).unwrap();

@@ -26,13 +26,13 @@ fn can_mov() {
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(
-                dst_val as u64,
+                dst_val as u128,
                 &enc,
                 &sk,
                 dst_enc,
             ))
             .arg(MaybeEncryptedUInt::<32>::new(
-                src_val as u64,
+                src_val as u128,
                 &enc,
                 &sk,
                 src_enc,

@@ -29,13 +29,13 @@ fn can_xor(val1: u32, val2: u32, encrypted_val1: bool, encrypted_val2: bool) {
 
     let args = ArgsBuilder::new()
         .arg(MaybeEncryptedUInt::<32>::new(
-            val1 as u64,
+            val1 as u128,
             &enc,
             &sk,
             encrypted_val1,
         ))
         .arg(MaybeEncryptedUInt::<32>::new(
-            val2 as u64,
+            val2 as u128,
             &enc,
             &sk,
             encrypted_val2,

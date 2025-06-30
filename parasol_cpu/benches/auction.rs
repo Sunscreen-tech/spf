@@ -3,7 +3,8 @@ use std::sync::{Arc, OnceLock};
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
+    fluent::{UInt, UInt16},
     metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;
@@ -42,7 +43,7 @@ fn generate_args<const N: usize>(
     enc: &Encryption,
     sk: &SecretKey,
 ) -> CallData<[UInt<16, L1GlweCiphertext>; 2]> {
-    let data = std::array::from_fn::<_, N, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
+    let data = std::array::from_fn::<_, N, _>(|i| UInt16::encrypt_secret(i as u128, enc, sk));
 
     let a = memory.try_allocate_type(&data).unwrap();
 

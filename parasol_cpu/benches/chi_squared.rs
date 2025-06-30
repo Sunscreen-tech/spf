@@ -5,7 +5,8 @@ use parasol_cpu::{
     ArgsBuilder, CallData, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
 };
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
+    fluent::{UInt, UInt16},
     metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;
@@ -46,10 +47,10 @@ fn generate_args(
         .unwrap();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<16, _>::encrypt_secret(2, enc, sk))
-        .arg(UInt::<16, _>::encrypt_secret(7, enc, sk))
-        .arg(UInt::<16, _>::encrypt_secret(9, enc, sk))
-        .return_value::<[UInt<16, _>; 4]>();
+        .arg(UInt16::encrypt_secret(2, enc, sk))
+        .arg(UInt16::encrypt_secret(7, enc, sk))
+        .arg(UInt16::encrypt_secret(9, enc, sk))
+        .return_value::<[UInt16; 4]>();
 
     (args, result)
 }

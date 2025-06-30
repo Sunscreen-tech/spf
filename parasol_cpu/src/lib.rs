@@ -35,9 +35,9 @@
 //! // the return type
 //! let enc = Encryption::default();
 //! let args = ArgsBuilder::new()
-//!     .arg(UInt::<8, _>::encrypt_secret(2, &enc, &sk))
-//!     .arg(UInt::<8, _>::encrypt_secret(7, &enc, &sk))
-//!     .return_value::<UInt<8, _>>();
+//!     .arg(UInt8::encrypt_secret(2, &enc, &sk))
+//!     .arg(UInt8::encrypt_secret(7, &enc, &sk))
+//!     .return_value::<UInt8>();
 //!
 //! // Run the program.
 //! let encrypted_result = run_program(

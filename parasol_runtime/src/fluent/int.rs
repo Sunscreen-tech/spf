@@ -154,7 +154,7 @@ mod tests {
             .run_graph_blocking(&ctx.circuit.borrow(), &fc)
             .unwrap();
 
-        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u64.pow(16) - 42);
+        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u128.pow(16) - 42);
     }
 
     #[test]
@@ -180,7 +180,7 @@ mod tests {
             .run_graph_blocking(&ctx.circuit.borrow(), &fc)
             .unwrap();
 
-        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u64.pow(16) - 42);
+        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u128.pow(16) - 42);
     }
 
     #[test]
@@ -189,7 +189,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = Int::<15, L1GlweCiphertext>::encrypt_secret(2u64.pow(15) - 42, &enc, &sk);
+        let val = Int::<15, L1GlweCiphertext>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk);
 
         let ctx = FheCircuitCtx::new();
 
@@ -213,7 +213,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = DynamicInt::<L1GlweCiphertext>::encrypt_secret(2u64.pow(15) - 42, &enc, &sk, 15);
+        let val = DynamicInt::<L1GlweCiphertext>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk, 15);
 
         let ctx = FheCircuitCtx::new();
 
@@ -237,7 +237,7 @@ mod tests {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
 
-            let val = Int::<15, T>::encrypt_secret(2u64.pow(15) - 42, &enc, &sk);
+            let val = Int::<15, T>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk);
 
             let ser = bincode::serialize(&val).unwrap();
             crate::safe_bincode::deserialize::<Int<15, T>>(&ser, &DEFAULT_128).unwrap();
@@ -255,7 +255,7 @@ mod tests {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
 
-            let val = DynamicInt::<T>::encrypt_secret(2u64.pow(15) - 42, &enc, &sk, 15);
+            let val = DynamicInt::<T>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk, 15);
 
             let ser = bincode::serialize(&val).unwrap();
             bincode::deserialize::<DynamicInt<T>>(&ser).unwrap();

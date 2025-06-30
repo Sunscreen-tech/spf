@@ -28,8 +28,8 @@ fn can_add_inputs() {
         ]);
 
         let args = ArgsBuilder::new()
-            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
-            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc2))
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u128, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u128, &enc, &sk, enc2))
             .return_value::<MaybeEncryptedUInt<32>>();
 
         let result = proc.run_program(program, &Arc::new(memory), args).unwrap();
@@ -93,10 +93,10 @@ fn can_add_carry_inputs() {
         ]);
 
         let args = ArgsBuilder::new()
-            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, sk, enc1))
-            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, sk, enc2))
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u128, &enc, sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u128, &enc, sk, enc2))
             .arg(MaybeEncryptedUInt::<8>::new(
-                input_carry as u64,
+                input_carry as u128,
                 &enc,
                 sk,
                 enc_input_carry,

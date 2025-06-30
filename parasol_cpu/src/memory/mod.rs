@@ -914,7 +914,7 @@ impl Page {
 mod tests {
     use parasol_runtime::{
         DEFAULT_128, Encryption, Evaluation,
-        fluent::{DynamicUInt, UInt},
+        fluent::{DynamicUInt, UInt, UInt8},
         test_utils::{get_encryption_128, get_evaluation_128, get_secret_keys_128},
     };
 
@@ -983,7 +983,7 @@ mod tests {
                 .unwrap();
 
             let ct: DynamicUInt<L1GlweCiphertext> =
-                UInt::<8, L1GlweCiphertext>::trivial(b as u64, &enc, &eval).into();
+                UInt::<8, L1GlweCiphertext>::trivial(b as u128, &enc, &eval).into();
 
             let byte_ct = Byte::Ciphertext(ct.bits);
 
@@ -1002,9 +1002,9 @@ mod tests {
             match memory.try_load(ptr_ct.try_offset(b).unwrap()).unwrap() {
                 Byte::Plaintext(v) => panic!("Expected ciphertext"),
                 Byte::Ciphertext(v) => {
-                    let val = UInt::<8, _>::from_bits_shallow(v);
+                    let val = UInt8::from_bits_shallow(v);
 
-                    assert_eq!(val.decrypt(&enc, &get_secret_keys_128()), b as u64);
+                    assert_eq!(val.decrypt(&enc, &get_secret_keys_128()), b as u128);
                 }
             }
         }
@@ -1116,7 +1116,7 @@ mod tests {
                 .iter()
                 .map(|x| {
                     let ct: DynamicUInt<L1GlweCiphertext> =
-                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).into();
+                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u128, &enc, &sk).into();
                     Byte::try_from(ct.bits).unwrap()
                 })
                 .collect::<Vec<_>>();
@@ -1124,13 +1124,13 @@ mod tests {
             let actual = Word::try_from_bytes(&bytes_enc, Extend::Zero, &enc).unwrap();
 
             for (byte, actual) in bytes.iter().zip(actual.0.iter()).take(4) {
-                let b = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
+                let b = UInt8::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = b.decrypt(&enc, &sk) as u8;
                 assert_eq!(*byte, actual);
             }
 
             for actual in actual.0.iter().skip(bytes.len()) {
-                let byte = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
+                let byte = UInt8::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = byte.decrypt(&enc, &sk) as u8;
                 assert_eq!(0, actual);
             }
@@ -1152,7 +1152,7 @@ mod tests {
                 .iter()
                 .map(|x| {
                     let ct: DynamicUInt<L1GlweCiphertext> =
-                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).into();
+                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u128, &enc, &sk).into();
                     Byte::try_from(ct.bits).unwrap()
                 })
                 .collect::<Vec<_>>();
@@ -1160,13 +1160,13 @@ mod tests {
             let actual = Word::try_from_bytes(&bytes_enc, Extend::Signed, &enc).unwrap();
 
             for (byte, actual) in bytes.iter().zip(actual.0.iter()).take(4) {
-                let b = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
+                let b = UInt8::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = b.decrypt(&enc, &sk) as u8;
                 assert_eq!(*byte, actual);
             }
 
             for actual in actual.0.iter().skip(bytes.len()) {
-                let byte = UInt::<8, _>::from_bits_shallow(actual.clone().unwrap_ciphertext());
+                let byte = UInt8::from_bits_shallow(actual.clone().unwrap_ciphertext());
                 let actual = byte.decrypt(&enc, &sk) as u8;
                 assert_eq!(0xFF, actual);
             }

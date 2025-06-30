@@ -3,7 +3,8 @@ use std::sync::{Arc, OnceLock};
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
+    fluent::{UInt, UInt8},
     metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;
@@ -49,14 +50,14 @@ fn generate_args(enc: &Encryption, sk: &SecretKey) -> CallData<UInt<8, L1GlweCip
         .sum::<u8>();
 
     ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(flags as u64, enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(40, enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(50, enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(70, enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(170, enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, enc, sk))
-        .return_value::<UInt<8, _>>()
+        .arg(UInt8::encrypt_secret(flags as u128, enc, sk))
+        .arg(UInt8::encrypt_secret(40, enc, sk))
+        .arg(UInt8::encrypt_secret(50, enc, sk))
+        .arg(UInt8::encrypt_secret(70, enc, sk))
+        .arg(UInt8::encrypt_secret(170, enc, sk))
+        .arg(UInt8::encrypt_secret(1, enc, sk))
+        .arg(UInt8::encrypt_secret(1, enc, sk))
+        .return_value::<UInt8>()
 }
 
 fn _cardio_from_compiler(c: &mut Criterion) {

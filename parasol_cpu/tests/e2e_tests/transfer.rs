@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{
+    Encryption, Evaluation,
+    fluent::{UInt, UInt32},
+};
 
 use crate::{get_ck, get_sk};
 
@@ -18,16 +21,16 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let sender = memory
-        .try_allocate_type(&UInt::<32, _>::encrypt_secret(42, &enc, sk))
+        .try_allocate_type(&UInt32::encrypt_secret(42, &enc, sk))
         .unwrap();
     let receiver = memory
-        .try_allocate_type(&UInt::<32, _>::encrypt_secret(29, &enc, sk))
+        .try_allocate_type(&UInt32::encrypt_secret(29, &enc, sk))
         .unwrap();
 
     let args = ArgsBuilder::new()
         .arg(sender)
         .arg(receiver)
-        .arg(UInt::<32, _>::encrypt_secret(26, &enc, sk))
+        .arg(UInt32::encrypt_secret(26, &enc, sk))
         .no_return_value();
 
     let prog = memory.get_function_entry("transfer").unwrap();

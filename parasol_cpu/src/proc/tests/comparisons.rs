@@ -40,13 +40,13 @@ fn run_single_test(
     ) {
         ArgsBuilder::new()
             .arg(MaybeEncryptedInt::<32>::new(
-                val1 as u64,
+                val1 as u128,
                 enc,
                 &sk,
                 encrypted_computation,
             ))
             .arg(MaybeEncryptedInt::<32>::new(
-                val2 as u64,
+                val2 as u128,
                 enc,
                 &sk,
                 encrypted_computation,
@@ -54,13 +54,13 @@ fn run_single_test(
     } else {
         ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(
-                val1 as u64,
+                val1 as u128,
                 enc,
                 &sk,
                 encrypted_computation,
             ))
             .arg(MaybeEncryptedUInt::<32>::new(
-                val2 as u64,
+                val2 as u128,
                 enc,
                 &sk,
                 encrypted_computation,

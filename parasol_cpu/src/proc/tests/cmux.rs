@@ -41,19 +41,19 @@ fn can_cmux(encrypted_computation: bool) {
 
         let args = ArgsBuilder::new()
             .arg(MaybeEncryptedUInt::<32>::new(
-                bound as u64,
+                bound as u128,
                 &enc,
                 &sk,
                 encrypted_computation,
             ))
             .arg(MaybeEncryptedUInt::<32>::new(
-                a as u64,
+                a as u128,
                 &enc,
                 &sk,
                 encrypted_computation,
             ))
             .arg(MaybeEncryptedUInt::<32>::new(
-                b as u64,
+                b as u128,
                 &enc,
                 &sk,
                 encrypted_computation,

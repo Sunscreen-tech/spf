@@ -1,5 +1,5 @@
 use parasol_cpu::{ArgsBuilder, run_program};
-use parasol_runtime::{Encryption, fluent::UInt};
+use parasol_runtime::{Encryption, fluent::UInt8};
 use std::time::Instant;
 
 mod generate_keys;
@@ -28,9 +28,9 @@ fn main() {
     // To use encrypted input we need an encryption instance
     let enc = Encryption::default();
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(a as u64, &enc, &secret_key))
-        .arg(UInt::<8, _>::encrypt_secret(b as u64, &enc, &secret_key))
-        .return_value::<UInt<8, _>>();
+        .arg(UInt8::encrypt_secret(a as u128, &enc, &secret_key))
+        .arg(UInt8::encrypt_secret(b as u128, &enc, &secret_key))
+        .return_value::<UInt8>();
 
     // Run the program.
     let now = Instant::now();

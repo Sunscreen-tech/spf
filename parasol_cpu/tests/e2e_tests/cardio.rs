@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{Encryption, Evaluation, fluent::UInt8};
 
 use crate::{get_ck, get_sk};
 
@@ -29,14 +29,14 @@ fn can_run_from_elf() {
         .sum::<u8>();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(flags as u64, &enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(40, &enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(50, &enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(70, &enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(170, &enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, &enc, sk))
-        .arg(UInt::<8, _>::encrypt_secret(1, &enc, sk))
-        .return_value::<UInt<8, _>>();
+        .arg(UInt8::encrypt_secret(flags as u128, &enc, sk))
+        .arg(UInt8::encrypt_secret(40, &enc, sk))
+        .arg(UInt8::encrypt_secret(50, &enc, sk))
+        .arg(UInt8::encrypt_secret(70, &enc, sk))
+        .arg(UInt8::encrypt_secret(170, &enc, sk))
+        .arg(UInt8::encrypt_secret(1, &enc, sk))
+        .arg(UInt8::encrypt_secret(1, &enc, sk))
+        .return_value::<UInt8>();
 
     let prog = memory.get_function_entry("cardio").unwrap();
 

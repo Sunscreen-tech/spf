@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{
+    Encryption, Evaluation,
+    fluent::{UInt, UInt8, UInt32},
+};
 
 use crate::{get_ck, get_sk};
 
@@ -19,21 +22,21 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let u32_ptr = memory
-        .try_allocate_type(&UInt::<32, _>::encrypt_secret(0, &enc, sk))
+        .try_allocate_type(&UInt32::encrypt_secret(0, &enc, sk))
         .unwrap();
     let u8_ptr = memory
-        .try_allocate_type(&UInt::<8, _>::encrypt_secret(0, &enc, sk))
+        .try_allocate_type(&UInt8::encrypt_secret(0, &enc, sk))
         .unwrap();
     let bool_ptr = memory
-        .try_allocate_type(&UInt::<8, _>::encrypt_secret(0, &enc, sk))
+        .try_allocate_type(&UInt8::encrypt_secret(0, &enc, sk))
         .unwrap();
     let comparison_output_ptr = memory
-        .try_allocate_type(&UInt::<32, _>::encrypt_secret(0, &enc, sk))
+        .try_allocate_type(&UInt32::encrypt_secret(0, &enc, sk))
         .unwrap();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(42, &enc, sk))
-        .arg(UInt::<32, _>::encrypt_secret(123456789, &enc, sk))
+        .arg(UInt8::encrypt_secret(42, &enc, sk))
+        .arg(UInt32::encrypt_secret(123456789, &enc, sk))
         .arg(u32_ptr)
         .arg(u8_ptr)
         .arg(bool_ptr)
@@ -49,11 +52,11 @@ fn can_run_from_elf() {
         .unwrap()
         .decrypt(&enc, sk);
     let u8_val = memory
-        .try_load_type::<UInt<8, _>>(u8_ptr)
+        .try_load_type::<UInt8>(u8_ptr)
         .unwrap()
         .decrypt(&enc, sk);
     let bool_val = memory
-        .try_load_type::<UInt<8, _>>(bool_ptr)
+        .try_load_type::<UInt8>(bool_ptr)
         .unwrap()
         .decrypt(&enc, sk);
     let comparison_val = memory
