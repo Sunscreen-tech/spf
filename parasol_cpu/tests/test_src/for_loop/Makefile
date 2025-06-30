@@ -1,10 +1,7 @@
 all: ../../test_data/for_loop
 
 clean:
-	$(RM) ../../test_data/for_loop.o ../../test_data/for_loop
+	$(RM) ../../test_data/for_loop
 
-../../test_data/for_loop.o: for_loop.c
-	$(LLVM_DIR)/bin/clang -O2 -target parasol -c -o ../../test_data/for_loop.o for_loop.c
-
-../../test_data/for_loop: ../../test_data/for_loop.o
-	$(LLVM_DIR)/bin/ld.lld ../../test_data/for_loop.o -o ../../test_data/for_loop
+../../test_data/for_loop: for_loop.c
+	$(LLVM_DIR)/bin/clang -O2 -target parasol -o ../../test_data/for_loop for_loop.c
