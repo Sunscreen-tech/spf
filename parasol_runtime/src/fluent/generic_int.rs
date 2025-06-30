@@ -737,15 +737,15 @@ where
     ///
     /// # Panics
     /// If `val >= 2^n` (only when `n` is 63 or smaller)
-    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
-        if n < 64 && val >= 0x1 << n {
+    pub fn encrypt_secret(val: u128, enc: &Encryption, sk: &SecretKey, n: usize) -> Self {
+        if n < 64 && val as u128 >= 0x1 << n {
             panic!("Out of bounds");
         }
 
         Self {
             bits: (0..n)
                 .map(|i| {
-                    let ct = T::encrypt_secret((val >> i) & 0x1 == 0x1, enc, sk);
+                    let ct = T::encrypt_secret((val as u128 >> i) & 0x1 == 0x1, enc, sk);
                     Arc::new(AtomicRefCell::new(ct))
                 })
                 .collect(),
@@ -754,7 +754,7 @@ where
     }
 
     /// Decrypts this encrypted integer and returns the contained integer message.
-    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
+    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u128 {
         self.with_decryption_fn(|x| x.decrypt(enc, sk))
     }
 
@@ -772,14 +772,14 @@ where
     }
 
     /// Run a custom (e.g. threshold) decryption algorithm and return the result.
-    pub fn with_decryption_fn<F>(&self, f: F) -> u64
+    pub fn with_decryption_fn<F>(&self, f: F) -> u128
     where
         F: Fn(&T) -> bool,
     {
-        self.bits.iter().enumerate().fold(0u64, |s, (i, x)| {
+        self.bits.iter().enumerate().fold(0u128, |s, (i, x)| {
             let x = AtomicRefCell::borrow(x);
 
-            s + ((f(&x) as u64) << i)
+            s + ((f(&x) as u128) << i)
         })
     }
 
@@ -791,7 +791,7 @@ where
     ///
     /// # Panics
     /// If `val >= 2^n` (only when `n` is 63 or smaller)
-    pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation, n: usize) -> Self {
+    pub fn trivial(val: u128, enc: &Encryption, eval: &Evaluation, n: usize) -> Self {
         if n < 64 && val >= 0x1 << n {
             panic!("Out of bounds");
         }
@@ -876,19 +876,19 @@ where
     }
 
     /// Encrypt the given integer
-    pub fn encrypt_secret(val: u64, enc: &Encryption, sk: &SecretKey) -> Self {
+    pub fn encrypt_secret(val: u128, enc: &Encryption, sk: &SecretKey) -> Self {
         Self {
             inner: DynamicGenericInt::encrypt_secret(val, enc, sk, N),
         }
     }
 
     /// Decrypts the encrypted integer
-    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u64 {
+    pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> u128 {
         self.inner.decrypt(enc, sk)
     }
 
     /// Trivially encrypt the given integer
-    pub fn trivial(val: u64, enc: &Encryption, eval: &Evaluation) -> Self {
+    pub fn trivial(val: u128, enc: &Encryption, eval: &Evaluation) -> Self {
         Self {
             inner: DynamicGenericInt::trivial(val, enc, eval, N),
         }

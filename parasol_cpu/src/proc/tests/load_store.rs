@@ -75,7 +75,7 @@ fn can_load_store_ciphertext_bit_width() {
 
         let src: [UInt<8, _>; 16] = plain_values
             .iter()
-            .map(|x| UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk))
+            .map(|x| UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u128, &enc, &sk))
             .collect::<Vec<_>>()
             .try_into()
             .unwrap_or_else(|_| unreachable!());

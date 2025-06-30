@@ -42,7 +42,8 @@ fn generate_args<const N: usize>(
     enc: &Encryption,
     sk: &SecretKey,
 ) -> CallData<[UInt<16, L1GlweCiphertext>; 2]> {
-    let data = std::array::from_fn::<_, N, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, enc, sk));
+    let data =
+        std::array::from_fn::<_, N, _>(|i| UInt::<16, _>::encrypt_secret(i as u128, enc, sk));
 
     let a = memory.try_allocate_type(&data).unwrap();
 

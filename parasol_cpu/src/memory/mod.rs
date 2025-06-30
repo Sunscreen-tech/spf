@@ -983,7 +983,7 @@ mod tests {
                 .unwrap();
 
             let ct: DynamicUInt<L1GlweCiphertext> =
-                UInt::<8, L1GlweCiphertext>::trivial(b as u64, &enc, &eval).into();
+                UInt::<8, L1GlweCiphertext>::trivial(b as u128, &enc, &eval).into();
 
             let byte_ct = Byte::Ciphertext(ct.bits);
 
@@ -1004,7 +1004,7 @@ mod tests {
                 Byte::Ciphertext(v) => {
                     let val = UInt::<8, _>::from_bits_shallow(v);
 
-                    assert_eq!(val.decrypt(&enc, &get_secret_keys_128()), b as u64);
+                    assert_eq!(val.decrypt(&enc, &get_secret_keys_128()), b as u128);
                 }
             }
         }
@@ -1116,7 +1116,7 @@ mod tests {
                 .iter()
                 .map(|x| {
                     let ct: DynamicUInt<L1GlweCiphertext> =
-                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).into();
+                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u128, &enc, &sk).into();
                     Byte::try_from(ct.bits).unwrap()
                 })
                 .collect::<Vec<_>>();
@@ -1152,7 +1152,7 @@ mod tests {
                 .iter()
                 .map(|x| {
                     let ct: DynamicUInt<L1GlweCiphertext> =
-                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u64, &enc, &sk).into();
+                        UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u128, &enc, &sk).into();
                     Byte::try_from(ct.bits).unwrap()
                 })
                 .collect::<Vec<_>>();

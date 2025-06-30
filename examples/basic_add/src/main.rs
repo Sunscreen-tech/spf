@@ -28,8 +28,8 @@ fn main() {
     // To use encrypted input we need an encryption instance
     let enc = Encryption::default();
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(a as u64, &enc, &secret_key))
-        .arg(UInt::<8, _>::encrypt_secret(b as u64, &enc, &secret_key))
+        .arg(UInt::<8, _>::encrypt_secret(a as u128, &enc, &secret_key))
+        .arg(UInt::<8, _>::encrypt_secret(b as u128, &enc, &secret_key))
         .return_value::<UInt<8, _>>();
 
     // Run the program.

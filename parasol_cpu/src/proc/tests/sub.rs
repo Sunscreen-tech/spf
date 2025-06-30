@@ -18,8 +18,8 @@ fn can_sub_inputs() {
         let encrypted_computation = enc1 || enc2;
 
         let args = ArgsBuilder::new()
-            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
-            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc2))
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u128, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u128, &enc, &sk, enc2))
             .return_value::<MaybeEncryptedUInt<32>>();
 
         let memory = Arc::new(Memory::new_default_stack());
@@ -85,10 +85,10 @@ fn can_sub_borrow_inputs() {
         ]);
 
         let args = ArgsBuilder::new()
-            .arg(MaybeEncryptedUInt::<32>::new(val1 as u64, &enc, &sk, enc1))
-            .arg(MaybeEncryptedUInt::<32>::new(val2 as u64, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val1 as u128, &enc, &sk, enc1))
+            .arg(MaybeEncryptedUInt::<32>::new(val2 as u128, &enc, &sk, enc1))
             .arg(MaybeEncryptedUInt::<32>::new(
-                input_borrow as u64,
+                input_borrow as u128,
                 &enc,
                 &sk,
                 enc_input_borrow,

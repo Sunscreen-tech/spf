@@ -91,8 +91,8 @@ where
         ]);
 
         let args = ArgsBuilder::new()
-            .arg(MaybeEncryptedUInt::<N>::new(a, &enc, &sk, a_enc))
-            .arg(MaybeEncryptedUInt::<N>::new(b, &enc, &sk, b_enc))
+            .arg(MaybeEncryptedUInt::<N>::new(a as u128, &enc, &sk, a_enc))
+            .arg(MaybeEncryptedUInt::<N>::new(b as u128, &enc, &sk, b_enc))
             .return_value::<MaybeEncryptedUInt<N>>();
 
         let actual = proc.run_program(program, &memory, args).unwrap();

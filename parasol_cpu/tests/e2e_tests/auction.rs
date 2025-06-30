@@ -18,7 +18,7 @@ fn can_run_auction_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let data =
-        std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u64, &enc, sk));
+        std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u128, &enc, sk));
 
     let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(&enc));
     let winner = memory.try_allocate_type(&winner).unwrap();

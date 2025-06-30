@@ -51,8 +51,8 @@ fn can_and_ciphertext_inputs() {
         ]);
 
         let args = ArgsBuilder::new()
-            .arg(UInt::<8, _>::encrypt_secret(val1 as u64, &enc, &sk))
-            .arg(UInt::<8, _>::encrypt_secret(val2 as u64, &enc, &sk))
+            .arg(UInt::<8, _>::encrypt_secret(val1 as u128, &enc, &sk))
+            .arg(UInt::<8, _>::encrypt_secret(val2 as u128, &enc, &sk))
             .return_value::<UInt<8, _>>();
 
         let answer = proc.run_program(program, &Arc::new(memory), args).unwrap();

@@ -21,7 +21,7 @@ fn can_not(val: u32, encrypted_computation: bool) {
 
     let args = ArgsBuilder::new()
         .arg(MaybeEncryptedUInt::<32>::new(
-            val as u64,
+            val as u128,
             &enc,
             &sk,
             encrypted_computation,

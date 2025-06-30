@@ -54,8 +54,8 @@ pub trait TestFrom<T> {
 macro_rules! impl_test_from {
     ( $( $x:ty ),* ) => {
         $(
-            impl TestFrom<u64> for $x {
-                fn test_from(value: u64) -> Self {
+            impl TestFrom<u128> for $x {
+                fn test_from(value: u128) -> Self {
                     value as $x
                 }
             }
@@ -63,11 +63,11 @@ macro_rules! impl_test_from {
     };
 }
 
-impl_test_from!(u32, u16, u8);
-impl_test_from!(i32, i16, i8);
+impl_test_from!(u128, u64, u32, u16, u8);
+impl_test_from!(i128, i64, i32, i16, i8);
 
 pub trait Bits<const N: usize> {
-    type PlaintextType: num::Num + TestFrom<u64> + std::fmt::Debug + Copy + ToArg;
+    type PlaintextType: num::Num + TestFrom<u128> + std::fmt::Debug + Copy + ToArg;
 }
 
 pub struct BitsUnsigned();
@@ -108,7 +108,7 @@ where
     BitsUnsigned: Bits<N>,
     <BitsUnsigned as Bits<N>>::PlaintextType: Into<u64>,
 {
-    pub fn new(val: u64, enc: &Encryption, sk: &SecretKey, encrypt: bool) -> Self {
+    pub fn new(val: u128, enc: &Encryption, sk: &SecretKey, encrypt: bool) -> Self {
         if !encrypt {
             Self::Plain(<BitsUnsigned as Bits<N>>::PlaintextType::test_from(val))
         } else {
@@ -198,7 +198,7 @@ where
     BitsSigned: Bits<N>,
     <BitsSigned as Bits<N>>::PlaintextType: Into<i64>,
 {
-    pub fn new(val: u64, enc: &Encryption, sk: &SecretKey, encrypt: bool) -> Self {
+    pub fn new(val: u128, enc: &Encryption, sk: &SecretKey, encrypt: bool) -> Self {
         if !encrypt {
             Self::Plain(<BitsSigned as Bits<N>>::PlaintextType::test_from(val))
         } else {

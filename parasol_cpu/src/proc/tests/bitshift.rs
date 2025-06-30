@@ -36,13 +36,13 @@ fn run_single_test(
 
     let args = ArgsBuilder::new()
         .arg(MaybeEncryptedUInt::<8>::new(
-            value as u64,
+            value as u128,
             enc,
             &sk,
             encrypted_value,
         ))
         .arg(MaybeEncryptedUInt::<8>::new(
-            shift as u64,
+            shift as u128,
             enc,
             &sk,
             encrypted_shift,

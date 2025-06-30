@@ -29,7 +29,7 @@ fn can_run_from_elf() {
         .sum::<u8>();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<8, _>::encrypt_secret(flags as u64, &enc, sk))
+        .arg(UInt::<8, _>::encrypt_secret(flags as u128, &enc, sk))
         .arg(UInt::<8, _>::encrypt_secret(40, &enc, sk))
         .arg(UInt::<8, _>::encrypt_secret(50, &enc, sk))
         .arg(UInt::<8, _>::encrypt_secret(70, &enc, sk))

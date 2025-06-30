@@ -20,10 +20,10 @@ fn can_run_from_elf() {
 
     let a = 0xFEEDF00D_CAFEBABEu64
         .to_le_bytes()
-        .map(|x| UInt::<8, _>::encrypt_secret(x as u64, &enc, sk));
+        .map(|x| UInt::<8, _>::encrypt_secret(x as u128, &enc, sk));
     let b = 0x12345678_9ABCDEF0u64
         .to_le_bytes()
-        .map(|x| UInt::<8, _>::encrypt_secret(x as u64, &enc, sk));
+        .map(|x| UInt::<8, _>::encrypt_secret(x as u128, &enc, sk));
 
     let a = memory.try_allocate_type(&a).unwrap();
     let b = memory.try_allocate_type(&b).unwrap();
