@@ -1,7 +1,7 @@
 use std::{sync::Arc, time::Instant};
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{Encryption, Evaluation, fluent::UInt16};
 
 use crate::{get_ck, get_sk};
 
@@ -17,10 +17,9 @@ fn can_run_auction_from_elf() {
 
     let mut proc = FheComputer::new(&enc, &eval);
 
-    let data =
-        std::array::from_fn::<_, 8, _>(|i| UInt::<16, _>::encrypt_secret(i as u128, &enc, sk));
+    let data = std::array::from_fn::<_, 8, _>(|i| UInt16::encrypt_secret(i as u128, &enc, sk));
 
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt::<16, _>::new(&enc));
+    let winner = std::array::from_fn::<_, 2, _>(|_| UInt16::new(&enc));
     let winner = memory.try_allocate_type(&winner).unwrap();
 
     let a = memory.try_allocate_type(&data).unwrap();
@@ -37,7 +36,7 @@ fn can_run_auction_from_elf() {
     proc.run_program(prog, &memory, args).unwrap();
     println!("Runtime {}", now.elapsed().as_secs_f64());
 
-    let winner = memory.try_load_type::<[UInt<16, _>; 2]>(winner).unwrap();
+    let winner = memory.try_load_type::<[UInt16; 2]>(winner).unwrap();
 
     assert_eq!(winner[0].decrypt(&enc, sk), 7);
     assert_eq!(winner[1].decrypt(&enc, sk), 7);

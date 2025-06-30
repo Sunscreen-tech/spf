@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{
+    Encryption, Evaluation,
+    fluent::{UInt, UInt8},
+};
 
 use crate::{get_ck, get_sk};
 
@@ -17,8 +20,7 @@ fn can_run_from_elf() {
 
     let mut proc = FheComputer::new(&enc, &eval);
 
-    let data =
-        std::array::from_fn::<_, 8, _>(|i| UInt::<8, _>::encrypt_secret(i as u128, &enc, sk));
+    let data = std::array::from_fn::<_, 8, _>(|i| UInt8::encrypt_secret(i as u128, &enc, sk));
 
     let a = memory.try_allocate_type(&data).unwrap();
     let b = memory.try_allocate_type(&data).unwrap();
@@ -31,7 +33,7 @@ fn can_run_from_elf() {
     proc.run_program(prog, &memory, args).unwrap();
 
     let result = memory
-        .try_load_type::<[UInt<8, _>; 8]>(c)
+        .try_load_type::<[UInt8; 8]>(c)
         .unwrap()
         .map(|r| r.decrypt(&enc, sk) as u8);
 

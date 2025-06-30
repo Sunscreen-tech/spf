@@ -35,7 +35,7 @@ mod tests {
     use super::*;
     use parasol_runtime::{
         Encryption,
-        fluent::UInt,
+        fluent::{UInt, UInt8},
         test_utils::{get_compute_key_128, get_secret_keys_128},
     };
 
@@ -52,10 +52,10 @@ mod tests {
         let sk = get_secret_keys_128();
 
         let arguments = ArgsBuilder::new()
-            .arg(UInt::<8, _>::encrypt_secret(42, &enc, &sk))
-            .arg(UInt::<8, _>::encrypt_secret(54, &enc, &sk))
-            .arg(UInt::<8, _>::encrypt_secret(11, &enc, &sk))
-            .return_value::<UInt<8, _>>();
+            .arg(UInt8::encrypt_secret(42, &enc, &sk))
+            .arg(UInt8::encrypt_secret(54, &enc, &sk))
+            .arg(UInt8::encrypt_secret(11, &enc, &sk))
+            .return_value::<UInt8>();
 
         let result = run_program(compute_key.clone(), CMUX_ELF, "cmux", arguments).unwrap();
 

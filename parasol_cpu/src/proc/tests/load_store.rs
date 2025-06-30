@@ -4,7 +4,11 @@ use crate::{
     ArgsBuilder, Byte, Error, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128,
 };
 
-use parasol_runtime::{L1GlweCiphertext, fluent::UInt, test_utils::get_secret_keys_128};
+use parasol_runtime::{
+    L1GlweCiphertext,
+    fluent::{UInt, UInt8},
+    test_utils::get_secret_keys_128,
+};
 
 #[test]
 fn can_load_store_plain_bit_width() {
@@ -73,7 +77,7 @@ fn can_load_store_ciphertext_bit_width() {
             IsaOp::Ret(),
         ]);
 
-        let src: [UInt<8, _>; 16] = plain_values
+        let src: [UInt8; 16] = plain_values
             .iter()
             .map(|x| UInt::<8, L1GlweCiphertext>::encrypt_secret(*x as u128, &enc, &sk))
             .collect::<Vec<_>>()
@@ -81,7 +85,7 @@ fn can_load_store_ciphertext_bit_width() {
             .unwrap_or_else(|_| unreachable!());
         let src = memory.try_allocate_type(&src).unwrap();
 
-        let dst: [UInt<8, _>; 16] = (0..16)
+        let dst: [UInt8; 16] = (0..16)
             .map(|_| UInt::<8, L1GlweCiphertext>::encrypt_secret(0, &enc, &sk))
             .collect::<Vec<_>>()
             .try_into()

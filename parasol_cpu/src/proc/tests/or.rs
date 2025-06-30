@@ -4,7 +4,10 @@ use rand::{RngCore, thread_rng};
 
 use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128};
 
-use parasol_runtime::{fluent::UInt, test_utils::get_secret_keys_128};
+use parasol_runtime::{
+    fluent::{UInt, UInt8},
+    test_utils::get_secret_keys_128,
+};
 
 #[test]
 fn can_or_plaintext_inputs() {
@@ -50,9 +53,9 @@ fn can_or_ciphertext_inputs() {
         ]);
 
         let args = ArgsBuilder::new()
-            .arg(UInt::<8, _>::encrypt_secret(val1 as u128, &enc, &sk))
-            .arg(UInt::<8, _>::encrypt_secret(val2 as u128, &enc, &sk))
-            .return_value::<UInt<8, _>>();
+            .arg(UInt8::encrypt_secret(val1 as u128, &enc, &sk))
+            .arg(UInt8::encrypt_secret(val2 as u128, &enc, &sk))
+            .return_value::<UInt8>();
 
         let answer = proc.run_program(program, &memory, args).unwrap();
 

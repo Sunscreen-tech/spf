@@ -1,7 +1,10 @@
 use std::sync::Arc;
 
 use parasol_cpu::{ArgsBuilder, FheComputer, Memory};
-use parasol_runtime::{Encryption, Evaluation, fluent::UInt};
+use parasol_runtime::{
+    Encryption, Evaluation,
+    fluent::{UInt, UInt16},
+};
 
 use crate::{get_ck, get_sk};
 
@@ -18,10 +21,10 @@ fn can_run_from_elf() {
     let mut proc = FheComputer::new(&enc, &eval);
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<16, _>::encrypt_secret(2, &enc, sk))
-        .arg(UInt::<16, _>::encrypt_secret(7, &enc, sk))
-        .arg(UInt::<16, _>::encrypt_secret(9, &enc, sk))
-        .return_value::<[UInt<16, _>; 4]>();
+        .arg(UInt16::encrypt_secret(2, &enc, sk))
+        .arg(UInt16::encrypt_secret(7, &enc, sk))
+        .arg(UInt16::encrypt_secret(9, &enc, sk))
+        .return_value::<[UInt16; 4]>();
 
     let prog = memory.get_function_entry("chi_sq").unwrap();
 

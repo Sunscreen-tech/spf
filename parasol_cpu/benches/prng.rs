@@ -38,7 +38,7 @@ fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
 
 fn generate_args(memory: &Memory, enc: &Encryption, sk: &SecretKey) -> CallData<()> {
     let rng = memory
-        .try_allocate_type(&UInt::<16, _>::encrypt_secret(1234, enc, sk))
+        .try_allocate_type(&UInt16::encrypt_secret(1234, enc, sk))
         .unwrap();
 
     ArgsBuilder::new().arg(rng).no_return_value()

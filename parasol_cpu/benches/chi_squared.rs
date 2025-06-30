@@ -46,10 +46,10 @@ fn generate_args(
         .unwrap();
 
     let args = ArgsBuilder::new()
-        .arg(UInt::<16, _>::encrypt_secret(2, enc, sk))
-        .arg(UInt::<16, _>::encrypt_secret(7, enc, sk))
-        .arg(UInt::<16, _>::encrypt_secret(9, enc, sk))
-        .return_value::<[UInt<16, _>; 4]>();
+        .arg(UInt16::encrypt_secret(2, enc, sk))
+        .arg(UInt16::encrypt_secret(7, enc, sk))
+        .arg(UInt16::encrypt_secret(9, enc, sk))
+        .return_value::<[UInt16; 4]>();
 
     (args, result)
 }

@@ -45,10 +45,10 @@ fn generate_args(
 ) -> CallData<UInt<8, L1GlweCiphertext>> {
     let a = 0xFEEDF00D_CAFEBABEu64
         .to_le_bytes()
-        .map(|x| UInt::<8, _>::encrypt_secret(x as u128, enc, sk));
+        .map(|x| UInt8::encrypt_secret(x as u128, enc, sk));
     let b = 0x12345678_9ABCDEF0u64
         .to_le_bytes()
-        .map(|x| UInt::<8, _>::encrypt_secret(x as u128, enc, sk));
+        .map(|x| UInt8::encrypt_secret(x as u128, enc, sk));
 
     let a = memory.try_allocate_type(&a).unwrap();
     let b = memory.try_allocate_type(&b).unwrap();
@@ -57,7 +57,7 @@ fn generate_args(
         .arg(a)
         .arg(b)
         .arg(len as u8)
-        .return_value::<UInt<8, _>>()
+        .return_value::<UInt8>()
 }
 
 fn _hamming_from_compiler(c: &mut Criterion) {
