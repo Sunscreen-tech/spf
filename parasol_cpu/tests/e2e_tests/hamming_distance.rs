@@ -7,8 +7,6 @@ use crate::{get_ck, get_sk};
 
 #[test]
 fn can_run_from_elf() {
-    env_logger::init();
-
     let memory =
         Arc::new(Memory::new_from_elf(include_bytes!("../test_data/hamming_distance")).unwrap());
 

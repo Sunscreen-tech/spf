@@ -524,23 +524,25 @@ impl<T> CallData<T> {
     /// Returns the required size for this call data, including aligning the stack pointer
     /// to a 16-byte boundary
     pub fn alloc_size(&self) -> usize {
-        let mut ptr = 0;
+        let mut offset = 0usize;
 
         for arg in self.args.iter() {
             // Account for this argument's alignment
-            ptr += (arg.alignment - ptr % arg.alignment) % arg.alignment;
-            ptr += arg.bytes.len();
+            offset = offset.next_multiple_of(arg.alignment);
+            offset += arg.bytes.len();
         }
 
+        // Allocate space for our return value.
         if self.return_value.size > 0 {
-            ptr += (self.return_value.alignment - ptr % self.return_value.alignment)
-                % self.return_value.alignment;
-            ptr += self.return_value.size;
+            // Account for our return value's alignment
+            offset = offset.next_multiple_of(self.return_value.alignment);
+            offset += self.return_value.size;
         }
 
-        ptr += (16 - ptr % 16) % 16;
+        // Finally, align the stack to the next 16-byte boundary
+        offset = offset.next_multiple_of(16);
 
-        ptr
+        offset
     }
 }
 

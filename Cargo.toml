@@ -66,3 +66,6 @@ codegen-units = 1
 [profile.release]
 lto = "fat"
 codegen-units = 1
+
+[profile.dev.package.sunscreen_tfhe]
+opt-level = 3

@@ -626,7 +626,7 @@ pub fn programmable_bootstrap_bivariate<S>(
 mod tests {
 
     use crate::{
-        GLWE_1_2048_128, LWE_637_128, RoundedDiv,
+        GLWE_1_2048_128, LWE_637_128, RadixCount, RadixLog, RoundedDiv,
         entities::{
             BivariateLookupTable, BootstrapKey, BootstrapKeyFft, GlweCiphertext, LweCiphertext,
             LweKeyswitchKey, UnivariateLookupTable,
@@ -710,9 +710,12 @@ mod tests {
 
     fn bootstrap_helper(map: impl Fn(u64) -> u64) {
         let bits = PlaintextBits(3);
-        let lwe = TEST_LWE_DEF_1;
+        let lwe = LWE_637_128;
         let glwe = GLWE_1_2048_128;
-        let radix = TEST_RADIX;
+        let radix = RadixDecomposition {
+            count: RadixCount(2),
+            radix_log: RadixLog(16),
+        };
 
         let original_sk = keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
