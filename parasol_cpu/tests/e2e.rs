@@ -2,8 +2,6 @@ use std::sync::{Arc, OnceLock};
 
 use parasol_runtime::{ComputeKey, SecretKey};
 
-// TODO: Need to update compiler calling convention and recompile to
-// fix these tests.
 mod e2e_tests;
 
 pub fn get_sk() -> &'static SecretKey {

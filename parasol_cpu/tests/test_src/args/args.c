@@ -6,8 +6,8 @@ typedef struct Foo {
 } Foo;
 
 
-void fn1(char a, short b, int c, long long d, long long *output) {
-    *output = a + b + c + d;
+void fn1(char a, short b, int c, long long d, __int128 e, long long *output) {
+    *output = a + b + c + d + e;
 }
 
 int fn2(char a, short b, int c, long long d) {

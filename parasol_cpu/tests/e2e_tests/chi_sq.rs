@@ -25,17 +25,7 @@ fn can_run_from_elf() {
 
     let prog = memory.get_function_entry("chi_sq").unwrap();
 
-    let (_, result) = proc
-        .run_program_with_options(
-            prog,
-            &memory,
-            args,
-            &RunProgramOptionsBuilder::new()
-                .log_register_info(true)
-                .log_instruction_execution(true)
-                .build(),
-        )
-        .unwrap();
+    let result = proc.run_program(prog, &memory, args).unwrap();
 
     assert_eq!(result[0].decrypt(&enc, sk), 529);
     assert_eq!(result[1].decrypt(&enc, sk), 242);
