@@ -6,7 +6,6 @@ use ndarray::{Array1, Array2};
 use num::Complex;
 use parasol_runtime::{
     ComputeKey, Params, SecretKey,
-    metadata::{SystemInfo, print_system_info},
 };
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
@@ -99,7 +98,6 @@ pub enum FitResults {
 pub struct CMuxTreeDataFile {
     pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
-    pub system_info: SystemInfo,
     pub method: Method,
     pub fit: FitResults,
     pub data: Vec<CMuxTreeDataPoint>,
@@ -357,8 +355,6 @@ fn run_compute_tree(
 const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
 
 pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataFile {
-    let system_info = print_system_info();
-
     let cmux_tree_params_pretty_json = serde_json::to_string_pretty(cmux_tree_params).unwrap();
     println!("Running with parameters:");
     println!("{cmux_tree_params_pretty_json}");
@@ -488,7 +484,6 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
     CMuxTreeDataFile {
         time: chrono::Local::now().to_string(),
         cmux_tree_parameters: cmux_tree_params.clone(),
-        system_info,
         method: Method::RandomSelectLinesCascadedDataLines,
         fit,
         data: data_points_per_level,
