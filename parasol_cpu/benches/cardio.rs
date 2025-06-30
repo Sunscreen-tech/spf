@@ -3,7 +3,8 @@ use std::sync::{Arc, OnceLock};
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
+    fluent::{UInt, UInt8},
     metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;

@@ -35,7 +35,7 @@ mod tests {
     use super::*;
     use parasol_runtime::{
         Encryption,
-        fluent::{UInt, UInt8},
+        fluent::UInt8,
         test_utils::{get_compute_key_128, get_secret_keys_128},
     };
 

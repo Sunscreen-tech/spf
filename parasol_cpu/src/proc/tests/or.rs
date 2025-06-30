@@ -4,10 +4,7 @@ use rand::{RngCore, thread_rng};
 
 use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128};
 
-use parasol_runtime::{
-    fluent::{UInt, UInt8},
-    test_utils::get_secret_keys_128,
-};
+use parasol_runtime::{fluent::UInt8, test_utils::get_secret_keys_128};
 
 #[test]
 fn can_or_plaintext_inputs() {

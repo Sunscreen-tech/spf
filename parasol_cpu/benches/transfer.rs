@@ -3,7 +3,7 @@ use std::sync::{Arc, OnceLock};
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory};
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt32,
     metadata::print_system_info,
 };
 

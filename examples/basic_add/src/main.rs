@@ -1,8 +1,5 @@
 use parasol_cpu::{ArgsBuilder, run_program};
-use parasol_runtime::{
-    Encryption,
-    fluent::{UInt, UInt8},
-};
+use parasol_runtime::{Encryption, fluent::UInt8};
 use std::time::Instant;
 
 mod generate_keys;

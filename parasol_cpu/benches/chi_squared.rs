@@ -5,7 +5,8 @@ use parasol_cpu::{
     ArgsBuilder, CallData, FheComputer, Memory, Ptr32, assembly::IsaOp, register_names::*,
 };
 use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey, fluent::UInt,
+    ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
+    fluent::{UInt, UInt16},
     metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;
