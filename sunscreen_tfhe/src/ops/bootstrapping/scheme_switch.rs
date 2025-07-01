@@ -373,8 +373,7 @@ mod tests {
                 assert_eq!(
                     a_i.coeffs(),
                     b.coeffs(),
-                    "Coefficients at index {} don't match input body",
-                    index
+                    "Coefficients at index {index} don't match input body",
                 );
             } else {
                 // All other positions should be zero
@@ -382,8 +381,7 @@ mod tests {
                     a_i.coeffs()
                         .iter()
                         .all(|x| *x == Torus::from(<S as num::Zero>::zero())),
-                    "Non-zero coefficients found at index {} (should be all zero)",
-                    i
+                    "Non-zero coefficients found at index {i} (should be all zero)"
                 );
             }
         }
@@ -742,8 +740,7 @@ mod tests {
 
             assert_eq!(
                 expected, decrypted_glev_component,
-                "{} glev decryption failed",
-                i
+                "{i} glev decryption failed"
             );
         }
     }

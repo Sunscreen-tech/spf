@@ -21,9 +21,7 @@ pub trait SecurityLevel {
 
         assert!(
             security_difference <= tolerance,
-            "Security level mismatch: expected {}, got {}",
-            specified_security_level,
-            security_level
+            "Security level mismatch: expected {specified_security_level}, got {security_level}"
         )
     }
 }
@@ -277,27 +275,27 @@ mod tests {
     #[test]
     fn check_security_levels() {
         let actual_lwe_std = lwe_security_level_to_std(512, 128.0).unwrap();
-        println!("LWE 512 128: {}", actual_lwe_std);
+        println!("LWE 512 128: {actual_lwe_std}");
         LWE_512_128.assert_security_level(128);
 
         let actual_lwe_std = lwe_security_level_to_std(637, 128.0).unwrap();
-        println!("LWE 637 128: {}", actual_lwe_std);
+        println!("LWE 637 128: {actual_lwe_std}");
         LWE_637_128.assert_security_level(128);
 
         let actual_glwe_std = lwe_security_level_to_std(5 * 256, 128.0).unwrap();
-        println!("GLWE 5 256 128: {}", actual_glwe_std);
+        println!("GLWE 5 256 128: {actual_glwe_std}");
         GLWE_5_256_128.assert_security_level(129);
 
         let actual_glwe_std = lwe_security_level_to_std(1024, 128.0).unwrap();
-        println!("GLWE 1 1024 128: {}", actual_glwe_std);
+        println!("GLWE 1 1024 128: {actual_glwe_std}");
         GLWE_1_1024_128.assert_security_level(128);
 
         let actual_glwe_std = lwe_security_level_to_std(2048, 128.0).unwrap();
-        println!("GLWE 1 2048 128: {}", actual_glwe_std);
+        println!("GLWE 1 2048 128: {actual_glwe_std}");
         GLWE_1_2048_128.assert_security_level(128);
 
         let actual_glwe_std = lwe_security_level_to_std(512, 128.0).unwrap();
-        println!("GLWE 1 512 128: {}", actual_glwe_std);
+        println!("GLWE 1 512 128: {actual_glwe_std}");
         GLWE_1_512_128.assert_security_level(128);
     }
 }

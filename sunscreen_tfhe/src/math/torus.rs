@@ -605,14 +605,7 @@ mod tests {
 
             assert!(
                 diff < 1e-12,
-                "Normalized torus relation test failed:  a = {:?}, b = {:?}, a_norm = {}, b_norm = {}, dist: {}, b_norm_from_dist = {}, diff = {}",
-                a,
-                b,
-                a_norm,
-                b_norm,
-                dist,
-                b_norm_from_dist,
-                diff
+                "Normalized torus relation test failed:  a = {a:?}, b = {b:?}, a_norm = {a_norm}, b_norm = {b_norm}, dist: {dist}, b_norm_from_dist = {b_norm_from_dist}, diff = {diff}"
             );
         }
     }

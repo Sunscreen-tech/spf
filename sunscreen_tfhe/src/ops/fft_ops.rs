@@ -775,8 +775,7 @@ mod tests {
 
             assert_eq!(
                 expected, decrypted_glev_component,
-                "{} glev decryption failed",
-                i
+                "{i} glev decryption failed"
             );
         }
 
