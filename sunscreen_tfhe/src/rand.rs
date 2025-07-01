@@ -24,7 +24,7 @@ pub fn normal_torus<S: TorusOps>(std: Stddev) -> Torus<S> {
     let q = (S::BITS as f64).exp2();
 
     let e = f64::round(e_0 * q) as i64;
-    let e: u64 = unsafe { std::mem::transmute(e) };
+    let e: u64 = i64::cast_unsigned(e);
 
     Torus::from(S::from_u64(e))
 }

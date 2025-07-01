@@ -93,9 +93,7 @@ fn generate_negacyclic_lut<S, F>(
         let p_i = map(p_i_unmapped);
         assert!(
             p_i < p,
-            "The map function must produce a value less than p. Map produced the relation ({} -> {})",
-            p_i_unmapped,
-            p_i
+            "The map function must produce a value less than p. Map produced the relation ({p_i_unmapped} -> {p_i})"
         );
 
         let p_i = p_i << delta;
@@ -169,7 +167,7 @@ pub(crate) fn generate_lut<S, F>(
                 0u64
             };
 
-            assert!(p_i < (p as u64), "The map function must produce a value less than p. Map produced the relation ({} -> {})", p_i_unmapped, p_i);
+            assert!(p_i < (p as u64), "The map function must produce a value less than p. Map produced the relation ({p_i_unmapped} -> {p_i})");
 
             let p_i = p_i << delta;
 
@@ -776,10 +774,7 @@ mod tests {
         }
 
         if !failed.is_empty() {
-            panic!(
-                "Failed to decrypt the following messages and decrypted values: {:?}",
-                failed
-            );
+            panic!("Failed to decrypt the following messages and decrypted values: {failed:?}");
         }
     }
 
@@ -894,8 +889,7 @@ mod tests {
         }
         if !failed.is_empty() {
             panic!(
-                "Failed to decrypt the following messages and decrypted values (as ((left input, right_input), expected, decrypted)): {:?}. However, the following messages and decrypted values succeeded: {:?}",
-                failed, succeeded
+                "Failed to decrypt the following messages and decrypted values (as ((left input, right_input), expected, decrypted)): {failed:?}. However, the following messages and decrypted values succeeded: {succeeded:?}"
             );
         }
     }

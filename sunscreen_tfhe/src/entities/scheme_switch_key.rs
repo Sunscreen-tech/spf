@@ -238,10 +238,7 @@ mod tests {
                     assert_eq!(
                         get_linear_index(i, j, n),
                         index,
-                        "Failed at n={}, i={}, j={}",
-                        n,
-                        i,
-                        j
+                        "Failed at n={n}, i={i}, j={j}"
                     );
                     index += 1;
                 }

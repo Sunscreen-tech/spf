@@ -298,7 +298,7 @@ mod tests {
         let ct = sk.encode_encrypt_glwe(&msg, &params, plaintext_bits);
 
         for rotation in (-2i64 * (degree as i64))..=(2i64 * (degree as i64)) {
-            println!("Rotation: {}", rotation);
+            println!("Rotation: {rotation}");
             let mut rotation_polynomial = vec![Torus::from(0u64); degree];
 
             let direction = if rotation < 0 { -1 } else { 1 };

@@ -97,7 +97,7 @@ macro_rules! impl_reinterpret_signed {
 
             #[inline(always)]
             fn reinterpret_as_signed(self) -> Self::Output {
-                unsafe { std::mem::transmute(self) }
+                <$ut>::cast_signed(self)
             }
         }
     };
@@ -129,7 +129,7 @@ macro_rules! impl_reinterpret_unsigned {
 
             #[inline(always)]
             fn reinterpret_as_unsigned(self) -> Self::Output {
-                unsafe { std::mem::transmute(self) }
+                <$st>::cast_unsigned(self)
             }
         }
     };
