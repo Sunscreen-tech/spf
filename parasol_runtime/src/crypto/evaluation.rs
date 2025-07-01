@@ -24,6 +24,7 @@ use super::{
 #[derive(Clone)]
 /// Performs FHE operations that don't require the compute key.
 pub struct KeylessEvaluation {
+    /// The parameters we'll evaluate with.
     pub params: Params,
     #[allow(unused)]
     l1glwe_zero: L1GlweCiphertext,
@@ -31,6 +32,7 @@ pub struct KeylessEvaluation {
 }
 
 impl KeylessEvaluation {
+    /// Creates a new [`KeylessEvaluation`]
     pub fn new(params: &Params, enc: &Encryption) -> Self {
         let l1glwe_zero = L1GlweCiphertext::trivial_zero(enc);
         let l1glwe_one = L1GlweCiphertext::trivial_one(enc);
@@ -62,6 +64,7 @@ impl KeylessEvaluation {
         );
     }
 
+    /// Performs a [`cmux`] over GLWE ciphertexts.
     pub fn cmux(
         &self,
         output: &mut L1GlweCiphertext,
@@ -79,6 +82,7 @@ impl KeylessEvaluation {
         );
     }
 
+    /// Performs a CMUX over GLEV ciphertexts. See [`glev_cmux`].
     pub fn glev_cmux(
         &self,
         output: &mut L1GlevCiphertext,
@@ -96,6 +100,7 @@ impl KeylessEvaluation {
         );
     }
 
+    /// Muliplies the given GLWE and GGSW ciphertexts. See [`glwe_ggsw_mad`].
     pub fn multiply_glwe_ggsw(
         &self,
         output: &mut L1GlweCiphertext,
@@ -117,6 +122,7 @@ impl KeylessEvaluation {
         output_fft.ifft(&mut output.0, &self.params.l1_params);
     }
 
+    /// Perform sample extraction. See [`sample_extract`].
     pub fn sample_extract_l1(
         &self,
         output: &mut L1LweCiphertext,
@@ -261,15 +267,12 @@ impl Evaluation {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
     use sunscreen_tfhe::entities::Polynomial;
 
     use crate::{
         DEFAULT_128,
         test_utils::{get_encryption_128, get_evaluation_128, get_secret_keys_128},
     };
-
-    use super::*;
 
     #[test]
     fn can_circuit_bootstrap() {
@@ -501,44 +504,5 @@ mod tests {
         eval.scheme_switch(&mut ggsw, &glev);
 
         assert_eq!(enc.decrypt_ggsw_l1(&ggsw, &sk), msg.coeffs()[0] == 1);
-    }
-
-    #[test]
-    fn can_otp_transcipher() {
-        let enc = get_encryption_128();
-        let eval = KeylessEvaluation::new(&DEFAULT_128, &enc);
-        let sk = get_secret_keys_128();
-
-        let msg = Polynomial::new(
-            &(0..DEFAULT_128.l1_poly_degree().0)
-                .map(|_| thread_rng().next_u64() % 2)
-                .collect::<Vec<_>>(),
-        );
-
-        let ct = enc.encrypt_glwe_l1_secret(&msg, &sk);
-
-        let otp = Polynomial::new(
-            &(0..DEFAULT_128.l1_poly_degree().0)
-                .map(|_| thread_rng().next_u64() % 2)
-                .collect::<Vec<_>>(),
-        );
-
-        let otp_ct = enc.encrypt_glwe_l1_secret(&otp, &sk);
-
-        let mut transcipher_ct = enc.allocate_glwe_l1();
-
-        eval.xor(&mut transcipher_ct, &ct, &otp_ct);
-
-        let transcipher_pt = enc.decrypt_glwe_l1(&transcipher_ct, &sk);
-
-        let actual = transcipher_pt
-            .coeffs()
-            .iter()
-            .zip(otp.coeffs().iter())
-            .map(|(p, o)| (p ^ o) & 0x1)
-            .collect::<Vec<_>>();
-        let actual = Polynomial::new(&actual);
-
-        assert_eq!(actual, msg);
     }
 }

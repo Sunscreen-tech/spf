@@ -78,9 +78,10 @@ pub mod test_utils;
 
 pub use circuit_processor::{CircuitProcessor, CompletionHandler, RuntimeError};
 pub use crypto::{
-    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, L0LweCiphertext, L1GgswCiphertext,
-    L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey, TrivialOne,
-    TrivialZero, ciphertext::CiphertextType,
+    ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, KeylessEvaluation, L0LweCiphertext,
+    L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey, SecretKey,
+    TrivialOne, TrivialZero, ciphertext::CiphertextType, decrypt_one_time_pad,
+    generate_one_time_pad, transcipher_one_time_pad,
 };
 pub use fhe_circuit::{
     FheCircuit, FheEdge, FheOp, SharedL0LweCiphertext, SharedL1GgswCiphertext,

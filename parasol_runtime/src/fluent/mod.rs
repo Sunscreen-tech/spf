@@ -17,13 +17,27 @@ use crate::{
 };
 
 mod bit;
+mod dynamic_generic_int;
+mod dynamic_generic_int_graph_nodes;
 mod generic_int;
+mod generic_int_graph_nodes;
 mod int;
+mod packed_generic_int;
+mod packed_generic_int_graph_node;
+mod packed_dynamic_generic_int_graph_node;
+mod transciphered_int;
 mod uint;
 
 pub use bit::*;
+pub use dynamic_generic_int::*;
+pub use dynamic_generic_int_graph_nodes::*;
 pub use generic_int::*;
+pub use generic_int_graph_nodes::*;
 pub use int::*;
+pub use packed_generic_int::*;
+pub use packed_generic_int_graph_node::*;
+pub use packed_dynamic_generic_int_graph_node::*;
+pub use transciphered_int::*;
 pub use uint::*;
 
 /// A context for building FHE circuits out of high-level primitives (e.g.
@@ -363,7 +377,7 @@ impl Muxable for L1GlevCiphertext {
 mod tests {
     use bit::Bit;
     use generic_int::GenericInt;
-    use rand::{RngCore, thread_rng};
+    use rand::{thread_rng, Rng, RngCore};
     use uint::UInt;
 
     use crate::test_utils::{
@@ -372,13 +386,13 @@ mod tests {
 
     use super::*;
 
-    fn roundtrip<T: CiphertextOps, U: Sign>() {
+    fn roundtrip<T: CiphertextOps, U: Sign, F: Fn() -> U::PlaintextType>(gen_pt: F) {
         let sk = get_secret_keys_128();
         let enc = get_encryption_128();
 
         for _ in 0..32 {
             // Make 16-bit integers.
-            let val = (thread_rng().next_u64() % 0x10000) as u128;
+            let val = gen_pt();
             let ct = GenericInt::<16, T, U>::encrypt_secret(val, &enc, &sk);
             let actual = ct.decrypt(&enc, &sk);
 
@@ -386,31 +400,47 @@ mod tests {
         }
     }
 
+    fn rand_u16() -> u128 {
+        (thread_rng().next_u64() & 0xFFFF) as u128
+    }
+
+    fn rand_i16() -> i128 {
+        (thread_rng().next_u64() & 0xFFFF) as i16 as i128
+    }
+
+    fn rand_u32() -> u128 {
+        (thread_rng().next_u64() & 0xFFFFFFFF) as u128
+    }
+
+    fn rand_i32() -> i128 {
+        (thread_rng().next_u64() & 0xFFFFFFFF) as i16 as i128
+    }
+
     #[test]
     fn can_roundtrip_l0_lwe() {
-        roundtrip::<L0LweCiphertext, Unsigned>();
-        roundtrip::<L0LweCiphertext, Signed>();
+        roundtrip::<L0LweCiphertext, Unsigned, _>(rand_u16);
+        roundtrip::<L0LweCiphertext, Signed, _>(rand_i16);
     }
 
     #[test]
     fn can_roundtrip_l1_lwe() {
-        roundtrip::<L1LweCiphertext, Unsigned>();
-        roundtrip::<L1LweCiphertext, Signed>();
+        roundtrip::<L1LweCiphertext, Unsigned, _>(rand_u16);
+        roundtrip::<L1LweCiphertext, Signed, _>(rand_i16);
     }
 
     #[test]
     fn can_roundtrip_l1_glwe() {
-        roundtrip::<L1GlweCiphertext, Unsigned>();
-        roundtrip::<L1GlweCiphertext, Signed>();
+        roundtrip::<L1GlweCiphertext, Unsigned, _>(rand_u16);
+        roundtrip::<L1GlweCiphertext, Signed, _>(rand_i16);
     }
 
     #[test]
     fn can_roundtrip_l1_ggsw() {
-        roundtrip::<L1GgswCiphertext, Unsigned>();
-        roundtrip::<L1GgswCiphertext, Signed>();
+        roundtrip::<L1GgswCiphertext, Unsigned, _>(rand_u16);
+        roundtrip::<L1GgswCiphertext, Signed, _>(rand_i16);
     }
 
-    fn input_output<T: CiphertextOps, U: Sign>(test_val: u128) {
+    fn input_output<T: CiphertextOps, U: Sign>(test_val: U::PlaintextType) {
         let (uproc, fc) = make_uproc_128();
         let enc = get_encryption_128();
 
@@ -461,7 +491,7 @@ mod tests {
 
     #[test]
     fn can_convert_ciphertexts() {
-        fn convert_test<T: CiphertextOps, U: CiphertextOps, V: Sign>(test_val: u128) {
+        fn convert_test<T: CiphertextOps, U: CiphertextOps, V: Sign>(test_val: V::PlaintextType) {
             let graph = FheCircuitCtx::new();
             let enc = get_encryption_128();
             let (uproc, fc) = make_uproc_128();
@@ -503,7 +533,7 @@ mod tests {
 
     #[test]
     fn can_cmp() {
-        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -557,7 +587,7 @@ mod tests {
 
     #[test]
     fn can_eq() {
-        fn case<OutCt: Muxable, U: Sign>(eq: bool, test_vals: (u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(eq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -638,7 +668,7 @@ mod tests {
 
     #[test]
     fn can_neq() {
-        fn case<OutCt: Muxable, U: Sign>(neq: bool, test_vals: (u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(neq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -772,7 +802,7 @@ mod tests {
 
     #[test]
     fn can_cmp_trivial_nontrivial_ggsw() {
-        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let eval = &get_evaluation_128();
             let sk = get_secret_keys_128();
@@ -827,7 +857,7 @@ mod tests {
 
     #[test]
     fn can_select() {
-        fn case<U: Sign>(test_vals: (u128, u128)) {
+        fn case<U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -866,7 +896,7 @@ mod tests {
 
     #[test]
     fn can_select_plain() {
-        fn case<U: Sign>(test_vals: (u128, u128)) {
+        fn case<U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let eval = &get_evaluation_128();
             let sk = get_secret_keys_128();
@@ -906,7 +936,7 @@ mod tests {
 
     #[test]
     fn can_sub() {
-        fn case<OutCt: Muxable, U: Sign>(test_vals: (u128, u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -942,31 +972,31 @@ mod tests {
 
     #[test]
     fn trivial_generic_int_encryption() {
-        fn case<T: CiphertextOps, U: Sign>() {
+        fn case<T: CiphertextOps, U: Sign, F: Fn() -> U::PlaintextType>(gen_pt: F) {
             let enc = get_encryption_128();
             let eval = &get_evaluation_128();
             let sk = get_secret_keys_128();
 
-            let expected = (thread_rng().next_u64() % (0x1 << 32)) as u128;
+            let expected = gen_pt();
 
             let val = GenericInt::<32, T, U>::trivial(expected, &enc, eval);
 
             assert_eq!(val.decrypt(&enc, &sk), expected);
         }
 
-        case::<L0LweCiphertext, Unsigned>();
-        case::<L0LweCiphertext, Signed>();
-        case::<L1LweCiphertext, Unsigned>();
-        case::<L1LweCiphertext, Signed>();
-        case::<L1GlweCiphertext, Unsigned>();
-        case::<L1GlweCiphertext, Signed>();
-        case::<L1GgswCiphertext, Unsigned>();
-        case::<L1GgswCiphertext, Signed>();
+        case::<L0LweCiphertext, Unsigned, _>(rand_u32);
+        case::<L0LweCiphertext, Signed, _>(rand_i32);
+        case::<L1LweCiphertext, Unsigned, _>(rand_u32);
+        case::<L1LweCiphertext, Signed, _>(rand_i32);
+        case::<L1GlweCiphertext, Unsigned, _>(rand_u32);
+        case::<L1GlweCiphertext, Signed, _>(rand_i32);
+        case::<L1GgswCiphertext, Unsigned, _>(rand_u32);
+        case::<L1GgswCiphertext, Signed, _>(rand_i32);
     }
 
     #[test]
     fn can_resize() {
-        fn case<T: CiphertextOps, U: Sign>(test_vals: (u128, u128, u128)) {
+        fn case<T: CiphertextOps, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -1013,7 +1043,7 @@ mod tests {
 
     #[test]
     fn can_add() {
-        fn case<OutCt: Muxable, U: Sign>(test_vals: (u128, u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -1049,7 +1079,7 @@ mod tests {
 
     #[test]
     fn can_mul() {
-        fn case<OutCt: Muxable, U: Sign>(test_vals: (u128, u128, u128)) {
+        fn case<OutCt: Muxable, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();

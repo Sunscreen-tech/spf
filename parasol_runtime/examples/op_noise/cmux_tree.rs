@@ -4,9 +4,7 @@ use clap::Args;
 use indicatif::{ProgressBar, ProgressStyle};
 use ndarray::{Array1, Array2};
 use num::Complex;
-use parasol_runtime::{
-    ComputeKey, Params, SecretKey,
-};
+use parasol_runtime::{ComputeKey, Params, SecretKey};
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
 use scirs2_optimize::{Bounds, bounded_least_squares, prelude::BoundedOptions};

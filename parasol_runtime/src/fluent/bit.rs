@@ -3,10 +3,9 @@ use std::{marker::PhantomData, sync::Arc};
 use parasol_concurrency::AtomicRefCell;
 use serde::{Deserialize, Serialize};
 
-use super::{CiphertextOps, FheCircuitCtx, Sign, generic_int::GenericIntGraphNodes};
+use super::{CiphertextOps, FheCircuitCtx, Sign};
 use crate::{
-    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey,
-    insert_ciphertext_conversion, safe_bincode::GetSize,
+    fluent::GenericIntGraphNodes, insert_ciphertext_conversion, safe_bincode::GetSize, Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey
 };
 
 use petgraph::stable_graph::NodeIndex;

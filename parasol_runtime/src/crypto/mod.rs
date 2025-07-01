@@ -2,10 +2,12 @@ pub mod ciphertext;
 mod encryption;
 mod evaluation;
 mod keys;
+mod transciphering;
 
 pub use encryption::*;
 pub use evaluation::*;
 pub use keys::*;
+pub use transciphering::*;
 
 /// A trait that produces a trivial zero encryption for the implementing ciphertext type.
 pub trait TrivialZero
