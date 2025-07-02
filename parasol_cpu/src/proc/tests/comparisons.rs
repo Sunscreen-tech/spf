@@ -40,13 +40,13 @@ fn run_single_test(
     ) {
         ArgsBuilder::new()
             .arg(MaybeEncryptedInt::<32>::new(
-                val1 as i128,
+                val1.cast_signed() as i128,
                 enc,
                 &sk,
                 encrypted_computation,
             ))
             .arg(MaybeEncryptedInt::<32>::new(
-                val2 as i128,
+                val2.cast_signed() as i128,
                 enc,
                 &sk,
                 encrypted_computation,

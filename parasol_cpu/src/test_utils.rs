@@ -270,8 +270,8 @@ mod tests {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
 
-        for i in 118..138 {
-            let val = MaybeEncryptedInt::<8>::new(i, &enc, &sk, i % 2 == 0);
+        for i in 118..138u8 {
+            let val = MaybeEncryptedInt::<8>::new(i.cast_signed() as i128, &enc, &sk, i % 2 == 0);
             assert_eq!(val.get(&enc, &sk), i as i8);
         }
     }
