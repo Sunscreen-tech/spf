@@ -907,7 +907,7 @@ mod tests {
         }
 
         case::<Unsigned>((42, 24));
-        case::<Signed>((65442, 65424));
+        case::<Signed>((-94, -112));
     }
 
     #[test]
@@ -947,7 +947,7 @@ mod tests {
         }
 
         case::<Unsigned>((42, 24));
-        case::<Signed>((65442, 65424));
+        case::<Signed>((-94, -112));
     }
 
     #[test]
