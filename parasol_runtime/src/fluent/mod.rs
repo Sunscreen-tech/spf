@@ -705,9 +705,11 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>(false, (43, 43));
-            case::<OutCt, Signed>(false, (65501, 65501));
+            case::<OutCt, Signed>(false, (-43, -43));
             case::<OutCt, Unsigned>(true, (43, 42));
-            case::<OutCt, Signed>(true, (65501, 65500));
+            case::<OutCt, Signed>(true, (43, 42));
+            case::<OutCt, Signed>(true, (-43, -42));
+            case::<OutCt, Signed>(true, (42, -42));
         }
 
         cases::<L1GlweCiphertext>();
@@ -852,17 +854,17 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>(false, false, (43, 42));
-            case::<OutCt, Signed>(false, false, (65501, 65500));
-            case::<OutCt, Signed>(false, false, (1, 65535));
+            case::<OutCt, Signed>(false, false, (-35, -36));
+            case::<OutCt, Signed>(false, false, (1, -42));
             case::<OutCt, Unsigned>(false, true, (43, 42));
-            case::<OutCt, Signed>(false, true, (65501, 65500));
-            case::<OutCt, Signed>(false, true, (1, 65535));
+            case::<OutCt, Signed>(false, true, (-35, -36));
+            case::<OutCt, Signed>(false, true, (1, -42));
             case::<OutCt, Unsigned>(true, false, (43, 42));
-            case::<OutCt, Signed>(true, false, (65501, 65500));
-            case::<OutCt, Signed>(true, false, (1, 65535));
+            case::<OutCt, Signed>(true, false, (-35, -36));
+            case::<OutCt, Signed>(true, false, (1, -42));
             case::<OutCt, Unsigned>(true, true, (43, 42));
-            case::<OutCt, Signed>(true, true, (65501, 65500));
-            case::<OutCt, Signed>(true, true, (1, 65535));
+            case::<OutCt, Signed>(true, true, (-35, -36));
+            case::<OutCt, Signed>(true, true, (1, -42));
         }
 
         cases::<L1GlweCiphertext>();
@@ -1048,15 +1050,15 @@ mod tests {
 
         case::<L0LweCiphertext, Unsigned>((1234, 1234, 210));
         case::<L0LweCiphertext, Signed>((1234, 1234, 82));
-        case::<L0LweCiphertext, Signed>((65432, 16777112, 152));
+        case::<L0LweCiphertext, Signed>((-1234, -1234, -82));
         // unimplemented
         //case::<L1LweCiphertext>();
         case::<L1GlweCiphertext, Unsigned>((1234, 1234, 210));
         case::<L1GlweCiphertext, Signed>((1234, 1234, 82));
-        case::<L1GlweCiphertext, Signed>((65432, 16777112, 152));
+        case::<L1GlweCiphertext, Signed>((-1234, -1234, -82));
         case::<L1GgswCiphertext, Unsigned>((1234, 1234, 210));
         case::<L1GgswCiphertext, Signed>((1234, 1234, 82));
-        case::<L1GgswCiphertext, Signed>((65432, 16777112, 152));
+        case::<L1GgswCiphertext, Signed>((-1234, -1234, -82));
     }
 
     #[test]
@@ -1124,7 +1126,7 @@ mod tests {
 
         case::<L1GlweCiphertext, Unsigned>((42, 16, 672));
         case::<L1GlweCiphertext, Signed>((42, 16, 672));
-        case::<L1GlweCiphertext, Signed>((42, 65520 /* -16 */, 64864 /* -672 */));
-        case::<L1GlweCiphertext, Signed>((65494 /* -42 */, 65520 /* -16 */, 672));
+        case::<L1GlweCiphertext, Signed>((42, -16, -672));
+        case::<L1GlweCiphertext, Signed>((-42, -16, 672));
     }
 }

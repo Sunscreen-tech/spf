@@ -240,10 +240,10 @@ where
             .to_bits(n)
             .map(|x| x as u64)
             .chain(std::iter::repeat(0))
-            .take(n)
+            .take(enc.params.l1_poly_degree().0)
             .collect::<Vec<_>>();
 
-        assert!(coeffs.len() < n);
+        assert!(coeffs.len() <= enc.params.l1_poly_degree().0);
 
         Polynomial::<u64>::new(&coeffs)
     }

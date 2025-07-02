@@ -23,14 +23,6 @@ impl PlaintextOps for i128 {
         assert!(*self >= -(0x1 << (bits - 1)));
     }
 
-    // fn extract_bit_as_bool(&self, bit: usize) -> bool {
-    //     self.extract_bit(bit) == 0x1
-    // }
-
-    // fn extract_bit(&self, bit: usize) -> Self {
-    //     (*self >> bit) & 0x1
-    // }
-
     fn from_bits<I: Iterator<Item = bool>>(i: I) -> Self {
         let mut bits = 0;
 
@@ -327,7 +319,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let pk = PublicKey::generate(&DEFAULT_128, &sk);
 
-        let val = PackedInt::<15, L1GlweCiphertext>::encrypt(2i128.pow(15) - 42, &enc, &pk);
+        let val = PackedInt::<15, L1GlweCiphertext>::encrypt(-42, &enc, &pk);
 
         let ser = bincode::serialize(&val).unwrap();
         crate::safe_bincode::deserialize::<PackedInt<15, L1GlweCiphertext>>(&ser, &DEFAULT_128)
@@ -340,7 +332,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let pk = PublicKey::generate(&DEFAULT_128, &sk);
 
-        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(2i128.pow(15) - 42, &enc, &pk, 15);
+        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(-42, &enc, &pk, 15);
 
         let ser = bincode::serialize(&val).unwrap();
         crate::safe_bincode::deserialize::<PackedDynamicInt<L1GlweCiphertext>>(&ser, &DEFAULT_128)
