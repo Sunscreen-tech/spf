@@ -572,17 +572,17 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>(false, false, (43, 42));
-            case::<OutCt, Signed>(false, false, (65501, 65500));
-            case::<OutCt, Signed>(false, false, (1, 65535));
+            case::<OutCt, Signed>(false, false, (-35, -36));
+            case::<OutCt, Signed>(false, false, (1, -3));
             case::<OutCt, Unsigned>(false, true, (43, 42));
-            case::<OutCt, Signed>(false, true, (65501, 65500));
-            case::<OutCt, Signed>(false, true, (1, 65535));
+            case::<OutCt, Signed>(false, true, (-37, -38));
+            case::<OutCt, Signed>(false, true, (1, -3));
             case::<OutCt, Unsigned>(true, false, (43, 42));
-            case::<OutCt, Signed>(true, false, (65501, 65500));
-            case::<OutCt, Signed>(true, false, (1, 65535));
+            case::<OutCt, Signed>(true, false, (-37, -38));
+            case::<OutCt, Signed>(true, false, (1, -3));
             case::<OutCt, Unsigned>(true, true, (43, 42));
-            case::<OutCt, Signed>(true, true, (65501, 65500));
-            case::<OutCt, Signed>(true, true, (1, 65535));
+            case::<OutCt, Signed>(true, true, (-37, -38));
+            case::<OutCt, Signed>(true, true, (1, -3));
         }
 
         cases::<L1GlweCiphertext>();
@@ -621,9 +621,9 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>(false, (43, 42));
-            case::<OutCt, Signed>(false, (65501, 65500));
+            case::<OutCt, Signed>(false, (-37, -38));
             case::<OutCt, Unsigned>(true, (43, 43));
-            case::<OutCt, Signed>(true, (65501, 65501));
+            case::<OutCt, Signed>(true, (-37, -37));
         }
 
         cases::<L1GlweCiphertext>();
@@ -978,10 +978,10 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>((42, 16, 26));
-            case::<OutCt, Signed>((65531, 65529, 2));
-            case::<OutCt, Signed>((65531, 2, 65529));
-            case::<OutCt, Signed>((65531, 65533, 65534));
-            case::<OutCt, Signed>((2, 65531, 7));
+            case::<OutCt, Signed>((-7, -9, 2));
+            case::<OutCt, Signed>((-7, 2, -9));
+            case::<OutCt, Signed>((-7, -5, -2));
+            case::<OutCt, Signed>((2, -7, 9));
         }
 
         cases::<L1GlweCiphertext>();
@@ -1090,9 +1090,9 @@ mod tests {
 
         fn cases<OutCt: Muxable>() {
             case::<OutCt, Unsigned>((42, 16, 58));
-            case::<OutCt, Signed>((65530, 16, 10));
-            case::<OutCt, Signed>((65530, 65529, 65523));
-            case::<OutCt, Signed>((65528, 2, 65530));
+            case::<OutCt, Signed>((-6, 16, 10));
+            case::<OutCt, Signed>((-6, -7, -13));
+            case::<OutCt, Signed>((-8, 2, -6));
         }
 
         cases::<L1GlweCiphertext>();

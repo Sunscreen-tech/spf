@@ -22,14 +22,6 @@ impl PlaintextOps for u128 {
         assert!(*self < 0x1 << bits);
     }
 
-    // fn extract_bit_as_bool(&self, bit: usize) -> bool {
-    //     self.extract_bit(bit) == 0x1
-    // }
-
-    // fn extract_bit(&self, bit: usize) -> Self {
-    //     (*self >> bit) & 0x1
-    // }
-
     fn from_bits<I: Iterator<Item = bool>>(iter: I) -> Self {
         iter.enumerate()
             .fold(0u128, |s, (i, x)| s + ((x as u128) << i))
