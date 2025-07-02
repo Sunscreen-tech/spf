@@ -28,7 +28,7 @@ impl PlaintextOps for u128 {
     }
 
     fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
-        (0..len).into_iter().map(|i| ((*self >> i) & 0x1) == 0x1)
+        (0..len).map(|i| ((*self >> i) & 0x1) == 0x1)
     }
 }
 

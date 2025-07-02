@@ -48,9 +48,6 @@ num_cpus = { workspace = true }
 itertools = { workspace = true }
 serde_json = { workspace = true }
 
-[profile.dev.package."*"]
-opt-level = 3
-
 [[bench]]
 harness = false
 name = "auction"

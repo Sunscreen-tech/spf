@@ -58,7 +58,7 @@ impl<U: Sign> RecryptedGenericInt<U> {
 
         U::PlaintextType::from_bits(
             poly.coeffs()
-                .into_iter()
+                .iter()
                 .map(|x| *x == 1)
                 .take(self.bit_len as usize),
         )
