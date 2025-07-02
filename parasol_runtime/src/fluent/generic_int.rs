@@ -243,8 +243,6 @@ where
             .take(enc.params.l1_poly_degree().0)
             .collect::<Vec<_>>();
 
-        assert!(coeffs.len() <= enc.params.l1_poly_degree().0);
-
         Polynomial::<u64>::new(&coeffs)
     }
 
