@@ -31,6 +31,7 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1.0.98"
+benchmark_system_info = { workspace = true }
 chrono = "0.4.41"
 clap = { workspace = true }
 criterion = { workspace = true }

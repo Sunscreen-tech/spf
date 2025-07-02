@@ -1,11 +1,11 @@
 use std::sync::{Arc, OnceLock};
 
+use benchmark_system_info::print_system_info;
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory, assembly::IsaOp, register_names::*};
 use parasol_runtime::{
     ComputeKey, DEFAULT_128, Encryption, Evaluation, L1GlweCiphertext, SecretKey,
     fluent::{UInt, UInt16},
-    metadata::print_system_info,
 };
 use rayon::ThreadPoolBuilder;
 

@@ -41,6 +41,7 @@ default = []
 debug = []
 
 [dev-dependencies]
+benchmark_system_info = { workspace = true }
 criterion = { workspace = true }
 env_logger = { workspace = true }
 num_cpus = { workspace = true }

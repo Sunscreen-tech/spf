@@ -232,7 +232,7 @@ checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
 name = "benchmark_system_info"
-version = "0.1.0"
+version = "0.9.0"
 dependencies = [
  "reqwest",
  "serde",
@@ -1864,6 +1864,7 @@ dependencies = [
 name = "parasol_cpu"
 version = "0.9.0"
 dependencies = [
+ "benchmark_system_info",
  "bincode",
  "biodivine-lib-bdd",
  "bytemuck",
@@ -1906,6 +1907,7 @@ name = "parasol_runtime"
 version = "0.9.0"
 dependencies = [
  "anyhow",
+ "benchmark_system_info",
  "bincode",
  "bumpalo",
  "chrono",
