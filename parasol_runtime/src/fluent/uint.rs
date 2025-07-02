@@ -19,7 +19,7 @@ pub struct Unsigned;
 
 impl PlaintextOps for u128 {
     fn assert_in_bounds(&self, bits: usize) {
-        assert!(*self < 0x1 << bits);
+        assert!(bits == 128 || *self < 0x1 << bits);
     }
 
     fn from_bits<I: Iterator<Item = bool>>(iter: I) -> Self {

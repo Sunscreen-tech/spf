@@ -19,8 +19,11 @@ pub struct Signed;
 
 impl PlaintextOps for i128 {
     fn assert_in_bounds(&self, bits: usize) {
-        assert!(*self < 0x1 << (bits - 1));
-        assert!(*self >= -(0x1 << (bits - 1)));
+        let max_val = ((0x1u128 << (bits - 1)) - 1).cast_signed();
+        let min_val = -(0x1u128 << (bits - 1)).cast_signed();
+
+        assert!(bits == 128 || *self <= max_val);
+        assert!(bits == 128 || *self >= min_val);
     }
 
     fn from_bits<I: Iterator<Item = bool>>(i: I) -> Self {
@@ -128,18 +131,6 @@ pub type PackedInt128 = PackedInt<128, L1GlweCiphertext>;
 
 /// Encrypted packed 256 bit integer. This is a specialization of [`PackedInt`] for 256 bits and [`L1GlweCiphertext`].
 pub type PackedInt256 = PackedInt<256, L1GlweCiphertext>;
-
-/// Given input [`u128`] of `bits` length, sign extend and return the value as
-/// an [`i128`]
-pub(crate) fn sign_extend(mut val: u128, bits: u32) -> i128 {
-    let sign = (val >> (bits - 1)) & 0x1;
-
-    for i in bits..128 {
-        val += sign << i;
-    }
-
-    val as i128
-}
 
 #[cfg(test)]
 mod tests {
