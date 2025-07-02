@@ -22,7 +22,7 @@ where
     T: CiphertextOps,
     U: Sign,
 {
-    /// Allocate a new [`DynamicGenericInt`] using trivial or precomputed (if T is [`L1GgswCiphertext`]) encryptions
+    /// Allocate a new [`DynamicGenericInt`] using trivial or precomputed (if T is [`L1GgswCiphertext`](crate::L1GgswCiphertext)) encryptions
     /// of zero.
     pub fn new(enc: &Encryption, n: usize) -> Self {
         Self {
@@ -115,11 +115,11 @@ where
     /// Create a trivial encryption of `val`.
     ///
     /// # Remarks
-    /// If `T` is [`L1GgswCiphertext`], then the result will contain precomputed
-    /// rather than trivial ciphertexts.
+    /// If `T` is [`L1GgswCiphertext`](crate::L1GgswCiphertext), then the result
+    /// will contain precomputed rather than trivial ciphertexts.
     ///
     /// # Panics
-    /// If `val >= 2^n` (only when `n` is 63 or smaller)
+    /// If `val >= 2**n` or `val < -(2**n)`
     pub fn trivial(val: U::PlaintextType, enc: &Encryption, eval: &Evaluation, n: usize) -> Self {
         val.assert_in_bounds(n);
 

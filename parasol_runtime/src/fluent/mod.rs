@@ -25,7 +25,7 @@ mod int;
 mod packed_dynamic_generic_int_graph_node;
 mod packed_generic_int;
 mod packed_generic_int_graph_node;
-mod transciphered_int;
+mod recrypted_int;
 mod uint;
 
 pub use bit::*;
@@ -37,7 +37,7 @@ pub use int::*;
 pub use packed_dynamic_generic_int_graph_node::*;
 pub use packed_generic_int::*;
 pub use packed_generic_int_graph_node::*;
-pub use transciphered_int::*;
+pub use recrypted_int::*;
 pub use uint::*;
 
 /// A context for building FHE circuits out of high-level primitives (e.g.
@@ -413,7 +413,7 @@ mod tests {
     }
 
     fn rand_i32() -> i128 {
-        (thread_rng().next_u64() & 0xFFFFFFFF) as i16 as i128
+        (thread_rng().next_u64() & 0xFFFFFFFF) as i32 as i128
     }
 
     #[test]

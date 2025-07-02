@@ -26,18 +26,18 @@ impl PlaintextOps for i128 {
         assert!(bits == 128 || *self >= min_val);
     }
 
-    fn from_bits<I: Iterator<Item = bool>>(i: I) -> Self {
-        let mut bits = 0;
+    fn from_bits<I: Iterator<Item = bool>>(bits: I) -> Self {
+        let mut num_bits = 0;
 
-        let mut val = i.enumerate().fold(0i128, |s, (i, x)| {
-            bits += 1;
+        let mut val = bits.enumerate().fold(0i128, |s, (i, x)| {
+            num_bits += 1;
             s | ((x as i128) << i)
         });
 
-        let sign = (val >> bits - 1) & 0x1;
+        let sign = (val >> (num_bits - 1)) & 0x1;
 
         // Sign extend our value to 128-bit.
-        for i in bits..128 {
+        for i in num_bits..128 {
             val |= sign << i;
         }
 
@@ -45,9 +45,7 @@ impl PlaintextOps for i128 {
     }
 
     fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
-        (0..len)
-            .enumerate()
-            .map(|(i, _)| ((*self >> i) & 0x1) == 0x1)
+        (0..len).into_iter().map(|i| ((*self >> i) & 0x1) == 0x1)
     }
 }
 

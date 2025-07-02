@@ -3,9 +3,9 @@ use std::{marker::PhantomData, mem::size_of, ops::Deref, sync::Arc};
 use crate::{
     Encryption, Evaluation, KeylessEvaluation, L1GlweCiphertext, SecretKey,
     crypto::{PublicKey, PublicOneTimePad},
-    fluent::{DynamicGenericInt, EncryptedTranscipheredInt, PackedDynamicGenericIntGraphNode},
+    fluent::{DynamicGenericInt, EncryptedRecryptedGenricInt, PackedDynamicGenericIntGraphNode},
+    recrypt_one_time_pad,
     safe_bincode::GetSize,
-    transcipher_one_time_pad,
 };
 
 use super::{CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PolynomialCiphertextOps};
@@ -100,7 +100,7 @@ where
     T: CiphertextOps,
     U: Sign,
 {
-    /// Allocate a new [`GenericInt`] using trivial or precomputed (if T is [`L1GgswCiphertext`]) encryptions
+    /// Allocate a new [`GenericInt`] using trivial or precomputed (if T is [`L1GgswCiphertext`](crate::L1GgswCiphertext)) encryptions
     /// of zero.
     pub fn new(enc: &Encryption) -> Self {
         Self {
@@ -293,15 +293,15 @@ where
 }
 
 impl<U: Sign> PackedDynamicGenericInt<L1GlweCiphertext, U> {
-    /// Transciphers this integer under the given [`PublicOneTimePad`].
-    pub fn transcipher(
+    /// Recrypts this integer under the given [`PublicOneTimePad`].
+    pub fn recrypt(
         &self,
         enc: &Encryption,
         eval: &KeylessEvaluation,
         otp: &PublicOneTimePad,
-    ) -> EncryptedTranscipheredInt<U> {
-        let t = transcipher_one_time_pad(&self.ct.borrow(), otp, eval, enc);
+    ) -> EncryptedRecryptedGenricInt<U> {
+        let t = recrypt_one_time_pad(&self.ct.borrow(), otp, eval, enc);
 
-        EncryptedTranscipheredInt::new(self.bit_len, t)
+        EncryptedRecryptedGenricInt::new(self.bit_len, t)
     }
 }

@@ -4,7 +4,8 @@ use crate::fluent::{
     CiphertextOps, PackedDynamicGenericIntGraphNode, PolynomialCiphertextOps, Sign,
 };
 
-/// FIXME
+/// A node in an FHE circuit corresponding to a packed integer. In this
+/// version, the size of the integer `N` is known at compilation time.
 pub struct PackedGenericIntGraphNode<
     const N: usize,
     T: CiphertextOps + PolynomialCiphertextOps,

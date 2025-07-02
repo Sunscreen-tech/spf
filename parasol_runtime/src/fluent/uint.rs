@@ -24,13 +24,11 @@ impl PlaintextOps for u128 {
 
     fn from_bits<I: Iterator<Item = bool>>(iter: I) -> Self {
         iter.enumerate()
-            .fold(0u128, |s, (i, x)| s + ((x as u128) << i))
+            .fold(0u128, |s, (i, x)| s | ((x as u128) << i))
     }
 
     fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
-        (0..len)
-            .enumerate()
-            .map(|(i, _)| ((*self >> i) & 0x1) == 0x1)
+        (0..len).into_iter().map(|i| ((*self >> i) & 0x1) == 0x1)
     }
 }
 

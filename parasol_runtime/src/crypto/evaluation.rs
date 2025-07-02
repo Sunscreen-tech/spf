@@ -82,7 +82,7 @@ impl KeylessEvaluation {
         );
     }
 
-    /// Performs a CMUX over GLEV ciphertexts. See [`glev_cmux`].
+    /// Performs a CMux over GLEV ciphertexts. See [`glev_cmux`].
     pub fn glev_cmux(
         &self,
         output: &mut L1GlevCiphertext,
@@ -100,7 +100,7 @@ impl KeylessEvaluation {
         );
     }
 
-    /// Muliplies the given GLWE and GGSW ciphertexts. See [`glwe_ggsw_mad`].
+    /// Multiplies the given GLWE and GGSW ciphertexts. See [`glwe_ggsw_mad`].
     pub fn multiply_glwe_ggsw(
         &self,
         output: &mut L1GlweCiphertext,
@@ -122,7 +122,7 @@ impl KeylessEvaluation {
         output_fft.ifft(&mut output.0, &self.params.l1_params);
     }
 
-    /// Perform sample extraction. See [`sample_extract`].
+    /// Performs sample extraction. See [`sample_extract`].
     pub fn sample_extract_l1(
         &self,
         output: &mut L1LweCiphertext,
