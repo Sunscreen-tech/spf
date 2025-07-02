@@ -5,9 +5,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     Encryption, Evaluation, SecretKey,
-    fluent::{
-        CiphertextOps, DynamicGenericIntGraphNodes, FheCircuitCtx, PlaintextOps, Sign,
-    },
+    fluent::{CiphertextOps, DynamicGenericIntGraphNodes, FheCircuitCtx, PlaintextOps, Sign},
 };
 
 #[derive(Clone, Serialize, Deserialize)]
@@ -77,7 +75,8 @@ where
         val.assert_in_bounds(n);
 
         Self {
-            bits: val.to_bits(n)
+            bits: val
+                .to_bits(n)
                 .map(|x| {
                     let ct = T::encrypt_secret(x, enc, sk);
                     Arc::new(AtomicRefCell::new(ct))
@@ -125,7 +124,8 @@ where
         val.assert_in_bounds(n);
 
         Self {
-            bits: val.to_bits(n)
+            bits: val
+                .to_bits(n)
                 .map(|i| {
                     let ct = T::trivial_encryption(i, enc, eval);
                     Arc::new(AtomicRefCell::new(ct))

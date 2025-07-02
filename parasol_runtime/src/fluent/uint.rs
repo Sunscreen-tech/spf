@@ -1,11 +1,12 @@
-use crate::{circuits::mul::append_uint_multiply, fluent::{DynamicGenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, PlaintextOps}, L1GlweCiphertext};
+use crate::{
+    L1GlweCiphertext,
+    circuits::mul::append_uint_multiply,
+    fluent::{DynamicGenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, PlaintextOps},
+};
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
-    generic_int::{
-        GenericInt, PackedDynamicGenericInt,
-        Sign,
-    },
+    generic_int::{GenericInt, PackedDynamicGenericInt, Sign},
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
@@ -29,14 +30,15 @@ impl PlaintextOps for u128 {
     //     (*self >> bit) & 0x1
     // }
 
-    fn from_bits<I: Iterator<Item=bool>>(iter: I) -> Self {
-        iter.enumerate().fold(0u128, |s, (i, x)| {
-            s + ((x as u128) << i)
-        })
+    fn from_bits<I: Iterator<Item = bool>>(iter: I) -> Self {
+        iter.enumerate()
+            .fold(0u128, |s, (i, x)| s + ((x as u128) << i))
     }
 
-    fn to_bits(&self, len: usize) -> impl Iterator<Item=bool> {
-        (0..len).enumerate().map(|(i, _)| ((*self >> i) & 0x1) == 0x1)
+    fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
+        (0..len)
+            .enumerate()
+            .map(|(i, _)| ((*self >> i) & 0x1) == 0x1)
     }
 }
 

@@ -22,9 +22,9 @@ mod dynamic_generic_int_graph_nodes;
 mod generic_int;
 mod generic_int_graph_nodes;
 mod int;
+mod packed_dynamic_generic_int_graph_node;
 mod packed_generic_int;
 mod packed_generic_int_graph_node;
-mod packed_dynamic_generic_int_graph_node;
 mod transciphered_int;
 mod uint;
 
@@ -34,9 +34,9 @@ pub use dynamic_generic_int_graph_nodes::*;
 pub use generic_int::*;
 pub use generic_int_graph_nodes::*;
 pub use int::*;
+pub use packed_dynamic_generic_int_graph_node::*;
 pub use packed_generic_int::*;
 pub use packed_generic_int_graph_node::*;
-pub use packed_dynamic_generic_int_graph_node::*;
 pub use transciphered_int::*;
 pub use uint::*;
 
@@ -377,7 +377,7 @@ impl Muxable for L1GlevCiphertext {
 mod tests {
     use bit::Bit;
     use generic_int::GenericInt;
-    use rand::{thread_rng, Rng, RngCore};
+    use rand::{RngCore, thread_rng};
     use uint::UInt;
 
     use crate::test_utils::{
@@ -533,7 +533,11 @@ mod tests {
 
     #[test]
     fn can_cmp() {
-        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            gt: bool,
+            eq: bool,
+            test_vals: (U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -587,7 +591,10 @@ mod tests {
 
     #[test]
     fn can_eq() {
-        fn case<OutCt: Muxable, U: Sign>(eq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            eq: bool,
+            test_vals: (U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -668,7 +675,10 @@ mod tests {
 
     #[test]
     fn can_neq() {
-        fn case<OutCt: Muxable, U: Sign>(neq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            neq: bool,
+            test_vals: (U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -802,7 +812,11 @@ mod tests {
 
     #[test]
     fn can_cmp_trivial_nontrivial_ggsw() {
-        fn case<OutCt: Muxable, U: Sign>(gt: bool, eq: bool, test_vals: (U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            gt: bool,
+            eq: bool,
+            test_vals: (U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = &get_encryption_128();
             let eval = &get_evaluation_128();
             let sk = get_secret_keys_128();
@@ -936,7 +950,9 @@ mod tests {
 
     #[test]
     fn can_sub() {
-        fn case<OutCt: Muxable, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = &get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -996,7 +1012,9 @@ mod tests {
 
     #[test]
     fn can_resize() {
-        fn case<T: CiphertextOps, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
+        fn case<T: CiphertextOps, U: Sign>(
+            test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -1043,7 +1061,9 @@ mod tests {
 
     #[test]
     fn can_add() {
-        fn case<OutCt: Muxable, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();
@@ -1079,7 +1099,9 @@ mod tests {
 
     #[test]
     fn can_mul() {
-        fn case<OutCt: Muxable, U: Sign>(test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType)) {
+        fn case<OutCt: Muxable, U: Sign>(
+            test_vals: (U::PlaintextType, U::PlaintextType, U::PlaintextType),
+        ) {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
             let ctx = FheCircuitCtx::new();

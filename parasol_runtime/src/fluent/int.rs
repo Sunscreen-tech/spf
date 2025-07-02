@@ -1,11 +1,12 @@
-use crate::{circuits::mul::append_int_multiply, fluent::{DynamicGenericInt, PlaintextOps, GenericIntGraphNodes, PackedGenericIntGraphNode}, L1GlweCiphertext};
+use crate::{
+    L1GlweCiphertext,
+    circuits::mul::append_int_multiply,
+    fluent::{DynamicGenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, PlaintextOps},
+};
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
-    generic_int::{
-        GenericInt, PackedDynamicGenericInt,
-        Sign,
-    },
+    generic_int::{GenericInt, PackedDynamicGenericInt, Sign},
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal_signed;
@@ -30,7 +31,7 @@ impl PlaintextOps for i128 {
     //     (*self >> bit) & 0x1
     // }
 
-    fn from_bits<I: Iterator<Item=bool>>(i: I) -> Self {
+    fn from_bits<I: Iterator<Item = bool>>(i: I) -> Self {
         let mut bits = 0;
 
         let mut val = i.enumerate().fold(0i128, |s, (i, x)| {
@@ -48,8 +49,10 @@ impl PlaintextOps for i128 {
         val
     }
 
-    fn to_bits(&self, len: usize) -> impl Iterator<Item=bool> {
-        (0..len).enumerate().map(|(i, _)| ((*self >> i) & 0x1) == 0x1)
+    fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
+        (0..len)
+            .enumerate()
+            .map(|(i, _)| ((*self >> i) & 0x1) == 0x1)
     }
 }
 
@@ -359,8 +362,7 @@ mod tests {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
 
-        let val =
-            PackedDynamicInt::<L1GlweCiphertext>::trivial_encrypt(-42, &enc, 15);
+        let val = PackedDynamicInt::<L1GlweCiphertext>::trivial_encrypt(-42, &enc, 15);
 
         assert_eq!(val.decrypt(&enc, &sk), -42);
     }

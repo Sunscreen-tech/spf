@@ -5,7 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{CiphertextOps, FheCircuitCtx, Sign};
 use crate::{
-    fluent::GenericIntGraphNodes, insert_ciphertext_conversion, safe_bincode::GetSize, Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey
+    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey,
+    fluent::GenericIntGraphNodes, insert_ciphertext_conversion, safe_bincode::GetSize,
 };
 
 use petgraph::stable_graph::NodeIndex;

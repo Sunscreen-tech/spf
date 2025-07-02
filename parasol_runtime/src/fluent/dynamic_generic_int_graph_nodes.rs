@@ -1,9 +1,21 @@
 use bumpalo::Bump;
-use mux_circuits::{add::ripple_carry_adder, and::make_and_circuit, comparisons::{compare_equal, compare_not_equal}, sub::full_subtractor};
+use mux_circuits::{
+    add::ripple_carry_adder,
+    and::make_and_circuit,
+    comparisons::{compare_equal, compare_not_equal},
+    sub::full_subtractor,
+};
 use petgraph::stable_graph::NodeIndex;
 use std::marker::PhantomData;
 
-use crate::{fluent::{BitNode, CiphertextOps, DynamicGenericInt, FheCircuitCtx, Muxable, PackedDynamicGenericIntGraphNode, Sign}, prune, Encryption, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext};
+use crate::{
+    Encryption, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext,
+    fluent::{
+        BitNode, CiphertextOps, DynamicGenericInt, FheCircuitCtx, Muxable,
+        PackedDynamicGenericIntGraphNode, Sign,
+    },
+    prune,
+};
 
 /// A collection of graph nodes resulting from FHE operations over dynamic generic integers (e.g. the
 /// result of adding two 7-bit values).

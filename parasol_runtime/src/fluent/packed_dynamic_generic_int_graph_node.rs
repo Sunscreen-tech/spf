@@ -3,7 +3,13 @@ use std::{marker::PhantomData, sync::Arc};
 use parasol_concurrency::AtomicRefCell;
 use petgraph::stable_graph::NodeIndex;
 
-use crate::{fluent::{CiphertextOps, DynamicGenericIntGraphNodes, FheCircuitCtx, PackedDynamicGenericInt, PolynomialCiphertextOps, Sign}, Encryption, FheEdge, FheOp, L1GlweCiphertext, L1LweCiphertext};
+use crate::{
+    Encryption, FheEdge, FheOp, L1GlweCiphertext, L1LweCiphertext,
+    fluent::{
+        CiphertextOps, DynamicGenericIntGraphNodes, FheCircuitCtx, PackedDynamicGenericInt,
+        PolynomialCiphertextOps, Sign,
+    },
+};
 
 /// A graph node that represents a dynamic generic integer in packed form. See [`PackedDynamicGenericInt`] for a
 /// description of packing.

@@ -2,8 +2,11 @@ use std::ops::Deref;
 
 use serde::{Deserialize, Serialize};
 
-use crate::{fluent::{CiphertextOps, PackedDynamicGenericInt, PolynomialCiphertextOps, Sign, Signed, Unsigned}, safe_bincode::GetSize, Encryption, PublicKey, SecretKey};
-
+use crate::{
+    Encryption, PublicKey, SecretKey,
+    fluent::{CiphertextOps, PackedDynamicGenericInt, PolynomialCiphertextOps, Sign},
+    safe_bincode::GetSize,
+};
 
 #[derive(Clone, Serialize, Deserialize)]
 /// A generic integer in the packed form with a constant size generic parameter, similar to [`PackedDynamicGenericInt`]
@@ -60,13 +63,12 @@ impl<const N: usize, T: CiphertextOps + PolynomialCiphertextOps, U: Sign> GetSiz
     fn check_is_valid(&self, params: &crate::Params) -> crate::Result<()> {
         self.inner.ct.borrow().check_is_valid(params)
     }
-    
 }
 
 impl<const N: usize, T, U> PackedGenericInt<N, T, U>
 where
     T: CiphertextOps + PolynomialCiphertextOps,
-    U: Sign
+    U: Sign,
 {
     /// Encrypt the given integer
     pub fn encrypt(val: U::PlaintextType, enc: &Encryption, pk: &PublicKey) -> Self {

@@ -21,7 +21,7 @@ impl<U: Sign> EncryptedTranscipheredInt<U> {
         Self {
             bit_len,
             inner: ct,
-            _phantom: PhantomData
+            _phantom: PhantomData,
         }
     }
 
@@ -84,7 +84,10 @@ impl TranscipheredInt<Unsigned> {
 #[cfg(test)]
 mod tests {
     use crate::{
-        fluent::{PackedInt32, PackedUInt32}, generate_one_time_pad, test_utils::{get_encryption_128, get_secret_keys_128}, KeylessEvaluation, PublicKey, DEFAULT_128
+        DEFAULT_128, KeylessEvaluation, PublicKey,
+        fluent::{PackedInt32, PackedUInt32},
+        generate_one_time_pad,
+        test_utils::{get_encryption_128, get_secret_keys_128},
     };
 
     #[test]

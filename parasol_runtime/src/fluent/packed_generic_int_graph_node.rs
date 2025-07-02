@@ -1,6 +1,8 @@
 use std::ops::Deref;
 
-use crate::fluent::{CiphertextOps, PackedDynamicGenericIntGraphNode, PolynomialCiphertextOps, Sign};
+use crate::fluent::{
+    CiphertextOps, PackedDynamicGenericIntGraphNode, PolynomialCiphertextOps, Sign,
+};
 
 /// FIXME
 pub struct PackedGenericIntGraphNode<

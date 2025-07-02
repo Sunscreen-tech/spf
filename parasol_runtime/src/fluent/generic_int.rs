@@ -1,35 +1,16 @@
-use std::{
-    marker::PhantomData,
-    mem::size_of,
-    ops::{BitAnd, Deref, Shr},
-    sync::Arc,
-};
+use std::{marker::PhantomData, mem::size_of, ops::Deref, sync::Arc};
 
 use crate::{
-    Encryption, Evaluation, FheEdge, FheOp, KeylessEvaluation, L1GgswCiphertext, L1GlweCiphertext,
-    L1LweCiphertext, SecretKey,
+    Encryption, Evaluation, KeylessEvaluation, L1GlweCiphertext, SecretKey,
     crypto::{PublicKey, PublicOneTimePad},
-    fluent::{
-        DynamicGenericInt, EncryptedTranscipheredInt, PackedDynamicGenericIntGraphNode, Signed,
-        Unsigned,
-    },
-    prune,
+    fluent::{DynamicGenericInt, EncryptedTranscipheredInt, PackedDynamicGenericIntGraphNode},
     safe_bincode::GetSize,
     transcipher_one_time_pad,
 };
 
-use super::{
-    CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PolynomialCiphertextOps, bit::BitNode,
-};
+use super::{CiphertextOps, FheCircuit, FheCircuitCtx, Muxable, PolynomialCiphertextOps};
 
-use bumpalo::Bump;
-use mux_circuits::{
-    MuxCircuit,
-    add::ripple_carry_adder,
-    and::make_and_circuit,
-    comparisons::{compare_equal, compare_not_equal},
-    sub::full_subtractor,
-};
+use mux_circuits::MuxCircuit;
 use parasol_concurrency::AtomicRefCell;
 use petgraph::stable_graph::NodeIndex;
 use serde::{Deserialize, Serialize};
@@ -275,7 +256,12 @@ where
 
         let poly = <T as PolynomialCiphertextOps>::decrypt(&self.ct.borrow(), enc, sk);
 
-        U::PlaintextType::from_bits(poly.coeffs().iter().map(|x| *x == 0x1).take(self.bit_len as usize))
+        U::PlaintextType::from_bits(
+            poly.coeffs()
+                .iter()
+                .map(|x| *x == 0x1)
+                .take(self.bit_len as usize),
+        )
     }
 
     /// Create an input node in the [`FheCircuitCtx`] graph.
