@@ -468,25 +468,25 @@ mod tests {
     #[test]
     fn can_input_output_generic_int_graph_l0_lwe() {
         input_output::<L0LweCiphertext, Unsigned>(1234);
-        input_output::<L0LweCiphertext, Signed>(65432);
+        input_output::<L0LweCiphertext, Signed>(-104);
     }
 
     #[test]
     fn can_input_output_generic_int_graph_l1_lwe() {
         input_output::<L1LweCiphertext, Unsigned>(1234);
-        input_output::<L1LweCiphertext, Signed>(65432);
+        input_output::<L1LweCiphertext, Signed>(-104);
     }
 
     #[test]
     fn can_input_output_generic_int_graph_l1_ggsw() {
         input_output::<L1GgswCiphertext, Unsigned>(1234);
-        input_output::<L1GgswCiphertext, Signed>(65432);
+        input_output::<L1GgswCiphertext, Signed>(-104);
     }
 
     #[test]
     fn can_input_output_generic_int_graph_l1_glwe() {
         input_output::<L1GlweCiphertext, Unsigned>(1234);
-        input_output::<L1GlweCiphertext, Signed>(65432);
+        input_output::<L1GlweCiphertext, Signed>(-104);
     }
 
     #[test]
@@ -514,21 +514,21 @@ mod tests {
         }
 
         convert_test::<L0LweCiphertext, L1GgswCiphertext, Unsigned>(1234);
-        convert_test::<L0LweCiphertext, L1GgswCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1GgswCiphertext, Signed>(-106);
         convert_test::<L0LweCiphertext, L1GlweCiphertext, Unsigned>(1234);
-        convert_test::<L0LweCiphertext, L1GlweCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1GlweCiphertext, Signed>(-106);
         convert_test::<L0LweCiphertext, L1LweCiphertext, Unsigned>(1234);
-        convert_test::<L0LweCiphertext, L1LweCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1LweCiphertext, Signed>(-106);
         convert_test::<L0LweCiphertext, L0LweCiphertext, Unsigned>(1234);
-        convert_test::<L0LweCiphertext, L0LweCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L0LweCiphertext, Signed>(-106);
 
         // GLEV ciphertexts are weird children, so give them a few cases.
         convert_test::<L1GlevCiphertext, L1GgswCiphertext, Unsigned>(1234);
-        convert_test::<L1GlevCiphertext, L1GgswCiphertext, Signed>(65432);
+        convert_test::<L1GlevCiphertext, L1GgswCiphertext, Signed>(-106);
         convert_test::<L1GgswCiphertext, L1GlevCiphertext, Unsigned>(1234);
-        convert_test::<L1GgswCiphertext, L1GlevCiphertext, Signed>(65432);
+        convert_test::<L1GgswCiphertext, L1GlevCiphertext, Signed>(-106);
         convert_test::<L0LweCiphertext, L1GlevCiphertext, Unsigned>(1234);
-        convert_test::<L0LweCiphertext, L1GlevCiphertext, Signed>(65432);
+        convert_test::<L0LweCiphertext, L1GlevCiphertext, Signed>(-106);
     }
 
     #[test]
