@@ -20,6 +20,7 @@ mux_circuits = { workspace = true }
 num = { workspace = true }
 parasol_concurrency = { workspace = true }
 petgraph = { workspace = true }
+rand = { workspace = true }
 rayon = { workspace = true }
 reqwest = { version = "0.12.15", features = ["blocking"] }
 serde = { workspace = true }
@@ -30,12 +31,12 @@ thiserror = { workspace = true }
 
 [dev-dependencies]
 anyhow = "1.0.98"
+benchmark_system_info = { workspace = true }
 chrono = "0.4.41"
 clap = { workspace = true }
 criterion = { workspace = true }
 indicatif = { workspace = true }
 ndarray = "0.16.1"
-rand = { workspace = true }
 scirs2-optimize = "0.1.0-alpha.3"
 sunscreen_math = { workspace = true }
 

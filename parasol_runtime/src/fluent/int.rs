@@ -1,11 +1,12 @@
-use crate::{L1GlweCiphertext, circuits::mul::append_int_multiply};
+use crate::{
+    L1GlweCiphertext,
+    circuits::mul::append_int_multiply,
+    fluent::{DynamicGenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, PlaintextOps},
+};
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
-    generic_int::{
-        DynamicGenericInt, GenericInt, GenericIntGraphNodes, PackedDynamicGenericInt,
-        PackedGenericIntGraphNode, Sign,
-    },
+    generic_int::{GenericInt, PackedDynamicGenericInt, Sign},
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal_signed;
@@ -16,7 +17,41 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Signed;
 
+impl PlaintextOps for i128 {
+    fn assert_in_bounds(&self, bits: usize) {
+        let max_val = ((0x1u128 << (bits - 1)) - 1).cast_signed();
+        let min_val = -(0x1u128 << (bits - 1)).cast_signed();
+
+        assert!(bits == 128 || *self <= max_val);
+        assert!(bits == 128 || *self >= min_val);
+    }
+
+    fn from_bits<I: Iterator<Item = bool>>(bits: I) -> Self {
+        let mut num_bits = 0;
+
+        let mut val = bits.enumerate().fold(0i128, |s, (i, x)| {
+            num_bits += 1;
+            s | ((x as i128) << i)
+        });
+
+        let sign = (val >> (num_bits - 1)) & 0x1;
+
+        // Sign extend our value to 128-bit.
+        for i in num_bits..128 {
+            val |= sign << i;
+        }
+
+        val
+    }
+
+    fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
+        (0..len).map(|i| ((*self >> i) & 0x1) == 0x1)
+    }
+}
+
 impl Sign for Signed {
+    type PlaintextType = i128;
+
     fn gen_compare_circuit(max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
         compare_or_maybe_equal_signed(max_len, gt, eq)
     }
@@ -114,9 +149,9 @@ mod tests {
         let sk = get_secret_keys_128();
         let pk = get_public_key_128();
 
-        let val = PackedInt::<16, L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk);
+        let val = PackedInt::<16, L1GlweCiphertext>::encrypt(-42, &enc, &pk);
 
-        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(16) - 42);
+        assert_eq!(val.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -126,9 +161,9 @@ mod tests {
         let sk = get_secret_keys_128();
         let pk = get_public_key_128();
 
-        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk, 16);
+        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(-42, &enc, &pk, 16);
 
-        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(16) - 42);
+        assert_eq!(val.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -139,7 +174,7 @@ mod tests {
         let pk = get_public_key_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = PackedInt::<16, L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk);
+        let val = PackedInt::<16, L1GlweCiphertext>::encrypt(-42, &enc, &pk);
 
         let ctx = FheCircuitCtx::new();
 
@@ -154,7 +189,7 @@ mod tests {
             .run_graph_blocking(&ctx.circuit.borrow(), &fc)
             .unwrap();
 
-        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u128.pow(16) - 42);
+        assert_eq!(as_unpacked.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -165,7 +200,7 @@ mod tests {
         let pk = get_public_key_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(2u64.pow(16) - 42, &enc, &pk, 16);
+        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(-42, &enc, &pk, 16);
 
         let ctx = FheCircuitCtx::new();
 
@@ -180,7 +215,7 @@ mod tests {
             .run_graph_blocking(&ctx.circuit.borrow(), &fc)
             .unwrap();
 
-        assert_eq!(as_unpacked.decrypt(&enc, &sk), 2u128.pow(16) - 42);
+        assert_eq!(as_unpacked.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -189,7 +224,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = Int::<15, L1GlweCiphertext>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk);
+        let val = Int::<15, L1GlweCiphertext>::encrypt_secret(-42, &enc, &sk);
 
         let ctx = FheCircuitCtx::new();
 
@@ -204,7 +239,7 @@ mod tests {
             .run_graph_blocking(&ctx.circuit.borrow(), &fc)
             .unwrap();
 
-        assert_eq!(actual.decrypt(&enc, &sk), 2u64.pow(15) - 42);
+        assert_eq!(actual.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -213,7 +248,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let (uproc, fc) = make_uproc_128();
 
-        let val = DynamicInt::<L1GlweCiphertext>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk, 15);
+        let val = DynamicInt::<L1GlweCiphertext>::encrypt_secret(-42, &enc, &sk, 15);
 
         let ctx = FheCircuitCtx::new();
 
@@ -228,7 +263,7 @@ mod tests {
             .run_graph_blocking(&ctx.circuit.borrow(), &fc)
             .unwrap();
 
-        assert_eq!(actual.decrypt(&enc, &sk), 2u64.pow(15) - 42);
+        assert_eq!(actual.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -237,7 +272,7 @@ mod tests {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
 
-            let val = Int::<15, T>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk);
+            let val = Int::<15, T>::encrypt_secret(-42, &enc, &sk);
 
             let ser = bincode::serialize(&val).unwrap();
             crate::safe_bincode::deserialize::<Int<15, T>>(&ser, &DEFAULT_128).unwrap();
@@ -255,7 +290,7 @@ mod tests {
             let enc = get_encryption_128();
             let sk = get_secret_keys_128();
 
-            let val = DynamicInt::<T>::encrypt_secret(2u128.pow(15) - 42, &enc, &sk, 15);
+            let val = DynamicInt::<T>::encrypt_secret(-42, &enc, &sk, 15);
 
             let ser = bincode::serialize(&val).unwrap();
             bincode::deserialize::<DynamicInt<T>>(&ser).unwrap();
@@ -273,7 +308,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let pk = PublicKey::generate(&DEFAULT_128, &sk);
 
-        let val = PackedInt::<15, L1GlweCiphertext>::encrypt(2u64.pow(15) - 42, &enc, &pk);
+        let val = PackedInt::<15, L1GlweCiphertext>::encrypt(-42, &enc, &pk);
 
         let ser = bincode::serialize(&val).unwrap();
         crate::safe_bincode::deserialize::<PackedInt<15, L1GlweCiphertext>>(&ser, &DEFAULT_128)
@@ -286,7 +321,7 @@ mod tests {
         let sk = get_secret_keys_128();
         let pk = PublicKey::generate(&DEFAULT_128, &sk);
 
-        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(2u64.pow(15) - 42, &enc, &pk, 15);
+        let val = PackedDynamicInt::<L1GlweCiphertext>::encrypt(-42, &enc, &pk, 15);
 
         let ser = bincode::serialize(&val).unwrap();
         crate::safe_bincode::deserialize::<PackedDynamicInt<L1GlweCiphertext>>(&ser, &DEFAULT_128)
@@ -298,9 +333,9 @@ mod tests {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
 
-        let val = PackedInt::<15, L1GlweCiphertext>::trivial_encrypt(2u64.pow(15) - 42, &enc);
+        let val = PackedInt::<15, L1GlweCiphertext>::trivial_encrypt(-42, &enc);
 
-        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(15) - 42);
+        assert_eq!(val.decrypt(&enc, &sk), -42);
     }
 
     #[test]
@@ -308,9 +343,8 @@ mod tests {
         let enc = get_encryption_128();
         let sk = get_secret_keys_128();
 
-        let val =
-            PackedDynamicInt::<L1GlweCiphertext>::trivial_encrypt(2u64.pow(15) - 42, &enc, 15);
+        let val = PackedDynamicInt::<L1GlweCiphertext>::trivial_encrypt(-42, &enc, 15);
 
-        assert_eq!(val.decrypt(&enc, &sk), 2u64.pow(15) - 42);
+        assert_eq!(val.decrypt(&enc, &sk), -42);
     }
 }

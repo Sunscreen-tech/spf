@@ -3,9 +3,25 @@ mod encryption;
 mod evaluation;
 mod keys;
 
+/// Recryption is the process of homomorphically computing an encryption under
+/// a different algorithm. When the resulting FHE ciphertext is decrypted,
+/// the resulting message is then a ciphertext under a that algorithm.
+///
+/// For example, we can produce an FHE encryption of a one-time pad `s`, encrypt
+/// `s` under FHE, then homomorphically XOR `s` with the message. This produces
+/// an FHE ciphertext whose message contains a one-time pad encryption of m under
+/// OTP key `s`. When we decrypt the FHE ciphertext, the resulting message is
+/// still encrypted under `s` and only its owner can view the final message.
+///
+/// This is useful in threshold encryption settings where the user wishes to
+/// view the result of an FHE computation without revealing it; without this
+/// technique the threshold committee would see the result.
+pub mod recryption;
+
 pub use encryption::*;
 pub use evaluation::*;
 pub use keys::*;
+pub use recryption::*;
 
 /// A trait that produces a trivial zero encryption for the implementing ciphertext type.
 pub trait TrivialZero

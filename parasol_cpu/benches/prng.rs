@@ -1,11 +1,9 @@
 use std::sync::{Arc, OnceLock};
 
+use benchmark_system_info::print_system_info;
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_cpu::{ArgsBuilder, CallData, FheComputer, Memory};
-use parasol_runtime::{
-    ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt16,
-    metadata::print_system_info,
-};
+use parasol_runtime::{ComputeKey, DEFAULT_128, Encryption, Evaluation, SecretKey, fluent::UInt16};
 
 fn setup() -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();

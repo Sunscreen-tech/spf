@@ -1,11 +1,12 @@
-use crate::{L1GlweCiphertext, circuits::mul::append_uint_multiply};
+use crate::{
+    L1GlweCiphertext,
+    circuits::mul::append_uint_multiply,
+    fluent::{DynamicGenericInt, GenericIntGraphNodes, PackedGenericIntGraphNode, PlaintextOps},
+};
 
 use super::{
     FheCircuit, Muxable, PackedGenericInt,
-    generic_int::{
-        DynamicGenericInt, GenericInt, GenericIntGraphNodes, PackedDynamicGenericInt,
-        PackedGenericIntGraphNode, Sign,
-    },
+    generic_int::{GenericInt, PackedDynamicGenericInt, Sign},
 };
 
 use mux_circuits::comparisons::compare_or_maybe_equal;
@@ -16,7 +17,24 @@ use serde::{Deserialize, Serialize};
 #[derive(Clone, Serialize, Deserialize)]
 pub struct Unsigned;
 
+impl PlaintextOps for u128 {
+    fn assert_in_bounds(&self, bits: usize) {
+        assert!(bits == 128 || *self < 0x1 << bits);
+    }
+
+    fn from_bits<I: Iterator<Item = bool>>(iter: I) -> Self {
+        iter.enumerate()
+            .fold(0u128, |s, (i, x)| s | ((x as u128) << i))
+    }
+
+    fn to_bits(&self, len: usize) -> impl Iterator<Item = bool> {
+        (0..len).map(|i| ((*self >> i) & 0x1) == 0x1)
+    }
+}
+
 impl Sign for Unsigned {
+    type PlaintextType = u128;
+
     fn gen_compare_circuit(max_len: usize, gt: bool, eq: bool) -> mux_circuits::MuxCircuit {
         compare_or_maybe_equal(max_len, gt, eq)
     }
