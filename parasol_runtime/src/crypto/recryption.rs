@@ -1,7 +1,12 @@
-use crate::{Encryption, KeylessEvaluation, L1GlweCiphertext, Params, PublicKey};
+use crate::{
+    Encryption, KeylessEvaluation, L1GlweCiphertext, Params, PublicKey, safe_bincode::GetSize,
+};
 use rand::{RngCore, thread_rng};
 use serde::{Deserialize, Serialize};
-use sunscreen_tfhe::entities::{Polynomial, PolynomialRef};
+use sunscreen_tfhe::{
+    OverlaySize,
+    entities::{Polynomial, PolynomialRef},
+};
 
 #[derive(Clone, Serialize, Deserialize)]
 /// The encrypted version of a one-time-pad.
@@ -19,6 +24,16 @@ pub struct PublicOneTimePad {
     ct: L1GlweCiphertext,
 }
 
+impl GetSize for PublicOneTimePad {
+    fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
+        L1GlweCiphertext::check_is_valid(&self.ct, params)
+    }
+
+    fn get_size(params: &Params) -> usize {
+        L1GlweCiphertext::get_size(params)
+    }
+}
+
 #[derive(Clone, Serialize, Deserialize)]
 /// The secret key for a one-time-pad.
 ///
@@ -27,6 +42,20 @@ pub struct PublicOneTimePad {
 /// This object is secret and must not be shared with other parties.
 pub struct SecretOneTimePad {
     key: Polynomial<u64>,
+}
+
+impl GetSize for SecretOneTimePad {
+    fn check_is_valid(&self, params: &Params) -> crate::Result<()> {
+        Ok(PolynomialRef::check_is_valid(
+            &self.key,
+            params.l1_params.dim.polynomial_degree,
+        )?)
+    }
+
+    fn get_size(params: &Params) -> usize {
+        // +1 for the length counter in the bincode buffer.
+        (PolynomialRef::<u64>::size(params.l1_poly_degree()) + 1) * size_of::<u64>()
+    }
 }
 
 /// Generates a [`PublicOneTimePad`], [`SecretOneTimePad`] pair. Give the public
@@ -90,7 +119,7 @@ pub fn decrypt_one_time_pad(x: &PolynomialRef<u64>, sk: &SecretOneTimePad) -> Po
 mod tests {
     use super::*;
     use crate::{
-        DEFAULT_128, KeylessEvaluation, PublicKey,
+        DEFAULT_128, KeylessEvaluation, PublicKey, safe_bincode,
         test_utils::{get_encryption_128, get_secret_keys_128},
     };
 
@@ -117,5 +146,43 @@ mod tests {
         let actual = decrypt_one_time_pad(&otp_encrypted, &secret_otp);
 
         assert_eq!(actual, expected);
+    }
+
+    #[test]
+    fn safe_deserialize_public_otp() {
+        let result =
+            safe_bincode::deserialize::<PublicOneTimePad>(&vec![1, 2, 3, 4, 5, 6], &DEFAULT_128);
+
+        assert!(result.is_err());
+
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+        let pk = PublicKey::generate(&DEFAULT_128, &sk);
+
+        let (public, _) = generate_one_time_pad(&DEFAULT_128, &enc, &pk);
+
+        let data = bincode::serialize(&public).unwrap();
+        let result = safe_bincode::deserialize::<PublicOneTimePad>(&data, &DEFAULT_128).unwrap();
+
+        assert_eq!(result.ct.0, public.ct.0);
+    }
+
+    #[test]
+    fn safe_deserialize_secret_otp() {
+        let result =
+            safe_bincode::deserialize::<SecretOneTimePad>(&vec![1, 2, 3, 4, 5, 6], &DEFAULT_128);
+
+        assert!(result.is_err());
+
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+        let pk = PublicKey::generate(&DEFAULT_128, &sk);
+
+        let (_, secret) = generate_one_time_pad(&DEFAULT_128, &enc, &pk);
+
+        let data = bincode::serialize(&secret).unwrap();
+        let result = safe_bincode::deserialize::<SecretOneTimePad>(&data, &DEFAULT_128).unwrap();
+
+        assert_eq!(result.key, secret.key);
     }
 }
