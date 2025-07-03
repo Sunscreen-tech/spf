@@ -151,7 +151,7 @@ mod tests {
     #[test]
     fn safe_deserialize_public_otp() {
         let result =
-            safe_bincode::deserialize::<PublicOneTimePad>(&vec![1, 2, 3, 4, 5, 6], &DEFAULT_128);
+            safe_bincode::deserialize::<PublicOneTimePad>(&[1, 2, 3, 4, 5, 6], &DEFAULT_128);
 
         assert!(result.is_err());
 
@@ -170,7 +170,7 @@ mod tests {
     #[test]
     fn safe_deserialize_secret_otp() {
         let result =
-            safe_bincode::deserialize::<SecretOneTimePad>(&vec![1, 2, 3, 4, 5, 6], &DEFAULT_128);
+            safe_bincode::deserialize::<SecretOneTimePad>(&[1, 2, 3, 4, 5, 6], &DEFAULT_128);
 
         assert!(result.is_err());
 
