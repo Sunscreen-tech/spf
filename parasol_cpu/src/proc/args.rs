@@ -82,9 +82,6 @@ where
     /// The number of bytes this type takes. Should be no greater than `u32::MAX`.
     fn size(&self) -> usize;
 
-    /// Whether this type needs to be sign extended or not.
-    fn is_signed() -> bool;
-
     /// Convert this value into a [`Vec<Byte>`].
     ///
     /// # Remarks
@@ -353,10 +350,6 @@ impl DynamicToArg for DynamicUInt<L1GlweCiphertext> {
         self.bits.len() / 8
     }
 
-    fn is_signed() -> bool {
-        false
-    }
-
     fn to_bytes(&self) -> Vec<Byte> {
         assert!(self.bits.len().is_power_of_two() && self.bits.len() % 8 == 0);
 
@@ -389,10 +382,6 @@ impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
 
     fn size(&self) -> usize {
         self.bits.len() / 8
-    }
-
-    fn is_signed() -> bool {
-        true
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
