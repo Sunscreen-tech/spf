@@ -10,7 +10,39 @@ use crate::{
 
 #[derive(Clone, Serialize, Deserialize)]
 /// A generic integer in the packed form with a constant size generic parameter, similar to [`PackedDynamicGenericInt`]
-/// and uses it as the internal representation
+/// and uses it as the internal representation.
+///
+/// # Example
+/// ```rust
+/// use std::sync::Arc;
+/// use parasol_runtime::{
+///   CircuitProcessor, ComputeKey, SecretKey, PublicKey, Evaluation, Encryption,
+///   L1GlweCiphertext, fluent::{FheCircuitCtx,
+///   PackedGenericInt, Unsigned}
+/// };
+/// let enc = Encryption::default();
+///
+/// let sk = SecretKey::generate_with_default_params();
+/// let pk = PublicKey::generate_with_default_params(&sk);
+/// let ck = ComputeKey::generate_with_default_params(&sk);
+///
+/// let eval = Evaluation::with_default_params(Arc::new(ck));
+/// let (mut uproc, fc) = CircuitProcessor::new(16_384, None, &eval, &enc);
+///
+/// let val = PackedGenericInt::<16, L1GlweCiphertext, Unsigned>::encrypt(42, &enc, &pk);
+///
+/// let ctx = FheCircuitCtx::new();
+///
+/// let as_unpacked = val
+///     .graph_input(&ctx)
+///     .unpack(&ctx)
+///     .collect_outputs(&ctx, &enc);
+///
+/// uproc
+///     .run_graph_blocking(&ctx.circuit.borrow(), &fc);
+///
+/// assert_eq!(as_unpacked.decrypt(&enc, &sk), 42);
+/// ```
 pub struct PackedGenericInt<const N: usize, T, U>
 where
     T: CiphertextOps + PolynomialCiphertextOps,
