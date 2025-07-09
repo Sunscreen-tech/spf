@@ -170,3 +170,28 @@ where
         }
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Encryption, PublicKey,
+        fluent::{Signed, Unsigned},
+        test_utils::get_secret_keys_128,
+    };
+
+    #[test]
+    fn can_public_key_encrypt_dynamic_generic_int() {
+        let sk = get_secret_keys_128();
+        let pk = PublicKey::generate_with_default_params(&sk);
+        let enc = Encryption::default();
+
+        let val = DynamicGenericInt::<L1GlweCiphertext, Unsigned>::encrypt(42, &enc, &pk, 16);
+
+        assert_eq!(val.decrypt(&enc, &sk), 42);
+
+        let val = DynamicGenericInt::<L1GlweCiphertext, Signed>::encrypt(-42, &enc, &pk, 16);
+
+        assert_eq!(val.decrypt(&enc, &sk), -42);
+    }
+}

@@ -34,7 +34,7 @@
 //! // this ensures 128-bit security.
 //! let public_key =
 //!     PublicKey::generate_with_default_params();
-//! 
+//!
 //! // Define the values we want to add. The values'
 //! // sizes must match the Parasol C program's parameters
 //! // when we encrypt them. Create the arguments and specify
