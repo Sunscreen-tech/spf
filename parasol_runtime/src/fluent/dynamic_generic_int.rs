@@ -2,9 +2,10 @@ use std::{marker::PhantomData, sync::Arc};
 
 use parasol_concurrency::AtomicRefCell;
 use serde::{Deserialize, Serialize};
+use sunscreen_tfhe::entities::Polynomial;
 
 use crate::{
-    Encryption, Evaluation, SecretKey,
+    Encryption, Evaluation, L1GlweCiphertext, PublicKey, SecretKey,
     fluent::{CiphertextOps, DynamicGenericIntGraphNodes, FheCircuitCtx, PlaintextOps, Sign},
 };
 
@@ -133,5 +134,64 @@ where
                 .collect(),
             _phantom: PhantomData,
         }
+    }
+}
+
+impl<U> DynamicGenericInt<L1GlweCiphertext, U>
+where
+    U: Sign,
+{
+    /// Encrypt `val` using [`PublicKey`].
+    ///
+    /// # Remarks
+    /// Requires the encryption parameters support RLWE encryption. [`crate::DEFAULT_128`]
+    /// have this property.
+    ///
+    /// It's generally recommended to encrypt a [`crate::fluent::PackedDynamicGenericInt`]
+    /// and unpack the result, as they're significantly smaller.
+    pub fn encrypt(val: U::PlaintextType, enc: &Encryption, pk: &PublicKey, n: usize) -> Self {
+        val.assert_in_bounds(n);
+
+        let zero = Polynomial::<u64>::zero(enc.params.l1_poly_degree().0);
+        let mut one = zero.clone();
+        one.coeffs_mut()[0] = 1;
+
+        Self {
+            bits: val
+                .to_bits(n)
+                .map(|i| {
+                    let msg = if i { &one } else { &zero };
+
+                    let ct = enc.encrypt_rlwe_l1(msg, pk);
+                    Arc::new(AtomicRefCell::new(ct))
+                })
+                .collect::<Vec<_>>(),
+            _phantom: PhantomData,
+        }
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+    use crate::{
+        Encryption, PublicKey,
+        fluent::{Signed, Unsigned},
+        test_utils::get_secret_keys_128,
+    };
+
+    #[test]
+    fn can_public_key_encrypt_dynamic_generic_int() {
+        let sk = get_secret_keys_128();
+        let pk = PublicKey::generate_with_default_params(&sk);
+        let enc = Encryption::default();
+
+        let val = DynamicGenericInt::<L1GlweCiphertext, Unsigned>::encrypt(42, &enc, &pk, 16);
+
+        assert_eq!(val.decrypt(&enc, &sk), 42);
+
+        let val = DynamicGenericInt::<L1GlweCiphertext, Signed>::encrypt(-42, &enc, &pk, 16);
+
+        assert_eq!(val.decrypt(&enc, &sk), -42);
     }
 }

@@ -11,7 +11,7 @@
 //! # Example
 //! ```ignore
 //! use parasol_cpu::{run_program, ArgsBuilder};
-//! use parasol_runtime::{ComputeKey, Encryption, SecretKey, fluent::Uint};
+//! use parasol_runtime::{ComputeKey, Encryption, PublicKey, SecretKey, fluent::Uint};
 //!
 //! // Embed the compiled Parasol add program into a constant.
 //! const FHE_FILE: &[u8] = include_bytes!("../data/add");
@@ -29,14 +29,20 @@
 //!         &secret_key,
 //!     );
 //!
+//! // Generate a public key that can be shared, allowing
+//! // users to encrypt (but not decrypt) their data. By default
+//! // this ensures 128-bit security.
+//! let public_key =
+//!     PublicKey::generate_with_default_params();
+//!
 //! // Define the values we want to add. The values'
 //! // sizes must match the Parasol C program's parameters
 //! // when we encrypt them. Create the arguments and specify
 //! // the return type
 //! let enc = Encryption::default();
 //! let args = ArgsBuilder::new()
-//!     .arg(UInt8::encrypt_secret(2, &enc, &sk))
-//!     .arg(UInt8::encrypt_secret(7, &enc, &sk))
+//!     .arg(UInt8::encrypt(2, &enc, &public_key))
+//!     .arg(UInt8::encrypt(7, &enc, &public_key))
 //!     .return_value::<UInt8>();
 //!
 //! // Run the program.
@@ -49,7 +55,7 @@
 //! .unwrap();
 //!
 //! // Decrypt the result.
-//! let result = encrypted_result.decrypt(&enc, &sk);
+//! let result = encrypted_result.decrypt(&enc, &secret_key);
 //!
 //! println!("Encrypted {a} + {b} = {result}");
 //! ```

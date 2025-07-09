@@ -13,6 +13,7 @@ use sunscreen_tfhe::ops::automorphisms::generate_automorphism_key;
 use sunscreen_tfhe::ops::bootstrapping::generate_scheme_switch_key;
 use sunscreen_tfhe::ops::encryption::rlwe_generate_public_key;
 
+use crate::DEFAULT_128;
 use crate::params::Params;
 use crate::safe_bincode::GetSize;
 
@@ -46,6 +47,14 @@ impl PublicKey {
     ///
     /// Additionally, the params must feature a level-1 GLWE polynomial count of 1. I.e.
     /// `params.l1_params.dim.count.0 == 1`. [`crate::DEFAULT_128`] have this property.
+    ///
+    /// # Examples
+    /// ```
+    /// use parasol_runtime::{DEFAULT_128, PublicKey, SecretKey};
+    ///
+    /// let sk = SecretKey::generate(&DEFAULT_128);
+    /// let pk = PublicKey::generate(&DEFAULT_128, &sk);
+    /// ```
     pub fn generate(params: &Params, sk: &SecretKey) -> Self {
         assert_eq!(
             params.l1_params.dim.size.0, 1,
@@ -57,6 +66,23 @@ impl PublicKey {
         rlwe_generate_public_key(&mut pk, &sk.glwe_1, &params.l1_params);
 
         Self { rlwe_1: pk }
+    }
+
+    /// Generates a public key from the given secret key using the [`crate::DEFAULT_128`]
+    /// parameter set.
+    ///
+    /// # Panics
+    /// If the secret key wasn't generated with [`crate::DEFAULT_128`].
+    ///
+    /// # Examples
+    /// ```
+    /// use parasol_runtime::{PublicKey, SecretKey};
+    ///
+    /// let sk = SecretKey::generate_with_default_params();
+    /// let pk = PublicKey::generate_with_default_params(&sk);
+    /// ```
+    pub fn generate_with_default_params(sk: &SecretKey) -> Self {
+        Self::generate(&DEFAULT_128, sk)
     }
 }
 

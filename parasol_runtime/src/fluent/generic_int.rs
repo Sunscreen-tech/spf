@@ -115,14 +115,17 @@ where
         }
     }
 
-    /// Encrypt the given integer
+    /// Encrypt the given integer using the given [`SecretKey`].
+    ///
+    /// # Remarks
+    /// If you need public-key encryption, you `U` must be [`L1GlweCiphertext`].
     pub fn encrypt_secret(val: U::PlaintextType, enc: &Encryption, sk: &SecretKey) -> Self {
         Self {
             inner: DynamicGenericInt::<_, U>::encrypt_secret(val, enc, sk, N),
         }
     }
 
-    /// Decrypts the encrypted integer
+    /// Decrypts the encrypted integer.
     pub fn decrypt(&self, enc: &Encryption, sk: &SecretKey) -> U::PlaintextType {
         self.inner.decrypt(enc, sk)
     }
@@ -131,6 +134,27 @@ where
     pub fn trivial(val: U::PlaintextType, enc: &Encryption, eval: &Evaluation) -> Self {
         Self {
             inner: DynamicGenericInt::<_, U>::trivial(val, enc, eval, N),
+        }
+    }
+}
+
+impl<const N: usize, U> GenericInt<N, L1GlweCiphertext, U>
+where
+    U: Sign,
+{
+    /// Encrypt `val` value using the given [`PublicKey`].
+    ///
+    /// # Remarks
+    /// Requires the encryption parameters support RLWE encryption. [`crate::DEFAULT_128`]
+    /// have this property.
+    ///
+    /// The result can be used directly and doesn't require unpacking. Nonetheless, it's
+    /// generally recommended to instead encrypt a
+    /// [`PackedGenericInt`](crate::fluent::PackedGenericInt) and unpacking it, as packed
+    /// values are significantly smaller.
+    pub fn encrypt(val: U::PlaintextType, enc: &Encryption, pk: &PublicKey) -> Self {
+        Self {
+            inner: DynamicGenericInt::<_, U>::encrypt(val, enc, pk, N),
         }
     }
 }
@@ -149,35 +173,6 @@ where
 ///
 /// Packed integers must be unpacked (with [`PackedDynamicGenericIntGraphNode::unpack`]) before you can perform
 /// computation.
-///
-/// # Example
-/// ```rust
-/// # use parasol_runtime::{
-/// #   test_utils::{get_encryption_128, get_public_key_128, get_secret_keys_128, make_uproc_128},
-/// #   L0LweCiphertext, L1GlweCiphertext, DEFAULT_128, fluent::{FheCircuitCtx, PackedGenericInt, Unsigned}
-/// # };
-/// # let enc = get_encryption_128();
-///
-/// # let sk = get_secret_keys_128();
-/// # let pk = get_public_key_128();
-/// # let (uproc, fc) = make_uproc_128();
-///
-/// let val = PackedGenericInt::<16, L1GlweCiphertext, Unsigned>::encrypt(42, &enc, &pk);
-///
-/// let ctx = FheCircuitCtx::new();
-///
-/// let as_unpacked = val
-///     .graph_input(&ctx)
-///     .unpack(&ctx)
-///     .collect_outputs(&ctx, &enc);
-///
-/// uproc
-///     .lock()
-///     .unwrap()
-///     .run_graph_blocking(&ctx.circuit.borrow(), &fc);
-///
-/// assert_eq!(as_unpacked.decrypt(&enc, &sk), 42);
-/// ```
 pub struct PackedDynamicGenericInt<T, U>
 where
     T: CiphertextOps + PolynomialCiphertextOps,
