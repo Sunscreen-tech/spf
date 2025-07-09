@@ -162,7 +162,7 @@ where
                 .map(|i| {
                     let msg = if i { &one } else { &zero };
 
-                    let ct = enc.encrypt_rlwe_l1(&msg, pk);
+                    let ct = enc.encrypt_rlwe_l1(msg, pk);
                     Arc::new(AtomicRefCell::new(ct))
                 })
                 .collect::<Vec<_>>(),
