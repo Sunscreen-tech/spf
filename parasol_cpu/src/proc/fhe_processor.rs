@@ -665,11 +665,11 @@ impl FheProcessor {
             Ok::<_, Error>(gas)
         };
 
-        // If we hit a frontend error, raise a fault and
         let gas = match run_program_impl() {
             Ok(gas) => gas,
             Err(e) => {
-                // Attempt to overwrite the current fault.
+                // Attempt to overwrite the current fault. If the frontend returned
+                // an error due to a previous fault, this will fail, but whatever.
                 let _ = self.aux_data.fault.set(e);
                 gas_limit.unwrap_or_default()
             }
@@ -735,10 +735,11 @@ impl Tomasulo for FheProcessor {
             debug!("executing pc={pc} id={instruction_id} {instruction:#?}");
         }
 
-        // If our processor has faulted, we don't need to perform any actual computation,
-        // but just want scoreboard entries and such to drop correctly.
+        // If our processor has faulted, we should no-op and immediately retire this
+        // instruction.
         if self.aux_data.fault.get().is_some() {
             FheProcessor::retire(&retirement_info, Ok(()));
+            return;
         }
 
         match instruction {
