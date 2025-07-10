@@ -4,6 +4,8 @@ use std::sync::{
     mpsc::{self, Receiver},
 };
 
+use log::error;
+
 use crate::circuit_processor::RuntimeError;
 
 /// A callback that fires when all the operations in an [`FheCircuit`](crate::FheCircuit)
@@ -43,7 +45,11 @@ impl CompletionHandler {
         let (send, recv) = mpsc::channel();
 
         (
-            Self::new(move |x| send.send(x.map(|x| x.to_owned())).unwrap()),
+            Self::new(move |x| {
+                if let Err(e) = send.send(x.map(|x| x.to_owned())) {
+                    error!("Completion handler notification failed: {e}");
+                }
+            }),
             recv,
         )
     }

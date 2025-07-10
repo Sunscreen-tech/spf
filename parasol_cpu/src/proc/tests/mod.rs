@@ -1,3 +1,5 @@
+use ctor::ctor;
+
 mod add;
 mod and;
 mod bitshift;
@@ -7,6 +9,7 @@ mod casting;
 mod cmux;
 mod comparisons;
 mod dbg;
+mod faults;
 mod load_store;
 mod mov;
 mod mul;
@@ -15,3 +18,8 @@ mod not;
 mod or;
 mod sub;
 mod xor;
+
+#[ctor]
+unsafe fn init_logging() {
+    env_logger::init();
+}
