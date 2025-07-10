@@ -393,18 +393,14 @@ impl FheProcessor {
         }
 
         // Execute any ready instructions (possibly including the one we just dispatched)
-        self.execute_ready_instructions(false, options)?;
+        self.execute_ready_instructions(false, options);
 
         let next_pc = self.next_program_counter(disp_inst, pc)?;
 
         Ok((next_pc, gas))
     }
 
-    fn execute_ready_instructions(
-        &mut self,
-        blocking: bool,
-        options: &RunProgramOptions,
-    ) -> Result<()> {
+    fn execute_ready_instructions(&mut self, blocking: bool, options: &RunProgramOptions) {
         // Finally, attempt to execute any ready instructions
         loop {
             let ready = if blocking {
@@ -417,7 +413,7 @@ impl FheProcessor {
                     if options.log_instruction_execution {
                         trace!("No instructions remaining, finished");
                     }
-                    return Ok(());
+                    return;
                 }
 
                 self.ready_instructions.1.recv().unwrap()
@@ -428,7 +424,7 @@ impl FheProcessor {
                     Ok(v) => v,
                     // No instructions ready, return.
                     Err(_) => {
-                        return Ok(());
+                        return;
                     }
                 }
             };
@@ -448,7 +444,9 @@ impl FheProcessor {
                 InstructionOperation::Retire(Err(e)) => {
                     error!("retire error e={e}");
 
-                    return Err(e);
+                    // If we already had an error and fail to overwrite it, then whatever.
+                    let _ = self.aux_data.fault.set(e);
+                    self.instructions_inflight -= 1;
                 }
                 InstructionOperation::Exec(v) => {
                     self.exec_instruction(v.clone(), self.make_retirement_info(&v), options);
@@ -468,14 +466,9 @@ impl FheProcessor {
     }
 
     pub fn retire(retirement_info: &RetirementInfo<DispatchIsaOp>, result: Result<()>) {
-        if let Err(e) = result {
-            // Waiting thread may have dropped.
-            let _ = retirement_info
-                .ready_instructions
-                .send(InstructionOperation::Retire(Err(e)));
-            return;
-        }
-
+        // We always notify our dependencies regardless of whether we errored or not.
+        // After doing that, we retire this instruction with success/failure as
+        // appropriate.
         let mut deps = retirement_info.scoreboard_entry.dependents.lock();
 
         while let Some(dep) = deps.pop() {
@@ -489,7 +482,6 @@ impl FheProcessor {
         }
 
         // Throw away the lock handle as this instruction is retired.
-        // TODO: Is this a good idea on Mutex?
         std::mem::forget(deps);
 
         trace!(
@@ -498,18 +490,22 @@ impl FheProcessor {
             retirement_info.scoreboard_entry.id
         );
 
-        let _ = retirement_info
-            .ready_instructions
-            .send(InstructionOperation::Retire(Ok(retirement_info
-                .scoreboard_entry
-                .clone())));
+        if let Err(e) = result {
+            let _ = retirement_info
+                .ready_instructions
+                .send(InstructionOperation::Retire(Err(e)));
+        } else {
+            let _ = retirement_info
+                .ready_instructions
+                .send(InstructionOperation::Retire(Ok(retirement_info
+                    .scoreboard_entry
+                    .clone())));
+        }
     }
 
     /// Waits for all issued instructions to retire.
-    pub fn wait(&mut self, options: &RunProgramOptions) -> crate::Result<()> {
-        self.execute_ready_instructions(true, options)?;
-
-        Ok(())
+    pub fn wait(&mut self, options: &RunProgramOptions) {
+        self.execute_ready_instructions(true, options);
     }
 
     /// Does the following:
@@ -593,6 +589,9 @@ impl FheProcessor {
 
         self.debug_handlers = vec![];
 
+        // Clear any fault
+        self.aux_data.fault = OnceLock::new();
+
         Ok(())
     }
 
@@ -639,6 +638,11 @@ impl FheProcessor {
             let mut gas = 0;
 
             loop {
+                // If an async error occurred, stop issuing new instructions.
+                if let Some(e) = self.aux_data.fault.get() {
+                    return Err(e.clone());
+                }
+
                 let inst = memory.try_load_plaintext_dword(self.pc.into())?;
                 let inst = IsaOp::try_from(inst)?;
 
@@ -650,33 +654,36 @@ impl FheProcessor {
                         self.pc = next_pc;
                     }
                     Err(e) => match e {
+                        // Halt isn't a true error, but rather we ran out of instructions
+                        // to execute.
                         Error::Halt => break,
-                        Error::OutOfGas(used_gas, _) => {
-                            self.wait(options)?;
-                            if let Some(gas_limit) = gas_limit {
-                                return Err(Error::OutOfGas(gas + used_gas, gas_limit));
-                            } else {
-                                // This case should never happen since gas
-                                // tracking should throw an out of gas answer
-                                // only when the gas_limit is a Some variant.
-                                unreachable!()
-                            }
-                        }
                         _ => return Err(e),
                     },
                 }
             }
 
-            self.wait(options)?;
-
             Ok::<_, Error>(gas)
         };
 
-        let gas = run_program_impl()?;
+        // If we hit a frontend error, raise a fault and
+        let gas = match run_program_impl() {
+            Ok(gas) => gas,
+            Err(e) => {
+                // Attempt to overwrite the current fault.
+                let _ = self.aux_data.fault.set(e);
+                gas_limit.unwrap_or_default()
+            }
+        };
+
+        self.wait(options);
 
         // Clear the inflight_memory_ops table so we don't leak memory.
         self.aux_data.inflight_memory_ops.clear();
         self.aux_data.memory = None;
+
+        if let Some(e) = self.aux_data.fault.get() {
+            return Err(e.clone());
+        }
 
         self.try_capture_return_value(memory, args, return_data)
             .map(|ret_val| (gas, ret_val))
@@ -726,6 +733,12 @@ impl Tomasulo for FheProcessor {
 
         if options.log_instruction_execution {
             debug!("executing pc={pc} id={instruction_id} {instruction:#?}");
+        }
+
+        // If our processor has faulted, we don't need to perform any actual computation,
+        // but just want scoreboard entries and such to drop correctly.
+        if self.aux_data.fault.get().is_some() {
+            FheProcessor::retire(&retirement_info, Ok(()));
         }
 
         match instruction {

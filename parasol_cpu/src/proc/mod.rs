@@ -1,4 +1,8 @@
-use std::{borrow::BorrowMut, collections::HashMap, sync::Arc};
+use std::{
+    borrow::BorrowMut,
+    collections::HashMap,
+    sync::{Arc, OnceLock},
+};
 
 use fhe_processor::FheProcessor;
 pub use fhe_processor::{RunProgramOptions, RunProgramOptionsBuilder};
@@ -220,6 +224,12 @@ pub(crate) struct FheProcessorAuxData {
     l1glwe_zero: L1GlweCiphertext,
     l1glwe_one: L1GlweCiphertext,
     enc: Encryption,
+
+    /// A sync or async error that can occur in the processor. When set, all previous in-flight
+    /// instructions that haven't started become no-ops that immediately retire and notify
+    /// their dependencies. This ensures that all outstanding scoreboard entries get dropped
+    /// correctly and we don't leak memory.
+    fault: OnceLock<Error>,
 }
 
 impl FheProcessorAuxData {
@@ -237,6 +247,7 @@ impl FheProcessorAuxData {
             l1glwe_zero,
             l1glwe_one,
             enc: enc.clone(),
+            fault: OnceLock::new(),
         }
     }
 }
