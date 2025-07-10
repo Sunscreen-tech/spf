@@ -766,19 +766,10 @@ impl Tomasulo for FheProcessor {
                     width,
                     instruction_id,
                     pc,
-                    self.aux_data.fault.clone(),
                 );
             }
             LoadI(dst, imm, width) => {
-                self.loadi(
-                    retirement_info,
-                    dst,
-                    imm,
-                    width,
-                    instruction_id,
-                    pc,
-                    self.aux_data.fault.clone(),
-                );
+                self.loadi(retirement_info, dst, imm, width, instruction_id, pc);
             }
             Store(dst, src, width, offset) => {
                 self.store(

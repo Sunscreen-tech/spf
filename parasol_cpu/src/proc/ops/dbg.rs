@@ -1,5 +1,5 @@
 use crate::{
-    DispatchIsaOp, Fault, Register,
+    DispatchIsaOp, Register,
     proc::fhe_processor::FheProcessor,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,

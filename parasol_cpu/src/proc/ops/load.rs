@@ -1,5 +1,3 @@
-use std::sync::{Arc, OnceLock};
-
 use crate::{
     Byte, Ciphertext, Error, Memory, Ptr32, Register, Result,
     proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::is_invalid_load_store_alignment},
@@ -20,7 +18,6 @@ impl FheProcessor {
         width: u32,
         instruction_id: usize,
         pc: u32,
-        fault: Arc<OnceLock<Error>>,
     ) {
         let load_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
