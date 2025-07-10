@@ -1,5 +1,3 @@
-use ctor::ctor;
-
 mod add;
 mod and;
 mod bitshift;
@@ -18,8 +16,3 @@ mod not;
 mod or;
 mod sub;
 mod xor;
-
-#[ctor]
-unsafe fn init_logging() {
-    env_logger::init();
-}
