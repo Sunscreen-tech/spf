@@ -1,7 +1,7 @@
 use parasol_runtime::circuits::add::add_circuit;
 
 use crate::{
-    Ciphertext, Error, Register, Result, check_register_width,
+    Ciphertext, Error, Fault, Register, Result, check_register_width,
     proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::make_parent_op},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},

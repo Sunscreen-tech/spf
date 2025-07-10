@@ -2,7 +2,7 @@ use mux_circuits::and::make_and_circuit;
 use parasol_runtime::{FheCircuit, FheEdge, FheOp};
 
 use crate::{
-    Ciphertext, Register, Result, check_register_width,
+    Ciphertext, Fault, Register, Result, check_register_width,
     proc::{DispatchIsaOp, fhe_processor::FheProcessor},
     register_to_l1glwe_by_trivial_lift,
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},

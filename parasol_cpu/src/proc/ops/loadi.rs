@@ -1,5 +1,5 @@
 use crate::{
-    Error, Register, Result,
+    Error, Fault, Register, Result,
     proc::{DispatchIsaOp, fhe_processor::FheProcessor},
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
@@ -14,6 +14,7 @@ impl FheProcessor {
         width: u32,
         instruction_id: usize,
         pc: u32,
+        fault: Fault,
     ) {
         let loadi_impl = || -> Result<()> {
             unwrap_registers!((mut dst));

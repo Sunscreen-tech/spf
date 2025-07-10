@@ -216,6 +216,8 @@ pub fn register_to_l1glwe_by_trivial_lift(
     }
 }
 
+pub(crate) type Fault = Arc<OnceLock<Error>>;
+
 pub(crate) struct FheProcessorAuxData {
     uop_processor: CircuitProcessor,
     flow: std::sync::mpsc::Receiver<()>,
@@ -229,7 +231,7 @@ pub(crate) struct FheProcessorAuxData {
     /// instructions that haven't started become no-ops that immediately retire and notify
     /// their dependencies. This ensures that all outstanding scoreboard entries get dropped
     /// correctly and we don't leak memory.
-    fault: OnceLock<Error>,
+    fault: Fault,
 }
 
 impl FheProcessorAuxData {
@@ -247,7 +249,7 @@ impl FheProcessorAuxData {
             l1glwe_zero,
             l1glwe_one,
             enc: enc.clone(),
-            fault: OnceLock::new(),
+            fault: Arc::new(OnceLock::new()),
         }
     }
 }

@@ -1,12 +1,13 @@
 use std::sync::mpsc::Sender;
 
 use super::scoreboard::ScoreboardEntryRef;
-use crate::{Result, RunProgramOptions};
+use crate::{Fault, Result, RunProgramOptions};
 
 #[derive(Clone)]
 pub struct RetirementInfo<I: Clone> {
     pub(crate) scoreboard_entry: ScoreboardEntryRef<I>,
     pub(crate) ready_instructions: Sender<InstructionOperation<I>>,
+    pub(crate) fault: Fault,
 }
 
 pub trait Tomasulo {

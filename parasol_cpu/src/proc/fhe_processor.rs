@@ -444,12 +444,17 @@ impl FheProcessor {
                 InstructionOperation::Retire(Err(e)) => {
                     error!("retire error e={e}");
 
-                    // If we already had an error and fail to overwrite it, then whatever.
+                    // This should already be set in `retire`, but let's do this for safety
+                    // just in case we later add another sender codepath to the retirement channel.
                     let _ = self.aux_data.fault.set(e);
                     self.instructions_inflight -= 1;
                 }
                 InstructionOperation::Exec(v) => {
-                    self.exec_instruction(v.clone(), self.make_retirement_info(&v), options);
+                    self.exec_instruction(
+                        v.clone(),
+                        self.make_retirement_info(&v, &self.aux_data.fault),
+                        options,
+                    );
                 }
             }
         }
@@ -458,14 +463,22 @@ impl FheProcessor {
     fn make_retirement_info(
         &self,
         scoreboard_entry: &ScoreboardEntryRef<DispatchIsaOp>,
+        fault: &Fault,
     ) -> RetirementInfo<DispatchIsaOp> {
         RetirementInfo {
             ready_instructions: self.ready_instructions.0.clone(),
             scoreboard_entry: scoreboard_entry.clone(),
+            fault: fault.clone(),
         }
     }
 
     pub fn retire(retirement_info: &RetirementInfo<DispatchIsaOp>, result: Result<()>) {
+        // First, we want to set a fault (if not already set) so dependant instructions
+        // are guaranteed to no-op.
+        if let Err(e) = result.as_ref() {
+            let _ = retirement_info.fault.set(e.clone());
+        }
+
         // We always notify our dependencies regardless of whether we errored or not.
         // After doing that, we retire this instruction with success/failure as
         // appropriate.
@@ -590,7 +603,7 @@ impl FheProcessor {
         self.debug_handlers = vec![];
 
         // Clear any fault
-        self.aux_data.fault = OnceLock::new();
+        self.aux_data.fault = Arc::new(OnceLock::new());
 
         Ok(())
     }
@@ -753,10 +766,19 @@ impl Tomasulo for FheProcessor {
                     width,
                     instruction_id,
                     pc,
+                    self.aux_data.fault.clone(),
                 );
             }
             LoadI(dst, imm, width) => {
-                self.loadi(retirement_info, dst, imm, width, instruction_id, pc);
+                self.loadi(
+                    retirement_info,
+                    dst,
+                    imm,
+                    width,
+                    instruction_id,
+                    pc,
+                    self.aux_data.fault.clone(),
+                );
             }
             Store(dst, src, width, offset) => {
                 self.store(
