@@ -7,6 +7,7 @@ mod casting;
 mod cmux;
 mod comparisons;
 mod dbg;
+mod faults;
 mod load_store;
 mod mov;
 mod mul;
