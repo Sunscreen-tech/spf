@@ -60,7 +60,7 @@ fn generate_args(enc: &Encryption, sk: &SecretKey) -> CallData<UInt<8, L1GlweCip
         .return_value::<UInt8>()
 }
 
-fn _cardio_from_compiler(c: &mut Criterion) {
+fn cardio_from_compiler(c: &mut Criterion) {
     let mut group = c.benchmark_group("cardio");
     group.sample_size(10);
 
@@ -244,7 +244,7 @@ fn cardio_from_assembly(c: &mut Criterion) {
     });
 }
 
-fn _cardio_thread_scaling(c: &mut Criterion) {
+fn cardio_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let mut group = c.benchmark_group("cardio");
         group.sample_size(10);
@@ -293,11 +293,10 @@ fn _cardio_thread_scaling(c: &mut Criterion) {
     }
 }
 
-// TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
-    //cardio_from_compiler,
+    cardio_from_compiler,
     cardio_from_assembly,
-    //cardio_thread_scaling
+    cardio_thread_scaling
 );
 criterion_main!(benches);

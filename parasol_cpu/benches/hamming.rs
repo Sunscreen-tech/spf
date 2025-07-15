@@ -61,7 +61,7 @@ fn generate_args(
         .return_value::<UInt8>()
 }
 
-fn _hamming_from_compiler(c: &mut Criterion) {
+fn hamming_from_compiler(c: &mut Criterion) {
     let mut group = c.benchmark_group("hamming");
     group.sample_size(10);
 
@@ -183,7 +183,7 @@ fn hamming_from_assembly(c: &mut Criterion) {
     });
 }
 
-fn _hamming_thread_scaling(c: &mut Criterion) {
+fn hamming_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let (sk, enc, eval) = setup();
 
@@ -240,7 +240,7 @@ fn _hamming_thread_scaling(c: &mut Criterion) {
     }
 }
 
-fn _hamming_input_scaling(c: &mut Criterion) {
+fn hamming_input_scaling(c: &mut Criterion) {
     fn run_input_len(c: &mut Criterion, len: usize) {
         let mut group = c.benchmark_group("hamming");
         group.sample_size(10);
@@ -278,9 +278,9 @@ fn _hamming_input_scaling(c: &mut Criterion) {
 // TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
-    // hamming_from_compiler,
+    hamming_from_compiler,
     hamming_from_assembly,
-    // hamming_thread_scaling,
-    // hamming_input_scaling
+    hamming_thread_scaling,
+    hamming_input_scaling
 );
 criterion_main!(benches);

@@ -227,7 +227,6 @@ fn chi_squared_thread_scaling(c: &mut Criterion) {
     }
 }
 
-// TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
     chi_squared_from_compiler,

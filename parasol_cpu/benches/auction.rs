@@ -124,7 +124,7 @@ fn auction_from_assembly(c: &mut Criterion) {
     });
 }
 
-fn _auction_n_bids<const N: usize>(c: &mut Criterion) {
+fn auction_n_bids<const N: usize>(c: &mut Criterion) {
     let mut group = c.benchmark_group("auction");
     group.sample_size(10);
 
@@ -152,7 +152,7 @@ fn _auction_n_bids<const N: usize>(c: &mut Criterion) {
     });
 }
 
-fn _auction_thread_scaling(c: &mut Criterion) {
+fn auction_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let mut group = c.benchmark_group("auction");
         group.sample_size(10);
@@ -199,15 +199,14 @@ fn _auction_thread_scaling(c: &mut Criterion) {
     }
 }
 
-// TODO: Re-enable compiled benchmarks after compiler update.
 criterion_group!(
     benches,
     auction_from_assembly,
-    // auction_n_bids::<2>,
-    // auction_n_bids::<4>,
-    // auction_n_bids::<8>,
-    // auction_n_bids::<16>,
-    // auction_n_bids::<32>,
-    // auction_thread_scaling
+    auction_n_bids::<2>,
+    auction_n_bids::<4>,
+    auction_n_bids::<8>,
+    auction_n_bids::<16>,
+    auction_n_bids::<32>,
+    auction_thread_scaling
 );
 criterion_main!(benches);
