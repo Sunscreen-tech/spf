@@ -55,7 +55,7 @@ fn generate_args(
     (args, result)
 }
 
-fn _chi_squared_from_compiler(c: &mut Criterion) {
+fn chi_squared_from_compiler(c: &mut Criterion) {
     let mut group = c.benchmark_group("chi_squared");
     group.sample_size(10);
 
@@ -177,7 +177,7 @@ fn chi_squared_from_assembly(c: &mut Criterion) {
     });
 }
 
-fn _chi_squared_thread_scaling(c: &mut Criterion) {
+fn chi_squared_thread_scaling(c: &mut Criterion) {
     fn run_with_threads(c: &mut Criterion, num_threads: usize) {
         let mut group = c.benchmark_group("chi_squared");
         group.sample_size(10);
@@ -230,8 +230,8 @@ fn _chi_squared_thread_scaling(c: &mut Criterion) {
 // TODO: Need updated calling convention in compiler to re-enable benchmarks
 criterion_group!(
     benches,
-    // chi_squared_from_compiler,
+    chi_squared_from_compiler,
     chi_squared_from_assembly,
-    // chi_squared_thread_scaling
+    chi_squared_thread_scaling
 );
 criterion_main!(benches);
