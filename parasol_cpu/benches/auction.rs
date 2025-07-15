@@ -42,7 +42,7 @@ fn generate_args<const N: usize>(
 ) -> CallData<()> {
     let data = std::array::from_fn::<_, N, _>(|i| UInt16::encrypt_secret(i as u128, enc, sk));
 
-    let winner = std::array::from_fn::<_, 2, _>(|_| UInt16::new(&enc));
+    let winner = std::array::from_fn::<_, 2, _>(|_| UInt16::new(enc));
     let winner = memory.try_allocate_type(&winner).unwrap();
 
     let a = memory.try_allocate_type(&data).unwrap();
@@ -116,7 +116,7 @@ fn _auction_from_assembly(c: &mut Criterion) {
                 (proc, args, prog, memory)
             },
             |(mut proc, args, prog, memory)| {
-                let _ = proc.run_program(prog, &memory, args).unwrap();
+                proc.run_program(prog, &memory, args).unwrap();
 
                 // Check that we got the right answer.
                 // assert_eq!(result[0].decrypt(&enc, &sk), 7);
