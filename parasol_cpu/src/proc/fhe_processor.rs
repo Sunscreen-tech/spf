@@ -311,6 +311,7 @@ impl FheProcessor {
         inst: IsaOp,
         pc: u32,
         options: &RunProgramOptions,
+        used_gas_so_far: u32,
     ) -> Result<(u32, u32)> {
         use crate::tomasulo::{GetDeps, ToDispatchedOp};
 
@@ -345,8 +346,8 @@ impl FheProcessor {
         let gas = self.compute_gas(&disp_inst);
 
         if let Some(gas_limit) = options.gas_limit {
-            if gas > gas_limit {
-                return Err(Error::OutOfGas(gas, gas_limit));
+            if gas + used_gas_so_far > gas_limit {
+                return Err(Error::OutOfGas(gas + used_gas_so_far, gas_limit));
             }
         }
 
@@ -648,7 +649,7 @@ impl FheProcessor {
 
         let mut run_program_impl = || {
             self.pc = initial_pc.0;
-            let mut gas = 0;
+            let mut used_gas_so_far = 0;
 
             loop {
                 // If an async error occurred, stop issuing new instructions.
@@ -659,11 +660,11 @@ impl FheProcessor {
                 let inst = memory.try_load_plaintext_dword(self.pc.into())?;
                 let inst = IsaOp::try_from(inst)?;
 
-                let pc_result = self.dispatch_instruction(inst, self.pc, options);
+                let pc_result = self.dispatch_instruction(inst, self.pc, options, used_gas_so_far);
 
                 match pc_result {
                     Ok((next_pc, used_gas)) => {
-                        gas += used_gas;
+                        used_gas_so_far += used_gas;
                         self.pc = next_pc;
                     }
                     Err(e) => match e {
@@ -675,7 +676,7 @@ impl FheProcessor {
                 }
             }
 
-            Ok::<_, Error>(gas)
+            Ok::<_, Error>(used_gas_so_far)
         };
 
         let gas = match run_program_impl() {
