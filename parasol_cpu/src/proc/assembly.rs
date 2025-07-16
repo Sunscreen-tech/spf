@@ -283,6 +283,14 @@ macro_rules! define_op {
                     }
                 }
 
+                impl $dispatch_name {
+                    pub(crate) fn instr_name(&self) -> &str {
+                        match self {
+                            $(Self:: $op_name(..) => stringify!($op_name)),*
+                        }
+                    }
+                }
+
                 impl<'a> ToDispatchedOp<'a> for $inst_name {
                     type DispatchedOp = $dispatch_name;
                     type RobEntrySrcs = ($(&'a RegisterFile<$reg_kind, $dispatch_name>,)*());
