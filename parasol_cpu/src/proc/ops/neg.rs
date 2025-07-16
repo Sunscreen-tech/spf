@@ -1,6 +1,9 @@
+use mux_circuits::neg::negator;
+use parasol_runtime::FheCircuit;
+
 use crate::{
-    Ciphertext, Register, Result,
-    proc::{DispatchIsaOp, fhe_processor::FheProcessor},
+    Ciphertext, Error, Register, Result,
+    proc::{DispatchIsaOp, fhe_processor::FheProcessor, ops::make_parent_op},
     tomasulo::{registers::RobEntryRef, tomasulo_processor::RetirementInfo},
     unwrap_registers,
 };
@@ -15,32 +18,40 @@ impl FheProcessor {
         _instruction_id: usize,
         _pc: u32,
     ) {
-        let neg_impl = || -> Result<()> {
+        let mut neg_impl = || -> Result<()> {
             unwrap_registers!((mut dst) (src));
 
             match src {
-                Register::Plaintext {
-                    val: val1,
-                    width: width1,
-                } => {
-                    let mask = (0x1 << width1) - 1;
+                Register::Plaintext { val, width } => {
+                    let mask = (0x1 << width) - 1;
 
                     *dst = Register::Plaintext {
-                        val: val1.wrapping_neg() & mask,
-                        width: *width1,
+                        val: val.wrapping_neg() & mask,
+                        width: *width,
                     };
 
                     FheProcessor::retire(&retirement_info, Ok(()));
                 }
-                Register::Ciphertext(Ciphertext::L1Glwe { data: _c1 }) => {
-                    todo!()
-                    // let output = add_l1glwe_cipher_cipher(c1, c2);
+                Register::Ciphertext(Ciphertext::L1Glwe { data: c }) => {
+                    let mut graph = FheCircuit::new();
 
-                    // *dst = Register::Ciphertext(Ciphertext::L1GlweCiphertext { data: output });
+                    let neg_circuit = negator(c.len());
+
+                    let output = graph.insert_mux_circuit_and_connect_inputs(
+                        &neg_circuit,
+                        c,
+                        &self.aux_data.enc,
+                    );
+
+                    let parent_op = make_parent_op(&retirement_info);
+
+                    self.aux_data
+                        .uop_processor
+                        .spawn_graph(&graph, &self.aux_data.flow, parent_op);
+
+                    *dst = Register::Ciphertext(Ciphertext::L1Glwe { data: output });
                 }
-                _ => {
-                    todo!()
-                }
+                _ => return Err(Error::EncryptionMismatch),
             };
 
             Ok(())
