@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use crate::{
-    ArgsBuilder, IsaOp, Memory,
+    ArgsBuilder, Error, IsaOp, Memory, RunProgramOptionsBuilder,
     register_names::{RP, SP, T0, T1, T2, T3},
     test_utils::make_computer_128,
 };
@@ -114,4 +114,38 @@ fn async_and_sync_faulting_instruction() {
     let result = proc.run_program(program, &Arc::new(memory), args);
 
     assert!(result.is_err());
+}
+
+#[test]
+fn out_of_gas_execution() {
+    let (mut proc, enc) = make_computer_128();
+    let sk = get_secret_keys_128();
+
+    let memory = Memory::new_default_stack();
+    let program = memory.allocate_program(&[
+        IsaOp::Load(T0, SP, 32, 0),
+        IsaOp::Load(T1, SP, 32, 4),
+        IsaOp::Add(T2, T0, T1),
+        IsaOp::Load(T3, SP, 32, 8),
+        IsaOp::Add(T2, T2, T3),
+        IsaOp::Store(RP, T2, 32, 0),
+        IsaOp::Ret(),
+    ]);
+
+    let args = ArgsBuilder::new()
+        .arg(UInt32::encrypt_secret(42, &enc, &sk))
+        .arg(UInt32::encrypt_secret(25, &enc, &sk))
+        .arg(UInt32::encrypt_secret(37, &enc, &sk))
+        .return_value::<UInt32>();
+
+    let result = proc.run_program_with_options(
+        program,
+        &Arc::new(memory),
+        args,
+        &RunProgramOptionsBuilder::new()
+            .gas_limit(Some(110_000)) // This gas covers any instruction above but not total
+            .build(),
+    );
+
+    assert!(matches!(result, Err(Error::OutOfGas(..))));
 }

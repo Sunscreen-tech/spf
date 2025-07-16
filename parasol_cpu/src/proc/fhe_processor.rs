@@ -640,8 +640,6 @@ impl FheProcessor {
         args: &CallData<T>,
         options: &RunProgramOptions,
     ) -> Result<(u32, T)> {
-        let gas_limit = options.gas_limit();
-
         self.reset()?;
         let return_data = self.set_up_function_call(memory, args)?;
         self.aux_data.memory = Some(memory.clone());
@@ -680,12 +678,12 @@ impl FheProcessor {
         };
 
         let gas = match run_program_impl() {
-            Ok(gas) => gas,
+            Ok(gas) => Some(gas),
             Err(e) => {
                 // Attempt to overwrite the current fault. If the frontend returned
                 // an error due to a previous fault, this will fail, but whatever.
                 let _ = self.aux_data.fault.set(e);
-                gas_limit.unwrap_or_default()
+                None
             }
         };
 
@@ -696,11 +694,11 @@ impl FheProcessor {
         self.aux_data.memory = None;
 
         if let Some(e) = self.aux_data.fault.get() {
-            return Err(e.clone());
+            Err(e.clone())
+        } else {
+            self.try_capture_return_value(memory, args, return_data)
+                .map(|ret_val| (gas.unwrap(), ret_val))
         }
-
-        self.try_capture_return_value(memory, args, return_data)
-            .map(|ret_val| (gas, ret_val))
     }
 
     /// Runs the given program using the passed user `data` as arguments.
