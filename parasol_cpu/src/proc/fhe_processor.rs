@@ -639,17 +639,22 @@ impl FheProcessor {
         initial_pc: Ptr32,
         args: &CallData<T>,
         options: &RunProgramOptions,
-    ) -> Result<(u32, T)> {
+    ) -> (u32, Result<T>) {
         let gas_limit = options.gas_limit();
+        let mut used_gas_so_far = 0;
 
-        self.reset()?;
-        let return_data = self.set_up_function_call(memory, args)?;
+        if let Err(e) = self.reset() {
+            return (used_gas_so_far, Err(e));
+        }
+        let return_data = match self.set_up_function_call(memory, args) {
+            Ok(v) => v,
+            Err(e) => return (used_gas_so_far, Err(e)),
+        };
         self.aux_data.memory = Some(memory.clone());
         self.debug_handlers = options.debug_handlers.clone();
 
         let mut run_program_impl = || {
             self.pc = initial_pc.0;
-            let mut used_gas_so_far = 0;
 
             loop {
                 // If an async error occurred, stop issuing new instructions.
@@ -695,12 +700,13 @@ impl FheProcessor {
         self.aux_data.inflight_memory_ops.clear();
         self.aux_data.memory = None;
 
-        if let Some(e) = self.aux_data.fault.get() {
-            return Err(e.clone());
-        }
+        let result = if let Some(e) = self.aux_data.fault.get() {
+            Err(e.clone())
+        } else {
+            self.try_capture_return_value(memory, args, return_data)
+        };
 
-        self.try_capture_return_value(memory, args, return_data)
-            .map(|ret_val| (gas, ret_val))
+        (gas, result)
     }
 
     /// Runs the given program using the passed user `data` as arguments.
@@ -717,7 +723,7 @@ impl FheProcessor {
             args,
             &RunProgramOptionsBuilder::new().build(),
         )
-        .map(|x| x.1)
+        .1
     }
 }
 

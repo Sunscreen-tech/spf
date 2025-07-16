@@ -57,6 +57,7 @@ fn can_invoke_dbg_handlers() {
         .build();
 
     proc.run_program_with_options(prog, &memory, args, &options)
+        .1
         .unwrap();
 
     assert_eq!(num_dbgs.load(Ordering::Relaxed), 2);
