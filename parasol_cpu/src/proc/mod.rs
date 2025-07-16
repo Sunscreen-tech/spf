@@ -289,7 +289,7 @@ impl FheComputer {
         memory: &Arc<Memory>,
         args: CallData<T>,
         options: &RunProgramOptions,
-    ) -> (u32, Result<T>) {
+    ) -> Result<(u32, T)> {
         self.processor
             .run_program_with_options(memory, initial_pc, &args, options)
     }

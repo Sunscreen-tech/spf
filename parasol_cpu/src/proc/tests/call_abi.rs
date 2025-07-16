@@ -77,7 +77,6 @@ fn can_pass_args_small_to_large() {
         .build();
 
     proc.run_program_with_options(prog, &memory, args, &options)
-        .1
         .unwrap();
 }
 
@@ -152,7 +151,6 @@ fn can_pass_args_large_to_small() {
         .build();
 
     proc.run_program_with_options(prog, &memory, args, &options)
-        .1
         .unwrap();
 }
 

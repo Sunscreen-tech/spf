@@ -639,22 +639,15 @@ impl FheProcessor {
         initial_pc: Ptr32,
         args: &CallData<T>,
         options: &RunProgramOptions,
-    ) -> (u32, Result<T>) {
-        let gas_limit = options.gas_limit();
-        let mut used_gas_so_far = 0;
-
-        if let Err(e) = self.reset() {
-            return (used_gas_so_far, Err(e));
-        }
-        let return_data = match self.set_up_function_call(memory, args) {
-            Ok(v) => v,
-            Err(e) => return (used_gas_so_far, Err(e)),
-        };
+    ) -> Result<(u32, T)> {
+        self.reset()?;
+        let return_data = self.set_up_function_call(memory, args)?;
         self.aux_data.memory = Some(memory.clone());
         self.debug_handlers = options.debug_handlers.clone();
 
         let mut run_program_impl = || {
             self.pc = initial_pc.0;
+            let mut used_gas_so_far = 0;
 
             loop {
                 // If an async error occurred, stop issuing new instructions.
@@ -685,12 +678,12 @@ impl FheProcessor {
         };
 
         let gas = match run_program_impl() {
-            Ok(gas) => gas,
+            Ok(gas) => Some(gas),
             Err(e) => {
                 // Attempt to overwrite the current fault. If the frontend returned
                 // an error due to a previous fault, this will fail, but whatever.
                 let _ = self.aux_data.fault.set(e);
-                gas_limit.unwrap_or_default()
+                None
             }
         };
 
@@ -700,13 +693,12 @@ impl FheProcessor {
         self.aux_data.inflight_memory_ops.clear();
         self.aux_data.memory = None;
 
-        let result = if let Some(e) = self.aux_data.fault.get() {
+        if let Some(e) = self.aux_data.fault.get() {
             Err(e.clone())
         } else {
             self.try_capture_return_value(memory, args, return_data)
-        };
-
-        (gas, result)
+                .map(|ret_val| (gas.unwrap(), ret_val))
+        }
     }
 
     /// Runs the given program using the passed user `data` as arguments.
@@ -723,7 +715,7 @@ impl FheProcessor {
             args,
             &RunProgramOptionsBuilder::new().build(),
         )
-        .1
+        .map(|x| x.1)
     }
 }
 
