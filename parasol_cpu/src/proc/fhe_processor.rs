@@ -2,7 +2,7 @@ use crate::{
     Byte, INSTRUCTION_SIZE, Memory, Result,
     register_names::*,
     tomasulo::{
-        registers::{RegisterFile, RegisterName, RobEntryRef},
+        registers::{RegisterFile, RegisterName},
         scoreboard::{ScoreboardEntry, ScoreboardEntryId, ScoreboardEntryRef},
         tomasulo_processor::{InstructionOperation, RetirementInfo, Tomasulo},
     },
@@ -217,95 +217,6 @@ impl FheProcessor {
         Ok(())
     }
 
-    /// Figures out the gas cost for the given instruction
-    fn compute_gas(&self, dispatched_op: &crate::proc::DispatchIsaOp) -> u32 {
-        fn is_register_ciphertext(reg: &RobEntryRef<Register>) -> bool {
-            match reg {
-                RobEntryRef::Id(e) | RobEntryRef::IdMut(e) => e.entry().is_ciphertext(),
-            }
-        }
-
-        use DispatchIsaOp::*;
-
-        match dispatched_op {
-            // instructions that do not compute anything are assigned trivial gas cost
-            Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) | Branch(..)
-            | Move(..) | Dbg(..) => 1,
-
-            // instructions that compute on one input source, but gas does not rely on it
-            Sext(..) | Zext(..) | Trunc(..) => 1,
-
-            // instructions that compute on one input source
-            Not(_, input) | Neg(_, input) => {
-                if is_register_ciphertext(input) {
-                    100_000
-                } else {
-                    1
-                }
-            }
-
-            // instructions that compute on two input sources that are interchangeable, and gas relies on either of them
-            And(_, input1, input2)
-            | Or(_, input1, input2)
-            | Xor(_, input1, input2)
-            | Add(_, input1, input2)
-            | Sub(_, input1, input2)
-            | CmpEq(_, input1, input2)
-            | CmpGt(_, input1, input2)
-            | CmpGe(_, input1, input2)
-            | CmpLt(_, input1, input2)
-            | CmpLe(_, input1, input2)
-            | CmpGtS(_, input1, input2)
-            | CmpGeS(_, input1, input2)
-            | CmpLtS(_, input1, input2)
-            | CmpLeS(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    100_000
-                } else {
-                    1
-                }
-            }
-
-            Mul(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    500_000
-                } else {
-                    1
-                }
-            }
-
-            // instructions that compute on two input sources that are not interchangeable, and gas relies on only one of them
-            Shr(_, _, input)
-            | Shra(_, _, input)
-            | Shl(_, _, input)
-            | Rotr(_, _, input)
-            | Rotl(_, _, input) => {
-                if is_register_ciphertext(input) {
-                    100_000
-                } else {
-                    1
-                }
-            }
-
-            // instructions that compute on three input sources that are interchangeable, and gas relies on either of them
-            AddC(_, _, input1, input2, input3)
-            | SubB(_, _, input1, input2, input3)
-            | Cmux(_, input1, input2, input3) => {
-                if is_register_ciphertext(input1)
-                    || is_register_ciphertext(input2)
-                    || is_register_ciphertext(input3)
-                {
-                    100_000
-                } else {
-                    1
-                }
-            }
-
-            // return has zero gas cost
-            Ret() => 0,
-        }
-    }
-
     pub fn dispatch_instruction(
         &mut self,
         inst: IsaOp,
@@ -343,7 +254,7 @@ impl FheProcessor {
         let disp_inst =
             inst.to_dispatched_op(srcs, scoreboard_entry.clone(), self.current_instruction, pc)?;
 
-        let gas = self.compute_gas(&disp_inst);
+        let gas = self.aux_data.gas_model.compute_gas(&disp_inst);
 
         if let Some(gas_limit) = options.gas_limit {
             if gas + used_gas_so_far > gas_limit {

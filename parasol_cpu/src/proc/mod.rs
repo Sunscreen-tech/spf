@@ -18,7 +18,10 @@ use parasol_runtime::{
 use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
 
-use crate::{Error, Memory, Ptr32, Result, Word, tomasulo::scoreboard::ScoreboardEntryRef};
+use crate::{
+    Error, Memory, Ptr32, Result, Word, proc::gas_model::GasModel,
+    tomasulo::scoreboard::ScoreboardEntryRef,
+};
 
 use self::ops::trivially_encrypt_value_l1glwe;
 
@@ -30,6 +33,7 @@ pub mod assembly;
 mod ops;
 
 mod fhe_processor;
+mod gas_model;
 
 #[cfg(test)]
 mod tests;
@@ -226,6 +230,7 @@ pub(crate) struct FheProcessorAuxData {
     l1glwe_zero: L1GlweCiphertext,
     l1glwe_one: L1GlweCiphertext,
     enc: Encryption,
+    gas_model: GasModel,
 
     /// A sync or async error that can occur in the processor. When set, all previous in-flight
     /// instructions that haven't started become no-ops that immediately retire and notify
@@ -249,6 +254,7 @@ impl FheProcessorAuxData {
             l1glwe_zero,
             l1glwe_one,
             enc: enc.clone(),
+            gas_model: GasModel::new(),
             fault: Arc::new(OnceLock::new()),
         }
     }
