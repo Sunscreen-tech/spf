@@ -64,6 +64,19 @@ impl GasModel {
         }
     }
 
+    fn figure_out_gas(
+        &self,
+        check_regs: &[&RobEntryRef<Register>],
+        data_reg: &RobEntryRef<Register>,
+        op: &DispatchIsaOp,
+    ) -> u32 {
+        if check_regs.iter().any(|x| is_register_ciphertext(x)) {
+            self.per_op_per_width_cost[op.instr_name()][register_width_to_index(data_reg)]
+        } else {
+            1
+        }
+    }
+
     pub(crate) fn compute_gas(&self, op: &DispatchIsaOp) -> u32 {
         match op {
             // return assigned zero cost
@@ -75,261 +88,109 @@ impl GasModel {
             | Move(..) | Dbg(..) | Sext(..) | Zext(..) | Trunc(..) => 1,
 
             // Not has only one input and the cost is non-trivial if that input is ciphertext
-            Not(_, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Not(_, input) => self.figure_out_gas(&[input], input, op),
 
             // Neg has only one input and the cost is non-trivial if that input is ciphertext
-            Neg(_, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Neg(_, input) => self.figure_out_gas(&[input], input, op),
 
             // And has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            And(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            And(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // Or has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            Or(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            Or(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // Xor has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            Xor(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            Xor(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // Add has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            Add(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            Add(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // Sub has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            Sub(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            Sub(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpEq has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpEq(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpEq(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpGt has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpGt(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpGt(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpGe has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpGe(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpGe(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpLt has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpLt(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpLt(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpLe has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpLe(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpLe(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpGtS has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpGtS(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpGtS(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpGeS has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpGeS(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpGeS(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpLtS has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpLtS(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpLtS(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // CmpLeS has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            CmpLeS(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            CmpLeS(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // Mul has two inputs that are interchangeable and the cost is non-trivial if either input is ciphertext
             // (where the other one will be lifted to ciphertext if not already), note their widths must be the same
-            Mul(_, input1, input2) => {
-                if is_register_ciphertext(input1) || is_register_ciphertext(input2) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
-            }
+            Mul(_, input1, input2) => self.figure_out_gas(&[input1, input2], input1, op),
 
             // Shr has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Shr(_, _, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Shr(_, _, input) => self.figure_out_gas(&[input], input, op),
 
             // Shra has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Shra(_, _, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Shra(_, _, input) => self.figure_out_gas(&[input], input, op),
 
             // Shl has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Shl(_, _, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Shl(_, _, input) => self.figure_out_gas(&[input], input, op),
 
             // Rotr has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Rotr(_, _, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Rotr(_, _, input) => self.figure_out_gas(&[input], input, op),
 
             // Rotl has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Rotl(_, _, input) => {
-                if is_register_ciphertext(input) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input)]
-                } else {
-                    1
-                }
-            }
+            Rotl(_, _, input) => self.figure_out_gas(&[input], input, op),
 
             // AddC has three inputs that are not interchangeable and the cost is non-trivial if any input is ciphertext
             // (where the other ones will be lifted to ciphertext if not already), note first two input widths must be the same
             // while last input width must be one
             AddC(_, _, input1, input2, input3) => {
-                if is_register_ciphertext(input1)
-                    || is_register_ciphertext(input2)
-                    || is_register_ciphertext(input3)
-                {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
+                self.figure_out_gas(&[input1, input2, input3], input1, op)
             }
 
             // SubB has three inputs that are not interchangeable and the cost is non-trivial if any input is ciphertext
             // (where the other ones will be lifted to ciphertext if not already), note first two input widths must be the same
             // while last input width must be one
             SubB(_, _, input1, input2, input3) => {
-                if is_register_ciphertext(input1)
-                    || is_register_ciphertext(input2)
-                    || is_register_ciphertext(input3)
-                {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input1)]
-                } else {
-                    1
-                }
+                self.figure_out_gas(&[input1, input2, input3], input1, op)
             }
 
             // Cmux has three inputs that are not interchangeable and the cost is non-trivial if the first input is ciphertext
             // (where the other ones will be lifted to ciphertext if not already), note last two input widths must be the same
             // while first input width must be one
-            Cmux(_, input1, input2, _input3) => {
-                if is_register_ciphertext(input1) {
-                    self.per_op_per_width_cost[op.instr_name()][register_width_to_index(input2)]
-                } else {
-                    1
-                }
-            }
+            Cmux(_, input1, input2, _input3) => self.figure_out_gas(&[input1], input2, op),
         }
     }
 }
