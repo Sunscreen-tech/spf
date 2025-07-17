@@ -72,6 +72,7 @@ pub use proc::assembly::register_names;
 
 #[doc(hidden)]
 pub mod test_utils;
+pub use test_utils::*;
 
 #[doc(hidden)]
 pub mod tomasulo;

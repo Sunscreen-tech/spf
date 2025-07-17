@@ -13,10 +13,13 @@ use super::{ops::is_invalid_load_store_alignment, *};
 
 use log::{debug, error, trace};
 
-use std::sync::{
-    Arc,
-    atomic::Ordering,
-    mpsc::{self, Receiver, Sender},
+use std::{
+    sync::{
+        Arc,
+        atomic::Ordering,
+        mpsc::{self, Receiver, Sender},
+    },
+    time::Instant,
 };
 
 type DebugHandler = Arc<dyn Fn(usize, u32, &Register) + Send + Sync + 'static>;
@@ -26,6 +29,7 @@ type DebugHandler = Arc<dyn Fn(usize, u32, &Register) + Send + Sync + 'static>;
 pub struct RunProgramOptions {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
+    log_instruction_time: bool,
     log_register_info: bool,
     debug_handlers: Vec<DebugHandler>,
 }
@@ -47,6 +51,7 @@ impl RunProgramOptions {
 pub struct RunProgramOptionsBuilder {
     gas_limit: Option<u32>,
     log_instruction_execution: bool,
+    log_instruction_time: bool,
     log_register_info: bool,
     debug_handlers: Vec<DebugHandler>,
 }
@@ -70,6 +75,16 @@ impl RunProgramOptionsBuilder {
     /// logger installed to see them (e.g. `env_logger`).
     pub fn log_instruction_execution(mut self, val: bool) -> Self {
         self.log_instruction_execution = val;
+        self
+    }
+
+    /// Enable debug logging for instruction execution time for benchmark.
+    ///
+    /// # Remarks
+    /// These logs will be emitted with `log::debug!`. You'll need an appropriate
+    /// logger installed to see them (e.g. `env_logger`).
+    pub fn log_instruction_time(mut self, val: bool) -> Self {
+        self.log_instruction_time = val;
         self
     }
 
@@ -97,6 +112,7 @@ impl RunProgramOptionsBuilder {
         RunProgramOptions {
             gas_limit: self.gas_limit,
             log_instruction_execution: self.log_instruction_execution,
+            log_instruction_time: self.log_instruction_time,
             log_register_info: self.log_register_info,
             debug_handlers: self.debug_handlers,
         }
@@ -688,6 +704,12 @@ impl Tomasulo for FheProcessor {
             return;
         }
 
+        let inst = if options.log_instruction_time {
+            &format!("{instruction:#?}")
+        } else {
+            ""
+        };
+        let now = Instant::now();
         match instruction {
             Load(dst, src, width, offset) => {
                 self.load(
@@ -842,6 +864,10 @@ impl Tomasulo for FheProcessor {
             Dbg(src, handler_id) => {
                 self.dbg(&retirement_info, src, handler_id, instruction_id, pc);
             }
+        }
+        if options.log_instruction_time {
+            let elapsed_us = now.elapsed().as_secs_f64() * 1_000_000.0;
+            debug!("{inst} {elapsed_us}");
         }
     }
 
