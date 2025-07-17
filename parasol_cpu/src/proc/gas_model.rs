@@ -8,6 +8,7 @@ use crate::{
 
 pub(crate) struct GasModel {
     per_op_per_width_cost: HashMap<&'static str, [u32; 4]>,
+    per_op_per_bi_width_cost: HashMap<&'static str, [[u32; 4]; 4]>,
 }
 
 fn is_register_ciphertext(reg: &RobEntryRef<Register>) -> bool {
@@ -31,6 +32,7 @@ fn register_width_to_index(reg: &RobEntryRef<Register>) -> usize {
 impl GasModel {
     pub(crate) fn new() -> Self {
         let mut per_op_per_width_cost = HashMap::new();
+        let mut per_op_per_bi_width_cost = HashMap::new();
 
         // TODO: benchmark to replace the numbers
         per_op_per_width_cost.insert(stringify!(Not), [100_000, 100_000, 100_000, 100_000]);
@@ -50,17 +52,59 @@ impl GasModel {
         per_op_per_width_cost.insert(stringify!(CmpLtS), [100_000, 100_000, 100_000, 100_000]);
         per_op_per_width_cost.insert(stringify!(CmpLeS), [100_000, 100_000, 100_000, 100_000]);
         per_op_per_width_cost.insert(stringify!(Mul), [500_000, 500_000, 500_000, 500_000]);
-        per_op_per_width_cost.insert(stringify!(Shr), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Shra), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Shl), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Rotr), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Rotl), [100_000, 100_000, 100_000, 100_000]);
         per_op_per_width_cost.insert(stringify!(AddC), [100_000, 100_000, 100_000, 100_000]);
         per_op_per_width_cost.insert(stringify!(SubB), [100_000, 100_000, 100_000, 100_000]);
         per_op_per_width_cost.insert(stringify!(Cmux), [100_000, 100_000, 100_000, 100_000]);
 
+        per_op_per_bi_width_cost.insert(
+            stringify!(Shr),
+            [
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+            ],
+        );
+        per_op_per_bi_width_cost.insert(
+            stringify!(Shra),
+            [
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+            ],
+        );
+        per_op_per_bi_width_cost.insert(
+            stringify!(Shl),
+            [
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+            ],
+        );
+        per_op_per_bi_width_cost.insert(
+            stringify!(Rotr),
+            [
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+            ],
+        );
+        per_op_per_bi_width_cost.insert(
+            stringify!(Rotl),
+            [
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+                [100_000, 100_000, 100_000, 100_000],
+            ],
+        );
+
         Self {
             per_op_per_width_cost,
+            per_op_per_bi_width_cost,
         }
     }
 
@@ -72,6 +116,21 @@ impl GasModel {
     ) -> u32 {
         if check_regs.iter().any(|x| is_register_ciphertext(x)) {
             self.per_op_per_width_cost[op.instr_name()][register_width_to_index(data_reg)]
+        } else {
+            1
+        }
+    }
+
+    fn figure_out_gas_bi(
+        &self,
+        check_regs: &[&RobEntryRef<Register>],
+        data_reg_pri: &RobEntryRef<Register>,
+        data_reg_sec: &RobEntryRef<Register>,
+        op: &DispatchIsaOp,
+    ) -> u32 {
+        if check_regs.iter().any(|x| is_register_ciphertext(x)) {
+            self.per_op_per_bi_width_cost[op.instr_name()][register_width_to_index(data_reg_pri)]
+                [register_width_to_index(data_reg_sec)]
         } else {
             1
         }
@@ -155,23 +214,23 @@ impl GasModel {
 
             // Shr has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Shr(_, _, input) => self.figure_out_gas(&[input], input, op),
+            Shr(_, input1, input2) => self.figure_out_gas_bi(&[input2], input1, input2, op),
 
             // Shra has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Shra(_, _, input) => self.figure_out_gas(&[input], input, op),
+            Shra(_, input1, input2) => self.figure_out_gas_bi(&[input2], input1, input2, op),
 
             // Shl has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Shl(_, _, input) => self.figure_out_gas(&[input], input, op),
+            Shl(_, input1, input2) => self.figure_out_gas_bi(&[input2], input1, input2, op),
 
             // Rotr has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Rotr(_, _, input) => self.figure_out_gas(&[input], input, op),
+            Rotr(_, input1, input2) => self.figure_out_gas_bi(&[input2], input1, input2, op),
 
             // Rotl has two inputs that are not interchangeable and the cost is non-trivial if the second input is ciphertext
             // (where the first one will be lifted to ciphertext if not already)
-            Rotl(_, _, input) => self.figure_out_gas(&[input], input, op),
+            Rotl(_, input1, input2) => self.figure_out_gas_bi(&[input2], input1, input2, op),
 
             // AddC has three inputs that are not interchangeable and the cost is non-trivial if any input is ciphertext
             // (where the other ones will be lifted to ciphertext if not already), note first two input widths must be the same
