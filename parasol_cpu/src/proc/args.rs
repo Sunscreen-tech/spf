@@ -432,32 +432,6 @@ impl Default for ArgsBuilder {
     }
 }
 
-/// A type indicating a "raw" return value where it only stores the bytes without being interpreted
-/// as actual types so the user has flexibility to interpret later. This is for use only in
-/// [`crate::ArgsBuilder::return_value_raw`] where the alignment and size are explicitly stated since
-/// this type, albeit implementing [`ToArg`], does not contain alignment and size information. Using this
-/// type in [`crate::ArgsBuilder::return_value`] leads to runtime error.
-pub struct RawReturnValue(pub Vec<Byte>);
-
-impl ToArg for RawReturnValue {
-    fn alignment() -> usize {
-        unreachable!("This function should not be called if you use this type correctly")
-    }
-
-    fn size() -> usize {
-        unreachable!("This function should not be called if you use this type correctly")
-    }
-
-    /// Prefer to just use the inner public [`Vec<Byte>`] value unless you do need a duplicate
-    fn to_bytes(&self) -> Vec<Byte> {
-        self.0.clone()
-    }
-
-    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
-        Ok(Self(data))
-    }
-}
-
 impl ArgsBuilder {
     /// Create a new [`ArgsBuilder`].
     pub fn new() -> Self {
@@ -492,11 +466,12 @@ impl ArgsBuilder {
     }
 
     /// Specify a return value for an FHE program using the alignment and size.
+    ///
     /// # Remarks
     /// If an FHE program returns a value greater than 8 bytes, you must specify this or above, even if you
     /// don't use it.
     /// Failure to do so will result in incorrect execution.
-    pub fn return_value_raw(self, align: usize, num_bytes: usize) -> CallData<RawReturnValue> {
+    pub fn return_value_raw(self, align: usize, num_bytes: usize) -> CallData<Vec<Byte>> {
         CallData {
             args: self.args,
             return_value: ReturnValue {
@@ -514,6 +489,7 @@ impl ArgsBuilder {
 }
 
 /// The info needed to pass an argument to a function from the host program.
+#[derive(Clone)]
 pub struct Arg {
     /// The alignment of the argument.
     pub alignment: usize,
@@ -562,6 +538,17 @@ impl<T> CallData<T> {
         offset = offset.next_multiple_of(16);
 
         offset
+    }
+
+    pub(crate) fn to_raw(&self) -> CallData<Vec<Byte>> {
+        CallData {
+            return_value: ReturnValue {
+                alignment: self.return_value.alignment,
+                size: self.return_value.size,
+                _phantom: PhantomData,
+            },
+            args: self.args.clone(),
+        }
     }
 }
 

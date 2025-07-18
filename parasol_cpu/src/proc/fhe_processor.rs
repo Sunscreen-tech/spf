@@ -520,15 +520,15 @@ impl FheProcessor {
         Ok(())
     }
 
-    fn try_capture_return_value<T: ToArg>(
+    fn try_capture_return_value_raw(
         &self,
         memory: &Arc<Memory>,
-        args: &CallData<T>,
+        args: &CallData<Vec<Byte>>,
         return_value_ptr: Ptr32,
-    ) -> Result<T> {
+    ) -> Result<Vec<Byte>> {
         // If our return value is a ZST, just return a vec of 0 bytes.
         if args.return_value.size == 0 {
-            T::try_from_bytes(vec![])
+            Ok(vec![])
         } else {
             // Read our return value from the return pointer.
             let mut data = Vec::with_capacity(args.return_value.size);
@@ -537,20 +537,20 @@ impl FheProcessor {
                 data.push(memory.try_load(return_value_ptr.try_offset(i as u32)?)?);
             }
 
-            Ok(T::try_from_bytes(data)?)
+            Ok(data)
         }
     }
 
     /// Runs the given program using the passed user `data` as arguments with a gas limit
-    /// Returns the amount of gas used to run the program and the program return
-    /// value
-    pub fn run_program_with_options<T: ToArg>(
+    /// Returns the amount of gas used to run the program and the raw return
+    /// value in [`Vec<Byte>`]
+    pub fn run_program_with_options_raw(
         &mut self,
         memory: &Arc<Memory>,
         initial_pc: Ptr32,
-        args: &CallData<T>,
+        args: &CallData<Vec<Byte>>,
         options: &RunProgramOptions,
-    ) -> Result<(u32, T)> {
+    ) -> Result<(u32, Vec<Byte>)> {
         self.reset()?;
         let return_data = self.set_up_function_call(memory, args)?;
         self.aux_data.memory = Some(memory.clone());
@@ -607,9 +607,24 @@ impl FheProcessor {
         if let Some(e) = self.aux_data.fault.get() {
             Err(e.clone())
         } else {
-            self.try_capture_return_value(memory, args, return_data)
+            self.try_capture_return_value_raw(memory, args, return_data)
                 .map(|ret_val| (gas.unwrap(), ret_val))
         }
+    }
+
+    /// Runs the given program using the passed user `data` as arguments with a gas limit
+    /// Returns the amount of gas used to run the program and the program return
+    /// value
+    pub fn run_program_with_options<T: ToArg>(
+        &mut self,
+        memory: &Arc<Memory>,
+        initial_pc: Ptr32,
+        args: &CallData<T>,
+        options: &RunProgramOptions,
+    ) -> Result<(u32, T)> {
+        let (gas, bytes) =
+            self.run_program_with_options_raw(memory, initial_pc, &args.to_raw(), options)?;
+        Ok((gas, T::try_from_bytes(bytes)?))
     }
 
     /// Runs the given program using the passed user `data` as arguments.

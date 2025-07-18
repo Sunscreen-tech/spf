@@ -19,7 +19,7 @@ use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Error, Memory, Ptr32, Result, Word, proc::gas_model::GasModel,
+    Byte, Error, Memory, Ptr32, Result, Word, proc::gas_model::GasModel,
     tomasulo::scoreboard::ScoreboardEntryRef,
 };
 
@@ -286,6 +286,18 @@ impl FheComputer {
         let processor = FheProcessor::new(aux_data);
 
         Self { processor }
+    }
+
+    /// Run the given FHE program with user specified data and a gas limit, return the used gas and program raw return value
+    pub fn run_program_with_options_raw(
+        &mut self,
+        initial_pc: Ptr32,
+        memory: &Arc<Memory>,
+        args: CallData<Vec<Byte>>,
+        options: &RunProgramOptions,
+    ) -> Result<(u32, Vec<Byte>)> {
+        self.processor
+            .run_program_with_options_raw(memory, initial_pc, &args.to_raw(), options)
     }
 
     /// Run the given FHE program with user specified data and a gas limit, return the used gas and program return value
