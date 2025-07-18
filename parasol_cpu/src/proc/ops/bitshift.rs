@@ -147,7 +147,13 @@ impl FheProcessor {
                     )?;
 
                     let input_width = c.len();
-                    let shift_width = c_shift.len();
+                    // Use minimal covered width for shift to speed up stuff
+                    // In case of rotation, this is correct anyway given the input width id power of 2
+                    // In case of shifting, this does not give the conceptually correct result if the high
+                    //   order bits in shift that get dropped isn't zero. However, this also indicates the
+                    //   shift amount is larger than the bit width  of the input, which is undefined behavior
+                    //   so we can return any result
+                    let shift_width = input_width.ilog2() as usize + 1;
 
                     let mut graph = FheCircuit::new();
                     let circuit = circuit_gen(input_width, shift_width);
@@ -156,7 +162,7 @@ impl FheProcessor {
                     let inputs = c
                         .iter()
                         .rev()
-                        .chain(c_shift.iter().rev())
+                        .chain(c_shift.iter().take(shift_width).rev())
                         .cloned()
                         .collect::<Vec<_>>();
 

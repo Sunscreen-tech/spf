@@ -133,9 +133,9 @@ pub fn bitshift(inputs: u16, shift_size: u16, dir: ShiftDirection, mode: ShiftMo
         }
     }
 
-    // Now mux in the higher order wrapped select bits; if any are 1 then the
-    // entire output vector is zero or sign
-    if mode != ShiftMode::Rotation {
+    // Now mux in the higher order wrapped select bits, if they exist; if any are 1 then the
+    // entire output vector is zero or sign (not applicable to rotation mode)
+    if !excess_shift_vars.is_empty() && mode != ShiftMode::Rotation {
         let mut clear_bit = variable_set.mk_false();
         for excess_shift_bit in excess_shift_vars {
             clear_bit = clear_bit.or(&excess_shift_bit);
@@ -164,11 +164,12 @@ mod tests {
 
     use crate::{graph_ops::Bit, test_mux_circuit};
 
-    use super::{ShiftDirection, ShiftMode, bitshift};
+    use super::{ShiftDirection, ShiftMode, bitshift, ilog2_rounded_up};
 
     #[derive(Debug, Clone, Copy)]
     struct Case {
-        width: u16,
+        shift_width: u16,
+        value_width: u16,
         shift: u16,
         value: u16,
         dir: ShiftDirection,
@@ -179,24 +180,25 @@ mod tests {
         fn fmt(&self, f: &mut Formatter) -> std::fmt::Result {
             write!(
                 f,
-                "Case {{ width: {}, shift: {}, direction: {:?}, mode: {:?}, value: {} }}",
-                self.width, self.shift, self.dir, self.mode, self.value
+                "Case {{ shift_width: {}, value_width: {}, shift: {}, direction: {:?}, mode: {:?}, value: {} }}",
+                self.shift_width, self.value_width, self.shift, self.dir, self.mode, self.value
             )
         }
     }
 
     fn run_case(case: Case) {
         let Case {
-            width,
+            shift_width,
+            value_width,
             shift,
             value,
             dir,
             mode,
         } = case;
 
-        let circuit = bitshift(width, width, dir, mode);
+        let circuit = bitshift(value_width, shift_width, dir, mode);
 
-        let mut expected_bits = (0..width)
+        let mut expected_bits = (0..value_width)
             .rev()
             .map(|i| Bit((value >> i) & 0x1 == 1))
             .collect::<Vec<_>>();
@@ -205,7 +207,7 @@ mod tests {
 
         match dir {
             ShiftDirection::Left => {
-                expected_bits.rotate_left((shift % width) as usize);
+                expected_bits.rotate_left((shift % value_width) as usize);
 
                 // Clear out bottom shift bits if zero
                 if mode == ShiftMode::Logical {
@@ -217,7 +219,7 @@ mod tests {
                 }
             }
             ShiftDirection::Right => {
-                expected_bits.rotate_right((shift % width) as usize);
+                expected_bits.rotate_right((shift % value_width) as usize);
 
                 // Clear out top shift bits if zero, or apply sign bit if arithmetic
                 if mode != ShiftMode::Rotation {
@@ -240,11 +242,11 @@ mod tests {
             .map(|(i, &Bit(x))| (x as u32) << i)
             .sum::<u32>();
 
-        let value_as_bits = (0..width)
+        let value_as_bits = (0..value_width)
             .rev()
             .map(|i| (value >> i) & 1 == 1)
             .collect::<Vec<_>>();
-        let shift_input = (0..width)
+        let shift_input = (0..shift_width)
             .rev()
             .map(|i| (shift >> i) & 1 == 1)
             .collect::<Vec<_>>();
@@ -266,11 +268,11 @@ mod tests {
             .map(|(i, &Bit(x))| (x as u32) << i)
             .sum::<u32>();
 
-        let print_width = width as usize;
+        let print_width = value_width as usize;
         if expected != actual {
             println!(
                 "width: {}, shift: {}, direction: {:?}, mode: {:?}, value: {:#print_width$b}, expected: {:#print_width$b}, actual: {:#print_width$b}",
-                width, shift, dir, mode, value, &expected, &actual
+                value_width, shift, dir, mode, value, &expected, &actual
             );
             println!("{}", &case);
             panic!("Mismatch");
@@ -279,63 +281,40 @@ mod tests {
 
     #[test]
     fn bitshift_circuit() {
-        let bad_cases = [
-            // These fail because we don't support shifting without zeros for
-            // non-power of two inputs.
-            // Case {
-            //     width: 3,
-            //     shift: 4,
-            //     dir: ShiftDirection::Left,
-            //     mode: ShiftMode::Rotation,
-            //     arith: false,
-            //     value: 1,
-            // },
-            // Case {
-            //     width: 5,
-            //     shift: 8,
-            //     dir: ShiftDirection::Left,
-            //     mode: ShiftMode::Rotation,
-            //     value: 1,
-            // },
-        ];
-
-        for case in bad_cases {
-            run_case(case);
-        }
-
         for mode in [
             ShiftMode::Arithmetic,
             ShiftMode::Logical,
             ShiftMode::Rotation,
         ] {
             for dir in [ShiftDirection::Left, ShiftDirection::Right] {
-                for width in 1..=6u16 {
-                    let mask = (1 << width) - 1;
+                for value_width in 1..=6u16 {
+                    // this happens to be correct for 1-6
+                    let min_shift_width = ilog2_rounded_up(value_width + 1) as u16;
+                    for shift_width in min_shift_width..=6u16 {
+                        // Skip the cases where we would need to perform a modulus
+                        // operation.
+                        if mode == ShiftMode::Rotation && !value_width.is_power_of_two() {
+                            continue;
+                        }
 
-                    // Skip the cases where we would need to perform a modulus
-                    // operation.
-                    if mode == ShiftMode::Rotation && !width.is_power_of_two() {
-                        continue;
-                    }
+                        // Skip the cases not compatible with arithmetic shift
+                        if mode == ShiftMode::Arithmetic && dir == ShiftDirection::Left {
+                            continue;
+                        }
 
-                    // Skip the cases not compatible with arithmetic shift
-                    if mode == ShiftMode::Arithmetic && dir == ShiftDirection::Left {
-                        continue;
-                    }
-
-                    // Check every value
-                    for value in 0..(1 << width) {
-                        let value = value & mask;
-
-                        for shift in 0..(1 << width) {
-                            let case = Case {
-                                width,
-                                shift: shift & mask,
-                                value,
-                                dir,
-                                mode,
-                            };
-                            run_case(case);
+                        // Check every value
+                        for value in 0..(1 << value_width) {
+                            for shift in 0..(1 << shift_width) {
+                                let case = Case {
+                                    shift_width,
+                                    value_width,
+                                    shift,
+                                    value,
+                                    dir,
+                                    mode,
+                                };
+                                run_case(case);
+                            }
                         }
                     }
                 }
