@@ -34,71 +34,71 @@ impl GasModel {
         let mut per_op_per_width_cost = HashMap::new();
         let mut per_op_per_bi_width_cost = HashMap::new();
 
-        // TODO: benchmark to replace the numbers
-        per_op_per_width_cost.insert(stringify!(Not), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Neg), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(And), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Or), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Xor), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Add), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Sub), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpEq), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpGt), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpGe), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpLt), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpLe), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpGtS), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpGeS), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpLtS), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(CmpLeS), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Mul), [500_000, 500_000, 500_000, 500_000]);
-        per_op_per_width_cost.insert(stringify!(AddC), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(SubB), [100_000, 100_000, 100_000, 100_000]);
-        per_op_per_width_cost.insert(stringify!(Cmux), [100_000, 100_000, 100_000, 100_000]);
+        // TODO: confirm the numbers after redoing shift
+        per_op_per_width_cost.insert(stringify!(Not), [380, 720, 1_450, 7_500]);
+        per_op_per_width_cost.insert(stringify!(Neg), [500, 930, 2_480, 120_000]);
+        per_op_per_width_cost.insert(stringify!(And), [800, 1_650, 6_000, 29_000]);
+        per_op_per_width_cost.insert(stringify!(Or), [810, 1_770, 2_810, 17_400]);
+        per_op_per_width_cost.insert(stringify!(Xor), [650, 1_260, 2_650, 29_400]);
+        per_op_per_width_cost.insert(stringify!(Add), [940, 2_080, 65_000, 350_000]);
+        per_op_per_width_cost.insert(stringify!(Sub), [1_020, 2_240, 104_000, 408_000]);
+        per_op_per_width_cost.insert(stringify!(CmpEq), [740, 1_480, 3_860, 9_100]);
+        per_op_per_width_cost.insert(stringify!(CmpGt), [840, 1_820, 6_800, 56_000]);
+        per_op_per_width_cost.insert(stringify!(CmpGe), [920, 2_500, 14_000, 13_400]);
+        per_op_per_width_cost.insert(stringify!(CmpLt), [820, 1_880, 4_800, 10_880]);
+        per_op_per_width_cost.insert(stringify!(CmpLe), [900, 2_480, 21_000, 12_400]);
+        per_op_per_width_cost.insert(stringify!(CmpGtS), [880, 2_180, 3_180, 12_800]);
+        per_op_per_width_cost.insert(stringify!(CmpGeS), [860, 1_820, 3_100, 12_800]);
+        per_op_per_width_cost.insert(stringify!(CmpLtS), [840, 2_040, 18_800, 19_000]);
+        per_op_per_width_cost.insert(stringify!(CmpLeS), [860, 1_800, 10_600, 12_600]);
+        per_op_per_width_cost.insert(stringify!(Mul), [1_740, 116_000, 468_000, 2_240_000]);
+        per_op_per_width_cost.insert(stringify!(AddC), [1_000, 2_200, 69_000, 354_000]);
+        per_op_per_width_cost.insert(stringify!(SubB), [1_000, 2_240, 67_300, 407_000]);
+        per_op_per_width_cost.insert(stringify!(Cmux), [580, 1_080, 1_980, 3_820]);
 
         per_op_per_bi_width_cost.insert(
             stringify!(Shr),
             [
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
+                [58_600, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [53_060_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
             ],
         );
         per_op_per_bi_width_cost.insert(
             stringify!(Shra),
             [
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
+                [58_860, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [44_900_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
             ],
         );
         per_op_per_bi_width_cost.insert(
             stringify!(Shl),
             [
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
+                [58_840, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [53_500_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
             ],
         );
         per_op_per_bi_width_cost.insert(
             stringify!(Rotr),
             [
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
+                [126_620, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [396_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
             ],
         );
         per_op_per_bi_width_cost.insert(
             stringify!(Rotl),
             [
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
-                [100_000, 100_000, 100_000, 100_000],
+                [126_620, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [398_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
+                [1_000_000_000, 1_000_000_000, 1_000_000_000, 1_000_000_000],
             ],
         );
 
