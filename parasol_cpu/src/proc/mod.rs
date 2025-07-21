@@ -288,19 +288,25 @@ impl FheComputer {
         Self { processor }
     }
 
-    /// Run the given FHE program with user specified data and a gas limit, return the used gas and program raw return value
-    pub fn run_program_with_options_raw(
+    /// Run the given FHE program with user specified data and options including gas limit, etc,
+    /// return the used gas and ([`Vec<Byte>`]) return value to be interpreted by the caller
+    pub fn run_program_with_options_and_dynamic_return(
         &mut self,
         initial_pc: Ptr32,
         memory: &Arc<Memory>,
         args: CallData<Vec<Byte>>,
         options: &RunProgramOptions,
     ) -> Result<(u32, Vec<Byte>)> {
-        self.processor
-            .run_program_with_options_raw(memory, initial_pc, &args.to_raw(), options)
+        self.processor.run_program_with_options_and_dynamic_return(
+            memory,
+            initial_pc,
+            &args.to_dyn(),
+            options,
+        )
     }
 
-    /// Run the given FHE program with user specified data and a gas limit, return the used gas and program return value
+    /// Run the given FHE program with user specified data and options including gas limit, etc,
+    /// return the used gas and program return value
     pub fn run_program_with_options<T: ToArg>(
         &mut self,
         initial_pc: Ptr32,

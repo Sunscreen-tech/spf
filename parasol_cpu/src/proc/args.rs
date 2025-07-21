@@ -453,11 +453,6 @@ impl ArgsBuilder {
     }
 
     /// Specify a return value for an FHE program.
-    ///
-    /// # Remarks
-    /// If an FHE program returns a value greater than 8 bytes, you must specify this or below, even if you
-    /// don't use it.
-    /// Failure to do so will result in incorrect execution.
     pub fn return_value<T: ToArg>(self) -> CallData<T> {
         CallData {
             args: self.args,
@@ -466,12 +461,7 @@ impl ArgsBuilder {
     }
 
     /// Specify a return value for an FHE program using the alignment and size.
-    ///
-    /// # Remarks
-    /// If an FHE program returns a value greater than 8 bytes, you must specify this or above, even if you
-    /// don't use it.
-    /// Failure to do so will result in incorrect execution.
-    pub fn return_value_raw(self, align: usize, num_bytes: usize) -> CallData<Vec<Byte>> {
+    pub fn return_value_dyn(self, align: usize, num_bytes: usize) -> CallData<Vec<Byte>> {
         CallData {
             args: self.args,
             return_value: ReturnValue {
@@ -540,7 +530,7 @@ impl<T> CallData<T> {
         offset
     }
 
-    pub(crate) fn to_raw(&self) -> CallData<Vec<Byte>> {
+    pub(crate) fn to_dyn(&self) -> CallData<Vec<Byte>> {
         CallData {
             return_value: ReturnValue {
                 alignment: self.return_value.alignment,
