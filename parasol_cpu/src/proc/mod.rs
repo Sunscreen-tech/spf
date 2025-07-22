@@ -19,7 +19,7 @@ use rayon::ThreadPool;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    Error, Memory, Ptr32, Result, Word, proc::gas_model::GasModel,
+    Byte, Error, Memory, Ptr32, Result, Word, proc::gas_model::GasModel,
     tomasulo::scoreboard::ScoreboardEntryRef,
 };
 
@@ -288,7 +288,25 @@ impl FheComputer {
         Self { processor }
     }
 
-    /// Run the given FHE program with user specified data and a gas limit, return the used gas and program return value
+    /// Run the given FHE program with user specified data and options including gas limit, etc,
+    /// return the used gas and ([`Vec<Byte>`]) return value to be interpreted by the caller
+    pub fn run_program_with_options_and_dynamic_return(
+        &mut self,
+        initial_pc: Ptr32,
+        memory: &Arc<Memory>,
+        args: CallData<Vec<Byte>>,
+        options: &RunProgramOptions,
+    ) -> Result<(u32, Vec<Byte>)> {
+        self.processor.run_program_with_options_and_dynamic_return(
+            memory,
+            initial_pc,
+            &args.to_dyn(),
+            options,
+        )
+    }
+
+    /// Run the given FHE program with user specified data and options including gas limit, etc,
+    /// return the used gas and program return value
     pub fn run_program_with_options<T: ToArg>(
         &mut self,
         initial_pc: Ptr32,
