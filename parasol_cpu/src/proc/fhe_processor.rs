@@ -541,8 +541,8 @@ impl FheProcessor {
         }
     }
 
-    /// Runs the given program using the passed user `data` as arguments with an
-    /// option including gas limit, etc
+    /// Runs the given program using the passed user `data` as arguments with options
+    /// including gas limit, etc
     ///
     /// Returns the amount of gas used to run the program and the program return
     /// value
@@ -562,8 +562,8 @@ impl FheProcessor {
         Ok((gas, T::try_from_bytes(bytes)?))
     }
 
-    /// Runs the given program using the passed user `data` as arguments with a an
-    /// option including gas limit, etc
+    /// Runs the given program using the passed user `data` as arguments with options
+    /// including gas limit, etc
     ///
     /// Returns the amount of gas used to run the program and the ([`Vec<Byte>`]) return value
     /// to be interpreted by the caller
