@@ -37,3 +37,6 @@ pub mod high_level;
 /// Container [`Error`] and [`Result`] types for this crate.
 mod error;
 pub use error::*;
+
+#[cfg(feature = "gpu")]
+mod gpu;

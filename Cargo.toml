@@ -10,7 +10,20 @@ members = [
     "sunscreen_math",
     "sunscreen_math_macros",
     "sunscreen_tfhe",
+    "sunscreen_gpu_runtime"
 ]
+default-members = [
+    "benchmark_system_info",
+    "examples/basic_add",
+    "parasol_concurrency",
+    "parasol_cpu",
+    "parasol_cpu_macros",
+    "parasol_runtime",
+    "sunscreen_math",
+    "sunscreen_math_macros",
+    "sunscreen_tfhe",
+]
+
 
 [workspace.dependencies]
 aligned-vec = { version = ">=0.6.2", features = ["serde"] }
@@ -22,13 +35,17 @@ cached = "0.55"
 clap = { version = "4", features = ["derive"] }
 criterion = { version = "0.5", default-features = false }
 crypto-bigint = { version = "0.5", features = ["serde"] }
+cuda-driver-sys = "0.3"
+cuda-runtime-sys = "0.3.0-alpha.1"
 darling = "0.20"
 elf = "0.7"
 env_logger = "0.11"
+find_cuda_helper = "0.2"
 indicatif = "0.17"
 itertools = "0.14"
 log = "0.4"
 num = { version = "0.4", features = ["serde"] }
+num-complex = { version = "0.4", features = ["bytemuck"] }
 num_cpus = "1"
 paste = "1"
 petgraph = { version = "0.7", features = ["serde-1"] }
@@ -59,6 +76,7 @@ parasol_cpu = { version = "0.9", path = "./parasol_cpu" }
 parasol_cpu_macros = { version = "0.9", path = "./parasol_cpu_macros" }
 parasol_runtime = { version = "0.9", path = "./parasol_runtime" }
 sunscreen_compiler_macros = { version = "0.9", path = "./sunscreen_compiler_macros" }
+sunscreen_gpu_runtime = { version = "0.9", path = "./sunscreen_gpu_runtime" }
 sunscreen_math = { version = "0.9", path = "./sunscreen_math" }
 sunscreen_math_macros = { version = "0.9", path = "./sunscreen_math_macros" }
 sunscreen_tfhe = { version = "0.9", path = "./sunscreen_tfhe" }
@@ -70,6 +88,7 @@ codegen-units = 1
 [profile.release]
 lto = "fat"
 codegen-units = 1
+debug = true
 
 [profile.dev.package.sunscreen_tfhe]
 opt-level = 3

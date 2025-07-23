@@ -4,6 +4,25 @@
         {
             "type": "lldb",
             "request": "launch",
+            "name": "Debug unit tests in library 'benchmark_system_info'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=benchmark_system_info"
+                ],
+                "filter": {
+                    "name": "benchmark_system_info",
+                    "kind": "lib"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
             "name": "Debug executable 'hello-world'",
             "cargo": {
                 "args": [
@@ -449,6 +468,25 @@
                 "filter": {
                     "name": "ops",
                     "kind": "bench"
+                }
+            },
+            "args": [],
+            "cwd": "${workspaceFolder}"
+        },
+        {
+            "type": "lldb",
+            "request": "launch",
+            "name": "Debug unit tests in library 'sunscreen_gpu_runtime'",
+            "cargo": {
+                "args": [
+                    "test",
+                    "--no-run",
+                    "--lib",
+                    "--package=sunscreen_gpu_runtime"
+                ],
+                "filter": {
+                    "name": "sunscreen_gpu_runtime",
+                    "kind": "lib"
                 }
             },
             "args": [],
