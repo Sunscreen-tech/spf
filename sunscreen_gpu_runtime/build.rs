@@ -1,7 +1,4 @@
-use std::{
-    path::Path,
-    process::Output,
-};
+use std::{path::Path, process::Output};
 
 fn validate_command_output(output: Output, panic_msg: &str) {
     println!("===stderr===");

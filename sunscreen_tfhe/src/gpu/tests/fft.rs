@@ -1,4 +1,3 @@
-
 use num::Complex;
 
 use crate::gpu::tests::get_runtimes;
