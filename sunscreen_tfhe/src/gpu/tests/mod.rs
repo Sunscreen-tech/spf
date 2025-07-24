@@ -15,10 +15,10 @@ pub(crate) fn get_runtimes() -> Arc<Vec<Arc<dyn GpuRuntimeBackend>>> {
 
     RUNTIMES
         .get_or_init(|| {
-            let mut runtimes: Vec<Arc<dyn GpuRuntimeBackend>> = vec![];
-
-            #[cfg(feature = "cuda")]
-            runtimes.push(Arc::new(CudaRuntime::new(GPU_KERNELS).unwrap()));
+            let runtimes: Vec<Arc<dyn GpuRuntimeBackend>> = vec![
+                #[cfg(feature = "cuda")]
+                Arc::new(CudaRuntime::new(GPU_KERNELS).unwrap())
+            ];
 
             Arc::new(runtimes)
         })

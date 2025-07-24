@@ -24,10 +24,8 @@ fn recursive_files_by_extension(root: &Path, extension: &str) -> Vec<PathBuf> {
         if f.file_type().unwrap().is_dir() {
             let mut subdir_files = recursive_files_by_extension(&f.path(), extension);
             files_with_extension.append(&mut subdir_files);
-        } else {
-            if f.file_name().to_str().unwrap().ends_with(extension) {
-                files_with_extension.push(f.path());
-            }
+        } else if f.file_name().to_str().unwrap().ends_with(extension) {
+            files_with_extension.push(f.path());
         }
     }
 
@@ -79,7 +77,7 @@ fn compile_as_cuda() {
                 Err(e) => panic!("{}", e),
             }
 
-            println!("Compiling {:#?}...", src_file);
+            println!("Compiling {src_file:#?}...");
 
             let ptx_file = dst_dir.join(format!("{filename}.ptx"));
 
@@ -100,7 +98,7 @@ fn compile_as_cuda() {
                 .arg(config.to_uppercase())
                 .arg("-o")
                 .arg(&ptx_file)
-                .arg(&src_file)
+                .arg(src_file)
                 .output()
                 .unwrap();
 
