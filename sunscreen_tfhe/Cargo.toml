@@ -16,6 +16,7 @@ categories = ["cryptography"]
 aligned-vec = { workspace = true }
 bytemuck = { workspace = true }
 num = { workspace = true }
+num-complex = { workspace = true }
 paste = { workspace = true }
 rand = { workspace = true }
 rand_distr = { workspace = true }
@@ -24,12 +25,22 @@ rayon = { workspace = true }
 realfft = { workspace = true }
 rustfft = { workspace = true }
 serde = { workspace = true }
+sunscreen_gpu_runtime = { workspace = true, optional = true }
 sunscreen_math = { workspace = true }
 thiserror = { workspace = true }
+
 
 [dev-dependencies]
 criterion = { workspace = true }
 proptest = { workspace = true }
+
+[build-dependencies]
+find_cuda_helper = { workspace = true, optional = true }
+
+[features]
+default = [] #["cuda"]
+cuda = ["gpu", "sunscreen_gpu_runtime/cuda", "dep:find_cuda_helper"]
+gpu = ["dep:sunscreen_gpu_runtime"]
 
 [[bench]]
 name = "fft"

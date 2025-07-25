@@ -1,0 +1,21 @@
+[package]
+name = "sunscreen_gpu_runtime"
+version = "0.9.0"
+edition = "2024"
+
+[dependencies]
+bytemuck = { workspace = true }
+cuda-driver-sys = { workspace = true, optional = true }
+cuda-runtime-sys = { workspace = true, optional = true }
+num = { workspace = true }
+parasol_concurrency = { workspace = true }
+thiserror = { workspace = true }
+
+[build-dependencies]
+find_cuda_helper = { workspace = true, optional = true }
+
+[features]
+default = [] #["cuda"]
+test_kernels = []
+cuda = ["dep:find_cuda_helper", "dep:cuda-runtime-sys", "dep:cuda-driver-sys"]
+amdhip = []
