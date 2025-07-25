@@ -50,7 +50,7 @@ fn compile_as_cuda() {
             Err(e) => panic!("{}", e),
         }
 
-        println!("Compiling {:#?}...", src_file);
+        println!("Compiling {src_file:#?}...");
 
         let c = Command::new(&nvcc)
             .arg("-Werror")

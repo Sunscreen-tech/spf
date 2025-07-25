@@ -223,7 +223,7 @@ pub trait AllocationBackend {
     /// # Safety
     /// You must not call this method while a GPU kernel that writes to the underlying buffer
     /// is running. You must additionally obey Rust's standard aliasing rules.
-    unsafe fn as_mut_slice(&self) -> &mut [u8];
+    unsafe fn as_mut_slice(&mut self) -> &mut [u8];
 }
 
 #[derive(Copy, Clone, Debug)]

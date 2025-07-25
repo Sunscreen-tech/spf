@@ -279,7 +279,7 @@ impl AllocationBackend for CudaAllocation {
         unsafe { slice::from_raw_parts(self.ptr, self.len) }
     }
 
-    unsafe fn as_mut_slice(&self) -> &mut [u8] {
+    unsafe fn as_mut_slice(&mut self) -> &mut [u8] {
         unsafe { slice::from_raw_parts_mut(self.ptr, self.len) }
     }
 }

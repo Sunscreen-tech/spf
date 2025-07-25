@@ -1714,6 +1714,7 @@ version = "0.4.6"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "73f88a1307638156682bada9d7604135552957b7818057dcef22705b4d509495"
 dependencies = [
+ "bytemuck",
  "num-traits",
  "rand 0.8.5",
  "serde",
@@ -2834,6 +2835,7 @@ dependencies = [
  "criterion",
  "find_cuda_helper",
  "num",
+ "num-complex 0.4.6",
  "paste",
  "proptest",
  "rand 0.8.5",
