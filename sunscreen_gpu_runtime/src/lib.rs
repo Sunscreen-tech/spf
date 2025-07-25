@@ -73,7 +73,11 @@ impl GpuRuntime {
     ///
     /// # Safety
     /// The given arguments must be the result of an `as_kernel_arg` call.
-    /// The number and types of arguments must match what's in the kernel declaration
+    /// The number and types of arguments must match what's in the kernel declaration.
+    /// 
+    /// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+    /// In particular, your host program should have no slices outstanding on any allocation
+    /// this kernel writes to during kernel execution.
     pub unsafe fn launch_kernel<'a, G: Grid>(
         &'a self,
         stream: &Stream<'a>,
@@ -152,6 +156,10 @@ pub trait GpuRuntimeBackend: Sync + Send {
     /// # Safety
     /// The given arguments must be the result of an `as_kernel_arg` call.
     /// The number and types of arguments must match what's in the kernel declaration
+    /// 
+    /// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+    /// In particular, your host program should have no slices outstanding on any allocation
+    /// this kernel writes to during kernel execution.
     unsafe fn launch_kernel<'a>(
         &'a self,
         stream: &'a dyn StreamBackend,
@@ -171,6 +179,10 @@ pub trait StreamBackend {
     /// # Safety
     /// The given arguments must be the result of an `as_kernel_arg` call.
     /// The number and types of arguments must match what's in the kernel declaration
+    /// 
+    /// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+    /// In particular, your host program should have no slices outstanding on any allocation
+    /// this kernel writes to during kernel execution.
     unsafe fn launch_kernel(
         &self,
         kernel_name: &str,
