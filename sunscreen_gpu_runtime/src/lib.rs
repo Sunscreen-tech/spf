@@ -66,6 +66,14 @@ impl GpuRuntime {
         Ok(Stream(self.0.make_stream()?))
     }
 
+    /// Launch a GPU kernel on the given stream and device.
+    /// 
+    /// # Remarks
+    /// Don't use this directly. use the [launch_kernel] macro.
+    /// 
+    /// # Safety
+    /// The given arguments must be the result of an `as_kernel_arg` call.
+    /// The number and types of arguments must match what's in the kernel declaration
     pub unsafe fn launch_kernel<'a, G: Grid>(
         &'a self,
         stream: &Stream<'a>,
@@ -76,7 +84,7 @@ impl GpuRuntime {
     ) -> Result<()> {
         unsafe {
             self.0
-                .launch_kernel(&stream.0, name, &grid, args, device_id)?;
+                .launch_kernel(stream.0.as_ref(), name, &grid, args, device_id)?;
         }
 
         Ok(())
@@ -131,9 +139,14 @@ pub trait GpuRuntimeBackend: Sync + Send {
     /// run in parallel.
     fn make_stream<'a>(&'a self) -> Result<Box<dyn StreamBackend + 'a>>;
 
+    /// Launch a GPU kernel on the given stream and device.
+    /// 
+    /// # Safety
+    /// The given arguments must be the result of an `as_kernel_arg` call.
+    /// The number and types of arguments must match what's in the kernel declaration
     unsafe fn launch_kernel<'a>(
         &'a self,
-        stream: &Box<dyn StreamBackend + 'a>,
+        stream: &'a dyn StreamBackend,
         name: &str,
         grid: &dyn Grid,
         args: &[*const c_void],
@@ -145,6 +158,11 @@ pub trait GpuRuntimeBackend: Sync + Send {
 }
 
 pub trait StreamBackend {
+    /// Launch a GPU kernel on this stream and the given device.
+    /// 
+    /// # Safety
+    /// The given arguments must be the result of an `as_kernel_arg` call.
+    /// The number and types of arguments must match what's in the kernel declaration
     unsafe fn launch_kernel(
         &self,
         kernel_name: &str,
@@ -168,10 +186,18 @@ impl<T> Allocation<T>
 where
     T: Pod,
 {
+    /// Get a slice to the underlying allocation.
+    /// 
+    /// # Safety
+    /// You must ensure no GPU kernels will concurrently write to this slice.
     pub unsafe fn as_slice(&self) -> &[T] {
         bytemuck::cast_slice(unsafe { self.inner.as_slice() })
     }
 
+    /// Get a mutable slice to the underlying allocation.
+    /// 
+    /// # Safety
+    /// You must ensure no GPU kernels will concurrently read from or write to this slice.
     pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
         bytemuck::cast_slice_mut(unsafe { self.inner.as_mut_slice() })
     }

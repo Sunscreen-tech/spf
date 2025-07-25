@@ -167,7 +167,7 @@ impl GpuRuntimeBackend for CudaRuntime {
 
     unsafe fn launch_kernel<'a>(
         &'a self,
-        stream: &Box<dyn StreamBackend + 'a>,
+        stream: &'a dyn StreamBackend,
         name: &str,
         grid: &dyn Grid,
         args: &[*const c_void],
