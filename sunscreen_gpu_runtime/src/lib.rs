@@ -67,10 +67,10 @@ impl GpuRuntime {
     }
 
     /// Launch a GPU kernel on the given stream and device.
-    /// 
+    ///
     /// # Remarks
     /// Don't use this directly. use the [launch_kernel] macro.
-    /// 
+    ///
     /// # Safety
     /// The given arguments must be the result of an `as_kernel_arg` call.
     /// The number and types of arguments must match what's in the kernel declaration
@@ -91,6 +91,14 @@ impl GpuRuntime {
     }
 }
 
+/// Launches the kernel with the given name on the given device and stream.
+/// This is the sanctioned mechanism for launching kernels that unpacks arguments
+/// as needed.
+///
+/// # Safety
+/// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+/// In particular, your host program should have no slices outstanding on any allocation
+/// this kernel writes to during kernel execution.
 #[macro_export]
 macro_rules! launch_kernel {
     (($grid:expr) ($name:literal) ($rt:ident,$stream:ident,$device_id:expr) $($args:expr),*) => {{
@@ -140,7 +148,7 @@ pub trait GpuRuntimeBackend: Sync + Send {
     fn make_stream<'a>(&'a self) -> Result<Box<dyn StreamBackend + 'a>>;
 
     /// Launch a GPU kernel on the given stream and device.
-    /// 
+    ///
     /// # Safety
     /// The given arguments must be the result of an `as_kernel_arg` call.
     /// The number and types of arguments must match what's in the kernel declaration
@@ -159,7 +167,7 @@ pub trait GpuRuntimeBackend: Sync + Send {
 
 pub trait StreamBackend {
     /// Launch a GPU kernel on this stream and the given device.
-    /// 
+    ///
     /// # Safety
     /// The given arguments must be the result of an `as_kernel_arg` call.
     /// The number and types of arguments must match what's in the kernel declaration
@@ -187,19 +195,17 @@ where
     T: Pod,
 {
     /// Get a slice to the underlying allocation.
-    /// 
-    /// # Safety
-    /// You must ensure no GPU kernels will concurrently write to this slice.
-    pub unsafe fn as_slice(&self) -> &[T] {
-        bytemuck::cast_slice(unsafe { self.inner.as_slice() })
+    pub fn as_slice(&self) -> &[T] {
+        bytemuck::cast_slice(self.inner.as_slice())
     }
 
     /// Get a mutable slice to the underlying allocation.
-    /// 
-    /// # Safety
-    /// You must ensure no GPU kernels will concurrently read from or write to this slice.
-    pub unsafe fn as_mut_slice(&mut self) -> &mut [T] {
-        bytemuck::cast_slice_mut(unsafe { self.inner.as_mut_slice() })
+    pub fn as_mut_slice(&mut self) -> &mut [T] {
+        bytemuck::cast_slice_mut(self.inner.as_mut_slice())
+    }
+
+    pub fn copy_from_slice(&mut self, other: &[T]) {
+        self.as_mut_slice().copy_from_slice(other);
     }
 }
 
@@ -236,20 +242,10 @@ pub trait AllocationBackend {
     fn ptr_mut(&self) -> *mut u8;
 
     /// Get the underlying GPU-accessible buffer as a slice.
-    /// TODO: Can use use an [`AtomicRefCell`]` and to remove the unsafe?
-    ///
-    /// # Safety
-    /// You must not call this method while a GPU kernel that writes to the underlying buffer
-    /// is running. You must additionally obey Rust's standard aliasing rules.
-    unsafe fn as_slice(&self) -> &[u8];
+    fn as_slice(&self) -> &[u8];
 
     /// Get the underlying GPU-accessible buffer as a mutable slice.
-    /// TODO: Can use use an [`AtomicRefCell`]` and to remove the unsafe?
-    ///
-    /// # Safety
-    /// You must not call this method while a GPU kernel that writes to the underlying buffer
-    /// is running. You must additionally obey Rust's standard aliasing rules.
-    unsafe fn as_mut_slice(&mut self) -> &mut [u8];
+    fn as_mut_slice(&mut self) -> &mut [u8];
 }
 
 #[derive(Copy, Clone, Debug)]
@@ -384,7 +380,7 @@ mod tests {
     fn can_allocate_data() {
         for runtime in get_runtimes().iter() {
             let mut data = runtime.allocate::<u64>(1234).unwrap();
-            let data = unsafe { data.as_mut_slice() };
+            let data = data.as_mut_slice();
 
             for (i, d) in data.iter_mut().enumerate() {
                 *d = i as u64;
@@ -406,9 +402,9 @@ mod tests {
             let mut y_gpu = runtime.allocate::<f32>(y.len()).unwrap();
             let z_gpu = runtime.allocate::<f32>(y.len()).unwrap();
 
-            let x_gpu_slice = unsafe { x_gpu.as_mut_slice() };
+            let x_gpu_slice = x_gpu.as_mut_slice();
             x_gpu_slice.copy_from_slice(&x);
-            let y_gpu_slice = unsafe { y_gpu.as_mut_slice() };
+            let y_gpu_slice = y_gpu.as_mut_slice();
             y_gpu_slice.copy_from_slice(&y);
 
             let block_size = 64u32;
@@ -431,7 +427,7 @@ mod tests {
 
             stream.wait().unwrap();
 
-            let z_gpu = unsafe { z_gpu.as_slice() };
+            let z_gpu = z_gpu.as_slice();
 
             dbg!(z_gpu);
 

@@ -3,6 +3,7 @@ use std::{
     process::Output,
 };
 
+#[allow(unused)]
 fn validate_command_output(output: Output, panic_msg: &str) {
     println!("===stderr===");
     println!("{}", String::from_utf8_lossy(&output.stderr));
@@ -14,6 +15,7 @@ fn validate_command_output(output: Output, panic_msg: &str) {
     }
 }
 
+#[allow(unused)]
 fn recursive_files_by_extension(root: &Path, extension: &str) -> Vec<PathBuf> {
     let mut files_with_extension = vec![];
     let file_entries = std::fs::read_dir(root).unwrap();
