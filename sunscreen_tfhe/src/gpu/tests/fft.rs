@@ -6,30 +6,25 @@ use rustfft::FftPlanner;
 
 use crate::gpu::tests::get_runtimes;
 
+fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {
+    let denom = if *actual == T::from(0.0).unwrap() {
+        T::from(1.0).unwrap()
+    } else {
+        actual.abs()
+    };
+
+    let err = (*actual - *expected).abs() / denom;
+
+    assert!(err < eps, "actual {actual} expected {expected}");
+}
+
 fn assert_complex_equalish<T: Float + NumCast + std::fmt::Display>(
     actual: &Complex<T>,
     expected: &Complex<T>,
     eps: T,
 ) {
-    let denom = if actual.re == T::from(0.0).unwrap() {
-        T::from(1.0).unwrap()
-    } else {
-        actual.re.abs()
-    };
-
-    let err = (actual.re - expected.re).abs() / denom;
-
-    assert!(err < eps, "actual {actual} expected {expected}");
-
-    let denom = if actual.im == T::from(0.0).unwrap() {
-        T::from(1.0).unwrap()
-    } else {
-        actual.im
-    };
-
-    let err = (actual.im - expected.im).abs() / denom;
-
-    assert!(err < eps, "actual {actual} expected {expected}");
+    assert_equalish(&actual.re, &expected.re, eps);
+    assert_equalish(&actual.im, &expected.im, eps);
 }
 
 #[derive(PartialEq)]
@@ -81,9 +76,6 @@ where
                     .collect::<Vec<_>>(),
             );
 
-            let mut actual = a_slice.to_vec();
-            fft.process(&mut actual);
-
             let stream = r.make_stream().unwrap();
 
             let threads_per_block = n / 4;
@@ -103,11 +95,13 @@ where
 
             stream.wait().unwrap();
 
-            dbg!(b_gpu.as_slice());
-            dbg!(&actual);
+            for a in a_gpu.as_slice().chunks(n as usize) {
+                let mut expected = a.to_vec();
+                fft.process(&mut expected);
 
-            for (actual, expected) in b_gpu.as_slice().iter().zip(actual.iter()) {
-                assert_complex_equalish(actual, expected, eps);
+                for (actual, expected) in b_gpu.as_slice().iter().zip(expected.iter()) {
+                    assert_complex_equalish(actual, expected, eps);
+                }
             }
         }
     }
