@@ -46,13 +46,6 @@ mod gpu {
 
         for config in ["test", "release"] {
             let binary = outdir.join(format!("sunscreen_gpu_runtime.{config}.fatbin"));
-            let dst_dir = outdir.join(src_file.parent().unwrap());
-
-            match std::fs::create_dir_all(&dst_dir) {
-                Ok(_) => {}
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(e) => panic!("{}", e),
-            }
 
             println!("Compiling {src_file:#?}...");
 

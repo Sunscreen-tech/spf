@@ -30,7 +30,7 @@ fn assert_complex_equalish<T: Float + NumCast + std::fmt::Display>(
 #[derive(PartialEq)]
 enum Direction {
     Forward,
-    Reverse,
+    Inverse,
 }
 
 fn can_fft_impl<T>(kernel_name: &str, eps: T, direction: Direction)
@@ -119,10 +119,10 @@ fn can_fft_f32() {
 
 #[test]
 fn can_ifft_f64() {
-    can_fft_impl::<f64>("can_rountrip_ifft_f64", 1e-10, Direction::Reverse);
+    can_fft_impl::<f64>("can_rountrip_ifft_f64", 1e-10, Direction::Inverse);
 }
 
 #[test]
 fn can_ifft_f32() {
-    can_fft_impl::<f32>("can_rountrip_ifft_f32", 1e-2, Direction::Reverse);
+    can_fft_impl::<f32>("can_rountrip_ifft_f32", 1e-2, Direction::Inverse);
 }

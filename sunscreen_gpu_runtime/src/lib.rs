@@ -368,8 +368,7 @@ mod tests {
             .get_or_init(|| {
                 let runtimes = vec![
                     #[cfg(feature = "cuda")]
-                    GpuRuntime(Box::new(CudaRuntime::new(cuda_runtime::KERNELS).unwrap()))
-
+                    GpuRuntime(Box::new(CudaRuntime::new(cuda_runtime::KERNELS).unwrap())),
                 ];
 
                 Arc::new(runtimes)
