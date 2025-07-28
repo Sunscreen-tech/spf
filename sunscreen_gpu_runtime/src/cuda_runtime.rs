@@ -206,16 +206,18 @@ impl<'a> StreamBackend for CudaStream<'a> {
     ) -> Result<()> {
         let kernel_fn = self.runtime.module.get_function(name)?;
 
-        let tbx = get_threads_per_block(grid.x())?;
-        let tby = get_threads_per_block(grid.y())?;
-        let tbz = get_threads_per_block(grid.z())?;
+        let dim_x = grid.x();
+        let dim_y = grid.y();
+        let dim_z = grid.z();
+
+        let tbx = get_threads_per_block(dim_x)?;
+        let tby = get_threads_per_block(dim_y)?;
+        let tbz = get_threads_per_block(dim_z)?;
 
         let args = args
             .iter()
             .map(|x| x as *const _ as *const c_void)
             .collect::<Vec<_>>();
-
-        dbg!(&args);
 
         wrap_cuda_driver! {
             cuLaunchKernel(
@@ -223,9 +225,9 @@ impl<'a> StreamBackend for CudaStream<'a> {
                 tbx,
                 tby,
                 tbz,
-                grid.x().threads_per_block,
-                grid.y().threads_per_block,
-                grid.z().threads_per_block,
+                dim_x.threads_per_block,
+                dim_y.threads_per_block,
+                dim_z.threads_per_block,
                 0,
                 self.handle,
                 args.as_ptr() as *mut _,

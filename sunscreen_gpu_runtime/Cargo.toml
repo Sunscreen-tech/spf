@@ -15,7 +15,8 @@ thiserror = { workspace = true }
 find_cuda_helper = { workspace = true, optional = true }
 
 [features]
-default = [] #["cuda"]
+default = [] # ["cuda"]
 test_kernels = []
-cuda = ["dep:find_cuda_helper", "dep:cuda-runtime-sys", "dep:cuda-driver-sys"]
-amdhip = []
+cuda = ["gpu", "dep:find_cuda_helper", "dep:cuda-runtime-sys", "dep:cuda-driver-sys"]
+amdhip = ["gpu"]
+gpu = []

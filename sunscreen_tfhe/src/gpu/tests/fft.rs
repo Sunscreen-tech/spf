@@ -1,28 +1,128 @@
-use num::Complex;
+use bytemuck::Pod;
+use num::{Complex, Float, FromPrimitive, NumCast, Signed};
+use sunscreen_gpu_runtime::launch_kernel;
+
+use rustfft::FftPlanner;
 
 use crate::gpu::tests::get_runtimes;
 
-#[test]
-fn can_roundtrip_fft() {
+fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {
+    let denom = if *actual == T::from(0.0).unwrap() {
+        T::from(1.0).unwrap()
+    } else {
+        actual.abs()
+    };
+
+    let err = (*actual - *expected).abs() / denom;
+
+    assert!(err < eps, "actual {actual} expected {expected}");
+}
+
+fn assert_complex_equalish<T: Float + NumCast + std::fmt::Display>(
+    actual: &Complex<T>,
+    expected: &Complex<T>,
+    eps: T,
+) {
+    assert_equalish(&actual.re, &expected.re, eps);
+    assert_equalish(&actual.im, &expected.im, eps);
+}
+
+#[derive(PartialEq)]
+enum Direction {
+    Forward,
+    Inverse,
+}
+
+fn can_fft_impl<T>(kernel_name: &str, eps: T, direction: Direction)
+where
+    T: Float
+        + Pod
+        + NumCast
+        + std::fmt::Debug
+        + FromPrimitive
+        + Signed
+        + Sync
+        + Send
+        + std::fmt::Display,
+{
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {
-        for n in [512u32, 1024, 2048, 4096] {
-            let mut a_gpu = r.allocate::<Complex<f64>>(n as usize).unwrap();
+        for n in [1024, 2048] {
+            let mut planner = FftPlanner::new();
+            let fft = if let Direction::Forward = direction {
+                planner.plan_fft_forward(n as usize)
+            } else {
+                planner.plan_fft_inverse(n as usize)
+            };
 
-            let _result_gpu = r.allocate::<Complex<f64>>(n as usize).unwrap();
+            let num_ffts = 1u32;
+            let num_values = n * num_ffts;
 
-            let gpu_data = unsafe { a_gpu.as_mut_slice() };
+            let mut a_gpu = r.allocate::<Complex<T>>(num_values as usize).unwrap();
 
-            gpu_data.copy_from_slice(
-                &(0..n)
-                    .map(|x| Complex::new(x as f64, (n - x) as f64))
+            let b_gpu = r.allocate::<Complex<T>>(num_values as usize).unwrap();
+
+            let a_slice = a_gpu.as_mut_slice();
+
+            a_slice.copy_from_slice(
+                &(0..num_values)
+                    .map(|x| {
+                        Complex::new(
+                            <T as NumCast>::from(x).unwrap(),
+                            <T as NumCast>::from(num_values - x).unwrap(),
+                        )
+                    })
                     .collect::<Vec<_>>(),
             );
 
-            let _stream = r.make_stream().unwrap();
+            let stream = r.make_stream().unwrap();
 
-            // WIP
+            let threads_per_block = n / 4;
+            let num_threads = threads_per_block * num_ffts;
+
+            unsafe {
+                launch_kernel!(
+                    ((num_threads, threads_per_block))
+                    (kernel_name)
+                    (r, stream, 0)
+                    a_gpu,
+                    b_gpu,
+                    n
+                )
+                .unwrap();
+            }
+
+            stream.wait().unwrap();
+
+            for a in a_gpu.as_slice().chunks(n as usize) {
+                let mut expected = a.to_vec();
+                fft.process(&mut expected);
+
+                for (actual, expected) in b_gpu.as_slice().iter().zip(expected.iter()) {
+                    assert_complex_equalish(actual, expected, eps);
+                }
+            }
         }
     }
+}
+
+#[test]
+fn can_fft_f64() {
+    can_fft_impl::<f64>("can_rountrip_fft_f64", 1e-10, Direction::Forward);
+}
+
+#[test]
+fn can_fft_f32() {
+    can_fft_impl::<f32>("can_rountrip_fft_f32", 1e-2, Direction::Forward);
+}
+
+#[test]
+fn can_ifft_f64() {
+    can_fft_impl::<f64>("can_rountrip_ifft_f64", 1e-10, Direction::Inverse);
+}
+
+#[test]
+fn can_ifft_f32() {
+    can_fft_impl::<f32>("can_rountrip_ifft_f32", 1e-2, Direction::Inverse);
 }

@@ -105,10 +105,10 @@ impl GpuRuntime {
 /// this kernel writes to during kernel execution.
 #[macro_export]
 macro_rules! launch_kernel {
-    (($grid:expr) ($name:literal) ($rt:ident,$stream:ident,$device_id:expr) $($args:expr),*) => {{
+    (($grid:expr) ($name:expr) ($rt:ident,$stream:ident,$device_id:expr) $($args:expr),*) => {{
         let kernel_args = vec![
             $(
-                $args.as_kernel_arg(),
+                $crate::AsKernelArg::as_kernel_arg(&$args),
             )*
         ];
 
@@ -267,9 +267,11 @@ pub trait AllocationBackend {
 /// Uses OpenCL's grid language where you specify the total number of threads in a given
 /// dimension and the number of threads per block.
 pub struct Dim {
+    #[allow(unused)]
     /// The total number of desired threads in this dimension.
     total_threads: u32,
 
+    #[allow(unused)]
     /// The number of threads per thread block in this dimension. This results in
     /// `total_threads / threads_per_block` blocks being spawned.
     ///
@@ -364,15 +366,10 @@ mod tests {
     fn get_runtimes() -> Arc<Vec<GpuRuntime>> {
         RUNTIMES
             .get_or_init(|| {
-                let mut runtimes = vec![];
-
-                #[cfg(feature = "cuda")]
-                {
-                    let cuda: Box<dyn GpuRuntimeBackend> =
-                        Box::new(CudaRuntime::new(cuda_runtime::KERNELS).unwrap());
-                    let cuda = GpuRuntime(cuda);
-                    runtimes.push(cuda);
-                }
+                let runtimes = vec![
+                    #[cfg(feature = "cuda")]
+                    GpuRuntime(Box::new(CudaRuntime::new(cuda_runtime::KERNELS).unwrap())),
+                ];
 
                 Arc::new(runtimes)
             })
