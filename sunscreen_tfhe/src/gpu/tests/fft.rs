@@ -4,7 +4,7 @@ use sunscreen_gpu_runtime::launch_kernel;
 
 use rustfft::FftPlanner;
 
-use crate::gpu::tests::get_runtimes;
+use crate::gpu::test_utils::get_runtimes;
 
 fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {
     let denom = if *actual == T::from(0.0).unwrap() {

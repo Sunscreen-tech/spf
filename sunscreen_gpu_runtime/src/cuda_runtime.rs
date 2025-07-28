@@ -9,8 +9,7 @@ use std::{
 };
 
 use cuda_driver_sys::{
-    CUfunction, CUstream, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuLaunchKernel,
-    cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamSynchronize, cudaError_enum,
+    cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUfunction, CUstream
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
@@ -107,17 +106,19 @@ impl CudaRuntime {
     }
 }
 
+impl CudaRuntime {
+    fn set_device_id(&self, device_id: DeviceId) -> Result<()> {
+        unsafe { cudaSetDevice(device_id.0 as i32) };
+
+        Ok(())
+    }
+}
+
 impl GpuRuntimeBackend for CudaRuntime {
     fn print_device_info(&self, device_id: DeviceId) -> Result<()> {
-        unsafe { cudaSetDevice(device_id.0 as i32) };
-        let mut device_name: [u8; 256] = [0; 256];
+        self.set_device_id(device_id)?;
 
-        // We're loading actual characters, who gives a shit about signed-ness.
-        wrap_cuda_driver! {cuDeviceGetName(&raw mut device_name as *mut c_char, (device_name.len() - 1) as i32, device_id.0 as i32)};
-
-        let device_name = CStr::from_bytes_until_nul(&device_name).unwrap();
-
-        println!("Device {}: {}", device_id.0, device_name.to_string_lossy());
+        println!("Device {}: {}", device_id.0, self.get_device_name(device_id)?);
 
         let (mut major, mut minor) = (0, 0);
         let mut device = 0;
@@ -134,6 +135,17 @@ impl GpuRuntimeBackend for CudaRuntime {
         println!("\tMemory {free} (bytes free) / {total} (bytes total)");
 
         Ok(())
+    }
+
+    fn get_device_name(&self, device_id: DeviceId) -> Result<String> {
+        unsafe { cudaSetDevice(device_id.0 as i32) };
+        let mut device_name: [u8; 256] = [0; 256];
+
+        // We're loading actual characters, who gives a shit about signed-ness.
+        wrap_cuda_driver! {cuDeviceGetName(&raw mut device_name as *mut c_char, (device_name.len() - 1) as i32, device_id.0 as i32)};
+
+        let device_name = CStr::from_bytes_until_nul(&device_name).unwrap();
+        Ok(device_name.to_string_lossy().to_string())
     }
 
     fn num_devices(&self) -> Result<usize> {
@@ -242,6 +254,12 @@ impl<'a> StreamBackend for CudaStream<'a> {
         wrap_cuda_driver!(cuStreamSynchronize(self.handle));
 
         Ok(())
+    }
+}
+
+impl<'a> Drop for CudaStream<'a> {
+    fn drop(&mut self) {
+        let _ = unsafe { cuStreamDestroy_v2(self.handle) };
     }
 }
 

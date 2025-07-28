@@ -41,6 +41,10 @@ impl GpuRuntime {
         self.0.print_device_info(device_id)
     }
 
+    pub fn get_device_name(&self, device_id: DeviceId) -> Result<String> {
+        self.0.get_device_name(device_id)
+    }
+
     /// Get the number of GPU devices compatible with this runtime.
     pub fn num_devices(&self) -> Result<usize> {
         self.0.num_devices()
@@ -130,6 +134,9 @@ impl<'a> Stream<'a> {
 pub trait GpuRuntimeBackend: Sync + Send {
     /// Print information about the given device.
     fn print_device_info(&self, device_id: DeviceId) -> Result<()>;
+
+    /// Get the name of the given device.
+    fn get_device_name(&self, device_id: DeviceId) -> Result<String>;
 
     /// Get the number of GPU devices.
     fn num_devices(&self) -> Result<usize>;

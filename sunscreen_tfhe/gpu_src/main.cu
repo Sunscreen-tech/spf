@@ -4,4 +4,5 @@
 
 #ifdef TEST
 #include "tests/tests.cuh"
+#include "benches/benches.cuh"
 #endif

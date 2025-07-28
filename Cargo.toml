@@ -58,6 +58,7 @@ raw-cpuid = "11"
 rayon = "1"
 realfft = "3"
 reqwest = { version = "0.12", features = ["blocking"] }
+rug = "1"
 rustfft = "6"
 seq-macro = "0.3"
 serde = { version = "1", features = ["rc", "derive"] }

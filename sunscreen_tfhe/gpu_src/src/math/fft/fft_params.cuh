@@ -22,6 +22,8 @@ SOFTWARE.
 
 #pragma once
 
+#include <cstdint>
+
 class FFT_Params
 {
 public:
