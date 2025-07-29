@@ -108,7 +108,7 @@ impl CudaRuntime {
 
 impl CudaRuntime {
     fn set_device_id(&self, device_id: DeviceId) -> Result<()> {
-        unsafe { cudaSetDevice(device_id.0 as i32) };
+        wrap_cuda_runtime! { cudaSetDevice(device_id.0 as i32) };
 
         Ok(())
     }
