@@ -91,6 +91,15 @@ impl TrivialOne for L1GlweCiphertext {
     }
 }
 
+impl L1GlweCiphertext {
+    /// Return if this ciphertext is a trivial encryption
+    pub fn is_trivial_encryption(&self, enc: &Encryption) -> bool {
+        self.0
+            .a(&enc.params.l1_params)
+            .all(|x| x.coeffs().iter().all(|x| x.inner() == 0))
+    }
+}
+
 #[repr(transparent)]
 #[derive(Clone)]
 /// A [`GgswCiphertext`] under the level 1 parameters. See [`Params`] for more details as to the
@@ -520,6 +529,8 @@ impl GetSize for L1GlevCiphertext {
 
 #[cfg(test)]
 mod tests {
+    use rand::{RngCore, thread_rng};
+
     use crate::{
         DEFAULT_128,
         test_utils::{get_encryption_128, get_secret_keys_128},
@@ -551,6 +562,29 @@ mod tests {
 
         let lwe = enc.encrypt_lwe_l1_secret(true, &sk);
         assert!(enc.decrypt_lwe_l1(&lwe, &sk));
+    }
+
+    #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
+    #[test]
+    fn can_differentiate_trivial_nontrivial_glwe() {
+        let secret = get_secret_keys_128();
+        let enc = get_encryption_128();
+
+        for _ in 0..100 {
+            // generate a random plaintext polynomial
+            let num = thread_rng().next_u64();
+            let mut pt = Polynomial::zero(DEFAULT_128.l1_poly_degree().0);
+            for i in 0..64 {
+                pt.coeffs_mut()[i] = (num >> i) & 1;
+            }
+
+            assert!(enc.trivial_glwe_l1(&pt).is_trivial_encryption(&enc));
+
+            assert!(
+                !enc.encrypt_glwe_l1_secret(&pt, &secret)
+                    .is_trivial_encryption(&enc)
+            );
+        }
     }
 
     #[cfg_attr(target_arch = "wasm32", wasm_bindgen_test::wasm_bindgen_test)]
