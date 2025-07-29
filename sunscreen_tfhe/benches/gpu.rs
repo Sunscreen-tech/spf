@@ -1,3 +1,4 @@
+#[cfg(all(feature = "gpu", feature = "test_kernels"))]
 use criterion::{criterion_group, criterion_main};
 
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
