@@ -27,14 +27,14 @@ SOFTWARE.
 __device__ __inline__ double2 Get_W_value_f64(int N, int m)
 {
 	double2 ctemp;
-	sincos(-PI_2 * (double)m / (double)N, &ctemp.y, &ctemp.x);
+	sincos(-TAU * (double)m / (double)N, &ctemp.y, &ctemp.x);
 	return ctemp;
 }
 
 __device__ __inline__ double2 Get_W_value_inverse_f64(int N, int m)
 {
 	double2 ctemp;
-	sincos(PI_2 * (double)m / (double)N, &ctemp.y, &ctemp.x);
+	sincos(TAU * (double)m / (double)N, &ctemp.y, &ctemp.x);
 	return ctemp;
 }
 #else

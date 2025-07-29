@@ -27,14 +27,14 @@ SOFTWARE.
 __device__ __inline__ float2 Get_W_value_f32(int N, int m)
 {
 	float2 ctemp;
-	sincosf(-PI_2_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	sincosf(-TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
 	return (ctemp);
 }
 
 __device__ __inline__ float2 Get_W_value_inverse_f32(int N, int m)
 {
 	float2 ctemp;
-	sincosf(PI_2_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	sincosf(TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
 	return (ctemp);
 }
 #else

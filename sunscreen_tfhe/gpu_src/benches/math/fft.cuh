@@ -1,5 +1,6 @@
 #pragma once
 #include <cstdint>
+#include "../../src/math/fft/fft.cuh"
 
 template <typename T>
 __device__ void benchmark_fft(
@@ -24,7 +25,7 @@ __device__ void benchmark_fft(
     __syncthreads();
 
     for (uint32_t i = 0; i < fft_count; i++) {
-        fft(x_local, fft_len);
+        fft_noreorder(x_local, fft_len);
     }
 
     for (unsigned int i = tid; i < fft_len; i += block_size)
