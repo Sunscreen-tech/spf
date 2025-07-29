@@ -138,7 +138,7 @@ impl GpuRuntimeBackend for CudaRuntime {
     }
 
     fn get_device_name(&self, device_id: DeviceId) -> Result<String> {
-        unsafe { cudaSetDevice(device_id.0 as i32) };
+        self.set_device_id(device_id)?;
         let mut device_name: [u8; 256] = [0; 256];
 
         // We're loading actual characters, who gives a shit about signed-ness.

@@ -32,8 +32,6 @@ __device__ void twisted_fft(
     // Then, multiply by out twist factor.
     for (uint32_t i = threadIdx.x; i < n_div_2; i += blockDim.x)
     {   
-        // s_output[i] = twist<Complex>(i, n);
-        //s_output[i] = {(S)s_input[i], (S)s_input[i + n_div_2]};
         Complex c = {(S)s_input[i], (S)s_input[i + n_div_2]};
 
         Complex twist;
