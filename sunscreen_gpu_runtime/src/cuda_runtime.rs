@@ -9,7 +9,9 @@ use std::{
 };
 
 use cuda_driver_sys::{
-    cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUfunction, CUstream
+    CUfunction, CUstream, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuLaunchKernel,
+    cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize,
+    cudaError_enum,
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
@@ -118,7 +120,11 @@ impl GpuRuntimeBackend for CudaRuntime {
     fn print_device_info(&self, device_id: DeviceId) -> Result<()> {
         self.set_device_id(device_id)?;
 
-        println!("Device {}: {}", device_id.0, self.get_device_name(device_id)?);
+        println!(
+            "Device {}: {}",
+            device_id.0,
+            self.get_device_name(device_id)?
+        );
 
         let (mut major, mut minor) = (0, 0);
         let mut device = 0;
