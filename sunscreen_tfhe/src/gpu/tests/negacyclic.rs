@@ -51,7 +51,7 @@ fn can_negacyclic_forward() {
 
                 baseline_fft.forward(input, &mut expected);
 
-                for (i, (actual, expected)) in actual.iter().zip(expected.iter()).enumerate() {
+                for (actual, expected) in actual.iter().zip(expected.iter()) {
                     assert_complex_equalish(actual, expected, 1e-9);
                 }
             }
