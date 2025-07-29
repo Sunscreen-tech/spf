@@ -39,4 +39,5 @@ mod error;
 pub use error::*;
 
 #[cfg(feature = "gpu")]
-mod gpu;
+/// GPU acceleraton for TFHE
+pub mod gpu;

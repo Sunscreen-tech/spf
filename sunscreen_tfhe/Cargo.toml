@@ -36,11 +36,13 @@ proptest = { workspace = true }
 
 [build-dependencies]
 find_cuda_helper = { workspace = true, optional = true }
+rug = { workspace = true, optional = true }
 
 [features]
-default = [] #["cuda"]
+default = [] #["cuda", "test_kernels"]
 cuda = ["gpu", "sunscreen_gpu_runtime/cuda", "dep:find_cuda_helper"]
 gpu = ["dep:sunscreen_gpu_runtime"]
+test_kernels = ["gpu", "dep:rug"]
 
 [[bench]]
 name = "fft"
@@ -48,4 +50,8 @@ harness = false
 
 [[bench]]
 name = "ops"
+harness = false
+
+[[bench]]
+name = "gpu"
 harness = false

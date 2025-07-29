@@ -23,19 +23,32 @@ SOFTWARE.
 #pragma once
 #include "../math.cuh"
 
+#if 1
 __device__ __inline__ float2 Get_W_value_f32(int N, int m)
 {
 	float2 ctemp;
-	sincosf(-PI_2_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	sincosf(-TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
 	return (ctemp);
 }
 
 __device__ __inline__ float2 Get_W_value_inverse_f32(int N, int m)
 {
 	float2 ctemp;
-	sincosf(PI_2_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	sincosf(TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
 	return (ctemp);
 }
+#else
+#include "fft_constants_f32.cuh"
+__device__ __inline__ constexpr float2 Get_W_value_f32(int N, int m)
+{
+	return TWIDDLES_F32[N - 2 + m];
+}
+
+__device__ __inline__ constexpr float2 Get_W_value_inverse_f32(int N, int m)
+{
+	return TWIDDLES_INV_F32[N - 2 + m];
+}
+#endif
 
 __device__ __inline__ float shfl(float *value, int par)
 {

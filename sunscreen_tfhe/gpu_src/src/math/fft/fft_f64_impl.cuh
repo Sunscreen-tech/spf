@@ -23,19 +23,32 @@ SOFTWARE.
 #pragma once
 #include "../math.cuh"
 
+#if 1
 __device__ __inline__ double2 Get_W_value_f64(int N, int m)
 {
 	double2 ctemp;
-	sincos(-PI_2 * (double)m / (double)N, &ctemp.y, &ctemp.x);
+	sincos(-TAU * (double)m / (double)N, &ctemp.y, &ctemp.x);
 	return ctemp;
 }
 
 __device__ __inline__ double2 Get_W_value_inverse_f64(int N, int m)
 {
 	double2 ctemp;
-	sincos(PI_2 * (double)m / (double)N, &ctemp.y, &ctemp.x);
+	sincos(TAU * (double)m / (double)N, &ctemp.y, &ctemp.x);
 	return ctemp;
 }
+#else
+#include "fft_constants_f64.cuh"
+__device__ __inline__ constexpr double2 Get_W_value_f64(int N, int m)
+{
+	return TWIDDLES_F64[N - 2 + m];
+}
+
+__device__ __inline__ constexpr double2 Get_W_value_inverse_f64(int N, int m)
+{
+	return TWIDDLES_INV_F64[N - 2 + m];
+}
+#endif
 
 __device__ __inline__ double shfl(double *value, int par)
 {
