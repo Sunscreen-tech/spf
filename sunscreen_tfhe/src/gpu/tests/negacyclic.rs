@@ -4,7 +4,12 @@ use num::{Complex, Zero};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    fft::negacyclic, gpu::{test_utils::get_runtimes, tests::{assert_complex_equalish, assert_equalish}}, FrequencyTransform
+    FrequencyTransform,
+    fft::negacyclic,
+    gpu::{
+        test_utils::get_runtimes,
+        tests::{assert_complex_equalish, assert_equalish},
+    },
 };
 
 #[test]
@@ -71,7 +76,11 @@ fn can_negacyclic_inverse() {
             let baseline_fft = negacyclic::get_fft(n.ilog2() as usize);
 
             let mut input = r.allocate::<Complex<f64>>(num_points / 2).unwrap();
-            input.copy_from_slice(&(0..num_points / 2).map(|x| Complex::new(x as f64, -(x as f64))).collect::<Vec<_>>());
+            input.copy_from_slice(
+                &(0..num_points / 2)
+                    .map(|x| Complex::new(x as f64, -(x as f64)))
+                    .collect::<Vec<_>>(),
+            );
 
             let output = r.allocate::<f64>(num_points).unwrap();
 
@@ -104,8 +113,8 @@ fn can_negacyclic_inverse() {
                 baseline_fft.reverse(input, &mut expected);
 
                 for (actual, expected) in actual.iter().zip(expected.iter()) {
-                    dbg!((actual, expected));
-                    //assert_equalish(actual, expected, 1e-9);
+                    // Integral values may be off by up to 1 due to rounding...
+                    assert!((actual - expected).abs() <= 1.0);
                 }
             }
         }

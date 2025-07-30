@@ -71,17 +71,8 @@ __device__ void twisted_ifft(
         Complex tmp = complex_mul(s_input[i], twist_inv);
         tmp = complex_mul_real(tmp, n_inv);
 
-        // s_output[i] = round(tmp.x);
-        // s_output[i + n_div_2] = round(tmp.y);
-
-        s_output[i] = tmp.x;
-        s_output[i + n_div_2] = tmp.y;
-
-        // s_output[i] = s_input[i].x;
-        // s_output[i + n_div_2] = s_input[i].y;
-
-        // s_output[2 * i] = s_input[i].x;
-        // s_output[2 * i + 1] = s_input[i].y;
+        s_output[i] = round(tmp.x);
+        s_output[i + n_div_2] = round(tmp.y);
     }
 
     __syncthreads();
