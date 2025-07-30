@@ -68,17 +68,17 @@ public:
     using Ty = float;
 };
 
-template <typename Complex>
-__device__ inline Complex complex_add(Complex a, Complex b)
-{
-    return {a.x + b.x, a.y + b.y};
-}
+// template <typename Complex>
+// __device__ inline Complex complex_add(Complex a, Complex b)
+// {
+//     return {a.x + b.x, a.y + b.y};
+// }
 
-template <typename Complex>
-__device__ inline Complex complex_sub(Complex a, Complex b)
-{
-    return {a.x - b.x, a.y - b.y};
-}
+// template <typename Complex>
+// __device__ inline Complex complex_sub(Complex a, Complex b)
+// {
+//     return {a.x - b.x, a.y - b.y};
+// }
 
 template <typename Complex>
 __device__ inline Complex complex_mul(Complex a, Complex b)
@@ -86,8 +86,125 @@ __device__ inline Complex complex_mul(Complex a, Complex b)
     return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x};
 }
 
-template <typename Complex>
-__device__ inline Complex complex_mul_real(Complex a, typename ScalarOf<Complex>::Ty b)
+// template <typename Complex>
+// __device__ inline Complex complex_mul_real(Complex a, typename ScalarOf<Complex>::Ty b)
+// {
+//     return {a.x * b, a.y * b};
+// }
+
+template <typename S>
+class Complex
 {
-    return {a.x * b, a.y * b};
-}
+public:
+    
+};
+
+template <>
+class Complex<double>
+{
+public:
+    using T = double;
+    using VecT = double2;
+
+    /// @brief Constructs an in-initialized Complex value.
+    __device__ Complex() {}
+    __device__ Complex(VecT inner) : val(inner) {}
+
+    __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
+    {
+        return Complex({this->val.x + rhs.val.x, this->val.y + rhs.val.y});
+    }
+
+    __device__ inline Complex<T> operator-(const Complex<T> &rhs) const
+    {
+        return Complex({this->val.x - rhs.val.x, this->val.y - rhs.val.y});
+    }
+
+    __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
+    {
+        return Complex({this->val.x * rhs.val.x - this->val.y * rhs.val.y,
+                        this->val.x * rhs.val.y + this->val.y * rhs.val.x});
+    }
+
+    __device__ inline Complex<T> operator*(const T &rhs) const
+    {
+        return Complex({this->val.x * rhs,
+                        this->val.y * rhs});
+    }
+
+    __device__ inline T& re() {
+        return this->val.x;
+    }
+
+    __device__ inline T& im() {
+        return this->val.y;
+    }
+
+    __device__ inline const T& re() const {
+        return this->val.x;
+    }
+
+    __device__ inline const T& im() const {
+        return this->val.y;
+    }
+
+    __device__ inline VecT& inner() {
+        return this->val;
+    }
+
+private:
+    VecT val;
+};
+
+template <>
+class Complex<float>
+{
+public:
+    using T = float;
+    using VecT = float2;
+
+    /// @brief Constructs an in-initialized Complex value.
+    __device__ Complex() {}
+    __device__ Complex(VecT inner) : val(inner) {}
+
+    __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
+    {
+        return Complex({this->val.x + rhs.val.x, this->val.y + rhs.val.y});
+    }
+
+    __device__ inline Complex<T> operator-(const Complex<T> &rhs) const
+    {
+        return Complex({this->val.x - rhs.val.x, this->val.y - rhs.val.y});
+    }
+
+    __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
+    {
+        return Complex({this->val.x * rhs.val.x - this->val.y * rhs.val.y,
+                        this->val.x * rhs.val.y + this->val.y * rhs.val.x});
+    }
+
+    __device__ inline Complex<T> operator*(const T &rhs) const
+    {
+        return Complex({this->val.x * rhs,
+                        this->val.y * rhs});
+    }
+
+
+    __device__ inline T& re() {
+        return this->val.x;
+    }
+
+    __device__ inline T& im() {
+        return this->val.y;
+    }
+
+    __device__ inline const T& re() const {
+        return this->val.x;
+    }
+
+    __device__ inline const T& im() const {
+        return this->val.y;
+    }
+private:
+    VecT val;
+};

@@ -4,8 +4,8 @@
 
 template <typename T>
 __device__ void benchmark_fft(
-    const T *__restrict__ x,
-    T *__restrict__ result,
+    const Complex<T> *__restrict__ x,
+    Complex<T> *__restrict__ result,
     uint32_t fft_len,
     uint32_t fft_count
 ) {
@@ -15,7 +15,7 @@ __device__ void benchmark_fft(
     uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    __shared__ T x_local[FFT_STORAGE];
+    __shared__ Complex<T> x_local[FFT_STORAGE];
 
     for (unsigned int i = tid; i < fft_len; i += block_size)
     {
@@ -35,8 +35,8 @@ __device__ void benchmark_fft(
 }
 
 extern "C" __global__ void benchmark_fft_f64(
-    double2* in,
-    double2* out,
+    const Complex<double>* __restrict__ in,
+    Complex<double>* __restrict__ out,
     uint32_t fft_len,
     uint32_t fft_count
 ) {
@@ -44,8 +44,8 @@ extern "C" __global__ void benchmark_fft_f64(
 }
 
 extern "C" __global__ void benchmark_fft_f32(
-    float2* in,
-    float2* out,
+    const Complex<float>* __restrict__ in,
+    Complex<float>* __restrict__ out,
     uint32_t fft_len,
     uint32_t fft_count
 ) {

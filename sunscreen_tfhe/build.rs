@@ -5,6 +5,8 @@ mod gpu {
         process::Output,
     };
 
+    use rug::float::Constant;
+
     #[allow(unused)]
     pub fn validate_command_output(output: Output, panic_msg: &str) {
         println!("===stderr===");
@@ -46,7 +48,7 @@ mod gpu {
 
         let mut lines = String::new();
 
-        let pi = rug::Float::with_val(256, core::f64::consts::PI);
+        let pi = rug::Float::with_val(256, Constant::Pi);
         let (complex_ty, suffix, ty) = match precision {
             Precision::F32 => ("float2", "f", "F32"),
             Precision::F64 => ("double2", "", "F64"),
