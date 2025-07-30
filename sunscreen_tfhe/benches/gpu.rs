@@ -31,7 +31,7 @@ mod gpu_benches {
         let g = RefCell::new(c.benchmark_group("FFT"));
 
         for_each_device_type(|dev_name, r: &GpuRuntime| {
-            for n in [1024, 2048] {
+            for n in [1024] {
                 let bench_name = format!("Complex<f64> FFT latency N={n} Device={dev_name} ");
                 let stream = r.make_stream().unwrap();
                 let num_ffts_sequence = 2 * 2 * 637u32;

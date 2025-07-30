@@ -17,3 +17,24 @@ extern "C" __global__ void can_forward_twisted_fft_f64(
         output[blockIdx.x * n / 2 + i] = result[i];
     }
 }
+
+extern "C" __global__ void can_inverse_twisted_fft_f64(
+    double2 *__restrict__ input,
+    double * __restrict__ output,
+    uint32_t n
+) {
+    __shared__ double2 input_s[FFT_STORAGE];
+    __shared__ double result[2 * FFT_STORAGE];
+
+    for (uint32_t i = threadIdx.x; i < n / 2; i += blockDim.x) {
+        input_s[i] = input[blockIdx.x * n / 2 + i];
+    }
+
+    __syncthreads();
+
+    twisted_ifft(&input_s[blockIdx.x * n / 2], result, n);
+
+    for (uint32_t i = threadIdx.x; i < n; i += blockDim.x) {
+        output[blockIdx.x * n + i] = result[i];
+    }
+}

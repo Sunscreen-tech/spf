@@ -3,9 +3,6 @@
 #include "../../src/math/fft/fft.cuh"
 #include <math.h>
 
-#define MAX_FFT 2048
-#define FFT_STORAGE 2112
-
 template <typename T>
 __device__ void can_rountrip_fft(
     const T *__restrict__ x,
