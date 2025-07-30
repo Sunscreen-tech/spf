@@ -49,31 +49,42 @@ __device__ void twisted_fft(
 /// This result is still in floating point and needs to be modulo reduced.
 template <typename Complex>
 __device__ void twisted_ifft(
-    const Complex * __restrict__ s_input,
+    Complex * __restrict__ s_input,
     typename ScalarOf<Complex>::Ty * __restrict__ s_output,
     uint32_t n)
 {
-    using S = ScalarOf<Complex>::Ty;
+    using S = typename ScalarOf<Complex>::Ty;
     uint32_t n_div_2 = n / 2;
 
     // Perform an n/2 IFFT.
     ifft(s_input, n_div_2);
 
-    S n_inv = Float<S>::TWO / (S)n;
+    S n_inv = 1.0 / (S)n_div_2;
 
     // Twist the inputs so we can use an N-point FFT for negacyclic
     // convolution
-    for (uint32_t i = threadIdx.x; i < n; i += blockDim.x)
+    for (uint32_t i = threadIdx.x; i < n_div_2; i += blockDim.x)
     {
         Complex twist_inv;
-        sincos(-PI * (S)i / (S)n, &twist.y, &twist.x);
+        sincos(-PI * (S)i / (S)n, &twist_inv.y, &twist_inv.x);
 
         Complex tmp = complex_mul(s_input[i], twist_inv);
         tmp = complex_mul_real(tmp, n_inv);
 
-        s_output[i] = tmp.x.round();
-        s_output[i + n_div_2] = tmp.y.round();
+        // s_output[i] = round(tmp.x);
+        // s_output[i + n_div_2] = round(tmp.y);
+
+        s_output[i] = tmp.x;
+        s_output[i + n_div_2] = tmp.y;
+
+        // s_output[i] = s_input[i].x;
+        // s_output[i + n_div_2] = s_input[i].y;
+
+        // s_output[2 * i] = s_input[i].x;
+        // s_output[2 * i + 1] = s_input[i].y;
     }
+
+    __syncthreads();
 }
 
 

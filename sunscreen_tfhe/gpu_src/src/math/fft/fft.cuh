@@ -4,8 +4,8 @@
 #include "fft_params.cuh"
 #include <cstdint>
 
-#define MAX_FFT 2048
-#define FFT_STORAGE 2112
+#define MAX_FFT 1024
+#define FFT_STORAGE 1056
 
 template <typename Complex>
 __device__ void fft(Complex *s_input, uint32_t n)
@@ -14,9 +14,6 @@ __device__ void fft(Complex *s_input, uint32_t n)
     {
     case 1024:
         do_SMFFT_CT_DIT<FFT_1024_forward>(s_input);
-        break;
-    case 2048:
-        do_SMFFT_CT_DIT<FFT_2048_forward>(s_input);
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -33,9 +30,6 @@ __device__ void ifft(Complex *s_input, uint32_t n)
     {
     case 1024:
         do_SMFFT_CT_DIT<FFT_1024_inverse>(s_input);
-        break;
-    case 2048:
-        do_SMFFT_CT_DIT<FFT_2048_inverse>(s_input);
         break;
     default:
         printf("Illegal FFT size %d", n);

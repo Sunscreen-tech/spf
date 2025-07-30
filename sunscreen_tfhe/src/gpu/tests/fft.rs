@@ -27,7 +27,7 @@ where
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {
-        for n in [1024, 2048] {
+        for n in [1024] {
             let mut planner = FftPlanner::new();
             let fft = if let Direction::Forward = direction {
                 planner.plan_fft_forward(n as usize)
