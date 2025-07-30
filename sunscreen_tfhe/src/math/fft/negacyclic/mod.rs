@@ -33,8 +33,8 @@ where
     fwd: Arc<dyn Fft<T>>,
     rev: Arc<dyn Fft<T>>,
 
-    pub(crate) twist: Vec<Complex<T>>,
-    pub(crate) twist_inv: Vec<Complex<T>>,
+    twist: Vec<Complex<T>>,
+    twist_inv: Vec<Complex<T>>,
 }
 
 impl<T> TwistedFft<T>
