@@ -5,8 +5,6 @@ mod gpu {
         process::Output,
     };
 
-    use rug::float::Constant;
-
     #[allow(unused)]
     pub fn validate_command_output(output: Output, panic_msg: &str) {
         println!("===stderr===");
@@ -48,7 +46,6 @@ mod gpu {
 
         let mut lines = String::new();
 
-        let pi = rug::Float::with_val(256, Constant::Pi);
         let (complex_ty, suffix, ty) = match precision {
             Precision::F32 => ("float2", "f", "F32"),
             Precision::F64 => ("double2", "", "F64"),
@@ -60,21 +57,20 @@ mod gpu {
             if *x == 0.0 {
                 format!("0.0{suffix}")
             } else {
-                format!("{x:<.50e}{suffix}")
+                format!("{:<.50e}{suffix}", x.to_f64())
             }
         }
 
-        for (dir_suffix, inv_val) in [("_", 1.0), ("_INV_", -1.0)] {
+        for (dir_suffix, inv_val) in [("_", -2.0), ("_INV_", 2.0)] {
             lines += &format!("const __device__ {complex_ty} TWIDDLES{dir_suffix}{ty}[4095] = {{");
 
             for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048] {
                 let n_float = rug::Float::with_val(256, n);
 
                 for j in 0..n {
-                    let (s, c) = Float::sin_cos(
-                        inv_val * 2.0 * pi.clone() * j / n_float.clone(),
-                        Float::new(256),
-                    );
+                    let x: Float = Float::with_val(256, inv_val) * j / n_float.clone();
+                    let s = x.clone().sin_pi();
+                    let c = x.clone().cos_pi();
 
                     lines += &format!(
                         "\n\t{{\n\t\t{},\n\t\t{}\n\t}}",

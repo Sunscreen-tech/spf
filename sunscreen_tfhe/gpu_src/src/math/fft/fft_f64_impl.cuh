@@ -41,12 +41,12 @@ __device__ __inline__ double2 Get_W_value_inverse_f64(int N, int m)
 #include "fft_constants_f64.cuh"
 __device__ __inline__ constexpr double2 Get_W_value_f64(int N, int m)
 {
-	return TWIDDLES_F64[N / 2 + m];
+	return TWIDDLES_F64[N - 2 + m];
 }
 
 __device__ __inline__ constexpr double2 Get_W_value_inverse_f64(int N, int m)
 {
-	return TWIDDLES_INV_F64[N / 2 + m];
+	return TWIDDLES_INV_F64[N - 2 + m];
 }
 #endif
 

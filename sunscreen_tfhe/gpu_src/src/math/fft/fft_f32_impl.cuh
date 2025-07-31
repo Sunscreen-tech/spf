@@ -23,7 +23,7 @@ SOFTWARE.
 #pragma once
 #include "../math.cuh"
 
-#if 1
+#if true
 __device__ __inline__ float2 Get_W_value_f32(int N, int m)
 {
 	float2 ctemp;

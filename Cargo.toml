@@ -27,6 +27,7 @@ default-members = [
 
 [workspace.dependencies]
 aligned-vec = { version = ">=0.6.2", features = ["serde"] }
+approx = "0.5"
 bincode = "1"
 biodivine-lib-bdd = "0.5"
 bumpalo = "3"

@@ -24,7 +24,8 @@ public:
     const static Ty ONE = 1.0f;
     const static Ty TWO = 2.0f;
 
-    static __device__ __forceinline__ void sincos(Ty x, Ty *sptr, Ty *cptr)
+    // TODO: This is buggy
+    static __device__ inline void sincos(Ty x, Ty *sptr, Ty *cptr)
     {
         sincosf(x, sptr, cptr);
     }
@@ -41,7 +42,8 @@ public:
     const static Ty ONE = 1.0;
     const static Ty TWO = 2.0;
 
-    static __device__ __forceinline__ void sincos(Ty x, Ty *sptr, Ty *cptr)
+    // TODO: This is buggy
+    static __device__ inline void sincos(Ty x, Ty *sptr, Ty *cptr)
     {
         sincos(x, sptr, cptr);
     }
