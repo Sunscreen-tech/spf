@@ -110,16 +110,16 @@ extern "C" __global__ void get_twiddles_f64(
         if (!inverse) {
             method_lut[i] = TWIDDLES_F64[n - 2 + i];
             double2 val;
-            sincos(TAU * (double)i / (double)n, &val.y, &val.x);
+            sincos(-TAU * (double)i / (double)n, &val.y, &val.x);
             method_sincos[i] = val;
-            sincospi(2.0 * (double)i / (double)n, &val.y, &val.x);
+            sincospi(-2.0 * (double)i / (double)n, &val.y, &val.x);
             method_sincospi[i] = val;
         } else {
             method_lut[i] = TWIDDLES_INV_F64[n - 2 + i];
             double2 val;
-            sincos(-TAU * (double)i / (double)n, &val.y, &val.x);
+            sincos(TAU * (double)i / (double)n, &val.y, &val.x);
             method_sincos[i] = val;
-            sincospi(-2.0 * (double)i / (double)n, &val.y, &val.x);
+            sincospi(2.0 * (double)i / (double)n, &val.y, &val.x);
             method_sincospi[i] = val;
         }
     }

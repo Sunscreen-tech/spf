@@ -1,4 +1,4 @@
-use std::f64::consts::TAU;
+use std::f64::consts::{PI, TAU};
 
 use bytemuck::Pod;
 use num::{Complex, Float, FromPrimitive, NumCast, Signed};
@@ -159,7 +159,13 @@ fn check_twiddles() {
                     .zip(sincospi.as_slice().iter())
                     .enumerate()
                 {
-                    let x = rug::Float::with_val(256, 2.0 * i as f64 / n as f64);
+                    let factor = if inverse {
+                        2.0
+                    } else {
+                        -2.0
+                    };
+
+                    let x = rug::Float::with_val(256, factor * i as f64 / n as f64);
 
                     let sin = x.clone().sin_pi();
                     let cos = x.clone().cos_pi();
@@ -167,7 +173,7 @@ fn check_twiddles() {
                     let actual_sin = sin.to_f64();
                     let actual_cos = cos.to_f64();
 
-                    let (rust_sin, rust_cos) = f64::sin_cos(TAU * i as f64 / n as f64);
+                    let (rust_sin, rust_cos) = f64::sin_cos(factor * PI * i as f64 / n as f64);
 
                     println!(
                         "\tsin({}2π{i}/{n}) rust_cpu={}ULPs LUT={}ULPs sincos={}ULPs sincospi={}ULPs",
