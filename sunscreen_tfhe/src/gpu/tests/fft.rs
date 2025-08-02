@@ -1,4 +1,4 @@
-use std::f64::consts::{PI, TAU};
+use std::f64::consts::PI;
 
 use bytemuck::Pod;
 use num::{Complex, Float, FromPrimitive, NumCast, Signed};
