@@ -62,9 +62,9 @@ mod gpu {
         }
 
         for (dir_suffix, inv_val) in [("_", -2.0), ("_INV_", 2.0)] {
-            lines += &format!("const __device__ {complex_ty} TWIDDLES{dir_suffix}{ty}[4095] = {{");
+            lines += &format!("const __device__ {complex_ty} TWIDDLES{dir_suffix}{ty}[] = {{");
 
-            for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048] {
+            for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096] {
                 let n_float = rug::Float::with_val(256, n);
 
                 for j in 0..n {
@@ -78,7 +78,7 @@ mod gpu {
                         format_value(&s, suffix)
                     );
 
-                    if !(n == 2048 && j == n - 1) {
+                    if !(n == 4096 && j == n - 1) {
                         lines += ","
                     }
                 }

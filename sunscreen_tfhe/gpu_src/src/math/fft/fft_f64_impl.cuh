@@ -21,48 +21,8 @@ SOFTWARE.
 */
 
 #pragma once
+#include "twiddles.cuh"
 #include "../math.cuh"
-
-#if defined(SINCOS)
-__device__ __inline__ double2 Get_W_value_f64(int N, int m)
-{
-	double2 ctemp;
-	sincos(-TAU * (double)m / (double)N, &ctemp.y, &ctemp.x);
-	return ctemp;
-}
-
-__device__ __inline__ double2 Get_W_value_inverse_f64(int N, int m)
-{
-	double2 ctemp;
-	sincos(TAU * (double)m / (double)N, &ctemp.y, &ctemp.x);
-	return ctemp;
-}
-#elif defined(SINCOSPI)
-__device__ __inline__ double2 Get_W_value_f64(int N, int m)
-{
-	double2 ctemp;
-	sincospi(-2.0 * (double)m / (double)N, &ctemp.y, &ctemp.x);
-	return ctemp;
-}
-
-__device__ __inline__ double2 Get_W_value_inverse_f64(int N, int m)
-{
-	double2 ctemp;
-	sincospi(2.0 * (double)m / (double)N, &ctemp.y, &ctemp.x);
-	return ctemp;
-}
-#else
-#include "fft_constants_f64.cuh"
-__device__ __inline__ constexpr double2 Get_W_value_f64(int N, int m)
-{
-	return TWIDDLES_F64[N - 2 + m];
-}
-
-__device__ __inline__ constexpr double2 Get_W_value_inverse_f64(int N, int m)
-{
-	return TWIDDLES_INV_F64[N - 2 + m];
-}
-#endif
 
 __device__ __inline__ double shfl(double *value, int par)
 {
@@ -432,9 +392,9 @@ __device__ void do_SMFFT_CT_DIT(double2 *s_input)
 		parity = ((itemp << 1) - 1);
 
 		if (const_params::fft_direction)
-			W = Get_W_value_inverse_f64(PoTp1, itemp * m_param);
+			W = FftTwiddles<double>::Get_W_value_inverse(PoTp1, itemp * m_param);
 		else
-			W = Get_W_value_f64(PoTp1, itemp * m_param);
+			W = FftTwiddles<double>::Get_W_value(PoTp1, itemp * m_param);
 
 		Aftemp.x = W.x * A_DFT_value.x - W.y * A_DFT_value.y;
 		Aftemp.y = W.x * A_DFT_value.y + W.y * A_DFT_value.x;
@@ -472,9 +432,9 @@ __device__ void do_SMFFT_CT_DIT(double2 *s_input)
 		j = threadIdx.x >> q;
 
 		if (const_params::fft_direction)
-			W = Get_W_value_inverse_f64(PoTp1, m_param);
+			W = FftTwiddles<double>::Get_W_value_inverse(PoTp1, m_param);
 		else
-			W = Get_W_value_f64(PoTp1, m_param);
+			W = FftTwiddles<double>::Get_W_value(PoTp1, m_param);
 
 		A_read_index = j * (PoTp1 << 1) + m_param;
 		B_read_index = j * (PoTp1 << 1) + m_param + PoT;
@@ -511,9 +471,9 @@ __device__ void do_SMFFT_CT_DIT(double2 *s_input)
 		j = threadIdx.x >> q;
 
 		if (const_params::fft_direction)
-			W = Get_W_value_inverse_f64(PoTp1, m_param);
+			W = FftTwiddles<double>::Get_W_value_inverse(PoTp1, m_param);
 		else
-			W = Get_W_value_f64(PoTp1, m_param);
+			W = FftTwiddles<double>::Get_W_value(PoTp1, m_param);
 
 		A_read_index = j * (PoTp1 << 1) + m_param;
 		B_read_index = j * (PoTp1 << 1) + m_param + PoT;
@@ -550,9 +510,9 @@ __device__ void do_SMFFT_CT_DIT(double2 *s_input)
 		m_param = threadIdx.x;
 
 		if (const_params::fft_direction)
-			W = Get_W_value_inverse_f64(PoTp1, m_param);
+			W = FftTwiddles<double>::Get_W_value_inverse(PoTp1, m_param);
 		else
-			W = Get_W_value_f64(PoTp1, m_param);
+			W = FftTwiddles<double>::Get_W_value(PoTp1, m_param);
 
 		A_read_index = m_param;
 		B_read_index = m_param + PoT;
