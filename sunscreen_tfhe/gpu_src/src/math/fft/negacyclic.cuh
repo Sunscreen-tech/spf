@@ -20,9 +20,6 @@ __device__ void twisted_fft(
     for (uint32_t i = threadIdx.x; i < n_div_2; i += blockDim.x)
     {   
         Complex<T> c({s_input[i], s_input[i + n_div_2]});
-
-        // Complex<T> twist;
-        // sincos(PI * (T)i / (T)n, &twist.im(), &twist.re());
         Complex<T> twist(FftTwiddles<T>::Get_W_value_inverse(2 * n, i));
 
         s_output[i] = c * twist;
@@ -53,8 +50,6 @@ __device__ void twisted_ifft(
     // convolution
     for (uint32_t i = threadIdx.x; i < n_div_2; i += blockDim.x)
     {
-        // Complex<T> twist_inv;
-        // sincos(-PI * (T)i / (T)n, &twist_inv.im(), &twist_inv.re());
         Complex<T> twist_inv(FftTwiddles<T>::Get_W_value(2 * n, i));
 
         Complex tmp = s_input[i] * twist_inv * n_inv;

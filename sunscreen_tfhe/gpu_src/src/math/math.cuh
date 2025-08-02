@@ -70,29 +70,11 @@ public:
     using Ty = float;
 };
 
-// template <typename Complex>
-// __device__ inline Complex complex_add(Complex a, Complex b)
-// {
-//     return {a.x + b.x, a.y + b.y};
-// }
-
-// template <typename Complex>
-// __device__ inline Complex complex_sub(Complex a, Complex b)
-// {
-//     return {a.x - b.x, a.y - b.y};
-// }
-
 template <typename Complex>
 __device__ inline Complex complex_mul(Complex a, Complex b)
 {
     return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x};
 }
-
-// template <typename Complex>
-// __device__ inline Complex complex_mul_real(Complex a, typename ScalarOf<Complex>::Ty b)
-// {
-//     return {a.x * b, a.y * b};
-// }
 
 template <typename S>
 class Complex
