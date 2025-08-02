@@ -1,42 +1,28 @@
 #pragma once
 #include <cstdint>
 
+#include "twiddles.cuh"
 #include "../math.cuh"
 #include "./fft.cuh"
 
-template <typename Complex>
-__device__ __inline__ Complex twist_inv(const uint32_t i)
-{
-    using FS = typename ScalarOf<Complex>::FloatOps;
-    using S = typename FT::Ty;
-    Complex t;
-
-    FS::sincos(-FS::PI * (S)i, &t.y, &t.x);
-
-    return t;
-}
-
 /// Compute a forward FFT over real negacyclic input `s_input`.
-template <typename Complex>
+template <typename T>
 __device__ void twisted_fft(
-    const typename ScalarOf<Complex>::Ty * __restrict__ s_input,
-    Complex * __restrict__ s_output,
+    const T * __restrict__ s_input,
+    Complex<T> * __restrict__ s_output,
     uint32_t n)
 {
-    using FS = typename ScalarOf<Complex>::FloatOps; 
-    using S = typename ScalarOf<Complex>::Ty;
-    uint32_t n_div_2 = (S)(n >> 1);
+    uint32_t n_div_2 = n / 2;
 
     // Split the input into 2 sub arrays, packing the first half into the real
     // component of our twist and the second half into the imaginary part.
     // Then, multiply by out twist factor.
     for (uint32_t i = threadIdx.x; i < n_div_2; i += blockDim.x)
     {   
-        Complex c = {(S)s_input[i], (S)s_input[i + n_div_2]};
+        Complex<T> c({s_input[i], s_input[i + n_div_2]});
+        Complex<T> twist(FftTwiddles<T>::Get_W_value_inverse(2 * n, i));
 
-        Complex twist;
-        sincos(PI * (S)i / (S)n, &twist.y, &twist.x);
-        s_output[i] = complex_mul(c, twist);
+        s_output[i] = c * twist;
     }
 
     __syncthreads();
@@ -47,32 +33,29 @@ __device__ void twisted_fft(
 
 /// Compute a twisted IFFT resulting in real negacyclic output `s_output`.
 /// This result is still in floating point and needs to be modulo reduced.
-template <typename Complex>
+template <typename T>
 __device__ void twisted_ifft(
-    Complex * __restrict__ s_input,
-    typename ScalarOf<Complex>::Ty * __restrict__ s_output,
+    Complex<T> * __restrict__ s_input,
+    T * __restrict__ s_output,
     uint32_t n)
 {
-    using S = typename ScalarOf<Complex>::Ty;
     uint32_t n_div_2 = n / 2;
 
     // Perform an n/2 IFFT.
     ifft(s_input, n_div_2);
 
-    S n_inv = 1.0 / (S)n_div_2;
+    T n_inv = 1.0 / (T)n_div_2;
 
     // Twist the inputs so we can use an N-point FFT for negacyclic
     // convolution
     for (uint32_t i = threadIdx.x; i < n_div_2; i += blockDim.x)
     {
-        Complex twist_inv;
-        sincos(-PI * (S)i / (S)n, &twist_inv.y, &twist_inv.x);
+        Complex<T> twist_inv(FftTwiddles<T>::Get_W_value(2 * n, i));
 
-        Complex tmp = complex_mul(s_input[i], twist_inv);
-        tmp = complex_mul_real(tmp, n_inv);
+        Complex tmp = s_input[i] * twist_inv * n_inv;
 
-        s_output[i] = round(tmp.x);
-        s_output[i + n_div_2] = round(tmp.y);
+        s_output[i] = round(tmp.re());
+        s_output[i + n_div_2] = round(tmp.im());
     }
 
     __syncthreads();

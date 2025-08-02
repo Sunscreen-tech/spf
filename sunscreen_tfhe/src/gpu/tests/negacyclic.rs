@@ -6,10 +6,7 @@ use sunscreen_gpu_runtime::launch_kernel;
 use crate::{
     FrequencyTransform,
     fft::negacyclic,
-    gpu::{
-        test_utils::get_runtimes,
-        tests::{assert_complex_equalish, assert_equalish},
-    },
+    gpu::{test_utils::get_runtimes, tests::assert_complex_equalish},
 };
 
 #[test]

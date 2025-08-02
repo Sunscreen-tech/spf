@@ -2,18 +2,22 @@
 #include "fft_f32_impl.cuh"
 #include "fft_f64_impl.cuh"
 #include "fft_params.cuh"
+#include "../math.cuh"
+
 #include <cstdint>
 
 #define MAX_FFT 1024
 #define FFT_STORAGE 1056
 
-template <typename Complex>
-__device__ void fft(Complex *s_input, uint32_t n)
+template <typename T>
+__device__ void fft(Complex<T> *s_input, uint32_t n)
 {
+    using VecT = typename Complex<T>::VecT;
+
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_forward>(s_input);
+        do_SMFFT_CT_DIT<FFT_1024_forward>(reinterpret_cast<VecT*>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -23,13 +27,15 @@ __device__ void fft(Complex *s_input, uint32_t n)
     __syncthreads();
 }
 
-template <typename Complex>
-__device__ void ifft(Complex *s_input, uint32_t n)
+template <typename T>
+__device__ void ifft(Complex<T> *s_input, uint32_t n)
 {
+    using VecT = typename Complex<T>::VecT;
+
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_inverse>(s_input);
+        do_SMFFT_CT_DIT<FFT_1024_inverse>(reinterpret_cast<VecT*>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -40,16 +46,15 @@ __device__ void ifft(Complex *s_input, uint32_t n)
 }
 
 
-template <typename Complex>
-__device__ void fft_noreorder(Complex *s_input, uint32_t n)
+template <typename T>
+__device__ void fft_noreorder(Complex<T> *s_input, uint32_t n)
 {
+    using VecT = typename Complex<T>::VecT;
+
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_forward_noreorder>(s_input);
-        break;
-    case 2048:
-        do_SMFFT_CT_DIT<FFT_2048_forward_noreorder>(s_input);
+        do_SMFFT_CT_DIT<FFT_1024_forward_noreorder>(reinterpret_cast<VecT*>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -59,16 +64,15 @@ __device__ void fft_noreorder(Complex *s_input, uint32_t n)
     __syncthreads();
 }
 
-template <typename Complex>
-__device__ void ifft_noreorder(Complex *s_input, uint32_t n)
+template <typename T>
+__device__ void ifft_noreorder(Complex<T> *s_input, uint32_t n)
 {
+    using VecT = typename Complex<T>::VecT;
+
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_inverse_noreorder>(s_input);
-        break;
-    case 2048:
-        do_SMFFT_CT_DIT<FFT_2048_inverse_noreorder>(s_input);
+        do_SMFFT_CT_DIT<FFT_1024_inverse_noreorder>(reinterpret_cast<VecT>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);

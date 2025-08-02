@@ -1,10 +1,15 @@
+use std::f64::consts::PI;
+
 use bytemuck::Pod;
 use num::{Complex, Float, FromPrimitive, NumCast, Signed};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use rustfft::FftPlanner;
 
-use crate::gpu::{test_utils::get_runtimes, tests::assert_complex_equalish};
+use crate::gpu::{
+    test_utils::get_runtimes,
+    tests::{assert_complex_equalish, ulps_difference},
+};
 
 #[derive(PartialEq)]
 enum Direction {
@@ -104,4 +109,87 @@ fn can_ifft_f64() {
 #[test]
 fn can_ifft_f32() {
     can_fft_impl::<f32>("can_rountrip_ifft_f32", 1e-2, Direction::Inverse);
+}
+
+/// This test measures and prints the twiddle error against 4 different methods:
+/// * Rust's sincos method
+/// * The GPU's LUT
+/// * The GPU's sincos method
+/// * The GPU's sincospi method
+///
+/// To run it, enable the test and run `cargo test -- check_twiddles --nocapture`
+#[ignore]
+#[test]
+fn check_twiddles() {
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        for inverse in [false, true] {
+            for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024] {
+                println!("n={n} inv={inverse}");
+                let lut = r.allocate::<Complex<f64>>(n as usize).unwrap();
+                let sincos = r.allocate::<Complex<f64>>(n as usize).unwrap();
+                let sincospi = r.allocate::<Complex<f64>>(n as usize).unwrap();
+
+                let stream = r.make_stream().unwrap();
+
+                let threads_per_block = 64;
+                let num_threads = threads_per_block;
+
+                unsafe {
+                    launch_kernel!(
+                        ((num_threads, threads_per_block))
+                        ("get_twiddles_f64")
+                        (r, stream, 0)
+                        lut,
+                        sincos,
+                        sincospi,
+                        n,
+                        inverse as u32
+                    )
+                    .unwrap();
+                }
+
+                stream.wait().unwrap();
+
+                for (i, ((lut, sincos), sincospi)) in lut
+                    .as_slice()
+                    .iter()
+                    .zip(sincos.as_slice().iter())
+                    .zip(sincospi.as_slice().iter())
+                    .enumerate()
+                {
+                    let factor = if inverse { 2.0 } else { -2.0 };
+
+                    let x = rug::Float::with_val(256, factor * i as f64 / n as f64);
+
+                    let sin = x.clone().sin_pi();
+                    let cos = x.clone().cos_pi();
+
+                    let actual_sin = sin.to_f64();
+                    let actual_cos = cos.to_f64();
+
+                    let (rust_sin, rust_cos) = f64::sin_cos(factor * PI * i as f64 / n as f64);
+
+                    println!(
+                        "\tsin({}2π{i}/{n}) rust_cpu={}ULPs LUT={}ULPs sincos={}ULPs sincospi={}ULPs",
+                        if inverse { "-" } else { "" },
+                        ulps_difference(rust_sin, actual_sin),
+                        ulps_difference(lut.im, actual_sin),
+                        ulps_difference(sincos.im, actual_sin),
+                        ulps_difference(sincospi.im, actual_sin)
+                    );
+
+                    println!(
+                        "\tcos({}2π{i}/{n}) rust_cpu={}ULPs LUT={}ULPs sincos={}ULPs sincospi={}ULPs",
+                        if inverse { "-" } else { "" },
+                        ulps_difference(rust_cos, actual_cos),
+                        ulps_difference(lut.re, actual_cos),
+                        ulps_difference(sincos.re, actual_cos),
+                        ulps_difference(sincospi.re, actual_cos)
+                    );
+                }
+            }
+        }
+    }
 }
