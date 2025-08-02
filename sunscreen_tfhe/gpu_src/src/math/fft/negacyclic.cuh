@@ -63,9 +63,6 @@ __device__ void twisted_ifft(
         Complex<T> twist_inv;
         sincos(-PI * (T)i / (T)n, &twist_inv.im(), &twist_inv.re());
 
-        // Complex tmp = complex_mul(s_input[i], twist_inv);
-        // tmp = complex_mul_real(tmp, n_inv);
-
         Complex tmp = s_input[i] * twist_inv * n_inv;
 
         s_output[i] = round(tmp.re());

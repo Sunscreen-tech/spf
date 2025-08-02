@@ -23,18 +23,32 @@ SOFTWARE.
 #pragma once
 #include "../math.cuh"
 
-#if true
+#if defined(SINCOS)
 __device__ __inline__ float2 Get_W_value_f32(int N, int m)
 {
 	float2 ctemp;
-	sincosf(-TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	sincos(-TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
 	return (ctemp);
 }
 
 __device__ __inline__ float2 Get_W_value_inverse_f32(int N, int m)
 {
 	float2 ctemp;
-	sincosf(TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	sincos(TAU_F * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	return (ctemp);
+}
+#elif defined(SINCOSPI)
+__device__ __inline__ float2 Get_W_value_f32(int N, int m)
+{
+	float2 ctemp;
+	sincospif(-2.0f * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
+	return (ctemp);
+}
+
+__device__ __inline__ float2 Get_W_value_inverse_f32(int N, int m)
+{
+	float2 ctemp;
+	sincospif(2.0 * fdividef((float)m, (float)N), &ctemp.y, &ctemp.x);
 	return (ctemp);
 }
 #else

@@ -159,11 +159,7 @@ fn check_twiddles() {
                     .zip(sincospi.as_slice().iter())
                     .enumerate()
                 {
-                    let factor = if inverse {
-                        2.0
-                    } else {
-                        -2.0
-                    };
+                    let factor = if inverse { 2.0 } else { -2.0 };
 
                     let x = rug::Float::with_val(256, factor * i as f64 / n as f64);
 
