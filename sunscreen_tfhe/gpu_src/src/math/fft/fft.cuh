@@ -72,7 +72,7 @@ __device__ void ifft_noreorder(Complex<T> *s_input, uint32_t n)
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_inverse_noreorder>(reinterpret_cast<VecT>(s_input));
+        do_SMFFT_CT_DIT<FFT_1024_inverse_noreorder>(reinterpret_cast<VecT*>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);

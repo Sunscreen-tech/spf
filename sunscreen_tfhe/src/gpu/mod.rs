@@ -31,4 +31,6 @@ pub mod test_utils {
             })
             .clone()
     }
+
+    pub const SUPPORTED_POLY_DEGREES: &[u32] = &[2048u32];
 }
