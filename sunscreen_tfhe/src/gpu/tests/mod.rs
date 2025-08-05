@@ -2,6 +2,7 @@ use num::{Complex, Float, NumCast};
 
 mod fft;
 mod negacyclic;
+mod polynomial;
 mod simd;
 
 pub fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {

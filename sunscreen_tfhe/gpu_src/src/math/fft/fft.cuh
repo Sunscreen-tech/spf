@@ -6,9 +6,6 @@
 
 #include <cstdint>
 
-#define MAX_FFT 1024
-#define FFT_STORAGE 1056
-
 template <typename T>
 __device__ void fft(Complex<T> *s_input, uint32_t n)
 {

@@ -11,6 +11,7 @@ fn can_mod_2_pow_64() {
         let num_values = 2048;
 
         let mut data = r.allocate::<f64>(num_values as usize).unwrap();
+        let mut actual = r.allocate::<u64>(num_values as usize).unwrap();
 
         data.as_mut_slice().iter_mut().for_each(|x| {
             let a = thread_rng().next_u32() as f64;
@@ -38,6 +39,7 @@ fn can_mod_2_pow_64() {
                 ("can_reduce_mod_2_pow_64")
                 (r, stream, 0)
                 data,
+                actual,
                 num_values as u32
             )
         }
@@ -45,8 +47,8 @@ fn can_mod_2_pow_64() {
 
         stream.wait().unwrap();
 
-        for (a, e) in data.as_slice().iter().zip(expected.coeffs().iter()) {
-            assert_eq!(u64::from_f64(*a), *e);
+        for (a, e) in actual.as_slice().iter().zip(expected.coeffs().iter()) {
+            assert_eq!(*a, *e);
         }
     }
 }

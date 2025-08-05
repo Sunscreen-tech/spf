@@ -2,7 +2,19 @@
 #include <bit>
 
 #include <cstdint>
+#include "math.cuh"
 #include "../iter_tools.cuh"
+
+/// @brief  Converts a value on the floating point (`F`) torus [-q/2, q/2] to an unsigned
+/// integer (`U`) on the torus [0, q).
+/// @param x The double torus value
+/// @return The unsigned torus value.
+template <typename F, typename U>
+__device__ inline U normalize_q_div_2_torus(F x) {
+    using SignedTy = Unsigned<U>::SignedTy;
+
+    return static_cast<U>((SignedTy)x);
+}
 
 template <uint64_t LOG2_Q>
 constexpr __device__ double q_as_float()
@@ -41,7 +53,7 @@ __device__ void inplace_reduce_mod_q_pow_2(
                   : rem;
 
         // If previous was true, this can't be.
-        rem = rem <= -q_div2
+        rem = rem < -q_div2
                   ? rem_plus_q
                   : rem;
 

@@ -3,7 +3,8 @@
 #include "../../src/math/math.cuh"
 #include "fft_constants_f64.cuh"
 #include "../../src/math/fft/fft.cuh"
-#include <math.h>
+#include "../../src/entities/dst.cuh"
+#include "../../src/entities/polynomial.cuh"
 
 template <typename T>
 __device__ void can_rountrip_fft(
@@ -11,13 +12,14 @@ __device__ void can_rountrip_fft(
     Complex<T> *__restrict__ result,
     uint32_t fft_len)
 {
-    assert(fft_len <= MAX_FFT);
-
     uint32_t tid = threadIdx.x;
     uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    __shared__ Complex<T> x_local[FFT_STORAGE];
+    init_scratch();
+    auto x_local_allocation = scratch_alloc<Polynomial<Complex<T>>>(PolynomialDegree{fft_len});
+    auto x_local = x_local_allocation->coeffs();
+    //__shared__ Complex<T> x_local[FFT_STORAGE];
 
     for (unsigned int i = tid; i < fft_len; i += block_size)
     {
@@ -40,13 +42,14 @@ __device__ void can_rountrip_ifft(
     Complex<T> *__restrict__ result,
     uint32_t fft_len)
 {
-    assert(fft_len <= MAX_FFT);
-
     uint32_t tid = threadIdx.x;
     uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    __shared__ Complex<T> x_local[FFT_STORAGE];
+    init_scratch();
+    auto x_local_allocation = scratch_alloc<Polynomial<Complex<T>>>(PolynomialDegree{fft_len});
+    auto x_local = x_local_allocation->coeffs();
+    //__shared__ Complex<T> x_local[FFT_STORAGE];
 
     for (unsigned int i = tid; i < fft_len; i += block_size)
     {

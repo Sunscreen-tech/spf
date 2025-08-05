@@ -11,34 +11,36 @@
 struct PolynomialDegree
 {
     uint32_t degree;
+
+    __device__ inline PolynomialDegree(uint32_t degree): degree(degree) {}
 };
+
+template <typename T>
+class PolynomialFft;
 
 template <typename T>
 class Polynomial
 {
 public:
-    static uint32_t size(const PolynomialDegree &size_info)
+    __device__ static inline uint32_t size(const PolynomialDegree &size_info)
     {
         return size_info.degree * sizeof(T);
     }
 
-    static constexpr uint32_t align()
+    __device__ static inline constexpr uint32_t align()
     {
         return alignof(T);
     }
 
     template <typename U>
-    void fft(Polynomial<U> *res, const PolynomialDegree &degree);
+    __device__ inline void fft(PolynomialFft<U> *res, const PolynomialDegree &degree) const;
 
-    template <typename U>
-    void ifft(Polynomial<U> *res, const PolynomialDegree &degree);
-
-    T *coeffs()
+    __device__ inline T *coeffs()
     {
         return data;
     }
 
-    const T *coeffs() const
+    __device__ inline const T *coeffs() const
     {
         return data;
     }
@@ -47,16 +49,47 @@ private:
     T data[0];
 };
 
+template <typename T>
+class PolynomialFft
+{
+public:
+    __device__ static inline uint32_t size(const PolynomialDegree &size_info)
+    {
+        // Add 64 elements to support FFTs up to 4096.
+        return (size_info.degree / 2) * sizeof(T);
+    }
+    
+    __device__ static inline constexpr uint32_t align()
+    {
+        return alignof(T);
+    }
+
+    template <typename U>
+    __device__ inline void ifft(Polynomial<U> *res, const PolynomialDegree &degree) const;
+
+    __device__ inline T *coeffs()
+    {
+        return data;
+    }
+
+    __device__ inline const T *coeffs() const
+    {
+        return data;
+    }
+private:
+    T data[0];
+};
+
 template <>
 template <>
-void Polynomial<uint64_t>::fft<Complex<double>>(
-    Polynomial<Complex<double>> *res,
-    const PolynomialDegree &degree)
+__device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
+    PolynomialFft<Complex<double>> *res,
+    const PolynomialDegree &degree) const
 {
     ScratchAllocation<Polynomial<double>> temp = scratch_alloc<Polynomial<double>, PolynomialDegree>(degree);
 
-    // Cast out u64 thing polynomial to double
-    for (uint32_t i = threadIdx.x; i < degree.degree; i += blockDim.x)
+    // Cast our u64 polynomial to double
+    BLOCK_FOR_EACH(i, degree.degree)
     {
         temp->coeffs()[i] = (double)this->coeffs()[i];
     }
@@ -68,15 +101,15 @@ void Polynomial<uint64_t>::fft<Complex<double>>(
 
 template <>
 template <>
-void Polynomial<Complex<double>>::ifft<uint64_t>(
+__device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     Polynomial<uint64_t> *__restrict__ res,
-    const PolynomialDegree &degree)
+    const PolynomialDegree &degree) const
 {
     PolynomialDegree n_div_2 = PolynomialDegree{degree.degree / 2};
 
     ScratchAllocation<Polynomial<Complex<double>>> temp = scratch_alloc<Polynomial<Complex<double>>, PolynomialDegree>(n_div_2);
 
-    for (uint32_t i = threadIdx.x; i < degree.degree; i += blockDim.x)
+    BLOCK_FOR_EACH(i, degree.degree)
     {
         temp->coeffs()[i] = this->coeffs()[i];
     }
@@ -95,6 +128,8 @@ void Polynomial<Complex<double>>::ifft<uint64_t>(
     // Finally, we cast each value from double to uint64_t
     BLOCK_FOR_EACH(i, degree.degree)
     {
-        res->coeffs()[i] = (uint64_t)reinterpret_cast<double*>(res->coeffs())[i];
+        // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
+        // then bitcast back to unsigned to get back to [0, q).
+        res->coeffs()[i] = normalize_q_div_2_torus<double, uint64_t>(reinterpret_cast<double*>(res->coeffs())[i]);
     }
 }
