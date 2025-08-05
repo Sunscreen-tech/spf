@@ -12,11 +12,11 @@ extern "C" __global__ void can_forward_twisted_fft_f64(
 {
     __shared__ double s_in[FFT_STORAGE];
 
-    COPY_TO_LOCAL(s_in, &input[blockIdx.x * n], n);
+    BLOCK_COPY(s_in, &input[blockIdx.x * n], n);
 
     auto s_out = twisted_fft(s_in, n);
 
-    COPY_FROM_LOCAL(&output[blockIdx.x * n / 2], s_out, n / 2);
+    BLOCK_COPY(&output[blockIdx.x * n / 2], s_out, n / 2);
 }
 
 extern "C" __global__ void can_inverse_twisted_fft_f64(
@@ -26,9 +26,9 @@ extern "C" __global__ void can_inverse_twisted_fft_f64(
 {
     __shared__ Complex<double> s_in[FFT_STORAGE];
 
-    COPY_TO_LOCAL(s_in, &input[blockIdx.x * n / 2], n / 2);
+    BLOCK_COPY(s_in, &input[blockIdx.x * n / 2], n / 2);
 
     auto s_out = twisted_ifft(s_in, n);
 
-    COPY_FROM_LOCAL(&output[blockIdx.x * n], s_out, n);
+    BLOCK_COPY(&output[blockIdx.x * n], s_out, n);
 }

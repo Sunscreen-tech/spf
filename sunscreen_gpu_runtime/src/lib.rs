@@ -276,7 +276,7 @@ pub trait AllocationBackend {
 pub struct Dim {
     #[allow(unused)]
     /// The total number of desired threads in this dimension.
-    total_threads: u32,
+    pub total_threads: u32,
 
     #[allow(unused)]
     /// The number of threads per thread block in this dimension. This results in
@@ -285,7 +285,7 @@ pub struct Dim {
     /// If [`GpuRuntime::allows_nonuniform_thread_blocks`] returns false, then
     /// `total_threads % threads_per_block` must be true or launching the kernel results
     /// in an error.
-    threads_per_block: u32,
+    pub threads_per_block: u32,
 }
 
 const DIM_ONE: Dim = Dim {

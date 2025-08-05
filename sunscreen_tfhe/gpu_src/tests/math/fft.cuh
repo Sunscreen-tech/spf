@@ -13,13 +13,13 @@ __device__ void can_rountrip_fft(
 {
     uint32_t block_id = blockIdx.x;
 
-    Complex<T> x_local[FFT_STORAGE];
+    __shared__ Complex<T> x_local[FFT_STORAGE];
 
-    COPY_TO_LOCAL(x_local, &x[block_id * fft_len], fft_len);
+    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 
     fft(x_local, fft_len);
 
-    COPY_FROM_LOCAL(&result[block_id * fft_len], x_local, fft_len);
+    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
 }
 
 template <typename T>
@@ -32,11 +32,11 @@ __device__ void can_rountrip_ifft(
 
     __shared__ Complex<T> x_local[FFT_STORAGE];
 
-    COPY_TO_LOCAL(x_local, &x[block_id * fft_len], fft_len);
+    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 
     ifft(x_local, fft_len);
 
-    COPY_FROM_LOCAL(&result[block_id * fft_len], x_local, fft_len);
+    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
 }
 
 extern "C" __global__ void can_rountrip_fft_f64(

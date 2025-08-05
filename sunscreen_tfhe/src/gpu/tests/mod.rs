@@ -1,6 +1,7 @@
 use num::{Complex, Float, NumCast};
 
 mod fft;
+mod memory;
 mod negacyclic;
 mod polynomial;
 mod simd;

@@ -121,9 +121,47 @@ __device__ inline uint32_t get_scratch_size()
     return get_scratch_size(gridDim.x);
 }
 
-extern "C" __global__ void query_scratch_size(
-    uint32_t num_blocks,
+extern "C" __global__ void query_scratch_size_per_block(
     uint32_t *size)
 {
-    *size = get_scratch_size(num_blocks);
+    *size = get_scratch_size(1);
 }
+
+/// @brief A dynamically sized type buffer.
+template <typename T>
+class DstBuffer {
+public:
+    __device__ static inline uint32_t size(uint32_t count) {
+        return count * sizeof(T);
+    }
+
+    __device__ static inline constexpr size_t align() {
+        return alignof(T);
+    }
+
+    __device__ inline T *operator*() {
+        return data;
+    }
+
+    __device__ inline const T *operator*() const {
+        return data;
+    }
+
+    __device__ inline T& operator[](uint32_t i) {
+        return data[i];
+    }
+
+    __device__ inline const T& operator[](uint32_t i) const {
+        return data[i];
+    }
+
+    __device__ inline T* ptr() {
+        return data;
+    }
+
+    __device__ inline const T* ptr() const {
+        return data;
+    }
+private:
+    T data[0];
+};

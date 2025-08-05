@@ -14,13 +14,13 @@ __device__ void benchmark_fft(
 
     __shared__ Complex<T> x_local[FFT_STORAGE];
 
-    COPY_TO_LOCAL(x_local, &x[block_id * fft_len], fft_len);
+    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 
     for (uint32_t i = 0; i < fft_count; i++) {
         fft_noreorder(x_local, fft_len);
     }
 
-    COPY_FROM_LOCAL(&result[block_id * fft_len], x_local, fft_len);
+    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
 }
 
 extern "C" __global__ void benchmark_fft_f64(
