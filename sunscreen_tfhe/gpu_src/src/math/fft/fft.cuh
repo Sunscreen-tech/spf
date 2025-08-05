@@ -6,6 +6,8 @@
 
 #include <cstdint>
 
+const uint32_t FFT_STORAGE = 2048 + 64;
+
 template <typename T>
 __device__ void fft(Complex<T> *s_input, uint32_t n)
 {

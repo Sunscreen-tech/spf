@@ -1,7 +1,6 @@
 #pragma once
 #include <cstdint>
 #include "../../src/math/fft/fft.cuh"
-#include "../../src/entities/dst.cuh"
 #include "../../src/entities/polynomial.cuh"
 
 template <typename T>
@@ -11,33 +10,17 @@ __device__ void benchmark_fft(
     uint32_t fft_len,
     uint32_t fft_count
 ) {
-    init_scratch();
-
-    uint32_t tid = threadIdx.x;
-    uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    //__shared__ Complex<T> x_local[FFT_STORAGE];
+    __shared__ Complex<T> x_local[FFT_STORAGE];
 
-    // FFT requires up to 64 extra Complex<T> elements
-    auto x_local_allocation = scratch_alloc<Polynomial<Complex<T>>>(PolynomialDegree(fft_len));
-    auto x_local = x_local_allocation->coeffs();
-
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        x_local[i] = x[block_id * fft_len + i];
-    }
-
-    __syncthreads();
+    COPY_TO_LOCAL(x_local, &x[block_id * fft_len], fft_len);
 
     for (uint32_t i = 0; i < fft_count; i++) {
         fft_noreorder(x_local, fft_len);
     }
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        result[block_id * fft_len + i] = x_local[i];
-    }
+    COPY_FROM_LOCAL(&result[block_id * fft_len], x_local, fft_len);
 }
 
 extern "C" __global__ void benchmark_fft_f64(

@@ -2,7 +2,6 @@
 #include <cstdint>
 
 #include "../math/math.cuh"
-#include "dst.cuh"
 #include "../params.h"
 #include "../math/simd.cuh"
 #include "../math/fft/negacyclic.cuh"
@@ -80,23 +79,35 @@ private:
     T data[0];
 };
 
+// 20kB is Large enough for 1024 point FFT, but small enough to schedule 2 thread blocks 
+// per SM.
+const size_t FFT_BUFFER_SIZE = 20 * 1024;
+__shared__ uint8_t FFT_BUFFER[FFT_BUFFER_SIZE];
+
 template <>
 template <>
 __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
     PolynomialFft<Complex<double>> *res,
     const PolynomialDegree &degree) const
 {
-    ScratchAllocation<Polynomial<double>> temp = scratch_alloc<Polynomial<double>, PolynomialDegree>(degree);
+    auto s_in = reinterpret_cast<double*>(FFT_BUFFER);
 
     // Cast our u64 polynomial to double
     BLOCK_FOR_EACH(i, degree.degree)
     {
-        temp->coeffs()[i] = (double)this->coeffs()[i];
+        s_in[i] = (double)this->coeffs()[i];
     }
 
     __syncthreads();
 
-    twisted_fft_noreorder(temp->coeffs(), res->coeffs(), degree.degree);
+    auto s_out = twisted_fft_noreorder(s_in, degree.degree);
+
+    BLOCK_FOR_EACH(i, degree.degree)
+    {
+        res->coeffs()[i] = s_out[i];
+    }
+
+    __syncthreads();
 }
 
 template <>
@@ -107,22 +118,22 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
 {
     PolynomialDegree n_div_2 = PolynomialDegree{degree.degree / 2};
 
-    ScratchAllocation<Polynomial<Complex<double>>> temp = scratch_alloc<Polynomial<Complex<double>>, PolynomialDegree>(n_div_2);
+    auto s_in = reinterpret_cast<Complex<double>*>(FFT_BUFFER);
 
     BLOCK_FOR_EACH(i, degree.degree)
     {
-        temp->coeffs()[i] = this->coeffs()[i];
+        s_in[i] = this->coeffs()[i];
     }
 
     __syncthreads();
 
     // We abuse the output buffer by treating it as memory pointing to  double* values.
     // This is okay because sizeof(uint64_t) == sizeof(double).
-    twisted_ifft_noreorder(temp->coeffs(), reinterpret_cast<Polynomial<double> *>(res)->coeffs(), degree.degree);
+    auto s_out = twisted_ifft_noreorder(s_in, degree.degree);
 
     // We again abuse the output buffer by treating it as a double*.
     inplace_reduce_mod_q_pow_2<double, 64>(
-        reinterpret_cast<double*>(res->coeffs()),
+        s_out,
         degree.degree);
 
     // Finally, we cast each value from double to uint64_t
@@ -130,6 +141,8 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     {
         // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
         // then bitcast back to unsigned to get back to [0, q).
-        res->coeffs()[i] = normalize_q_div_2_torus<double, uint64_t>(reinterpret_cast<double*>(res->coeffs())[i]);
+        res->coeffs()[i] = normalize_q_div_2_torus<double, uint64_t>(s_out[i]);
     }
+
+    __syncthreads();
 }

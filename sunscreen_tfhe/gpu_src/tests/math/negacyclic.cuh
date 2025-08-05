@@ -4,26 +4,19 @@
 #include "../../src/math/math.cuh"
 #include "../../src/math/fft/negacyclic.cuh"
 #include "../../src/math/fft/fft.cuh"
-#include "../../src/entities/dst.cuh"
-#include "../../src/entities/polynomial.cuh"
 
 extern "C" __global__ void can_forward_twisted_fft_f64(
     const double *__restrict__ input,
     Complex<double> *__restrict__ output,
     uint32_t n)
 {
-    ///__shared__ Complex<double> result[FFT_STORAGE];
+    __shared__ double s_in[FFT_STORAGE];
 
-    init_scratch();
-    auto result_allocation = scratch_alloc<Polynomial<Complex<double>>>(PolynomialDegree{n});
-    auto result = result_allocation->coeffs();
+    COPY_TO_LOCAL(s_in, &input[blockIdx.x * n], n);
 
-    twisted_fft(&input[blockIdx.x * n], result, n);
+    auto s_out = twisted_fft(s_in, n);
 
-    for (uint32_t i = threadIdx.x; i < n / 2; i += blockDim.x)
-    {
-        output[blockIdx.x * n / 2 + i] = result[i];
-    }
+    COPY_FROM_LOCAL(&output[blockIdx.x * n / 2], s_out, n / 2);
 }
 
 extern "C" __global__ void can_inverse_twisted_fft_f64(
@@ -31,26 +24,11 @@ extern "C" __global__ void can_inverse_twisted_fft_f64(
     double *__restrict__ output,
     uint32_t n)
 {
-    init_scratch();
-    auto input_s_allocation = scratch_alloc<Polynomial<Complex<double>>>(PolynomialDegree{n});
-    auto input_s = input_s_allocation->coeffs();
-    auto result_allocation = scratch_alloc<Polynomial<double>>(PolynomialDegree{n});
-    auto result = result_allocation->coeffs();
-    
-    // __shared__ Complex<double> input_s[FFT_STORAGE];
-    // __shared__ double result[2 * FFT_STORAGE];
+    __shared__ Complex<double> s_in[FFT_STORAGE];
 
-    for (uint32_t i = threadIdx.x; i < n / 2; i += blockDim.x)
-    {
-        input_s[i] = input[blockIdx.x * n / 2 + i];
-    }
+    COPY_TO_LOCAL(s_in, &input[blockIdx.x * n / 2], n / 2);
 
-    __syncthreads();
+    auto s_out = twisted_ifft(s_in, n);
 
-    twisted_ifft(&input_s[blockIdx.x * n / 2], result, n);
-
-    for (uint32_t i = threadIdx.x; i < n; i += blockDim.x)
-    {
-        output[blockIdx.x * n + i] = result[i];
-    }
+    COPY_FROM_LOCAL(&output[blockIdx.x * n], s_out, n);
 }

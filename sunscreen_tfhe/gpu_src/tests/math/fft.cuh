@@ -3,7 +3,6 @@
 #include "../../src/math/math.cuh"
 #include "fft_constants_f64.cuh"
 #include "../../src/math/fft/fft.cuh"
-#include "../../src/entities/dst.cuh"
 #include "../../src/entities/polynomial.cuh"
 
 template <typename T>
@@ -12,28 +11,15 @@ __device__ void can_rountrip_fft(
     Complex<T> *__restrict__ result,
     uint32_t fft_len)
 {
-    uint32_t tid = threadIdx.x;
-    uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    init_scratch();
-    auto x_local_allocation = scratch_alloc<Polynomial<Complex<T>>>(PolynomialDegree{fft_len});
-    auto x_local = x_local_allocation->coeffs();
-    //__shared__ Complex<T> x_local[FFT_STORAGE];
+    Complex<T> x_local[FFT_STORAGE];
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        x_local[i] = x[block_id * fft_len + i];
-    }
-
-    __syncthreads();
+    COPY_TO_LOCAL(x_local, &x[block_id * fft_len], fft_len);
 
     fft(x_local, fft_len);
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        result[block_id * fft_len + i] = x_local[i];
-    }
+    COPY_FROM_LOCAL(&result[block_id * fft_len], x_local, fft_len);
 }
 
 template <typename T>
@@ -42,28 +28,15 @@ __device__ void can_rountrip_ifft(
     Complex<T> *__restrict__ result,
     uint32_t fft_len)
 {
-    uint32_t tid = threadIdx.x;
-    uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    init_scratch();
-    auto x_local_allocation = scratch_alloc<Polynomial<Complex<T>>>(PolynomialDegree{fft_len});
-    auto x_local = x_local_allocation->coeffs();
-    //__shared__ Complex<T> x_local[FFT_STORAGE];
+    __shared__ Complex<T> x_local[FFT_STORAGE];
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        x_local[i] = x[block_id * fft_len + i];
-    }
-
-    __syncthreads();
+    COPY_TO_LOCAL(x_local, &x[block_id * fft_len], fft_len);
 
     ifft(x_local, fft_len);
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        result[block_id * fft_len + i] = x_local[i];
-    }
+    COPY_FROM_LOCAL(&result[block_id * fft_len], x_local, fft_len);
 }
 
 extern "C" __global__ void can_rountrip_fft_f64(
