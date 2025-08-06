@@ -10,7 +10,7 @@ fn can_roundtrip_polynomial() {
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {
-        for d in SUPPORTED_POLY_DEGREES {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
             let mut x = r.allocate::<u64>(*d as usize).unwrap();
             let y = r.allocate::<u64>(*d as usize).unwrap();
 
@@ -20,7 +20,7 @@ fn can_roundtrip_polynomial() {
 
             let stream = r.make_stream().unwrap();
 
-            let threads_per_block = d / 8;
+            let threads_per_block = d.threads_per_block();
             let num_threads = threads_per_block;
 
             let grid = (num_threads, threads_per_block);

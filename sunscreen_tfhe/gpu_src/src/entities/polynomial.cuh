@@ -2,17 +2,10 @@
 #include <cstdint>
 
 #include "../math/math.cuh"
-#include "../params.h"
+#include "../params.cuh"
 #include "../math/simd.cuh"
 #include "../math/fft/negacyclic.cuh"
 #include "../iter_tools.cuh"
-
-struct PolynomialDegree
-{
-    uint32_t degree;
-
-    __device__ inline PolynomialDegree(uint32_t degree): degree(degree) {}
-};
 
 template <typename T>
 class PolynomialFft;

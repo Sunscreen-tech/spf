@@ -14,7 +14,10 @@ use sunscreen_gpu_runtime::Result;
 #[cfg(any(feature = "test_kernels", test))]
 #[doc(hidden)]
 pub mod test_utils {
-    use std::sync::{Arc, OnceLock};
+    use std::{
+        ops::Deref,
+        sync::{Arc, OnceLock},
+    };
 
     use sunscreen_gpu_runtime::GpuRuntime;
 
@@ -38,7 +41,32 @@ pub mod test_utils {
             .clone()
     }
 
-    pub const SUPPORTED_POLY_DEGREES: &[u32] = &[2048u32];
+    #[derive(Clone, Copy, Debug)]
+    pub struct PolyDegreeInfo(pub u32);
+
+    impl PolyDegreeInfo {
+        pub fn threads_per_block(&self) -> u32 {
+            self.0 / 8
+        }
+    }
+
+    impl From<u32> for PolyDegreeInfo {
+        fn from(value: u32) -> Self {
+            assert!(value.is_power_of_two());
+
+            Self(value)
+        }
+    }
+
+    impl Deref for PolyDegreeInfo {
+        type Target = u32;
+
+        fn deref(&self) -> &Self::Target {
+            &self.0
+        }
+    }
+
+    pub const SUPPORTED_POLY_DEGREES: &[PolyDegreeInfo] = &[PolyDegreeInfo(2048u32)];
 }
 
 /// Scratch space used during GPU computation.
