@@ -20,9 +20,6 @@ __device__ inline Complex<T>* apply_twist(
     uint32_t tid = threadIdx.x;
     uint32_t dim = blockDim.x;
 
-    
-    printf("%d/%d\n", tid, dim);
-
     // Since negacyclic FFT requires n / 8 threads in a block, we have each thread load their values 
     // into registers so we can write them back to shared memory in a coordinated manner.
     //
