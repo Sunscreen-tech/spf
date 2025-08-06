@@ -4,6 +4,7 @@ mod fft;
 mod memory;
 mod negacyclic;
 mod polynomial;
+mod signed_decomposition;
 mod simd;
 
 pub fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {

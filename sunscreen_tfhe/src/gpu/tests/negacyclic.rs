@@ -128,12 +128,12 @@ fn can_apply_twist() {
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {
-        for n in SUPPORTED_POLY_DEGREES {
+        for n in SUPPORTED_POLY_DEGREES.iter().copied() {
             let num_blocks = 19;
 
-            let mut x = r.allocate::<f64>((num_blocks * n) as usize).unwrap();
+            let mut x = r.allocate::<f64>((num_blocks * *n) as usize).unwrap();
             let result = r
-                .allocate::<Complex<f64>>((num_blocks * n / 2) as usize)
+                .allocate::<Complex<f64>>((num_blocks * *n / 2) as usize)
                 .unwrap();
 
             x.as_mut_slice()
@@ -141,7 +141,7 @@ fn can_apply_twist() {
                 .for_each(|x| *x = thread_rng().next_u64() as f64);
 
             let stream = r.make_stream().unwrap();
-            let threads_per_block = n / 8;
+            let threads_per_block = n.threads_per_block();
             let num_threads = num_blocks * threads_per_block;
 
             unsafe {
@@ -183,13 +183,13 @@ fn can_remove_twist() {
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {
-        for n in SUPPORTED_POLY_DEGREES {
+        for n in SUPPORTED_POLY_DEGREES.iter().copied() {
             let num_blocks = 19;
 
             let mut x = r
-                .allocate::<Complex<f64>>((num_blocks * n / 2) as usize)
+                .allocate::<Complex<f64>>((num_blocks * *n / 2) as usize)
                 .unwrap();
-            let result = r.allocate::<f64>((num_blocks * n) as usize).unwrap();
+            let result = r.allocate::<f64>((num_blocks * *n) as usize).unwrap();
 
             x.as_mut_slice().iter_mut().for_each(|x| {
                 *x = Complex::new(
@@ -199,7 +199,7 @@ fn can_remove_twist() {
             });
 
             let stream = r.make_stream().unwrap();
-            let threads_per_block = n / 8;
+            let threads_per_block = n.threads_per_block();
             let num_threads = num_blocks * threads_per_block;
 
             unsafe {
@@ -232,20 +232,6 @@ fn can_remove_twist() {
                 dbg!((a, e));
                 approx::assert_relative_eq!(a, e, max_relative = 1e-10);
             }
-        }
-    }
-}
-
-#[test]
-fn can_negacyclic_roundtrip_noreorder() {
-    let runtimes = get_runtimes();
-
-    for r in runtimes.iter() {
-        for n in SUPPORTED_POLY_DEGREES {
-            let num_blocks = 19;
-            let len = (num_blocks * *n) as usize;
-
-            let x = r.allocate::<Complex<f64>>(len).unwrap();
         }
     }
 }

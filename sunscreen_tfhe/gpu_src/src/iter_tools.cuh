@@ -1,6 +1,11 @@
 #pragma once
 #include <cstdint>
 
+/// Collectively use each thread in the current thread block to iterate [0, N).
+/// In many cases, this creates optimal memory coalescing/bank conflict outcomes
+/// in load and store operations.
+///
+/// Does not call __syncthreads();
 #define BLOCK_FOR_EACH(i, N) \
     for (uint32_t i = threadIdx.x; i < N; i += blockDim.x)
 
