@@ -1,7 +1,10 @@
 use num::{Complex, Float, NumCast};
 
 mod fft;
+mod memory;
 mod negacyclic;
+mod polynomial;
+mod simd;
 
 pub fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {
     let denom = if *actual == T::from(0.0).unwrap() {
@@ -55,4 +58,22 @@ pub fn ulps_difference(x: f64, y: f64) -> u64 {
     };
 
     if err > 100 { 100 } else { err }
+}
+
+pub fn get_inv_twisty(j: u32, n: u32) -> Complex<f64> {
+    let n_float = rug::Float::with_val(256, n);
+    let x = rug::Float::with_val(256, -1.0) * j / n_float.clone();
+    let s = x.clone().sin_pi();
+    let c = x.clone().cos_pi();
+
+    Complex::new(c.to_f64(), s.to_f64())
+}
+
+pub fn get_twisty(j: u32, n: u32) -> Complex<f64> {
+    let n_float = rug::Float::with_val(256, n);
+    let x = rug::Float::with_val(256, 1.0) * j / n_float.clone();
+    let s = x.clone().sin_pi();
+    let c = x.clone().cos_pi();
+
+    Complex::new(c.to_f64(), s.to_f64())
 }

@@ -7,35 +7,56 @@
 
 extern "C" __global__ void can_forward_twisted_fft_f64(
     const double *__restrict__ input,
-    Complex<double> * __restrict__ output,
-    uint32_t n
-) {
-    __shared__ Complex<double> result[FFT_STORAGE];
+    Complex<double> *__restrict__ output,
+    uint32_t n)
+{
+    auto s_in = get_fft_scratch<double>();
 
-    twisted_fft(&input[blockIdx.x * n], result, n);
+    BLOCK_COPY(s_in, &input[blockIdx.x * n], n);
 
-    for (uint32_t i = threadIdx.x; i < n / 2; i += blockDim.x) {
-        output[blockIdx.x * n / 2 + i] = result[i];
-    }
+    auto s_out = twisted_fft(s_in, n);
+
+    BLOCK_COPY(&output[blockIdx.x * n / 2], s_out, n / 2);
 }
 
 extern "C" __global__ void can_inverse_twisted_fft_f64(
     Complex<double> *__restrict__ input,
-    double * __restrict__ output,
+    double *__restrict__ output,
+    uint32_t n)
+{
+    auto s_in = get_fft_scratch<Complex<double>>();
+
+    BLOCK_COPY(s_in, &input[blockIdx.x * n / 2], n / 2);
+
+    auto s_out = twisted_ifft(s_in, n);
+
+    BLOCK_COPY(&output[blockIdx.x * n], s_out, n);
+}
+
+extern "C" __global__ void can_apply_twist(
+    const double* __restrict__ input,
+    Complex<double>* __restrict__ output,
     uint32_t n
 ) {
-    __shared__ Complex<double> input_s[FFT_STORAGE];
-    __shared__ double result[2 * FFT_STORAGE];
+    auto s_in = get_fft_scratch<double>();
 
-    for (uint32_t i = threadIdx.x; i < n / 2; i += blockDim.x) {
-        input_s[i] = input[blockIdx.x * n / 2 + i];
-    }
+    BLOCK_COPY(s_in, &input[blockIdx.x * n], n);
 
-    __syncthreads();
+    auto s_out = apply_twist(s_in, n);
 
-    twisted_ifft(&input_s[blockIdx.x * n / 2], result, n);
+    BLOCK_COPY(&output[blockIdx.x * n / 2], s_out, n / 2);
+}
 
-    for (uint32_t i = threadIdx.x; i < n; i += blockDim.x) {
-        output[blockIdx.x * n + i] = result[i];
-    }
+extern "C" __global__ void can_remove_twist(
+    const Complex<double>* __restrict__ input,
+    double* __restrict__ output,
+    uint32_t n
+) {
+    auto s_in = get_fft_scratch<Complex<double>>();
+
+    BLOCK_COPY(s_in, &input[blockIdx.x * n / 2], n / 2);
+
+    auto s_out = remove_twist(s_in, n);
+
+    BLOCK_COPY(&output[blockIdx.x * n], s_out, n);
 }

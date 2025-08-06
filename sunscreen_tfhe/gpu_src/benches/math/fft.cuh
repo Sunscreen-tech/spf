@@ -1,53 +1,49 @@
 #pragma once
 #include <cstdint>
 #include "../../src/math/fft/fft.cuh"
+#include "../../src/entities/polynomial.cuh"
 
 template <typename T>
 __device__ void benchmark_fft(
     const Complex<T> *__restrict__ x,
     Complex<T> *__restrict__ result,
     uint32_t fft_len,
-    uint32_t fft_count
+    uint32_t fft_count,
+    uint32_t reorder
 ) {
-    assert(fft_len <= MAX_FFT);
-
-    uint32_t tid = threadIdx.x;
-    uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    __shared__ Complex<T> x_local[FFT_STORAGE];
+    auto x_local = get_fft_scratch<Complex<T>>();
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        x_local[i] = x[block_id * fft_len + i];
-    }
-
-    __syncthreads();
+    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 
     for (uint32_t i = 0; i < fft_count; i++) {
-        fft_noreorder(x_local, fft_len);
+        if (reorder) {
+            fft(x_local, fft_len);
+        } else {
+            fft_noreorder(x_local, fft_len);
+        }
     }
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        result[block_id * fft_len + i] = x_local[i];
-    }
+    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
 }
 
 extern "C" __global__ void benchmark_fft_f64(
     const Complex<double>* __restrict__ in,
     Complex<double>* __restrict__ out,
     uint32_t fft_len,
-    uint32_t fft_count
+    uint32_t fft_count,
+    uint32_t reorder
 ) {
-    benchmark_fft(in, out, fft_len, fft_count);
+    benchmark_fft(in, out, fft_len, fft_count, reorder);
 }
 
 extern "C" __global__ void benchmark_fft_f32(
     const Complex<float>* __restrict__ in,
     Complex<float>* __restrict__ out,
     uint32_t fft_len,
-    uint32_t fft_count
+    uint32_t fft_count,
+    uint32_t reorder
 ) {
-    benchmark_fft(in, out, fft_len, fft_count);
+    benchmark_fft(in, out, fft_len, fft_count, reorder);
 }

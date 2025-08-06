@@ -112,8 +112,8 @@ pub fn vector_mod_pow2_q_f64_u64(c: &mut [u64], a: &[f64], log2_q: u64) {
     for (o, ifft) in c.iter_mut().zip(a.iter()) {
         let mut ifft = mod_q(*ifft, q);
 
-        // Next, we need to adjust x outside [-q/2, q/2) to wrap to the correct torus
-        // point.
+        // Next, adjust x (-q, q) to (-q/2, q/2) to reduce errors when
+        // converting back to u64
         if ifft >= q_div_2 {
             ifft -= q;
         } else if ifft <= -q_div_2 {

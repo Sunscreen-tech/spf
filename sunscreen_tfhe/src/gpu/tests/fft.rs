@@ -93,22 +93,66 @@ where
 
 #[test]
 fn can_fft_f64() {
-    can_fft_impl::<f64>("can_rountrip_fft_f64", 1e-10, Direction::Forward);
+    can_fft_impl::<f64>("can_fft_f64", 1e-10, Direction::Forward);
 }
 
 #[test]
 fn can_fft_f32() {
-    can_fft_impl::<f32>("can_rountrip_fft_f32", 1e-2, Direction::Forward);
+    can_fft_impl::<f32>("can_fft_f32", 1e-2, Direction::Forward);
 }
 
 #[test]
 fn can_ifft_f64() {
-    can_fft_impl::<f64>("can_rountrip_ifft_f64", 1e-10, Direction::Inverse);
+    can_fft_impl::<f64>("can_ifft_f64", 1e-10, Direction::Inverse);
 }
 
 #[test]
 fn can_ifft_f32() {
-    can_fft_impl::<f32>("can_rountrip_ifft_f32", 1e-2, Direction::Inverse);
+    can_fft_impl::<f32>("can_ifft_f32", 1e-2, Direction::Inverse);
+}
+
+// Will use noreorder FFT variant if kernels compiled with -DFFT_NO_REORDER
+#[test]
+fn can_roundtrip_fft_f64() {
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        let n = 1024;
+
+        let num_blocks = 19;
+
+        let mut x = r.allocate::<Complex<f64>>(n * num_blocks).unwrap();
+        let y = r.allocate::<Complex<f64>>(n * num_blocks).unwrap();
+
+        x.as_mut_slice()
+            .iter_mut()
+            .enumerate()
+            .for_each(|(i, x)| *x = Complex::new(2.0 * i as f64, 2.0 * i as f64 + 1.0));
+
+        let stream = r.make_stream().unwrap();
+
+        let threads_per_block = n as u32 / 4;
+        let threads = num_blocks as u32 * threads_per_block;
+
+        unsafe {
+            launch_kernel! {
+                ((threads, threads_per_block))
+                ("can_roundtrip_fft_f64")
+                (r, stream, 0)
+                x,
+                y,
+                n as u32
+            }
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for (a, e) in x.as_slice().iter().zip(y.as_slice().iter()) {
+            approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12);
+            approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12);
+        }
+    }
 }
 
 /// This test measures and prints the twiddle error against 4 different methods:

@@ -3,96 +3,109 @@
 #include "../../src/math/math.cuh"
 #include "fft_constants_f64.cuh"
 #include "../../src/math/fft/fft.cuh"
-#include <math.h>
+#include "../../src/entities/polynomial.cuh"
 
 template <typename T>
-__device__ void can_rountrip_fft(
+__device__ void can_fft(
     const Complex<T> *__restrict__ x,
     Complex<T> *__restrict__ result,
+    bool reorder,
     uint32_t fft_len)
 {
-    assert(fft_len <= MAX_FFT);
-
-    uint32_t tid = threadIdx.x;
-    uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    __shared__ Complex<T> x_local[FFT_STORAGE];
+    auto x_local = get_fft_scratch<Complex<T>>();
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        x_local[i] = x[block_id * fft_len + i];
+    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
+
+    if (reorder) {
+        fft(x_local, fft_len);
+    } else {
+        fft_noreorder(x_local, fft_len);
     }
 
-    __syncthreads();
-
-    fft(x_local, fft_len);
-
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        result[block_id * fft_len + i] = x_local[i];
-    }
+    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
 }
 
 template <typename T>
-__device__ void can_rountrip_ifft(
+__device__ void can_ifft(
     const Complex<T> *__restrict__ x,
     Complex<T> *__restrict__ result,
+    bool reorder,
     uint32_t fft_len)
 {
-    assert(fft_len <= MAX_FFT);
-
-    uint32_t tid = threadIdx.x;
-    uint32_t block_size = blockDim.x;
     uint32_t block_id = blockIdx.x;
 
-    __shared__ Complex<T> x_local[FFT_STORAGE];
+    auto x_local = get_fft_scratch<Complex<T>>();
 
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        x_local[i] = x[block_id * fft_len + i];
+    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
+
+    if (reorder) {
+        ifft(x_local, fft_len);
+    } else {
+        ifft_noreorder(x_local, fft_len);
     }
 
-    __syncthreads();
-
-    ifft(x_local, fft_len);
-
-    for (unsigned int i = tid; i < fft_len; i += block_size)
-    {
-        result[block_id * fft_len + i] = x_local[i];
-    }
+    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
 }
 
-extern "C" __global__ void can_rountrip_fft_f64(
+extern "C" __global__ void can_fft_f64(
     const Complex<double> *__restrict__ x,
     Complex<double> *__restrict__ result,
     uint32_t fft_len)
 {
-    can_rountrip_fft(x, result, fft_len);
+    can_fft(x, result, true, fft_len);
 }
 
-extern "C" __global__ void can_rountrip_fft_f32(
+extern "C" __global__ void can_fft_f32(
     const Complex<float> *__restrict__ x,
     Complex<float> *__restrict__ result,
     uint32_t fft_len)
 {
-    can_rountrip_fft(x, result, fft_len);
+    can_fft(x, result, true, fft_len);
 }
 
-extern "C" __global__ void can_rountrip_ifft_f64(
+extern "C" __global__ void can_ifft_f64(
     const Complex<double> *__restrict__ x,
     Complex<double> *__restrict__ result,
     uint32_t fft_len)
 {
-    can_rountrip_ifft(x, result, fft_len);
+    can_ifft(x, result, true, fft_len);
 }
 
-extern "C" __global__ void can_rountrip_ifft_f32(
+extern "C" __global__ void can_ifft_f32(
     const Complex<float> *__restrict__ x,
     Complex<float> *__restrict__ result,
     uint32_t fft_len)
 {
-    can_rountrip_ifft(x, result, fft_len);
+    can_ifft(x, result, true, fft_len);
+}
+
+extern "C" __global__ void can_roundtrip_fft_f64(
+    const Complex<double> *__restrict__ x,
+    Complex<double> *__restrict__ result,
+    uint32_t fft_len)
+{
+    auto s_in = get_fft_scratch<Complex<double>>();
+
+    BLOCK_COPY(s_in, &x[fft_len * blockIdx.x], fft_len);
+
+    double n_inv = 1 / (double)fft_len;
+
+#ifdef FFT_NO_REORDER
+    fft_noreorder(s_in, fft_len);
+    ifft_noreorder(s_in, fft_len);
+#else
+    fft(s_in, fft_len);
+    ifft(s_in, fft_len);
+#endif
+
+    BLOCK_FOR_EACH(i, fft_len)
+    {
+        result[fft_len * blockIdx.x + i] = s_in[i] * n_inv;
+    }
+
+    __syncthreads();
 }
 
 /// Computes the FFT twiddles using 3 methods:

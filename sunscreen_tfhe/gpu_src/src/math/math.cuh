@@ -1,10 +1,30 @@
 #pragma once
+#include <cstdint>
 
 const double PI = 3.14159265358979323846264338327950288;
 const double TAU = PI * 2.0;
 
 const float PI_F = 3.14159265358979323846264338327950288f;
 const float TAU_F = PI * 2.0f;
+
+template <typename U>
+class Unsigned
+{
+};
+
+template <>
+class Unsigned<uint32_t>
+{
+public:
+    using SignedTy = int32_t;
+};
+
+template <>
+class Unsigned<uint64_t>
+{
+public:
+    using SignedTy = int64_t;
+};
 
 /// @brief Wraps built-in float types to generalize constants and functions.
 /// @tparam S
@@ -80,7 +100,6 @@ template <typename S>
 class Complex
 {
 public:
-    
 };
 
 template <>
@@ -90,49 +109,55 @@ public:
     using T = double;
     using VecT = double2;
 
-    /// @brief Constructs an in-initialized Complex value.
+    /// @brief Constructs an un-initialized Complex value.
     __device__ Complex() {}
-    __device__ Complex(VecT inner) : val(inner) {}
+    __device__ Complex(T re, T im) : val({re, im}) {}
+    __device__ Complex(VecT val) : val(val) {}
 
     __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
     {
-        return Complex({this->val.x + rhs.val.x, this->val.y + rhs.val.y});
+        return Complex(this->val.x + rhs.val.x, this->val.y + rhs.val.y);
     }
 
     __device__ inline Complex<T> operator-(const Complex<T> &rhs) const
     {
-        return Complex({this->val.x - rhs.val.x, this->val.y - rhs.val.y});
+        return Complex(this->val.x - rhs.val.x, this->val.y - rhs.val.y);
     }
 
     __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
     {
-        return Complex({this->val.x * rhs.val.x - this->val.y * rhs.val.y,
-                        this->val.x * rhs.val.y + this->val.y * rhs.val.x});
+        return Complex(this->val.x * rhs.val.x - this->val.y * rhs.val.y,
+                       this->val.x * rhs.val.y + this->val.y * rhs.val.x);
     }
 
     __device__ inline Complex<T> operator*(const T &rhs) const
     {
-        return Complex({this->val.x * rhs,
-                        this->val.y * rhs});
+        return Complex(this->val.x * rhs,
+                       this->val.y * rhs);
     }
 
-    __device__ inline T& re() {
+    __device__ inline T &re()
+    {
         return this->val.x;
     }
 
-    __device__ inline T& im() {
+    __device__ inline T &im()
+    {
         return this->val.y;
     }
 
-    __device__ inline const T& re() const {
+    __device__ inline const T &re() const
+    {
         return this->val.x;
     }
 
-    __device__ inline const T& im() const {
+    __device__ inline const T &im() const
+    {
         return this->val.y;
     }
 
-    __device__ inline VecT& inner() {
+    __device__ inline VecT &inner()
+    {
         return this->val;
     }
 
@@ -147,48 +172,53 @@ public:
     using T = float;
     using VecT = float2;
 
-    /// @brief Constructs an in-initialized Complex value.
+    /// @brief Constructs an un-initialized Complex value.
     __device__ Complex() {}
-    __device__ Complex(VecT inner) : val(inner) {}
+    __device__ Complex(T re, T im) : val({re, im}) {}
+    __device__ Complex(VecT val) : val(val) {}
 
     __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
     {
-        return Complex({this->val.x + rhs.val.x, this->val.y + rhs.val.y});
+        return Complex(this->val.x + rhs.val.x, this->val.y + rhs.val.y);
     }
 
     __device__ inline Complex<T> operator-(const Complex<T> &rhs) const
     {
-        return Complex({this->val.x - rhs.val.x, this->val.y - rhs.val.y});
+        return Complex(this->val.x - rhs.val.x, this->val.y - rhs.val.y);
     }
 
     __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
     {
-        return Complex({this->val.x * rhs.val.x - this->val.y * rhs.val.y,
-                        this->val.x * rhs.val.y + this->val.y * rhs.val.x});
+        return Complex(this->val.x * rhs.val.x - this->val.y * rhs.val.y,
+                       this->val.x * rhs.val.y + this->val.y * rhs.val.x);
     }
 
     __device__ inline Complex<T> operator*(const T &rhs) const
     {
-        return Complex({this->val.x * rhs,
-                        this->val.y * rhs});
+        return Complex(this->val.x * rhs,
+                       this->val.y * rhs);
     }
 
-
-    __device__ inline T& re() {
+    __device__ inline T &re()
+    {
         return this->val.x;
     }
 
-    __device__ inline T& im() {
+    __device__ inline T &im()
+    {
         return this->val.y;
     }
 
-    __device__ inline const T& re() const {
+    __device__ inline const T &re() const
+    {
         return this->val.x;
     }
 
-    __device__ inline const T& im() const {
+    __device__ inline const T &im() const
+    {
         return this->val.y;
     }
+
 private:
     VecT val;
 };
