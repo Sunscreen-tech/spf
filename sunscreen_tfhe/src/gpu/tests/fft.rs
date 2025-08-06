@@ -111,8 +111,9 @@ fn can_ifft_f32() {
     can_fft_impl::<f32>("can_ifft_f32", 1e-2, Direction::Inverse);
 }
 
+// Will use noreorder FFT variant if kernels compiled with -DFFT_NO_REORDER
 #[test]
-fn can_roundtrip_fft_noreorder_f64() {
+fn can_roundtrip_fft_f64() {
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {

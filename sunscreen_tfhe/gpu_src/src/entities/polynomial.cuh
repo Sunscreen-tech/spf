@@ -95,6 +95,8 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
 
     __syncthreads();
 
+    // twisted_fft operated in-place and returns s_in reinterpreted
+    // as Complex<double>*
 #ifdef FFT_NO_REORDER
     auto s_out = twisted_fft_noreorder(s_in, degree.degree);
 #else
@@ -116,15 +118,14 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
 
     BLOCK_COPY(s_in, this->coeffs(), n_div_2.degree);
 
-    // We abuse the output buffer by treating it as memory pointing to  double* values.
-    // This is okay because sizeof(uint64_t) == sizeof(double).
+    // twisted_ifft operates in-place and returns s_in reinterpreted
+    // as double*.
 #ifdef FFT_NO_REORDER
     auto s_out = twisted_ifft_noreorder(s_in, degree.degree);
 #else
     auto s_out = twisted_ifft(s_in, degree.degree);
 #endif
 
-    // We again abuse the output buffer by treating it as a double*.
     inplace_reduce_mod_q_pow_2<double, 64>(
         s_out,
         degree.degree);
