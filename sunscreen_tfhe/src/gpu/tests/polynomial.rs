@@ -5,7 +5,6 @@ use crate::gpu::{
     test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
 };
 
-#[ignore]
 #[test]
 fn can_roundtrip_polynomial() {
     let runtimes = get_runtimes();
@@ -41,6 +40,9 @@ fn can_roundtrip_polynomial() {
             .unwrap();
 
             stream.wait().unwrap();
+
+            dbg!(x.as_slice());
+            dbg!(y.as_slice());
 
             for (e, a) in x.as_slice().iter().zip(y.as_slice().iter()) {
                 assert_eq!(*a, *e);

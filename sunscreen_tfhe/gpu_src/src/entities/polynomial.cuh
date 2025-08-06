@@ -85,7 +85,7 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
     PolynomialFft<Complex<double>> *res,
     const PolynomialDegree &degree) const
 {
-    auto s_in = reinterpret_cast<double*>(FFT_BUFFER);
+    auto s_in = get_fft_scratch<double>();
 
     // Cast our u64 polynomial to double
     BLOCK_FOR_EACH(i, degree.degree)
@@ -95,9 +95,13 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
 
     __syncthreads();
 
+#ifdef FFT_NO_REORDER
     auto s_out = twisted_fft_noreorder(s_in, degree.degree);
+#else
+    auto s_out = twisted_fft(s_in, degree.degree);
+#endif
 
-    BLOCK_COPY(res->coeffs(), s_out, degree.degree);
+    BLOCK_COPY(res->coeffs(), s_out, degree.degree / 2);
 }
 
 template <>
@@ -108,13 +112,17 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
 {
     PolynomialDegree n_div_2 = PolynomialDegree{degree.degree / 2};
 
-    auto s_in = reinterpret_cast<Complex<double>*>(FFT_BUFFER);
+    auto s_in = get_fft_scratch<Complex<double>>();
 
-    BLOCK_COPY(s_in, this->coeffs(), degree.degree);
+    BLOCK_COPY(s_in, this->coeffs(), n_div_2.degree);
 
     // We abuse the output buffer by treating it as memory pointing to  double* values.
     // This is okay because sizeof(uint64_t) == sizeof(double).
+#ifdef FFT_NO_REORDER
     auto s_out = twisted_ifft_noreorder(s_in, degree.degree);
+#else
+    auto s_out = twisted_ifft(s_in, degree.degree);
+#endif
 
     // We again abuse the output buffer by treating it as a double*.
     inplace_reduce_mod_q_pow_2<double, 64>(

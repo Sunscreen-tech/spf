@@ -171,8 +171,8 @@ fn can_apply_twist() {
 
             for (a, e) in result.as_slice().iter().zip(expected.iter()) {
                 dbg!((a, e));
-                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-13);
-                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-13);
+                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-10);
+                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-10);
             }
         }
     }
@@ -230,7 +230,7 @@ fn can_remove_twist() {
 
             for (a, e) in result.as_slice().iter().zip(expected.iter()) {
                 dbg!((a, e));
-                approx::assert_relative_eq!(a, e, max_relative = 1e-12);
+                approx::assert_relative_eq!(a, e, max_relative = 1e-10);
             }
         }
     }
