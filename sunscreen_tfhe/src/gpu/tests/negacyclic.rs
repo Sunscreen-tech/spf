@@ -1,12 +1,17 @@
 use core::f64;
 
 use num::{Complex, Zero};
+use num_complex::ComplexFloat;
+use rand::{RngCore, thread_rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
     FrequencyTransform,
     fft::negacyclic,
-    gpu::{test_utils::get_runtimes, tests::assert_complex_equalish},
+    gpu::{
+        test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
+        tests::{assert_complex_equalish, get_inv_twisty, get_twisty},
+    },
 };
 
 #[test]
@@ -113,6 +118,119 @@ fn can_negacyclic_inverse() {
                     // Integral values may be off by up to 1 due to rounding...
                     assert!((actual - expected).abs() <= 1.0);
                 }
+            }
+        }
+    }
+}
+
+#[test]
+fn can_apply_twist() {
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        for n in SUPPORTED_POLY_DEGREES {
+            let num_blocks = 19;
+
+            let mut x = r.allocate::<f64>((num_blocks * n) as usize).unwrap();
+            let result = r
+                .allocate::<Complex<f64>>((num_blocks * n / 2) as usize)
+                .unwrap();
+
+            x.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = thread_rng().next_u64() as f64);
+
+            let stream = r.make_stream().unwrap();
+            let threads_per_block = n / 8;
+            let num_threads = num_blocks * threads_per_block;
+
+            unsafe {
+                launch_kernel!(
+                    ((num_threads, threads_per_block))
+                    ("can_apply_twist")
+                    (r, stream, 0)
+                    x,
+                    result,
+                    *n
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            let n_div_2 = *n as usize / 2;
+
+            let mut expected = vec![Complex::<f64>::zero(); n_div_2];
+
+            for i in 0..n_div_2 {
+                let x = x.as_slice();
+                let e = Complex::new(x[i], x[i + n_div_2]);
+
+                expected[i] = e * get_twisty(i as u32, *n);
+            }
+
+            for (a, e) in result.as_slice().iter().zip(expected.iter()) {
+                dbg!((a, e));
+                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-13);
+                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-13);
+            }
+        }
+    }
+}
+
+#[test]
+fn can_remove_twist() {
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        for n in SUPPORTED_POLY_DEGREES {
+            let num_blocks = 19;
+
+            let mut x = r
+                .allocate::<Complex<f64>>((num_blocks * n / 2) as usize)
+                .unwrap();
+            let result = r.allocate::<f64>((num_blocks * n) as usize).unwrap();
+
+            x.as_mut_slice().iter_mut().for_each(|x| {
+                *x = Complex::new(
+                    thread_rng().next_u64() as f64,
+                    thread_rng().next_u64() as f64,
+                )
+            });
+
+            let stream = r.make_stream().unwrap();
+            let threads_per_block = n / 8;
+            let num_threads = num_blocks * threads_per_block;
+
+            unsafe {
+                launch_kernel!(
+                    ((num_threads, threads_per_block))
+                    ("can_remove_twist")
+                    (r, stream, 0)
+                    x,
+                    result,
+                    *n
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            let n_div_2 = *n as usize / 2;
+
+            let mut expected = vec![f64::zero(); *n as usize];
+
+            for i in 0..n_div_2 {
+                let x = x.as_slice();
+                let e = x[i] * get_inv_twisty(i as u32, *n) / n_div_2 as f64;
+
+                expected[i] = e.re();
+                expected[i + n_div_2] = e.im();
+            }
+
+            for (a, e) in result.as_slice().iter().zip(expected.iter()) {
+                dbg!((a, e));
+                approx::assert_relative_eq!(a, e, max_relative = 1e-12);
             }
         }
     }

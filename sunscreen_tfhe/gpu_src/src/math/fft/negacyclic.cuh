@@ -20,6 +20,8 @@ __device__ inline Complex<T>* apply_twist(
     uint32_t tid = threadIdx.x;
     uint32_t dim = blockDim.x;
 
+    
+    printf("%d/%d\n", tid, dim);
 
     // Since negacyclic FFT requires n / 8 threads in a block, we have each thread load their values 
     // into registers so we can write them back to shared memory in a coordinated manner.
@@ -35,10 +37,10 @@ __device__ inline Complex<T>* apply_twist(
     __syncthreads();
 
     // Now write our complex registers back to shared memory.
-    s_output[tid] = c0 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 0 * dim);
-    s_output[tid] = c1 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 1 * dim);
-    s_output[tid] = c2 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 2 * dim);
-    s_output[tid] = c3 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 3 * dim);
+    s_output[tid + 0 * dim] = c0 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 0 * dim);
+    s_output[tid + 1 * dim] = c1 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 1 * dim);
+    s_output[tid + 2 * dim] = c2 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 2 * dim);
+    s_output[tid + 3 * dim] = c3 * FftTwiddles<T>::Get_W_value_inverse(n_times_2, tid + 3 * dim);
 
     __syncthreads();
 
