@@ -235,3 +235,17 @@ fn can_remove_twist() {
         }
     }
 }
+
+#[test]
+fn can_negacyclic_roundtrip_noreorder() {
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        for n in SUPPORTED_POLY_DEGREES {
+            let num_blocks = 19;
+            let len = (num_blocks * *n) as usize;
+
+            let x = r.allocate::<Complex<f64>>(len).unwrap();
+        }
+    }
+}

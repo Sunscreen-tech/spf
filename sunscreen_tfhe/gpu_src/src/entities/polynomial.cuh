@@ -79,11 +79,6 @@ private:
     T data[0];
 };
 
-// 20kB is Large enough for 1024 point FFT, but small enough to schedule 2 thread blocks 
-// per SM.
-const size_t FFT_BUFFER_SIZE = 20 * 1024;
-__shared__ uint8_t FFT_BUFFER[FFT_BUFFER_SIZE];
-
 template <>
 template <>
 __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
@@ -102,12 +97,7 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
 
     auto s_out = twisted_fft_noreorder(s_in, degree.degree);
 
-    BLOCK_FOR_EACH(i, degree.degree)
-    {
-        res->coeffs()[i] = s_out[i];
-    }
-
-    __syncthreads();
+    BLOCK_COPY(res->coeffs(), s_out, degree.degree);
 }
 
 template <>
@@ -120,12 +110,7 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
 
     auto s_in = reinterpret_cast<Complex<double>*>(FFT_BUFFER);
 
-    BLOCK_FOR_EACH(i, degree.degree)
-    {
-        s_in[i] = this->coeffs()[i];
-    }
-
-    __syncthreads();
+    BLOCK_COPY(s_in, this->coeffs(), degree.degree);
 
     // We abuse the output buffer by treating it as memory pointing to  double* values.
     // This is okay because sizeof(uint64_t) == sizeof(double).

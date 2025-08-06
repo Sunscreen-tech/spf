@@ -10,7 +10,7 @@ extern "C" __global__ void can_forward_twisted_fft_f64(
     Complex<double> *__restrict__ output,
     uint32_t n)
 {
-    __shared__ double s_in[FFT_STORAGE];
+    auto s_in = get_fft_scratch<double>();
 
     BLOCK_COPY(s_in, &input[blockIdx.x * n], n);
 
@@ -24,7 +24,7 @@ extern "C" __global__ void can_inverse_twisted_fft_f64(
     double *__restrict__ output,
     uint32_t n)
 {
-    __shared__ Complex<double> s_in[FFT_STORAGE];
+    auto s_in = get_fft_scratch<Complex<double>>();
 
     BLOCK_COPY(s_in, &input[blockIdx.x * n / 2], n / 2);
 
@@ -38,7 +38,7 @@ extern "C" __global__ void can_apply_twist(
     Complex<double>* __restrict__ output,
     uint32_t n
 ) {
-    __shared__ double s_in[FFT_STORAGE];
+    auto s_in = get_fft_scratch<double>();
 
     BLOCK_COPY(s_in, &input[blockIdx.x * n], n);
 
@@ -52,7 +52,7 @@ extern "C" __global__ void can_remove_twist(
     double* __restrict__ output,
     uint32_t n
 ) {
-    __shared__ Complex<double> s_in[FFT_STORAGE];
+    auto s_in = get_fft_scratch<Complex<double>>();
 
     BLOCK_COPY(s_in, &input[blockIdx.x * n / 2], n / 2);
 

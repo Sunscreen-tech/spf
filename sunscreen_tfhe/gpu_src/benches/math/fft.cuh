@@ -12,7 +12,7 @@ __device__ void benchmark_fft(
 ) {
     uint32_t block_id = blockIdx.x;
 
-    __shared__ Complex<T> x_local[FFT_STORAGE];
+    auto x_local = get_fft_scratch<Complex<T>>();
 
     BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 

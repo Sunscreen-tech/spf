@@ -93,8 +93,6 @@ __device__ Complex<T>* twisted_fft(
 
     auto s_output = apply_twist(s_input, n);
 
-    __syncthreads();
-
     // Perform an n/2 FFT.
     fft(s_output, n_div_2);
 
