@@ -1,8 +1,15 @@
+use rand::{RngCore, thread_rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
-use crate::gpu::{
-    Scratch,
-    test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
+use crate::{
+    Torus,
+    dst::AsSlice,
+    entities::Polynomial,
+    gpu::{
+        Scratch,
+        test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
+    },
+    polynomial::polynomial_sub,
 };
 
 #[test]
@@ -46,6 +53,62 @@ fn can_roundtrip_polynomial() {
 
             for (e, a) in x.as_slice().iter().zip(y.as_slice().iter()) {
                 assert_eq!(*a, *e);
+            }
+        }
+    }
+}
+
+#[test]
+fn can_sub_polynomials() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13u32;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let len = (num_blocks * *d) as usize;
+            let c = r.allocate::<Torus<u64>>(len).unwrap();
+            let mut a = r.allocate::<Torus<u64>>(len).unwrap();
+            let mut b = r.allocate::<Torus<u64>>(len).unwrap();
+
+            a.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = thread_rng().next_u64().into());
+            b.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = thread_rng().next_u64().into());
+
+            let stream = r.make_stream().unwrap();
+            let threads_per_block = d.threads_per_block();
+
+            unsafe {
+                launch_kernel!(
+                    ((num_blocks * threads_per_block, threads_per_block))
+                    ("can_sub_polynomials")
+                    (r, stream, 0)
+                    c,
+                    a,
+                    b,
+                    *d
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            for ((c, a), b) in c
+                .as_slice()
+                .chunks(*d as usize)
+                .zip(a.as_slice().chunks(*d as usize))
+                .zip(b.as_slice().chunks(*d as usize))
+            {
+                let a = Polynomial::new(a);
+                let b = Polynomial::new(b);
+                let c = Polynomial::new(c);
+                let mut expected = Polynomial::zero(*d as usize);
+
+                polynomial_sub(&mut expected, &a, &b);
+
+                assert_eq!(c.as_slice(), expected.as_slice());
             }
         }
     }

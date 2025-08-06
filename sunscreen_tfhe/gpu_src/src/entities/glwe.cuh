@@ -2,63 +2,41 @@
 
 #include <cstdint>
 
-#include "iterator.cuh"
+#include "dst_array.cuh"
 #include "polynomial.cuh"
 #include "../params.cuh"
+
+template <typename T>
+class GlweCiphertextFft;
 
 template <typename T>
 class GlweCiphertext
 {
 public:
-    class Iter {
-        GlweDef m_params;
-        T* m_base;
-        bool m_include_b;
-    public:
-        Iter(const GlweDef &params, T* base, bool include_b): m_params(params), m_base(base), m_include_b(include_b) { }    
-
-        __device__ inline DstIterator<T, Polynomial<T>> begin() {
-            return DstIterator(m_base, 1 << m_params.log_polynomial_degree)
-        }
-
-        __device__ inline DstIterator<T, Polynomial<T>> end() {
-            int32_t num_polys = m_include_b
-                ? m_params.size + 1
-                : m_params.size;
-
-            return DstIterator(&m_base[num_polys * m_params.polynomial_degree()])
-        }
-    };
-
     GlweCiphertext() = delete;
 
-    __device__ inline uint32_t size_elems(const GlweDef &params) {
-        return (1 << params.polynomial_degree()) * params.size;
-    }
-
-    __device__ inline uint32_t size(const GlweDef &params)
+    __device__ static inline uint32_t size(const GlweDef &params)
     {
-        return sizeof(T) * size_elems(params);
+        return Polynomial<T>::size(params.polynomial_degree()) * (params.size.val + 1);
     }
 
-    __device__ constexpr inline size_t align()
+    __device__ static constexpr inline size_t align()
     {
         return alignof(T);
     }
 
-    __device__ inline Iter a(GlweDef &glwe) {
-        return Iter(glwe, data, false);
+    __device__ inline Polynomial<T> *a_b(uint32_t i, const GlweDef &glwe)
+    {
+        auto as_array = reinterpret_cast<DstArray<Polynomial<T>> *>(this);
+        return as_array->nth(i, glwe.polynomial_degree().val);
     }
 
-    __device__ inline Iter a_b(GlweDef &glwe) {
-        return Iter(glwe, data, true);
+    __device__ inline const Polynomial<T> *a_b(uint32_t i, const GlweDef &glwe) const
+    {
+        auto as_array = reinterpret_cast<const DstArray<Polynomial<T>> *>(this);
+        return as_array->nth(i, glwe.polynomial_degree().val);
     }
 
 private:
-    T data[0];
-};
-
-template <typename T>
-class GlweCiphertextFft
-{
+    uint8_t data[0];
 };

@@ -40,7 +40,7 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 #[target_feature(enable = "avx2,fma")]
 pub fn vector_add_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
-        *c = a + b;
+        *c = a.wrapping_add(b);
     }
 }
 
@@ -48,7 +48,7 @@ pub fn vector_add_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
 #[target_feature(enable = "avx2,fma")]
 pub fn vector_sub_u64(c: &mut [u64], a: &[u64], b: &[u64]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
-        *c = a - b;
+        *c = a.wrapping_sub(b);
     }
 }
 
