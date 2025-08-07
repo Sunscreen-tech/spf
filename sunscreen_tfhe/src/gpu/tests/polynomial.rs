@@ -1,15 +1,12 @@
+use aligned_vec::avec_rt;
+use num::{Complex, Zero};
 use rand::{RngCore, thread_rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    Torus,
-    dst::AsSlice,
-    entities::{Polynomial, PolynomialRef},
-    gpu::{
-        Scratch,
-        test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
-    },
-    polynomial::{polynomial_add, polynomial_sub},
+    dst::{AsSlice, FromMutSlice, FromSlice}, entities::{Polynomial, PolynomialFftRef, PolynomialRef}, gpu::{
+        test_utils::{get_runtimes, SUPPORTED_POLY_DEGREES}, Scratch
+    }, polynomial::{polynomial_add, polynomial_mad, polynomial_sub}, Torus
 };
 
 #[test]
@@ -126,4 +123,72 @@ fn can_sub_polynomials() {
 #[test]
 fn can_add_polynomials() {
     poly_op_test::<Torus<u64>, _>(|c, a, b| polynomial_add(c, a, b), "can_add_polynomials");
+}
+
+#[test]
+fn can_mad_polynomials() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13u32;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let len = (num_blocks * *d) as usize;
+            let c = r.allocate::<Complex<f64>>(len).unwrap();
+            let mut a = r.allocate::<Complex<f64>>(len).unwrap();
+            let mut b = r.allocate::<Complex<f64>>(len).unwrap();
+
+            a.as_mut_slice().iter_mut().for_each(|x| {
+                *x = Complex::new(
+                    thread_rng().next_u64() as f64,
+                    thread_rng().next_u64() as f64,
+                )
+            });
+            b.as_mut_slice().iter_mut().for_each(|x| {
+                *x = Complex::new(
+                    thread_rng().next_u64() as f64,
+                    thread_rng().next_u64() as f64,
+                )
+            });
+
+            let stream = r.make_stream().unwrap();
+            let threads_per_block = d.threads_per_block();
+
+            unsafe {
+                launch_kernel!(
+                    ((num_blocks * threads_per_block, threads_per_block))
+                    ("can_mad_polynomials")
+                    (r, stream, 0usize)
+                    c,
+                    a,
+                    b,
+                    *d
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            for ((c, a), b) in c
+                .as_slice()
+                .chunks(*d as usize)
+                .zip(a.as_slice().chunks(*d as usize))
+                .zip(b.as_slice().chunks(*d as usize))
+            {
+                let a = PolynomialFftRef::from_slice(a);
+                let b = PolynomialFftRef::from_slice(b);
+                let c = PolynomialFftRef::from_slice(c);
+
+                let mut expected = avec_rt!([64]| Complex::<f64>::zero(); *d as usize);
+            
+                let expected =  PolynomialFftRef::from_mut_slice(&mut expected);
+
+                expected.multiply_add(&a, &b);
+
+                for (a, e) in c.as_slice().iter().zip(expected.as_slice().iter()) {
+                    approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-15);
+                    approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-15);
+                }
+            }
+        }
+    }
 }

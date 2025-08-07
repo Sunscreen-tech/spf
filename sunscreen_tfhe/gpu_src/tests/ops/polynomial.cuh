@@ -47,3 +47,18 @@ extern "C" __global__ void can_add_polynomials(
 
     polynomial_add(c_i, a_i, b_i, degree);
 }
+
+extern "C" __global__ void can_mad_polynomials(
+    DstArray<PolynomialFft<Complex<double>>> *c,
+    const DstArray<PolynomialFft<Complex<double>>> *a,
+    const DstArray<PolynomialFft<Complex<double>>> *b,
+    uint32_t d
+) {
+    auto degree = PolynomialDegree(d);
+
+    auto c_i = c->nth(blockIdx.x, degree);
+    auto a_i = a->nth(blockIdx.x, degree);
+    auto b_i = b->nth(blockIdx.x, degree);
+
+    polynomial_mad(c_i, a_i, b_i, degree);
+}
