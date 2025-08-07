@@ -24,9 +24,6 @@ public:
         return alignof(T);
     }
 
-    template <typename U>
-    __device__ inline void fft(PolynomialFft<U> *res, const PolynomialDegree &degree) const;
-
     __device__ inline T *coeffs()
     {
         return reinterpret_cast<T *>(data);
@@ -36,6 +33,12 @@ public:
     {
         return reinterpret_cast<const T *>(data);
     }
+
+    template <typename U>
+    __device__ inline void fft(PolynomialFft<U> *res, const PolynomialDegree &degree) const;
+
+    template <typename U>
+    __device__ inline PolynomialFft<U> *fft_inplace(const PolynomialDegree &degree);
 
 private:
     uint8_t data[0];
@@ -50,14 +53,11 @@ public:
         // Add 64 elements to support FFTs up to 4096.
         return (size_info.val / 2) * sizeof(T);
     }
-    
+
     __device__ static inline constexpr uint32_t align()
     {
         return alignof(T);
     }
-
-    template <typename U>
-    __device__ inline void ifft(Polynomial<U> *res, const PolynomialDegree &degree) const;
 
     __device__ inline T *coeffs()
     {
@@ -68,6 +68,13 @@ public:
     {
         return reinterpret_cast<const T *>(data);
     }
+
+    template <typename U>
+    __device__ inline void ifft(Polynomial<U> *res, const PolynomialDegree &degree) const;
+
+    template <typename U>
+    __device__ inline Polynomial<U> *ifft_inplace(const PolynomialDegree &degree);
+
 private:
     uint8_t data[0];
 };
@@ -101,6 +108,22 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
 
 template <>
 template <>
+__device__ inline PolynomialFft<Complex<double>> *Polynomial<uint64_t>::fft_inplace(const PolynomialDegree &degree)
+{
+    auto s_cast = reinterpret_cast<double *>(this);
+
+    BLOCK_FOR_EACH(i, degree.val)
+    {
+        s_cast[i] = (double)this->coeffs()[i];
+    }
+
+    auto s_out = twisted_fft(s_cast, degree.val);
+
+    return reinterpret_cast<PolynomialFft<Complex<double>> *>(s_out);
+}
+
+template <>
+template <>
 __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     Polynomial<uint64_t> *__restrict__ res,
     const PolynomialDegree &degree) const
@@ -128,8 +151,29 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     {
         // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
         // then bitcast back to unsigned to get back to [0, q).
-        res->coeffs()[i] = normalize_q_div_2_torus<double, uint64_t>(s_out[i]);
+        res->coeffs()[i] = (uint64_t)normalize_q_div_2_torus<double, uint64_t>(s_out[i]);
     }
 
     __syncthreads();
+}
+
+template <typename U>
+__device__ inline Polynomial<U> *ifft_inplace(const PolynomialDegree &degree)
+{
+    auto s_out = twisted_ifft(s_in, degree.val);
+
+    inplace_reduce_mod_q_pow_2<double, 64>(
+        s_out,
+        degree.val);
+
+    auto s_out_uint = reinterpret_cast<Polynomial<uint64_t> *>(s_out);
+
+    BLOCK_FOR_EACH(i, degree.val)
+    {
+        // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
+        // then bitcast back to unsigned to get back to [0, q).
+        s_out_uint->coeffs()[i] = (uint64_t)normalize_q_div_2_torus<double, uint64_t>(s_out[i]);
+    }
+
+    return s_out_uint;
 }
