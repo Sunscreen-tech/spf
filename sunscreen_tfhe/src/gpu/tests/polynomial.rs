@@ -2,9 +2,14 @@ use rand::{RngCore, thread_rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    dst::AsSlice, entities::{Polynomial, PolynomialRef}, gpu::{
-        test_utils::{get_runtimes, SUPPORTED_POLY_DEGREES}, Scratch
-    }, polynomial::{polynomial_add, polynomial_sub}, Torus
+    Torus,
+    dst::AsSlice,
+    entities::{Polynomial, PolynomialRef},
+    gpu::{
+        Scratch,
+        test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
+    },
+    polynomial::{polynomial_add, polynomial_sub},
 };
 
 #[test]
@@ -54,10 +59,10 @@ fn can_roundtrip_polynomial() {
 }
 
 fn poly_op_test<T, F>(baseline_op: F, kernel_name: &str)
-where 
+where
     F: Fn(&mut PolynomialRef<T>, &PolynomialRef<T>, &PolynomialRef<T>),
     T: Clone + num::Zero + bytemuck::Pod + std::fmt::Debug + PartialEq,
-    u64: Into<T>
+    u64: Into<T>,
 {
     let runtimes = get_runtimes();
     let num_blocks = 13u32;

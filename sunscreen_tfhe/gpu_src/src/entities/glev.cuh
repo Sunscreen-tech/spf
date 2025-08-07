@@ -17,12 +17,12 @@ class GlevCiphertext
 public:
     GlevCiphertext() = delete;
 
-    __device__ inline uint32_t size(const GlevSizeInfo &size_info)
+    __device__ static inline uint32_t size(const GlevSizeInfo &size_info)
     {
         return GlweCiphertext<T>::size(std::get<0>(size_info)) * std::get<1>(size_info).count.val;
     }
 
-    __device__ constexpr inline size_t align()
+    __device__ static constexpr inline size_t align()
     {
         return alignof(T);
     }
@@ -52,12 +52,12 @@ class GlevCiphertextFft
 public:
     GlevCiphertextFft() = delete;
 
-    __device__ inline uint32_t size(const GlevSizeInfo &size_info)
+    __device__ static inline uint32_t size(const GlevSizeInfo &size_info)
     {
         return GlweCiphertextFft<T>::size(std::get<0>(size_info)) * std::get<1>(size_info).count.val;
     }
 
-    __device__ constexpr inline size_t align()
+    __device__ static constexpr inline size_t align()
     {
         return alignof(T);
     }

@@ -10,12 +10,7 @@ use crate::{
 
 fn glwe_op_test<F>(baseline_op: F, kernel_name: &str)
 where
-    F: Fn(
-        &mut GlweCiphertextRef<u64>,
-        &GlweCiphertextRef<u64>,
-        &GlweCiphertextRef<u64>,
-        &GlweDef
-    ),
+    F: Fn(&mut GlweCiphertextRef<u64>, &GlweCiphertextRef<u64>, &GlweCiphertextRef<u64>, &GlweDef),
 {
     let runtimes = get_runtimes();
 
@@ -104,14 +99,16 @@ where
 
 #[test]
 fn can_glwe_sub() {
-    glwe_op_test(|c, a, b, def| {
-        sub_glwe_ciphertexts(c, a, b, def)
-    }, "can_glwe_sub");
+    glwe_op_test(
+        |c, a, b, def| sub_glwe_ciphertexts(c, a, b, def),
+        "can_glwe_sub",
+    );
 }
 
 #[test]
 fn can_glwe_add() {
-    glwe_op_test(|c, a, b, def| {
-        add_glwe_ciphertexts(c, a, b, def)
-    }, "can_glwe_add");
+    glwe_op_test(
+        |c, a, b, def| add_glwe_ciphertexts(c, a, b, def),
+        "can_glwe_add",
+    );
 }
