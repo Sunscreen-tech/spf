@@ -6,6 +6,7 @@
 #include "../entities/scratch.cuh"
 #include "../entities/glwe.cuh"
 #include "../entities/glev.cuh"
+#include "../entities/ggsw.cuh"
 #include "../math/signed_decomposer.cuh"
 #include "../params.cuh"
 
@@ -107,4 +108,26 @@ __device__ inline void decomposed_polynomial_glev_mad(
 
         glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
     }
+}
+
+template <typename T, typename U>
+__device__ inline void glwe_ggsw_mad(
+    GlweCiphertextFft<U> *__restrict__ c_fft,
+    const GlweCiphertext<T> *__restrict__ a,
+    const GgswCiphertextFft<U> *__restrict__ b,
+    const GlweDef &glwe,
+    const RadixDecomposition &radix,
+    PerBlockStackAllocator &scratch)
+{
+    for (uint32_t i = 0; i < glwe.size.val; i++) {
+        auto a_i = a->a_b(i, glwe);
+        auto glev_i = b->rows(i, std::tuple(glwe, radix));
+        
+        decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
+    }
+
+    auto a_i = a->a_b(glwe.size.val, glwe);
+    auto glev_i = b->rows(glwe.size.val, std::tuple(glwe, radix));
+    
+    decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
 }

@@ -65,3 +65,20 @@ extern "C" __global__ void can_polynomial_glev_mad(
 
     decomposed_polynomial_glev_mad(c_i, a_i, b_i, glwe, radix, scratch);
 }
+
+extern "C" __global__ void can_glwe_ggsw_mad(
+    DstArray<GlweCiphertextFft<Complex<double>>> *__restrict__ c,
+    const DstArray<GlweCiphertext<uint64_t>> *__restrict__ a,
+    const DstArray<GgswCiphertextFft<Complex<double>>> *__restrict__ b,
+    uint8_t *__restrict__ scratch_buffer)
+{
+    const auto &radix = PBS_RADIX_2_16_128;
+    const auto &glwe = GLWE_1_2048_128;
+    auto scratch = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
+
+    auto c_i = c->nth(blockIdx.x, glwe);
+    auto a_i = a->nth(blockIdx.x, glwe);
+    auto b_i = b->nth(blockIdx.x, std::tuple(glwe, radix));
+
+    glwe_ggsw_mad(c_i, a_i, b_i, glwe, radix, scratch);
+}
