@@ -87,10 +87,12 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
 {
     auto s_in = get_fft_scratch<double>();
 
-    // Cast our u64 polynomial to double
+    // Reinterpret our [0, q) torus as [-q/2, q/2) to minimize errors. In particular,
+    // this ensures that small negative torus elements don't blow up into large FFTs
+    // that fail to modulo reduce.
     BLOCK_FOR_EACH(i, degree.val)
     {
-        s_in[i] = (double)this->coeffs()[i];
+        s_in[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);
     }
 
     __syncthreads();
@@ -112,9 +114,12 @@ __device__ inline PolynomialFft<Complex<double>> *Polynomial<uint64_t>::fft_inpl
 {
     auto s_cast = reinterpret_cast<double *>(this->coeffs());
 
+    // Reinterpret our [0, q) torus as [-q/2, q/2) to minimize errors. In particular,
+    // this ensures that small negative torus elements don't blow up into large FFTs
+    // that fail to modulo reduce.
     BLOCK_FOR_EACH(i, degree.val)
     {
-        s_cast[i] = (double)this->coeffs()[i];
+        s_cast[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);
     }
 
     __syncthreads();
@@ -153,7 +158,7 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     {
         // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
         // then bitcast back to unsigned to get back to [0, q).
-        res->coeffs()[i] = (uint64_t)normalize_q_div_2_torus<double, uint64_t>(s_out[i]);
+        res->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
     }
 
     __syncthreads();
@@ -179,7 +184,7 @@ __device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inp
     {
         // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
         // then bitcast back to unsigned to get back to [0, q).
-        s_out_uint->coeffs()[i] = (uint64_t)normalize_q_div_2_torus<double, uint64_t>(s_out[i]);
+        s_out_uint->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
     }
 
     return s_out_uint;

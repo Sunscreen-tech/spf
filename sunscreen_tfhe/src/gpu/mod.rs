@@ -1,6 +1,6 @@
 use std::sync::OnceLock;
 
-use sunscreen_gpu_runtime::{Allocation, AsKernelArg, DeviceId, GpuRuntime, Grid, launch_kernel};
+use sunscreen_gpu_runtime::{Allocation, AsKernelArg, GpuRuntime, Grid, launch_kernel};
 
 #[cfg(any(feature = "test_kernels", test))]
 pub(crate) const GPU_KERNELS: &[u8] =
