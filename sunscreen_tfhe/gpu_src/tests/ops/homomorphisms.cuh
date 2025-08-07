@@ -12,7 +12,7 @@ extern "C" __global__ void can_glwe_sub(
     const DstArray<GlweCiphertext<uint64_t>> *a,
     const DstArray<GlweCiphertext<uint64_t>> *b)
 {
-    const auto params = GlweDef(LogPolyDegree(11), GlweSize(1));
+    const auto params = GLWE_1_128;
 
     auto c_i = c->nth(blockIdx.x, params);
     auto a_i = a->nth(blockIdx.x, params);
@@ -26,7 +26,7 @@ extern "C" __global__ void can_glwe_add(
     const DstArray<GlweCiphertext<uint64_t>> *__restrict__ a,
     const DstArray<GlweCiphertext<uint64_t>> *__restrict__ b)
 {
-    const auto params = GlweDef(LogPolyDegree(11), GlweSize(1));
+    const auto params = GLWE_1_128;
 
     auto c_i = c->nth(blockIdx.x, params);
     auto a_i = a->nth(blockIdx.x, params);
@@ -35,14 +35,28 @@ extern "C" __global__ void can_glwe_add(
     glwe_add(c_i, a_i, b_i, params);
 }
 
+extern "C" __global__ void can_glwe_polynomial_mad(
+    DstArray<GlweCiphertextFft<Complex<double>>> *__restrict__ c,
+    const DstArray<GlweCiphertextFft<Complex<double>>> *__restrict__ a,
+    const DstArray<PolynomialFft<Complex<double>>> *__restrict__ b)
+{
+    const auto &glwe = GLWE_1_128;
+
+    auto c_i = c->nth(blockIdx.x, glwe);
+    auto a_i = a->nth(blockIdx.x, glwe);
+    auto b_i = b->nth(blockIdx.x, glwe.polynomial_degree());
+
+    glwe_polynomial_mad(c_i, a_i, b_i, glwe);
+}
+
 extern "C" __global__ void can_polynomial_glev_mad(
     DstArray<GlweCiphertextFft<Complex<double>>> *__restrict__ c,
     const DstArray<Polynomial<uint64_t>> *__restrict__ a,
     const DstArray<GlevCiphertextFft<Complex<double>>> *__restrict__ b,
-    uint8_t *__restrict__ scratch_buffer
-) {
-    const auto& radix = PBS_RADIX_128;
-    const auto& glwe = GLWE_1_128;
+    uint8_t *__restrict__ scratch_buffer)
+{
+    const auto &radix = PBS_RADIX_128;
+    const auto &glwe = GLWE_1_128;
     auto scratch = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
 
     auto c_i = c->nth(blockIdx.x, glwe);
