@@ -812,14 +812,14 @@ pub mod encryption {
 
 /// Operations for producing Fourier-transformed versions of entities.
 pub mod fft {
-    use num::Complex;
+    use num::{Complex, Zero};
 
     use crate::{
-        GlweDef, LweDef, RadixDecomposition,
+        GlweDef, LweDef, PolynomialDegree, RadixDecomposition,
         entities::{
             AutomorphismKeyFft, AutomorphismKeyRef, BootstrapKeyFft, BootstrapKeyRef,
             GgswCiphertextFft, GgswCiphertextRef, GlweCiphertextFft, GlweCiphertextRef,
-            SchemeSwitchKeyFft, SchemeSwitchKeyRef,
+            PolynomialFft, PolynomialRef, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
         },
     };
 
@@ -921,6 +921,20 @@ pub mod fft {
         auto_key.fft(&mut ak_fft, glwe, radix);
 
         ak_fft
+    }
+
+    /// Take the Fourier transform of a [`Polynomial`](crate::entities::Polynomial).
+    ///
+    /// # Panics
+    /// If degree is not a power of two.
+    pub fn fft_polynomial(
+        poly: &PolynomialRef<u64>,
+        degree: &PolynomialDegree,
+    ) -> PolynomialFft<Complex<f64>> {
+        let mut fft = PolynomialFft::new(&vec![Complex::zero(); degree.0 / 2]);
+        poly.fft(&mut fft);
+
+        fft
     }
 }
 
