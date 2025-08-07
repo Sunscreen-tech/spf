@@ -110,12 +110,14 @@ template <>
 template <>
 __device__ inline PolynomialFft<Complex<double>> *Polynomial<uint64_t>::fft_inplace(const PolynomialDegree &degree)
 {
-    auto s_cast = reinterpret_cast<double *>(this);
+    auto s_cast = reinterpret_cast<double *>(this->coeffs());
 
     BLOCK_FOR_EACH(i, degree.val)
     {
         s_cast[i] = (double)this->coeffs()[i];
     }
+
+    __syncthreads();
 
     auto s_out = twisted_fft(s_cast, degree.val);
 
@@ -157,9 +159,14 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     __syncthreads();
 }
 
-template <typename U>
-__device__ inline Polynomial<U> *ifft_inplace(const PolynomialDegree &degree)
+template <>
+template <>
+__device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inplace(const PolynomialDegree &degree)
 {
+    auto s_in = reinterpret_cast<Complex<double> *>(this);
+
+    // Ensure any shared memory writes have completed.
+    __syncthreads();
     auto s_out = twisted_ifft(s_in, degree.val);
 
     inplace_reduce_mod_q_pow_2<double, 64>(

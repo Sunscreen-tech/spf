@@ -43,15 +43,56 @@ fn can_roundtrip_polynomial() {
                     x,
                     y,
                     scratch,
-                    *d
+                    *d as u32
                 )
             }
             .unwrap();
 
             stream.wait().unwrap();
 
-            dbg!(x.as_slice());
-            dbg!(y.as_slice());
+            for (e, a) in x.as_slice().iter().zip(y.as_slice().iter()) {
+                assert_eq!(*a, *e);
+            }
+        }
+    }
+}
+
+#[test]
+fn can_roundtrip_polynomial_inplace() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let len = (*d * num_blocks) as usize;
+
+            let mut x = r.allocate::<u64>(len).unwrap();
+            let y = r.allocate::<u64>(len).unwrap();
+
+            x.as_mut_slice().iter_mut().enumerate().for_each(|(i, x)| {
+                *x = i as u64;
+            });
+
+            let stream = r.make_stream().unwrap();
+
+            let threads_per_block = d.threads_per_block();
+            let num_threads = threads_per_block * num_blocks;
+
+            let grid = (num_threads, threads_per_block);
+
+            unsafe {
+                launch_kernel!(
+                    (grid)
+                    ("can_polynomial_rountrip_fft_inplace")
+                    (r, stream, 0)
+                    x,
+                    y,
+                    *d as u32
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
 
             for (e, a) in x.as_slice().iter().zip(y.as_slice().iter()) {
                 assert_eq!(*a, *e);
@@ -205,7 +246,6 @@ fn can_mad_polynomials() {
                     .zip(expected.as_slice().iter())
                     .enumerate()
                 {
-                    dbg!(i);
                     approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12);
                     approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12);
                 }

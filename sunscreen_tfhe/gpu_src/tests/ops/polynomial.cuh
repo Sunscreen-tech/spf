@@ -18,6 +18,25 @@ extern "C" __global__ void can_polynomial_rountrip_fft(
     tmp->ifft(y, degree);
 }
 
+extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
+    const DstArray<Polynomial<uint64_t>> *__restrict__ x,
+    DstArray<Polynomial<uint64_t>> *__restrict__ y,
+    const uint32_t n
+) {
+    auto degree = PolynomialDegree(n);
+    auto x_i = x->nth(blockIdx.x, degree);
+    auto y_i = y->nth(blockIdx.x, degree);
+
+    auto s_in = get_fft_scratch<Polynomial<uint64_t>>();
+
+    BLOCK_COPY(s_in->coeffs(), x_i->coeffs(), n);
+
+    auto s_fft = s_in->fft_inplace<Complex<double>>(degree);
+    auto s_out = s_fft->ifft_inplace<uint64_t>(degree);
+
+    BLOCK_COPY(y_i->coeffs(), s_out->coeffs(), n);
+}
+
 extern "C" __global__ void can_sub_polynomials(
     DstArray<Polynomial<uint64_t>> *c,
     const DstArray<Polynomial<uint64_t>> *a,
@@ -60,6 +79,5 @@ extern "C" __global__ void can_mad_polynomials(
     auto a_i = a->nth(blockIdx.x, degree);
     auto b_i = b->nth(blockIdx.x, degree);
 
-    //printf("%lf %lf\n", a_i->coeffs()[threadIdx.x].re(), a_i->coeffs()[threadIdx.x].im());
     polynomial_mad(c_i, a_i, b_i, degree);
 }
