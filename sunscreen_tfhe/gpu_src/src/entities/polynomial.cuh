@@ -92,7 +92,7 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
     // that fail to modulo reduce.
     BLOCK_FOR_EACH(i, degree.val)
     {
-        s_in[i] = (double)this->coeffs()[i];
+        s_in[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);
     }
 
     __syncthreads();
@@ -114,6 +114,9 @@ __device__ inline PolynomialFft<Complex<double>> *Polynomial<uint64_t>::fft_inpl
 {
     auto s_cast = reinterpret_cast<double *>(this->coeffs());
 
+    // Reinterpret our [0, q) torus as [-q/2, q/2) to minimize errors. In particular,
+    // this ensures that small negative torus elements don't blow up into large FFTs
+    // that fail to modulo reduce.
     BLOCK_FOR_EACH(i, degree.val)
     {
         s_cast[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);

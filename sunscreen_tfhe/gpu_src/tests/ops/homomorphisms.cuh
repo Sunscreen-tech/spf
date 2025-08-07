@@ -63,8 +63,5 @@ extern "C" __global__ void can_polynomial_glev_mad(
     auto a_i = a->nth(blockIdx.x, glwe.polynomial_degree());
     auto b_i = b->nth(blockIdx.x, std::tuple(glwe, radix));
 
-    // printf("%le\n", c_i->a_b(0, glwe)->coeffs()[threadIdx.x].re());
-    //printf("%le\n", b_i->decomps(0, std::tuple(glwe, radix))->a_b(0, glwe)->coeffs()[threadIdx.x].re());
-
     decomposed_polynomial_glev_mad(c_i, a_i, b_i, glwe, radix, scratch);
 }

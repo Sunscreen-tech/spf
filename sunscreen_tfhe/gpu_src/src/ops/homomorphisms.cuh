@@ -103,11 +103,7 @@ __device__ inline void decomposed_polynomial_glev_mad(
         auto b_l = b->decomps(l, std::tuple(glwe, radix));
         decomp.next(decomp_poly);
 
-        //printf("%lu\n", decomp_poly->coeffs()[threadIdx.x]);
-
         auto decomp_poly_fft = decomp_poly->fft_inplace<Complex<double>>(glwe.polynomial_degree());
-
-        //printf("%le\n", decomp_poly_fft->coeffs()[threadIdx.x].re());
 
         glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
     }
