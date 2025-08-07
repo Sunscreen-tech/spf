@@ -92,12 +92,6 @@ public:
     using Ty = float;
 };
 
-template <typename Complex>
-__device__ inline Complex complex_mul(Complex a, Complex b)
-{
-    return {a.x * b.x - a.y * b.y, a.x * b.y + a.y * b.x};
-}
-
 template <typename S>
 class Complex
 {
@@ -128,14 +122,21 @@ public:
 
     __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
     {
-        return Complex(this->val.x * rhs.val.x - this->val.y * rhs.val.y,
-                       this->val.x * rhs.val.y + this->val.y * rhs.val.x);
+        return Complex(__fma_rn(this->val.x, rhs.val.x, -this->val.y * rhs.val.y),
+                       __fma_rn(this->val.x, rhs.val.y, this->val.y * rhs.val.x));
     }
 
     __device__ inline Complex<T> operator*(const T &rhs) const
     {
         return Complex(this->val.x * rhs,
                        this->val.y * rhs);
+    }
+
+    __device__ inline Complex<T> &operator+=(const Complex<T> &rhs) {
+        this->re() += rhs.re();
+        this->im() += rhs.im();
+
+        return *this;
     }
 
     __device__ inline T &re()

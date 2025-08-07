@@ -60,5 +60,6 @@ extern "C" __global__ void can_mad_polynomials(
     auto a_i = a->nth(blockIdx.x, degree);
     auto b_i = b->nth(blockIdx.x, degree);
 
+    //printf("%lf %lf\n", a_i->coeffs()[threadIdx.x].re(), a_i->coeffs()[threadIdx.x].im());
     polynomial_mad(c_i, a_i, b_i, degree);
 }
