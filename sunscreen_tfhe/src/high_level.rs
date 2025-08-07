@@ -947,8 +947,8 @@ pub mod fft {
         glwe: &GlweDef,
         radix: &RadixDecomposition,
     ) -> GlevCiphertextFft<Complex<f64>> {
-        let mut out = GlevCiphertextFft::new(&glwe, &radix);
-        glev.fft(&mut out, &glwe);
+        let mut out = GlevCiphertextFft::new(glwe, radix);
+        glev.fft(&mut out, glwe);
 
         out
     }
