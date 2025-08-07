@@ -2,14 +2,9 @@ use rand::{RngCore, thread_rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    Torus,
-    dst::AsSlice,
-    entities::Polynomial,
-    gpu::{
-        Scratch,
-        test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
-    },
-    polynomial::polynomial_sub,
+    dst::AsSlice, entities::{Polynomial, PolynomialRef}, gpu::{
+        test_utils::{get_runtimes, SUPPORTED_POLY_DEGREES}, Scratch
+    }, polynomial::{polynomial_add, polynomial_sub}, Torus
 };
 
 #[test]
@@ -58,17 +53,21 @@ fn can_roundtrip_polynomial() {
     }
 }
 
-#[test]
-fn can_sub_polynomials() {
+fn poly_op_test<T, F>(baseline_op: F, kernel_name: &str)
+where 
+    F: Fn(&mut PolynomialRef<T>, &PolynomialRef<T>, &PolynomialRef<T>),
+    T: Clone + num::Zero + bytemuck::Pod + std::fmt::Debug + PartialEq,
+    u64: Into<T>
+{
     let runtimes = get_runtimes();
     let num_blocks = 13u32;
 
     for r in runtimes.iter() {
         for d in SUPPORTED_POLY_DEGREES.iter().copied() {
             let len = (num_blocks * *d) as usize;
-            let c = r.allocate::<Torus<u64>>(len).unwrap();
-            let mut a = r.allocate::<Torus<u64>>(len).unwrap();
-            let mut b = r.allocate::<Torus<u64>>(len).unwrap();
+            let c = r.allocate::<T>(len).unwrap();
+            let mut a = r.allocate::<T>(len).unwrap();
+            let mut b = r.allocate::<T>(len).unwrap();
 
             a.as_mut_slice()
                 .iter_mut()
@@ -83,8 +82,8 @@ fn can_sub_polynomials() {
             unsafe {
                 launch_kernel!(
                     ((num_blocks * threads_per_block, threads_per_block))
-                    ("can_sub_polynomials")
-                    (r, stream, 0)
+                    (kernel_name)
+                    (r, stream, 0usize)
                     c,
                     a,
                     b,
@@ -106,10 +105,20 @@ fn can_sub_polynomials() {
                 let c = Polynomial::new(c);
                 let mut expected = Polynomial::zero(*d as usize);
 
-                polynomial_sub(&mut expected, &a, &b);
+                baseline_op(&mut expected, &a, &b);
 
                 assert_eq!(c.as_slice(), expected.as_slice());
             }
         }
     }
+}
+
+#[test]
+fn can_sub_polynomials() {
+    poly_op_test::<Torus<u64>, _>(|c, a, b| polynomial_sub(c, a, b), "can_sub_polynomials");
+}
+
+#[test]
+fn can_add_polynomials() {
+    poly_op_test::<Torus<u64>, _>(|c, a, b| polynomial_add(c, a, b), "can_add_polynomials");
 }
