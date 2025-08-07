@@ -10,10 +10,21 @@
 /// @param x The double torus value
 /// @return The unsigned torus value.
 template <typename F, typename U>
-__device__ inline U normalize_q_div_2_torus(F x) {
+__device__ inline U signed_to_unsigned_torus(F x) {
     using SignedTy = Unsigned<U>::SignedTy;
 
     return static_cast<U>((SignedTy)x);
+}
+
+/// @brief  Converts a value on the unsigned (`U`) torus [0, q) to an a signed
+/// float (`F`) on the torus [-q/2, q/2).
+/// @param x The double torus value
+/// @return The unsigned torus value.
+template <typename F, typename U>
+__device__ inline F unsigned_to_signed_torus(U x) {
+    using SignedTy = Unsigned<U>::SignedTy;
+
+    return static_cast<F>((SignedTy)x);
 }
 
 template <uint64_t LOG2_Q>

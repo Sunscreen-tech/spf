@@ -818,8 +818,9 @@ pub mod fft {
         GlweDef, LweDef, PolynomialDegree, RadixDecomposition,
         entities::{
             AutomorphismKeyFft, AutomorphismKeyRef, BootstrapKeyFft, BootstrapKeyRef,
-            GgswCiphertextFft, GgswCiphertextRef, GlweCiphertextFft, GlweCiphertextRef,
-            PolynomialFft, PolynomialRef, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
+            GgswCiphertextFft, GgswCiphertextRef, GlevCiphertextFft, GlevCiphertextRef,
+            GlweCiphertextFft, GlweCiphertextRef, PolynomialFft, PolynomialRef, SchemeSwitchKeyFft,
+            SchemeSwitchKeyRef,
         },
     };
 
@@ -935,6 +936,21 @@ pub mod fft {
         poly.fft(&mut fft);
 
         fft
+    }
+
+    /// Take the Fourier transform of a [`GlevCiphertext`](crate::entities::GlevCiphertext)
+    ///
+    /// # Panics
+    /// If `glwe` or `radix` parameters are incorrect.
+    pub fn fft_glev(
+        glev: &GlevCiphertextRef<u64>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> GlevCiphertextFft<Complex<f64>> {
+        let mut out = GlevCiphertextFft::new(&glwe, &radix);
+        glev.fft(&mut out, &glwe);
+
+        out
     }
 }
 

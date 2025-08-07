@@ -48,6 +48,12 @@ impl LweDimension {
 /// are integers mod `q`.
 pub struct PolynomialDegree(pub usize);
 
+impl PolynomialDegree {
+    pub(crate) fn threads_per_block(&self) -> u32 {
+        self.0 as u32 / 8
+    }
+}
+
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 /// The number of polynomials in a GLWE instance.

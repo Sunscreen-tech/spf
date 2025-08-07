@@ -100,10 +100,15 @@ __device__ inline void decomposed_polynomial_glev_mad(
     {
         uint32_t l = radix.count.val - i - 1;
 
-        auto b_i = b->decomps(l, std::tuple(glwe, radix));
+        auto b_l = b->decomps(l, std::tuple(glwe, radix));
         decomp.next(decomp_poly);
+
+        //printf("%lu\n", decomp_poly->coeffs()[threadIdx.x]);
+
         auto decomp_poly_fft = decomp_poly->fft_inplace<Complex<double>>(glwe.polynomial_degree());
 
-        glwe_polynomial_mad(c, b_i, decomp_poly_fft, glwe);
+        //printf("%le\n", decomp_poly_fft->coeffs()[threadIdx.x].re());
+
+        glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
     }
 }

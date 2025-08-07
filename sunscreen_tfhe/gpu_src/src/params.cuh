@@ -74,5 +74,5 @@ struct RadixDecomposition
     __device__ constexpr inline RadixDecomposition(RadixCount count, RadixLog radix_log) : count(count), radix_log(radix_log) {}
 };
 
-__device__ const RadixDecomposition PBS_RADIX_128 = RadixDecomposition(RadixCount(2), RadixLog(16));
-__device__ const GlweDef GLWE_1_128 = GlweDef(LogPolyDegree(11), GlweSize(1));
+__device__ const RadixDecomposition PBS_RADIX_2_16_128 = RadixDecomposition(RadixCount(2), RadixLog(16));
+__device__ const GlweDef GLWE_1_2048_128 = GlweDef(LogPolyDegree(11), GlweSize(1));

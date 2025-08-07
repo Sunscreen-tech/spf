@@ -1,8 +1,8 @@
-use num::Complex;
+use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, RadixCount, TorusOps,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{NoWrapper, OverlaySize},
 };
 
@@ -21,6 +21,17 @@ dst! {
     ()
 }
 dst_iter! { GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, ParallelGlevCiphertextFftIterator, ParallelGlevCiphertextFftIteratorMut, NoWrapper, GlevCiphertextFftRef, ()}
+
+impl GlevCiphertextFft<Complex<f64>> {
+    /// Create a new zero GLev ciphertext with the given parameters.
+    pub fn new(params: &GlweDef, radix: &RadixDecomposition) -> Self {
+        let elems = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
+
+        Self {
+            data: avec![Complex::zero(); elems],
+        }
+    }
+}
 
 impl OverlaySize for GlevCiphertextFftRef<Complex<f64>> {
     type Inputs = (GlweDimension, RadixCount);

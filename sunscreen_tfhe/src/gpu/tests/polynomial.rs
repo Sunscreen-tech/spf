@@ -11,7 +11,7 @@ use crate::{
         Scratch,
         test_utils::{PolyDegreeInfo, SUPPORTED_POLY_DEGREES, get_runtimes},
     },
-    polynomial::{polynomial_add, polynomial_mad, polynomial_sub},
+    polynomial::{polynomial_add, polynomial_sub},
 };
 
 #[test]
@@ -240,12 +240,7 @@ fn can_mad_polynomials() {
 
                 expected.multiply_add(&a, &b);
 
-                for (i, (a, e)) in c
-                    .as_slice()
-                    .iter()
-                    .zip(expected.as_slice().iter())
-                    .enumerate()
-                {
+                for (a, e) in c.as_slice().iter().zip(expected.as_slice().iter()) {
                     approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12);
                     approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12);
                 }

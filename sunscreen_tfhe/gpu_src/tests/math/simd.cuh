@@ -13,6 +13,6 @@ extern "C" __global__ void can_reduce_mod_2_pow_64(
 
     BLOCK_FOR_EACH(i, n)
     {
-        output[i] = normalize_q_div_2_torus<double, uint64_t>(input[i]);
+        output[i] = signed_to_unsigned_torus<double, uint64_t>(input[i]);
     }
 }

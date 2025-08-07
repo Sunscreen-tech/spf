@@ -2,7 +2,7 @@ use num::Complex;
 
 use crate::{
     GlweDef, RadixDecomposition, TorusOps,
-    dst::{FromMutSlice, OverlaySize},
+    dst::{AsSlice, FromMutSlice, OverlaySize},
     entities::{
         GgswCiphertextFftRef, GlevCiphertextFftRef, GlevCiphertextRef, GlweCiphertextFftRef,
         GlweCiphertextRef, GlweKeyswitchKeyFftRef, PolynomialFftRef, PolynomialRef,
