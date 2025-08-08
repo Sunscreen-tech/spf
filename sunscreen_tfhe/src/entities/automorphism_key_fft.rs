@@ -45,7 +45,7 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
         &self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyFftIterator<Complex<f64>> {
+    ) -> GlweKeyswitchKeyFftIterator<'_, Complex<f64>> {
         GlweKeyswitchKeyFftIterator::new(
             &self.data,
             GlweKeyswitchKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
@@ -58,7 +58,7 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
         &mut self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyFftIteratorMut<Complex<f64>> {
+    ) -> GlweKeyswitchKeyFftIteratorMut<'_, Complex<f64>> {
         GlweKeyswitchKeyFftIteratorMut::new(
             &mut self.data,
             GlweKeyswitchKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),

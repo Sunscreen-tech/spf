@@ -2,7 +2,11 @@
 pub mod cuda_runtime;
 
 mod error;
-use std::{ffi::c_void, marker::PhantomData};
+use std::{
+    ffi::c_void,
+    marker::PhantomData,
+    sync::{Arc, OnceLock},
+};
 
 use bytemuck::{NoUninit, Pod};
 pub use error::*;
@@ -66,7 +70,7 @@ impl GpuRuntime {
 
     /// Makes an independent queue for GPU kernels. Kernels enqueued on separate streams
     /// run in parallel.
-    pub fn make_stream(&self) -> Result<Stream> {
+    pub fn make_stream(&self) -> Result<Stream<'_>> {
         Ok(Stream(self.0.make_stream()?))
     }
 
@@ -359,29 +363,24 @@ impl Grid for ((u32, u32), (u32, u32), (u32, u32)) {
     }
 }
 
-#[cfg(test)]
-mod tests {
-    use std::sync::{Arc, OnceLock};
-
-    #[cfg(feature = "cuda")]
-    use crate::cuda_runtime::CudaRuntime;
-
-    use super::*;
-
+pub fn get_runtimes() -> Arc<Vec<GpuRuntime>> {
     static RUNTIMES: OnceLock<Arc<Vec<GpuRuntime>>> = OnceLock::new();
 
-    fn get_runtimes() -> Arc<Vec<GpuRuntime>> {
-        RUNTIMES
-            .get_or_init(|| {
-                let runtimes = vec![
-                    #[cfg(feature = "cuda")]
-                    GpuRuntime(Box::new(CudaRuntime::new(cuda_runtime::KERNELS).unwrap())),
-                ];
+    RUNTIMES
+        .get_or_init(|| {
+            let runtimes = vec![
+                #[cfg(feature = "cuda")]
+                GpuRuntime(Box::new(cuda_runtime::CudaRuntime::new(cuda_runtime::KERNELS).unwrap())),
+            ];
 
-                Arc::new(runtimes)
-            })
-            .clone()
-    }
+            Arc::new(runtimes)
+        })
+        .clone()
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
 
     #[test]
     fn can_print_device_info() {

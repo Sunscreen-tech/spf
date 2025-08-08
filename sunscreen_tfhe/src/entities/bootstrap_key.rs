@@ -49,7 +49,7 @@ impl<S: TorusOps> BootstrapKey<S> {
 
 impl<S: TorusOps> BootstrapKeyRef<S> {
     /// Iterate over the rows of the [BootstrapKey].
-    pub fn rows(&self, params: &GlweDef, radix: &RadixDecomposition) -> GgswCiphertextIterator<S> {
+    pub fn rows(&self, params: &GlweDef, radix: &RadixDecomposition) -> GgswCiphertextIterator<'_, S> {
         let stride = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
         GgswCiphertextIterator::new(self.as_slice(), stride)
@@ -60,7 +60,7 @@ impl<S: TorusOps> BootstrapKeyRef<S> {
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelGgswCiphertextIterator<S> {
+    ) -> ParallelGgswCiphertextIterator<'_, S> {
         let stride = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
         ParallelGgswCiphertextIterator::new(self.as_slice(), stride)
@@ -71,7 +71,7 @@ impl<S: TorusOps> BootstrapKeyRef<S> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GgswCiphertextIteratorMut<S> {
+    ) -> GgswCiphertextIteratorMut<'_, S> {
         let stride = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
         GgswCiphertextIteratorMut::new(self.as_mut_slice(), stride)
@@ -158,7 +158,7 @@ impl BootstrapKeyFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GgswCiphertextFftIteratorMut<Complex<f64>> {
+    ) -> GgswCiphertextFftIteratorMut<'_, Complex<f64>> {
         let stride = GgswCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
         GgswCiphertextFftIteratorMut::new(self.as_mut_slice(), stride)
