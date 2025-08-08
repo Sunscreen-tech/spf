@@ -278,8 +278,8 @@ def _(json):
         raise FileNotFoundError("No data file found. Please run the noise analysis tool first.")
 
     # Extract key parameters
-    std_sample_count = results["cmux_tree_parameters"]["run_options"][
-        "std_sample_count"
+    spread_sample_count = results["cmux_tree_parameters"]["run_options"][
+        "spread_sample_count"
     ]
     return (results,)
 
@@ -288,13 +288,13 @@ def _(json):
 def _(np, results):
     # Parse experimental data
     drift_data = results["drift_data"]
-    std_data = results["std_data"]
+    spread_data = results["spread_data"]
 
     # Extract arrays for analysis
-    depths = np.array([x["depth"] for x in std_data])
-    measured_stds = np.array([x["std"] for x in std_data])
-    measured_means = np.array([x["mean"] for x in std_data])
-    measured_errors = np.array([x["measured_err"] for x in std_data])
+    depths = np.array([x["depth"] for x in spread_data])
+    measured_stds = np.array([x["std"] for x in spread_data])
+    measured_means = np.array([x["mean"] for x in spread_data])
+    measured_errors = np.array([x["measured_err"] for x in spread_data])
 
     # Drift analysis arrays
     drift_raw = np.array(results["drift_raw"])

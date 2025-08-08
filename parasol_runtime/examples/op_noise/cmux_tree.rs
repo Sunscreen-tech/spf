@@ -37,12 +37,12 @@ pub struct CMuxTreeRunOptions {
     /// The maximum level of the cmux tree to run when estimating the change in
     /// the standard deviation
     #[arg(long)]
-    std_depth: usize,
+    spread_depth: usize,
 
     /// Number of times to run the cmux tree to measure the noise in the
     /// standard deviation
     #[arg(long)]
-    std_sample_count: usize,
+    spread_sample_count: usize,
 
     /// Whether to include the raw data in the output
     #[arg(long, default_value_t = false)]
@@ -161,8 +161,8 @@ pub struct CMuxTreeDataFile {
     pub fit: FitResults,
     pub drift_data: Vec<CMuxTreeDriftDataPoint>,
     pub drift_raw: Vec<Vec<f64>>,
-    pub std_data: Vec<CMuxTreeStdDataPoint>,
-    pub std_raw: Vec<Vec<Option<f64>>>,
+    pub spread_data: Vec<CMuxTreeStdDataPoint>,
+    pub spread_raw: Vec<Vec<Option<f64>>>,
 }
 
 impl CMuxTreeDataFile {
@@ -172,8 +172,8 @@ impl CMuxTreeDataFile {
         fit: FitResults,
         drift_data: Vec<CMuxTreeDriftDataPoint>,
         drift_raw: Vec<Vec<f64>>,
-        std_data: Vec<CMuxTreeStdDataPoint>,
-        std_raw: Vec<Vec<Option<f64>>>,
+        spread_data: Vec<CMuxTreeStdDataPoint>,
+        spread_raw: Vec<Vec<Option<f64>>>,
     ) -> Self {
         Self {
             version: 1,
@@ -185,8 +185,8 @@ impl CMuxTreeDataFile {
             fit,
             drift_data,
             drift_raw,
-            std_data,
-            std_raw,
+            spread_data,
+            spread_raw,
         }
     }
 }
@@ -655,12 +655,12 @@ fn spread_analysis(
         })
         .collect::<Vec<_>>();
 
-    let std_raw = samples_per_level_flattened
+    let spread_raw = samples_per_level_flattened
         .into_iter()
         .map(|level| level.into_iter().map(|res| res.ok()).collect())
         .collect();
 
-    (data_points_per_level, std_raw)
+    (data_points_per_level, spread_raw)
 }
 
 fn drift_analysis(
@@ -786,23 +786,20 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
 
     println!("Running the spread analysis");
     let now = std::time::Instant::now();
-    let (std_data, std_raw) = spread_analysis(
-        run_options.drift_sample_count,
-        run_options.std_depth,
+    let (spread_data, spread_raw) = spread_analysis(
+        run_options.spread_sample_count,
+        run_options.spread_depth,
         &params,
     );
-    println!(
-        "Time to run standard deviation analysis: {:?}",
-        now.elapsed()
-    );
+    println!("Time to run spread analysis: {:?}", now.elapsed());
 
-    let (depths, stds) = std_data
+    let (depths, stds) = spread_data
         .iter()
         .map(|dp| (dp.depth, dp.std))
         .unzip::<usize, f64, Vec<_>, Vec<_>>();
 
-    let std_raw = if run_options.include_raw {
-        std_raw
+    let spread_raw = if run_options.include_raw {
+        spread_raw
     } else {
         vec![]
     };
@@ -821,7 +818,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         fit,
         drift_data,
         drift_raw,
-        std_data,
-        std_raw,
+        spread_data,
+        spread_raw,
     )
 }
