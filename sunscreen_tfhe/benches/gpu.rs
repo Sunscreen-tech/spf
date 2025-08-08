@@ -167,8 +167,6 @@ mod gpu_benches {
                         let grid = (threads, tpb);
                         let scratch = Scratch::new(r, grid).unwrap();
 
-                        
-
                         b.iter(|| {
                             unsafe {
                                 launch_kernel!(
@@ -182,7 +180,7 @@ mod gpu_benches {
                             }
                             .unwrap();
                             stream.wait().unwrap();
-                        });                       
+                        });
                     },
                 );
             }
