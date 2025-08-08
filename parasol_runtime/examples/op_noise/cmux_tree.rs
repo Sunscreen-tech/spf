@@ -101,8 +101,18 @@ pub struct SpreadModel {
 
 impl SpreadModel {
     /// Evaluate the spread model at a given depth
-    fn evaluate(&self, depth: f64) -> f64 {
+    pub fn evaluate(&self, depth: f64) -> f64 {
         function_to_fit(depth, self.a, self.b, self.c)
+    }
+
+    /// Get the model parameters (a, b, c)
+    pub fn parameters(&self) -> (f64, f64, f64) {
+        (self.a, self.b, self.c)
+    }
+
+    /// Get the relative error of the fit
+    pub fn relative_error(&self) -> f64 {
+        self.relative_error
     }
 }
 
@@ -367,7 +377,7 @@ fn fit_spread_model(depths: &[f64], stds: &[f64]) -> Result<SpreadModel, String>
         res
     };
 
-    // Set bounds - a must be positive for the model to make sense
+    // Set bounds: a > 1e-10 (must be positive for rational function), b and c unbounded
     let bounds = Bounds::new(&[(Some(1e-10), None), (None, None), (None, None)]);
     let options = BoundedOptions {
         max_iter: 10_000,
@@ -546,7 +556,7 @@ fn run_compute_tree(
     samples_per_level
 }
 
-fn std_analysis(
+fn spread_analysis(
     sample_count: usize,
     depth: usize,
     params: &Params,
