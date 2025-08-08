@@ -8,7 +8,15 @@ mod gpu_benches {
     use criterion::Criterion;
     use num::Complex;
     use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
-    use sunscreen_tfhe::gpu::test_utils::get_runtimes;
+    use sunscreen_tfhe::{
+        GLWE_1_1024_128, GLWE_1_2048_128, LWE_637_128, OverlaySize, RadixCount, RadixDecomposition,
+        RadixLog, Torus,
+        entities::{
+            BootstrapKey, BootstrapKeyFftRef, GlweCiphertextRef, GlweSecretKey, LweSecretKey,
+        },
+        gpu::{Scratch, test_utils::get_runtimes},
+        high_level,
+    };
 
     pub fn for_each_device_type<F: Fn(&str, &GpuRuntime)>(f: F) {
         let mut used_devices = HashSet::new();
@@ -114,12 +122,78 @@ mod gpu_benches {
             }
         });
     }
+
+    pub fn synthetic_pbs(c: &mut Criterion) {
+        let mut g = RefCell::new(c.benchmark_group("Synthetic PBS"));
+
+        for_each_device_type(|dev_name, r| {
+            for log_count in 0..12 {
+                let pbs_count = 0x1 << log_count;
+
+                let pbs_radix = RadixDecomposition {
+                    count: RadixCount(2),
+                    radix_log: RadixLog(16),
+                };
+
+                let lwe = LWE_637_128;
+                let glwe = GLWE_1_2048_128;
+
+                let lwe_sk = LweSecretKey::generate_binary(&lwe);
+                let glwe_sk = GlweSecretKey::generate_binary(&glwe);
+                let bsk = high_level::keygen::generate_bootstrapping_key(
+                    &lwe_sk, &glwe_sk, &lwe, &glwe, &pbs_radix,
+                );
+                let bsk = high_level::fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix);
+
+                g.borrow_mut().bench_function(
+                    &format!("Synthetic PBS {dev_name} count={pbs_count}"),
+                    |b| {
+                        let res = r
+                            .allocate::<Torus<u64>>(
+                                pbs_count * GlweCiphertextRef::<u64>::size(glwe.dim),
+                            )
+                            .unwrap();
+                        let mut bsk_dev = r
+                            .allocate::<Complex<f64>>(BootstrapKeyFftRef::size((
+                                lwe.dim,
+                                glwe.dim,
+                                pbs_radix.count,
+                            )))
+                            .unwrap();
+
+                        let stream = r.make_stream().unwrap();
+                        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+                        let threads = pbs_count as u32 * tpb;
+                        let grid = (threads, tpb);
+                        let scratch = Scratch::new(r, grid).unwrap();
+
+                        
+
+                        b.iter(|| {
+                            unsafe {
+                                launch_kernel!(
+                                    (grid)
+                                    ("synthetic_pbs")
+                                    (r, stream, 0)
+                                    res,
+                                    bsk_dev,
+                                    scratch
+                                )
+                            }
+                            .unwrap();
+                            stream.wait().unwrap();
+                        });                       
+                    },
+                );
+            }
+        });
+    }
 }
 
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 use gpu_benches::*;
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
-criterion_group!(benches, fft);
+criterion_group!(benches, fft, synthetic_pbs);
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 criterion_main!(benches);
 

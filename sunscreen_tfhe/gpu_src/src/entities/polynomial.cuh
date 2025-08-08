@@ -40,6 +40,11 @@ public:
     template <typename U>
     __device__ inline PolynomialFft<U> *fft_inplace(const PolynomialDegree &degree);
 
+    __device__ inline void clone_into(Polynomial<T> *other, const PolynomialDegree &degree) const
+    {
+        BLOCK_COPY(other->coeffs(), this->coeffs(), degree.val);
+    }
+
 private:
     uint8_t data[0];
 };
