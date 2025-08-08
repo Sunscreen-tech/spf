@@ -105,11 +105,13 @@ impl SpreadModel {
         function_to_fit(depth, self.a, self.b, self.c)
     }
 
+    #[allow(dead_code)]
     /// Get the model parameters (a, b, c)
     pub fn parameters(&self) -> (f64, f64, f64) {
         (self.a, self.b, self.c)
     }
 
+    #[allow(dead_code)]
     /// Get the relative error of the fit
     pub fn relative_error(&self) -> f64 {
         self.relative_error
