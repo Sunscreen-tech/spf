@@ -1,5 +1,8 @@
 use num::{Complex, Float, NumCast};
 
+use crate::Torus;
+
+mod entities;
 mod fft;
 mod homomorphisms;
 mod memory;

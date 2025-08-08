@@ -54,7 +54,7 @@ public:
 
         auto alloc_ptr = &m_next[padding];
         m_next = &m_next[padding + size];
-        
+
         return PerBlockStackAllocation<T>(this, reinterpret_cast<T *>(alloc_ptr), size);
     }
 
