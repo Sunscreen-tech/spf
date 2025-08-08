@@ -12,8 +12,8 @@ For initial testing and development:
 cargo run --features="benchmark_system_info" --release --example op_noise -- \
     analyze-cmux-tree params \
     --parameter-set-name default_128 \
-    --std-sample-count 100 \
-    --std-depth 1024 \
+    --spread-sample-count 100 \
+    --spread-depth 1024 \
     --drift-sample-count 100 \
     --drift-depth 256
 ```
@@ -26,8 +26,8 @@ For production analysis requiring high statistical confidence:
 cargo run --features="benchmark_system_info" --release --example op_noise -- \
     analyze-cmux-tree params \
     --parameter-set-name default_128 \
-    --std-sample-count 10000 \
-    --std-depth 4096 \
+    --spread-sample-count 10000 \
+    --spread-depth 4096 \
     --drift-sample-count 10000 \
     --drift-depth 512
 ```
