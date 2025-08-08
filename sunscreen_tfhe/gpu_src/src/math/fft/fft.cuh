@@ -21,6 +21,7 @@ __device__ void fft(Complex<T> *s_input, uint32_t n)
 {
     using VecT = typename Complex<T>::VecT;
 
+    __syncthreads();
     switch (n)
     {
     case 1024:
@@ -37,6 +38,7 @@ __device__ void fft(Complex<T> *s_input, uint32_t n)
 template <typename T>
 __device__ void ifft(Complex<T> *s_input, uint32_t n)
 {
+    __syncthreads();
     using VecT = typename Complex<T>::VecT;
 
     switch (n)

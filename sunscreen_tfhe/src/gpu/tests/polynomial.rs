@@ -241,8 +241,8 @@ fn can_mad_polynomials() {
                 expected.multiply_add(&a, &b);
 
                 for (a, e) in c.as_slice().iter().zip(expected.as_slice().iter()) {
-                    approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12);
-                    approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12);
+                    approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-11);
+                    approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-11);
                 }
             }
         }

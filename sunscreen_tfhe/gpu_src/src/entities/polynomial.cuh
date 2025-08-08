@@ -169,9 +169,6 @@ template <>
 __device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inplace(const PolynomialDegree &degree)
 {
     auto s_in = reinterpret_cast<Complex<double> *>(this);
-
-    // Ensure any shared memory writes have completed.
-    __syncthreads();
     auto s_out = twisted_ifft(s_in, degree.val);
 
     inplace_reduce_mod_q_pow_2<double, 64>(

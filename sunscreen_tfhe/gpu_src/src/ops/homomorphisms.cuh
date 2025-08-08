@@ -79,7 +79,6 @@ __device__ inline void glwe_polynomial_mad(
     auto a_b = a->a_b(params.size.val, params);
     auto c_b = c->a_b(params.size.val, params);
 
-
     polynomial_mad<T>(c_b, a_b, b, params.polynomial_degree());
 }
 
@@ -119,15 +118,42 @@ __device__ inline void glwe_ggsw_mad(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
-    for (uint32_t i = 0; i < glwe.size.val; i++) {
+    for (uint32_t i = 0; i < glwe.size.val; i++)
+    {
         auto a_i = a->a_b(i, glwe);
         auto glev_i = b->rows(i, std::tuple(glwe, radix));
-        
+
         decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
     }
 
     auto a_i = a->a_b(glwe.size.val, glwe);
     auto glev_i = b->rows(glwe.size.val, std::tuple(glwe, radix));
-    
+
     decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
+}
+
+template <typename T, typename U>
+__device__ inline void cmux(
+    GlweCiphertext<T> *__restrict__ c,
+    const GlweCiphertext<T> *__restrict__ a,
+    const GlweCiphertext<T> *__restrict__ b,
+    const GgswCiphertextFft<U> *__restrict__ sel,
+    const GlweDef &glwe,
+    const RadixDecomposition &radix,
+    PerBlockStackAllocator &scratch)
+{
+    auto diff = scratch.alloc<GlweCiphertext<T>>(glwe);
+
+    glwe_sub(*diff, b, a, glwe);
+
+    auto prod_fft = scratch.alloc<GlweCiphertextFft<U>>(glwe);
+    prod_fft.clear();
+
+    glwe_ggsw_mad(*prod_fft, *diff, sel, glwe, radix, scratch);
+
+    auto prod = scratch.alloc<GlweCiphertext<T>>(glwe);
+
+    prod_fft->ifft(*prod, glwe);
+
+    glwe_add(c, *prod, a, glwe);
 }
