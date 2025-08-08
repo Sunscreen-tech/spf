@@ -175,8 +175,6 @@ __device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inp
         s_out,
         degree.val);
 
-    __syncthreads();
-
     auto s_out_uint = reinterpret_cast<Polynomial<uint64_t> *>(s_out);
 
     BLOCK_FOR_EACH(i, degree.val)
@@ -185,7 +183,6 @@ __device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inp
         // then bitcast back to unsigned to get back to [0, q).
         s_out_uint->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
     }
-    __syncthreads();
 
     return s_out_uint;
 }
