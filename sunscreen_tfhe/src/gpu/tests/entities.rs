@@ -103,7 +103,7 @@ fn check_glwe_fft_noise() {
 
             decrypt_glwe_ciphertext(&mut gpu_fft_msg, &gpu_fft_cpu_ifft_ct, &sk, &glwe);
             decrypt_glwe_ciphertext(&mut no_fft_msg, &cts[i], &sk, &glwe);
-            
+
             for j in 0..glwe.dim.polynomial_degree.0 {
                 assert_eq!(
                     no_fft_msg.coeffs()[j].decode(PlaintextBits(1)),
