@@ -169,14 +169,13 @@ template <>
 __device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inplace(const PolynomialDegree &degree)
 {
     auto s_in = reinterpret_cast<Complex<double> *>(this);
-
-    // Ensure any shared memory writes have completed.
-    __syncthreads();
     auto s_out = twisted_ifft(s_in, degree.val);
 
     inplace_reduce_mod_q_pow_2<double, 64>(
         s_out,
         degree.val);
+
+    __syncthreads();
 
     auto s_out_uint = reinterpret_cast<Polynomial<uint64_t> *>(s_out);
 
@@ -186,6 +185,7 @@ __device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inp
         // then bitcast back to unsigned to get back to [0, q).
         s_out_uint->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
     }
+    __syncthreads();
 
     return s_out_uint;
 }

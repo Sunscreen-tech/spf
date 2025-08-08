@@ -75,7 +75,6 @@ public:
 
     template <typename U>
     __device__ inline void ifft(GlweCiphertext<U> *out, const GlweDef &params) const;
-
 private:
     uint8_t data[0];
 };

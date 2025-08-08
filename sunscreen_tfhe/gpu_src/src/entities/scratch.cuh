@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include "../math/math.cuh"
+
 #define STACK_ALLOCATOR
 
 template <typename T>
@@ -53,7 +55,7 @@ public:
         auto alloc_ptr = &m_next[padding];
         m_next = &m_next[padding + size];
         
-        return PerBlockStackAllocation<T>(this, reinterpret_cast<T *>(alloc_ptr));
+        return PerBlockStackAllocation<T>(this, reinterpret_cast<T *>(alloc_ptr), size);
     }
 
 private:
@@ -103,11 +105,17 @@ public:
         m_allocator->m_next = reinterpret_cast<uint8_t *>(next);
     }
 
+    __device__ inline void clear() {
+        for (uint32_t i = threadIdx.x; i < m_size / 4; i += blockDim.x) {
+            reinterpret_cast<uint32_t *>(m_ptr)[i] = 0;
+        }
+    }
 private:
-    __device__ PerBlockStackAllocation(PerBlockStackAllocator *base, T *ptr) : m_allocator(base), m_ptr(ptr) {}
+    __device__ PerBlockStackAllocation(PerBlockStackAllocator *base, T *ptr, uint32_t size) : m_allocator(base), m_ptr(ptr), m_size(size) {}
 
     PerBlockStackAllocator *m_allocator;
     T *m_ptr;
+    uint32_t m_size;
 };
 
 __device__ inline uint32_t get_scratch_size(uint32_t num_blocks)

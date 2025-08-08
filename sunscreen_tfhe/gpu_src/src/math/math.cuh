@@ -177,8 +177,8 @@ public:
 
     /// @brief Constructs an un-initialized Complex value.
     __device__ Complex() {}
-    __device__ Complex(T re, T im) : val({re, im}) {}
-    __device__ Complex(VecT val) : val(val) {}
+    __device__ constexpr Complex(T re, T im) : val({re, im}) {}
+    __device__ constexpr Complex(VecT val) : val(val) {}
 
     __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
     {

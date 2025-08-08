@@ -82,3 +82,22 @@ extern "C" __global__ void can_glwe_ggsw_mad(
 
     glwe_ggsw_mad(c_i, a_i, b_i, glwe, radix, scratch);
 }
+
+extern "C" __global__ void can_cmux(
+    DstArray<GlweCiphertext<uint64_t>> *__restrict__ c,
+    const DstArray<GlweCiphertext<uint64_t>> *__restrict__ a,
+    const DstArray<GlweCiphertext<uint64_t>> *__restrict__ b,
+    const DstArray<GgswCiphertextFft<Complex<double>>> *__restrict__ sel,
+    uint8_t *__restrict__ scratch_buffer)
+{
+    const auto &radix = PBS_RADIX_2_16_128;
+    const auto &glwe = GLWE_1_2048_128;
+    auto scratch = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
+
+    auto c_i = c->nth(blockIdx.x, glwe);
+    auto a_i = a->nth(blockIdx.x, glwe);
+    auto b_i = b->nth(blockIdx.x, glwe);
+    auto sel_i = sel->nth(blockIdx.x, std::tuple(glwe, radix));
+    
+    cmux(c_i, a_i, b_i, sel_i, glwe, radix, scratch);
+}
