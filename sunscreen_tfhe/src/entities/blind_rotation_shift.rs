@@ -48,7 +48,11 @@ impl<S: TorusOps> BlindRotationShift<S> {
 
 impl<S: TorusOps> BlindRotationShiftRef<S> {
     /// Iterate over the rows of the [BlindRotationShift].
-    pub fn rows(&self, params: &GlweDef, radix: &RadixDecomposition) -> GgswCiphertextIterator<'_, S> {
+    pub fn rows(
+        &self,
+        params: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> GgswCiphertextIterator<'_, S> {
         let stride = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
         GgswCiphertextIterator::new(self.as_slice(), stride)

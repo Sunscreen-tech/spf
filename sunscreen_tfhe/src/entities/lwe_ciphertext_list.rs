@@ -41,12 +41,12 @@ impl<S: TorusOps> LweCiphertextList<S> {
 
 impl<S: TorusOps> LweCiphertextListRef<S> {
     /// Iterate over the LWE ciphertexts in the list.
-    pub fn ciphertexts(&self, lwe: &LweDef) -> LweCiphertextIterator<S> {
+    pub fn ciphertexts(&self, lwe: &LweDef) -> LweCiphertextIterator<'_, S> {
         LweCiphertextIterator::new(self.as_slice(), LweCiphertextRef::<S>::size(lwe.dim))
     }
 
     /// Iterate over the LWE ciphertexts in the list mutably.
-    pub fn ciphertexts_mut(&mut self, lwe: &LweDef) -> LweCiphertextIteratorMut<S> {
+    pub fn ciphertexts_mut(&mut self, lwe: &LweDef) -> LweCiphertextIteratorMut<'_, S> {
         LweCiphertextIteratorMut::new(self.as_mut_slice(), LweCiphertextRef::<S>::size(lwe.dim))
     }
 }

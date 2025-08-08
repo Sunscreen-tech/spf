@@ -72,12 +72,12 @@ where
     S: TorusOps,
 {
     /// Get the public key data as an iterator.
-    pub fn enc_zeros(&self, params: &LweDef) -> LweCiphertextIterator<S> {
+    pub fn enc_zeros(&self, params: &LweDef) -> LweCiphertextIterator<'_, S> {
         LweCiphertextIterator::new(&self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Get the public key data as a mutable iterator.
-    pub fn enc_zeros_mut(&mut self, params: &LweDef) -> LweCiphertextIteratorMut<S> {
+    pub fn enc_zeros_mut(&mut self, params: &LweDef) -> LweCiphertextIteratorMut<'_, S> {
         LweCiphertextIteratorMut::new(&mut self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 

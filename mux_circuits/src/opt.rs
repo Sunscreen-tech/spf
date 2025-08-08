@@ -40,7 +40,7 @@ impl<'a, N, E> GraphQuery<'a, N, E> {
      * [`Direction::Outgoing`] gives children, while
      * [`Direction::Incoming`] gives parents.
      */
-    pub fn neighbors_directed(&self, x: NodeIndex, direction: Direction) -> Neighbors<E> {
+    pub fn neighbors_directed(&self, x: NodeIndex, direction: Direction) -> Neighbors<'_, E> {
         self.0.neighbors_directed(x, direction)
     }
 
@@ -52,7 +52,7 @@ impl<'a, N, E> GraphQuery<'a, N, E> {
      * [`Direction::Outgoing`] gives children, while
      * [`Direction::Incoming`] gives parents.
      */
-    pub fn edges_directed(&self, x: NodeIndex, direction: Direction) -> Edges<E, Directed> {
+    pub fn edges_directed(&self, x: NodeIndex, direction: Direction) -> Edges<'_, E, Directed> {
         self.0.edges_directed(x, direction)
     }
 }

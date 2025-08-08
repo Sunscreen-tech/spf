@@ -51,13 +51,13 @@ where
 {
     /// Returns an iterator over the rows of the GLEV ciphertext, which are
     /// [`GlweCiphertext`](crate::entities::GlweCiphertext)s.
-    pub fn glwe_ciphertexts(&self, params: &GlweDef) -> GlweCiphertextIterator<S> {
+    pub fn glwe_ciphertexts(&self, params: &GlweDef) -> GlweCiphertextIterator<'_, S> {
         GlweCiphertextIterator::new(&self.data, GlweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Returns a mutable iterator over the rows of the GLEV ciphertext, which are
     /// [`GlweCiphertext](crate::entities::GlweCiphertext)s.
-    pub fn glwe_ciphertexts_mut(&mut self, params: &GlweDef) -> GlweCiphertextIteratorMut<S> {
+    pub fn glwe_ciphertexts_mut(&mut self, params: &GlweDef) -> GlweCiphertextIteratorMut<'_, S> {
         GlweCiphertextIteratorMut::new(&mut self.data, GlweCiphertextRef::<S>::size(params.dim))
     }
 

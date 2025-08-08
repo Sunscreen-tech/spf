@@ -162,21 +162,21 @@ where
         }
     }
 
-    pub fn entry(&self) -> RwLockReadGuard<RobEntry<T>> {
+    pub fn entry(&self) -> RwLockReadGuard<'_, RobEntry<T>> {
         match self {
             Self::Id(entry) => entry.entry(),
             Self::IdMut(entry) => entry.entry(),
         }
     }
 
-    pub fn entry_mut(&self) -> Result<RwLockWriteGuard<RobEntry<T>>> {
+    pub fn entry_mut(&self) -> Result<RwLockWriteGuard<'_, RobEntry<T>>> {
         match self {
             Self::Id(_) => Err(Error::RegisterMutabilityViolation),
             Self::IdMut(entry) => Ok(entry.entry_mut()),
         }
     }
 
-    pub fn entry_force_mut(&self) -> RwLockWriteGuard<RobEntry<T>> {
+    pub fn entry_force_mut(&self) -> RwLockWriteGuard<'_, RobEntry<T>> {
         match self {
             Self::Id(entry) => entry.entry_mut(),
             Self::IdMut(entry) => entry.entry_mut(),

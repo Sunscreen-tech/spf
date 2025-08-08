@@ -75,7 +75,11 @@ where
 {
     /// Returns an iterator over the rows of the GGSW ciphertext, which are
     /// [`GlevCiphertext`](crate::entities::GlevCiphertext)s.
-    pub fn rows(&self, params: &GlweDef, radix: &RadixDecomposition) -> GlevCiphertextIterator<S> {
+    pub fn rows(
+        &self,
+        params: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> GlevCiphertextIterator<'_, S> {
         let stride = GlevCiphertextRef::<S>::size((params.dim, radix.count));
 
         GlevCiphertextIterator::new(&self.data, stride)
@@ -87,7 +91,7 @@ where
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<S> {
+    ) -> GlevCiphertextIteratorMut<'_, S> {
         let stride = GlevCiphertextRef::<S>::size((params.dim, radix.count));
 
         GlevCiphertextIteratorMut::new(&mut self.data, stride)

@@ -37,12 +37,12 @@ impl<S: TorusOps> GlweCiphertextList<S> {
 
 impl<S: TorusOps> GlweCiphertextListRef<S> {
     /// Iterate over the GLWE ciphertexts in the list.
-    pub fn ciphertexts(&self, lwe: &GlweDef) -> GlweCiphertextIterator<S> {
+    pub fn ciphertexts(&self, lwe: &GlweDef) -> GlweCiphertextIterator<'_, S> {
         GlweCiphertextIterator::new(self.as_slice(), GlweCiphertextRef::<S>::size(lwe.dim))
     }
 
     /// Iterate over the GLWE ciphertexts in the list mutably.
-    pub fn ciphertexts_mut(&mut self, lwe: &GlweDef) -> GlweCiphertextIteratorMut<S> {
+    pub fn ciphertexts_mut(&mut self, lwe: &GlweDef) -> GlweCiphertextIteratorMut<'_, S> {
         GlweCiphertextIteratorMut::new(self.as_mut_slice(), GlweCiphertextRef::<S>::size(lwe.dim))
     }
 }

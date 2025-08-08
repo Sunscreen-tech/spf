@@ -370,7 +370,9 @@ pub fn get_runtimes() -> Arc<Vec<GpuRuntime>> {
         .get_or_init(|| {
             let runtimes = vec![
                 #[cfg(feature = "cuda")]
-                GpuRuntime(Box::new(cuda_runtime::CudaRuntime::new(cuda_runtime::KERNELS).unwrap())),
+                GpuRuntime(Box::new(
+                    cuda_runtime::CudaRuntime::new(cuda_runtime::KERNELS).unwrap(),
+                )),
             ];
 
             Arc::new(runtimes)

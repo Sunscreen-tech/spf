@@ -41,12 +41,12 @@ where
     S: Clone + Zero,
 {
     /// Iterate over the polynomials in the list.
-    pub fn iter(&self, degree: PolynomialDegree) -> PolynomialIterator<S> {
+    pub fn iter(&self, degree: PolynomialDegree) -> PolynomialIterator<'_, S> {
         PolynomialIterator::new(&self.data, PolynomialRef::<S>::size(degree))
     }
 
     /// Iterate over the polynomials in the list mutably.
-    pub fn iter_mut(&mut self, degree: PolynomialDegree) -> PolynomialIteratorMut<S> {
+    pub fn iter_mut(&mut self, degree: PolynomialDegree) -> PolynomialIteratorMut<'_, S> {
         PolynomialIteratorMut::new(&mut self.data, PolynomialRef::<S>::size(degree))
     }
 }

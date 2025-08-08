@@ -57,7 +57,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> PrivateFunctionalKeyswitchKeyIter<S> {
+    ) -> PrivateFunctionalKeyswitchKeyIter<'_, S> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -74,7 +74,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelPrivateFunctionalKeyswitchKeyIter<S> {
+    ) -> ParallelPrivateFunctionalKeyswitchKeyIter<'_, S> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -91,7 +91,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> PrivateFunctionalKeyswitchKeyIterMut<S> {
+    ) -> PrivateFunctionalKeyswitchKeyIterMut<'_, S> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -108,7 +108,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelPrivateFunctionalKeyswitchKeyIterMut<S> {
+    ) -> ParallelPrivateFunctionalKeyswitchKeyIterMut<'_, S> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,

@@ -46,7 +46,7 @@ impl GgswCiphertextFftRef<Complex<f64>> {
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextFftIterator<Complex<f64>> {
+    ) -> GlevCiphertextFftIterator<'_, Complex<f64>> {
         let stride = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
         GlevCiphertextFftIterator::new(self.as_slice(), stride)
@@ -58,7 +58,7 @@ impl GgswCiphertextFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextFftIteratorMut<Complex<f64>> {
+    ) -> GlevCiphertextFftIteratorMut<'_, Complex<f64>> {
         let stride = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
         GlevCiphertextFftIteratorMut::new(self.as_mut_slice(), stride)
