@@ -784,9 +784,9 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         drift_offset_std,
     };
 
-    println!("Running the standard deviation analysis");
+    println!("Running the spread analysis");
     let now = std::time::Instant::now();
-    let (std_data, std_raw) = std_analysis(
+    let (std_data, std_raw) = spread_analysis(
         run_options.drift_sample_count,
         run_options.std_depth,
         &params,
