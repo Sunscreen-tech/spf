@@ -207,7 +207,7 @@ def _():
     # Configure matplotlib for publication quality
     plt.rcParams.update(
         {
-            "figure.dpi": 300,
+            "figure.dpi": 150,
             "axes.grid": True,
             "grid.alpha": 0.6,
             "axes.axisbelow": True,
