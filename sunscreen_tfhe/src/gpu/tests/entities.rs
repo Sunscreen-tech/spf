@@ -16,7 +16,7 @@ use crate::{
 #[test]
 fn check_glwe_fft_noise() {
     let runtimes = get_runtimes();
-    let num_blocks = 13;
+    let num_blocks = 25;
 
     let glwe = GLWE_1_2048_128;
 
@@ -132,12 +132,9 @@ fn check_glwe_fft_noise() {
         }
 
         let samples = (num_blocks * glwe.dim.polynomial_degree.0) as f64;
-        println!(
-            "No FFT {:e} CPU {:e} GPU {:e} Half {:e}",
-            mean_err[0] / samples,
-            mean_err[1] / samples,
-            mean_err[2] / samples,
-            mean_err[3] / samples
-        );
+        assert!(mean_err[0] / samples < 1e-15);
+        assert!(mean_err[1] / samples < 1e-15);
+        assert!(mean_err[2] / samples < 1e-15);
+        assert!(mean_err[3] / samples < 1e-15);
     }
 }
