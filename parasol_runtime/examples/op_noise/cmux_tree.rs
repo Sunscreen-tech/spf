@@ -1,13 +1,11 @@
 use std::sync::Arc;
 
+use benchmark_system_info::{SystemInfo, get_system_info};
 use clap::Args;
 use indicatif::{ProgressBar, ProgressStyle};
 use ndarray::{Array1, Array2};
 use num::Complex;
-use parasol_runtime::{
-    ComputeKey, Params, SecretKey
-};
-use benchmark_system_info::{SystemInfo, get_system_info};
+use parasol_runtime::{ComputeKey, Params, SecretKey};
 use rand::{Rng, seq::SliceRandom};
 use rayon::prelude::*;
 use scirs2_optimize::{Bounds, bounded_least_squares, prelude::BoundedOptions};
@@ -49,7 +47,6 @@ pub struct CMuxTreeRunOptions {
     /// Whether to include the raw data in the output
     #[arg(long, default_value_t = false)]
     include_raw: bool,
-
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -354,33 +351,33 @@ fn linear_regression(xs: &[f64], ys: &[f64]) -> (f64, f64, f64) {
 /// Fit a rational model to the spread standard deviation data
 fn fit_spread_model(depths: &[f64], stds: &[f64]) -> Result<SpreadModel, String> {
     let n = depths.len();
-    
+
     // Residual function for the optimizer
     let residuals = |params: &[f64], y: &[f64]| {
         let a = params[0];
         let b = params[1];
         let c = params[2];
-        
+
         let mut res = Array1::zeros(n);
-        
+
         for (i, &x) in depths.iter().enumerate() {
             res[i] = y[i] - function_to_fit(x, a, b, c);
         }
-        
+
         res
     };
-    
+
     // Set bounds - a must be positive for the model to make sense
     let bounds = Bounds::new(&[(Some(1e-10), None), (None, None), (None, None)]);
     let options = BoundedOptions {
         max_iter: 10_000,
         ..Default::default()
     };
-    
+
     // Initial parameters based on Python implementation
     let initial_params = Array1::from_vec(vec![6.0e-6, 0.002, -3.0]);
     let data = Array1::from_vec(stds.to_vec());
-    
+
     let results = bounded_least_squares(
         residuals,
         &initial_params,
@@ -389,15 +386,16 @@ fn fit_spread_model(depths: &[f64], stds: &[f64]) -> Result<SpreadModel, String>
         &data,
         Some(options),
     );
-    
+
     match results {
         Ok(result) => {
             let a = result.x[0];
             let b = result.x[1];
             let c = result.x[2];
-            
+
             // Calculate relative error
-            let relative_errors: Vec<f64> = depths.iter()
+            let relative_errors: Vec<f64> = depths
+                .iter()
                 .zip(stds.iter())
                 .map(|(&x, &y)| {
                     let predicted = function_to_fit(x, a, b, c);
@@ -408,19 +406,20 @@ fn fit_spread_model(depths: &[f64], stds: &[f64]) -> Result<SpreadModel, String>
                     }
                 })
                 .collect();
-            
-            let max_relative_error = relative_errors.iter()
+
+            let max_relative_error = relative_errors
+                .iter()
                 .cloned()
                 .fold(f64::NEG_INFINITY, f64::max);
-            
+
             Ok(SpreadModel {
                 a,
-                b, 
+                b,
                 c,
                 relative_error: max_relative_error,
             })
         }
-        Err(e) => Err(format!("Failed to fit spread model: {}", e))
+        Err(e) => Err(format!("Failed to fit spread model: {}", e)),
     }
 }
 
@@ -431,35 +430,34 @@ fn fit_error_rate(
     drift_offset_std: f64,
 ) -> FitResults {
     let depths_f64 = depths.iter().map(|&d| d as f64).collect::<Vec<_>>();
-    
+
     // Step 1: Fit the spread model to the standard deviation data
     let spread_model = match fit_spread_model(&depths_f64, stds) {
         Ok(model) => model,
         Err(e) => return FitResults::FitErrorMessage(e),
     };
-    
+
     // Step 2: Define the total variance model combining all three noise sources
     let total_std_model = |depth: f64| -> f64 {
         // Get spread standard deviation from fitted model
         let spread_std = spread_model.evaluate(depth);
-        
+
         // Calculate total variance: σ₀² + d² * σₘ² + σₛ²(d)
-        let variance = drift_offset_std.powi(2) 
-            + (depth * drift_std).powi(2) 
-            + spread_std.powi(2);
-        
+        let variance = drift_offset_std.powi(2) + (depth * drift_std).powi(2) + spread_std.powi(2);
+
         variance.sqrt()
     };
-    
+
     // Step 3: Calculate error rates using the complete drift-corrected model
     // The drift is already incorporated in the total variance, so we calculate
     // error directly from the total standard deviation
     // Note: We don't need to store these rates since they're not used elsewhere
-    
+
     // Calculate the base-2 error at depth 256 using the complete model
     let total_std_256 = total_std_model(256.0);
-    let base_2_error_at_depth_256 = probability_away_from_mean_gaussian_log(0.25, total_std_256).log_2();
-    
+    let base_2_error_at_depth_256 =
+        probability_away_from_mean_gaussian_log(0.25, total_std_256).log_2();
+
     // Calculate max error between model and measured standard deviations
     // This measures how well our spread model fits the actual data
     let max_error = depths_f64
@@ -474,7 +472,7 @@ fn fit_error_rate(
             }
         })
         .fold(f64::NEG_INFINITY, f64::max);
-    
+
     FitResults::FitErrorRate {
         spread_model,
         drift_std,
@@ -547,7 +545,6 @@ fn run_compute_tree(
 
     samples_per_level
 }
-
 
 fn std_analysis(
     sample_count: usize,
@@ -806,12 +803,7 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         vec![]
     };
 
-    let fit = fit_error_rate(
-        &depths,
-        &stds,
-        drift_std,
-        drift_offset_std,
-    );
+    let fit = fit_error_rate(&depths, &stds, drift_std, drift_offset_std);
 
     CMuxTreeDataFile::new(
         cmux_tree_params.clone(),
