@@ -60,7 +60,7 @@ where
                     .collect::<Vec<_>>(),
             );
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = n / 4;
             let num_threads = threads_per_block * num_ffts;
@@ -69,7 +69,7 @@ where
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     (kernel_name)
-                    (r, stream, 0)
+                    (r, stream)
                     a_gpu,
                     b_gpu,
                     n
@@ -129,7 +129,7 @@ fn can_roundtrip_fft_f64() {
             .enumerate()
             .for_each(|(i, x)| *x = Complex::new(2.0 * i as f64, 2.0 * i as f64 + 1.0));
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let threads_per_block = n as u32 / 4;
         let threads = num_blocks as u32 * threads_per_block;
@@ -138,7 +138,7 @@ fn can_roundtrip_fft_f64() {
             launch_kernel! {
                 ((threads, threads_per_block))
                 ("can_roundtrip_fft_f64")
-                (r, stream, 0)
+                (r, stream)
                 x,
                 y,
                 n as u32
@@ -175,7 +175,7 @@ fn check_twiddles() {
                 let sincos = r.allocate::<Complex<f64>>(n as usize).unwrap();
                 let sincospi = r.allocate::<Complex<f64>>(n as usize).unwrap();
 
-                let stream = r.make_stream().unwrap();
+                let stream = r.make_stream(0.into()).unwrap();
 
                 let threads_per_block = 64;
                 let num_threads = threads_per_block;
@@ -184,7 +184,7 @@ fn check_twiddles() {
                     launch_kernel!(
                         ((num_threads, threads_per_block))
                         ("get_twiddles_f64")
-                        (r, stream, 0)
+                        (r, stream)
                         lut,
                         sincos,
                         sincospi,

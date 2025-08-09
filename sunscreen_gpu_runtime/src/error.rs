@@ -21,6 +21,9 @@ pub enum Error {
 
     #[error("Could not cast the given slice")]
     CastError,
+
+    #[error("No such kernel.")]
+    NoSuchKernel,
 }
 
 impl Error {

@@ -70,8 +70,8 @@ impl GpuRuntime {
 
     /// Makes an independent queue for GPU kernels. Kernels enqueued on separate streams
     /// run in parallel.
-    pub fn make_stream(&self) -> Result<Stream<'_>> {
-        Ok(Stream(self.0.make_stream()?))
+    pub fn make_stream(&self, device_id: DeviceId) -> Result<Stream<'_>> {
+        Ok(Stream(self.0.make_stream(device_id)?))
     }
 
     /// Launch a GPU kernel on the given stream and device.
@@ -92,11 +92,9 @@ impl GpuRuntime {
         name: &str,
         grid: G,
         args: &[*const c_void],
-        device_id: DeviceId,
     ) -> Result<()> {
         unsafe {
-            self.0
-                .launch_kernel(stream.0.as_ref(), name, &grid, args, device_id)?;
+            self.0.launch_kernel(stream.0.as_ref(), name, &grid, args)?;
         }
 
         Ok(())
@@ -113,14 +111,14 @@ impl GpuRuntime {
 /// this kernel writes to during kernel execution.
 #[macro_export]
 macro_rules! launch_kernel {
-    (($grid:expr) ($name:expr) ($rt:ident,$stream:ident,$device_id:expr) $($args:expr),*) => {{
+    (($grid:expr) ($name:expr) ($rt:ident,$stream:ident) $($args:expr),*) => {{
         let kernel_args = vec![
             $(
                 $crate::AsKernelArg::as_kernel_arg(&$args),
             )*
         ];
 
-        let result = $rt.launch_kernel(&$stream, $name, $grid, kernel_args.as_slice(), $device_id.into());
+        let result = $rt.launch_kernel(&$stream, $name, $grid, kernel_args.as_slice());
 
         result
     }};
@@ -160,7 +158,7 @@ pub trait GpuRuntimeBackend: Sync + Send {
 
     /// Makes an independent queue for GPU kernels. Kernels enqueued on separate streams
     /// run in parallel.
-    fn make_stream<'a>(&'a self) -> Result<Box<dyn StreamBackend + 'a>>;
+    fn make_stream<'a>(&'a self, device_id: DeviceId) -> Result<Box<dyn StreamBackend + 'a>>;
 
     /// Launch a GPU kernel on the given stream and device.
     ///
@@ -177,7 +175,6 @@ pub trait GpuRuntimeBackend: Sync + Send {
         name: &str,
         grid: &dyn Grid,
         args: &[*const c_void],
-        device_id: DeviceId,
     ) -> Result<()>;
 
     /// Whether or not this runtime allows non-uniform thread blocks.
@@ -427,13 +424,13 @@ mod tests {
             let block_size = 64u32;
             let threads = (x.len() as u32).next_multiple_of(block_size);
 
-            let stream = runtime.make_stream().unwrap();
+            let stream = runtime.make_stream(0.into()).unwrap();
 
             unsafe {
                 launch_kernel!
                     (((threads, block_size))
                     ("vector_add")
-                    (runtime, stream, 0)
+                    (runtime, stream)
                     x_gpu,
                     y_gpu,
                     z_gpu,

@@ -54,7 +54,7 @@ fn check_glwe_fft_noise() {
                 .collect::<Vec<_>>(),
         );
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
         let threads = num_blocks as u32 * tpb;
@@ -63,7 +63,7 @@ fn check_glwe_fft_noise() {
             launch_kernel!(
                 ((threads, tpb))
                 ("compare_glwe_fft")
-                (r, stream, 0)
+                (r, stream)
                 y,
                 y_fft,
                 x

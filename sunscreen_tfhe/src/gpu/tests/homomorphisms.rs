@@ -78,7 +78,7 @@ where
             a.as_mut_slice().copy_from_slice(&a_flat);
             b.as_mut_slice().copy_from_slice(&b_flat);
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let tpb = d.threads_per_block();
             let t = num_blocks * tpb;
@@ -87,7 +87,7 @@ where
                 launch_kernel!(
                     ((t, tpb))
                     (kernel_name)
-                    (r, stream, 0)
+                    (r, stream)
                     c,
                     a,
                     b
@@ -214,7 +214,7 @@ fn can_glwe_polynomial_mad() {
                 .as_slice(),
         );
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = PolyDegreeInfo(glwe.dim.polynomial_degree.0 as u32).threads_per_block();
         let threads = num_blocks as u32 * tpb;
@@ -223,7 +223,7 @@ fn can_glwe_polynomial_mad() {
             launch_kernel!(
                 ((threads, tpb))
                 ("can_glwe_polynomial_mad")
-                (r, stream, 0)
+                (r, stream)
                 c,
                 a,
                 b
@@ -346,7 +346,7 @@ fn can_polynomial_glev_mad() {
                 .as_slice(),
         );
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
         let threads = tpb * num_blocks as u32;
@@ -358,7 +358,7 @@ fn can_polynomial_glev_mad() {
             launch_kernel!(
                 (grid)
                 ("can_polynomial_glev_mad")
-                (r, stream, 0)
+                (r, stream)
                 c,
                 a,
                 b,
@@ -493,7 +493,7 @@ fn can_glwe_ggsw_mad() {
                 .as_slice(),
         );
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
         let threads = tpb * num_blocks as u32;
@@ -504,7 +504,7 @@ fn can_glwe_ggsw_mad() {
             launch_kernel!(
                 (grid)
                 ("can_glwe_ggsw_mad")
-                (r, stream, 0)
+                (r, stream)
                 c,
                 a,
                 b,
@@ -634,7 +634,7 @@ fn can_cmux() {
                 .as_slice(),
         );
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
         let threads = tpb * num_blocks as u32;
@@ -645,7 +645,7 @@ fn can_cmux() {
             launch_kernel!(
                 (grid)
                 ("can_cmux")
-                (r, stream, 0)
+                (r, stream)
                 c,
                 a,
                 b,

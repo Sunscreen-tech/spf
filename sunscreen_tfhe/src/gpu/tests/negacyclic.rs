@@ -30,7 +30,7 @@ fn can_negacyclic_forward() {
 
             let output = r.allocate::<Complex<f64>>(num_points / 2).unwrap();
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = n / 8;
             let num_threads = num_ffts as u32 * threads_per_block;
@@ -39,7 +39,7 @@ fn can_negacyclic_forward() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_forward_twisted_fft_f64")
-                    (r, stream, 0)
+                    (r, stream)
                     input,
                     output,
                     n
@@ -86,7 +86,7 @@ fn can_negacyclic_inverse() {
 
             let output = r.allocate::<f64>(num_points).unwrap();
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = n / 8;
             let num_threads = num_ffts as u32 * threads_per_block;
@@ -95,7 +95,7 @@ fn can_negacyclic_inverse() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_inverse_twisted_fft_f64")
-                    (r, stream, 0)
+                    (r, stream)
                     input,
                     output,
                     n
@@ -140,7 +140,7 @@ fn can_apply_twist() {
                 .iter_mut()
                 .for_each(|x| *x = thread_rng().next_u64() as f64);
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = n.threads_per_block();
             let num_threads = num_blocks * threads_per_block;
 
@@ -148,7 +148,7 @@ fn can_apply_twist() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_apply_twist")
-                    (r, stream, 0)
+                    (r, stream)
                     x,
                     result,
                     *n
@@ -198,7 +198,7 @@ fn can_remove_twist() {
                 )
             });
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = n.threads_per_block();
             let num_threads = num_blocks * threads_per_block;
 
@@ -206,7 +206,7 @@ fn can_remove_twist() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_remove_twist")
-                    (r, stream, 0)
+                    (r, stream)
                     x,
                     result,
                     *n

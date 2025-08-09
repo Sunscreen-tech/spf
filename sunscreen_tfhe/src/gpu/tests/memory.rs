@@ -21,7 +21,7 @@ fn can_copy_to_and_from_shared_memory() {
             .iter_mut()
             .for_each(|x| *x = thread_rng().next_u32());
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
         let block_size = 128u32;
         let threads = num_blocks as u32 * block_size;
 
@@ -29,7 +29,7 @@ fn can_copy_to_and_from_shared_memory() {
             launch_kernel!(
                 ((threads, block_size))
                 ("can_copy_to_and_from_shared_memory")
-                (r, stream, 0)
+                (r, stream)
                 input,
                 output
             )
@@ -63,7 +63,7 @@ fn can_use_scratch() {
             .iter_mut()
             .for_each(|x| *x = thread_rng().next_u32());
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
         let block_size = 128u32;
         let threads = num_blocks as u32 * block_size;
         let grid = (threads, block_size);
@@ -74,7 +74,7 @@ fn can_use_scratch() {
             launch_kernel!(
                 (grid)
                 ("can_use_scratch")
-                (r, stream, 0)
+                (r, stream)
                 a,
                 b,
                 output,
