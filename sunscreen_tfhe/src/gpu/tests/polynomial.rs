@@ -50,6 +50,9 @@ fn can_roundtrip_polynomial() {
 
             stream.wait().unwrap();
 
+            dbg!(x.as_slice());
+            dbg!(y.as_slice());
+
             for (e, a) in x.as_slice().iter().zip(y.as_slice().iter()) {
                 assert_eq!(*a, *e);
             }

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 
+#include "fft_noreorder.cuh"
 #include "fft_f32_impl.cuh"
 #include "fft_f64_impl.cuh"
 #include "fft_params.cuh"
@@ -63,7 +64,7 @@ __device__ void fft_noreorder(Complex<T> *s_input, uint32_t n)
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_forward_noreorder>(reinterpret_cast<VecT*>(s_input));
+        CT_DIT_FFT_4way<FFT_1024_forward_noreorder>(reinterpret_cast<VecT*>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -81,7 +82,7 @@ __device__ void ifft_noreorder(Complex<T> *s_input, uint32_t n)
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_inverse_noreorder>(reinterpret_cast<VecT*>(s_input));
+        CT_DIF_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<VecT*>(s_input));
         break;
     default:
         printf("Illegal FFT size %d", n);
