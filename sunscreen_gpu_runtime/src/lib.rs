@@ -94,8 +94,7 @@ impl GpuRuntime {
         args: &[*const c_void],
     ) -> Result<()> {
         unsafe {
-            self.0
-                .launch_kernel(stream.0.as_ref(), name, &grid, args)?;
+            self.0.launch_kernel(stream.0.as_ref(), name, &grid, args)?;
         }
 
         Ok(())

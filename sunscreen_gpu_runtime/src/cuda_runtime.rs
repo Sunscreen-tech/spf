@@ -1,14 +1,24 @@
 use core::slice;
 use std::{
-    collections::HashMap, ffi::{c_char, CStr, CString}, marker::PhantomData, mem::MaybeUninit, os::raw::c_void, ptr::{self, null_mut}, str::FromStr, sync::{OnceLock, RwLock}
+    collections::HashMap,
+    ffi::{CStr, CString, c_char},
+    marker::PhantomData,
+    mem::MaybeUninit,
+    os::raw::c_void,
+    ptr::{self, null_mut},
+    str::FromStr,
+    sync::{OnceLock, RwLock},
 };
 
 use cuda_driver_sys::{
-    cuCtxCreate_v2, cuCtxDestroy_v2, cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuDevicePrimaryCtxGetState, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUcontext, CUdevice, CUfunction, CUmodule, CUstream
+    CUcontext, CUdevice, CUfunction, CUmodule, CUstream, cuCtxCreate_v2, cuCtxDestroy_v2,
+    cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName,
+    cuDevicePrimaryCtxGetState, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain,
+    cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2,
+    cuStreamSynchronize, cudaError_enum,
 };
 use cuda_runtime_sys::{
-    cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
-    cudaMemGetInfo,
+    cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal, cudaMemGetInfo,
 };
 
 use crate::{
@@ -52,19 +62,14 @@ impl Module {
 
         wrap_cuda_driver! {cuModuleGetFunction(&raw mut kernel_fn, self.module, name.as_ptr())};
 
-        Ok(Function {
-            inner: kernel_fn
-        })
+        Ok(Function { inner: kernel_fn })
     }
 }
 
 static INIT: OnceLock<Result<()>> = OnceLock::new();
 
 fn ensure_init() -> Result<()> {
-    INIT.get_or_init(|| {
-        Ok(())
-    })
-    .clone()?;
+    INIT.get_or_init(|| Ok(())).clone()?;
 
     Ok(())
 }
@@ -98,7 +103,7 @@ impl Context {
 
         let mut ctx = CUcontext::default();
         wrap_cuda_driver! {cuDevicePrimaryCtxRetain(&raw mut ctx, device_id)};
-        wrap_cuda_driver!( cuCtxSetCurrent(ctx) );
+        wrap_cuda_driver!(cuCtxSetCurrent(ctx));
 
         let module = Module::new(fatbin)?;
 
