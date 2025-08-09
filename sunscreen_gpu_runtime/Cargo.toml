@@ -20,3 +20,7 @@ test_kernels = []
 cuda = ["gpu", "dep:find_cuda_helper", "dep:cuda-runtime-sys", "dep:cuda-driver-sys"]
 amdhip = ["gpu"]
 gpu = []
+
+[[bin]]
+name = "device_info"
+required_features = ["gpu"]

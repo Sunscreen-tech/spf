@@ -44,7 +44,10 @@ impl OverlaySize for GlevCiphertextFftRef<Complex<f64>> {
 impl GlevCiphertextFftRef<Complex<f64>> {
     /// Returns an iterator over the rows of the GLEV ciphertext, which are
     /// [`GlweCiphertextFft`](crate::entities::GlweCiphertextFft)s.
-    pub fn glwe_ciphertexts(&self, params: &GlweDef) -> GlweCiphertextFftIterator<Complex<f64>> {
+    pub fn glwe_ciphertexts(
+        &self,
+        params: &GlweDef,
+    ) -> GlweCiphertextFftIterator<'_, Complex<f64>> {
         GlweCiphertextFftIterator::new(
             &self.data,
             GlweCiphertextFftRef::<Complex<f64>>::size(params.dim),
@@ -56,7 +59,7 @@ impl GlevCiphertextFftRef<Complex<f64>> {
     pub fn glwe_ciphertexts_mut(
         &mut self,
         params: &GlweDef,
-    ) -> GlweCiphertextFftIteratorMut<Complex<f64>> {
+    ) -> GlweCiphertextFftIteratorMut<'_, Complex<f64>> {
         GlweCiphertextFftIteratorMut::new(
             &mut self.data,
             GlweCiphertextFftRef::<Complex<f64>>::size(params.dim),

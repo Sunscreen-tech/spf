@@ -49,8 +49,9 @@ impl LweDimension {
 pub struct PolynomialDegree(pub usize);
 
 impl PolynomialDegree {
-    #[allow(unused)]
-    pub(crate) fn threads_per_block(&self) -> u32 {
+    /// The number of GPU threads per block to launch in the grid for this
+    /// polynomial size.
+    pub fn threads_per_block(&self) -> u32 {
         self.0 as u32 / 8
     }
 }

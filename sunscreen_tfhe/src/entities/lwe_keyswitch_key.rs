@@ -63,7 +63,7 @@ where
         &self,
         new_params: &LweDef,
         radix: &RadixDecomposition,
-    ) -> LevCiphertextIterator<S> {
+    ) -> LevCiphertextIterator<'_, S> {
         let stride = LevCiphertextRef::<S>::size((new_params.dim, radix.count));
 
         LevCiphertextIterator::new(&self.data, stride)
@@ -75,7 +75,7 @@ where
         &mut self,
         new_params: &LweDef,
         radix: &RadixDecomposition,
-    ) -> LevCiphertextIteratorMut<S> {
+    ) -> LevCiphertextIteratorMut<'_, S> {
         let stride = LevCiphertextRef::<S>::size((new_params.dim, radix.count));
 
         LevCiphertextIteratorMut::new(&mut self.data, stride)

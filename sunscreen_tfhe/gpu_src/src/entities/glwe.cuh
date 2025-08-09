@@ -41,6 +41,22 @@ public:
     template <typename U>
     __device__ inline void fft(GlweCiphertextFft<U> *out, const GlweDef &params) const;
 
+    __device__ inline void clone_into(GlweCiphertext<T> *other, const GlweDef &params) const
+    {
+        for (uint32_t i = 0; i < params.size.val; i++)
+        {
+            auto this_a_i = this->a_b(i, params);
+            auto other_a_i = other->a_b(i, params);
+
+            this_a_i->clone_into(other_a_i, params.polynomial_degree());
+        }
+
+        auto this_b = this->a_b(params.size.val, params);
+        auto other_b = other->a_b(params.size.val, params);
+
+        this_b->clone_into(other_b, params.polynomial_degree());
+    }
+
 private:
     uint8_t data[0];
 };
@@ -75,6 +91,7 @@ public:
 
     template <typename U>
     __device__ inline void ifft(GlweCiphertext<U> *out, const GlweDef &params) const;
+
 private:
     uint8_t data[0];
 };

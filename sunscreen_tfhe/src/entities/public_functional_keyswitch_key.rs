@@ -47,7 +47,7 @@ impl<S: TorusOps> PublicFunctionalKeyswitchKeyRef<S> {
         &self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIterator<S> {
+    ) -> GlevCiphertextIterator<'_, S> {
         let stride = GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count));
 
         GlevCiphertextIterator::new(self.as_slice(), stride)
@@ -58,7 +58,7 @@ impl<S: TorusOps> PublicFunctionalKeyswitchKeyRef<S> {
         &mut self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<S> {
+    ) -> GlevCiphertextIteratorMut<'_, S> {
         let stride = GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count));
 
         GlevCiphertextIteratorMut::new(self.as_mut_slice(), stride)

@@ -26,10 +26,20 @@ struct PolynomialDegree
     __device__ constexpr inline PolynomialDegree(uint32_t degree) : val(degree) {}
 };
 
+struct LweSize
+{
+    uint32_t val;
+
+    __device__ constexpr inline LweSize(uint32_t size) : val(size) {}
+};
+
 class LweDef
 {
 public:
-    uint32_t size;
+    __device__ LweDef() = delete;
+    __device__ constexpr inline LweDef(LweSize size): size(size) {}
+
+    LweSize size;
 };
 
 class GlweDef
@@ -75,4 +85,5 @@ struct RadixDecomposition
 };
 
 __device__ const RadixDecomposition PBS_RADIX_2_16_128 = RadixDecomposition(RadixCount(2), RadixLog(16));
+__device__ const LweDef LWE_637_128 = LweDef(LweSize(637));
 __device__ const GlweDef GLWE_1_2048_128 = GlweDef(LogPolyDegree(11), GlweSize(1));

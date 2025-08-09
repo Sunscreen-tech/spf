@@ -72,7 +72,7 @@ impl<T> AtomicRefCell<T> {
     ///
     /// # Panics
     /// If the underlying value is already mutably borrowed.
-    pub fn borrow(&self) -> Ref<T> {
+    pub fn borrow(&self) -> Ref<'_, T> {
         let old = self.state.fetch_add(1, Ordering::Acquire);
 
         if old == 0 {
@@ -94,7 +94,7 @@ impl<T> AtomicRefCell<T> {
     ///
     /// # Panics
     /// If the underlying value is already borrowed (any type).
-    pub fn borrow_mut(&self) -> RefMut<T> {
+    pub fn borrow_mut(&self) -> RefMut<'_, T> {
         if let Err(e) = self
             .state
             .compare_exchange(1, 0, Ordering::Acquire, Ordering::Relaxed)
@@ -202,7 +202,7 @@ impl<T> Spinlock<T> {
     /// # Remarks
     /// Semantically, this behaves the same as [`std::sync::Mutex::try_lock`], except that one can
     /// call [`std::mem::forget`] on the returned [`SpinlockHandle`] without leaking OS resources.
-    pub fn try_lock(&self) -> Option<SpinlockHandle<T>> {
+    pub fn try_lock(&self) -> Option<SpinlockHandle<'_, T>> {
         if self
             .lock
             .compare_exchange(false, true, Ordering::Acquire, Ordering::Relaxed)

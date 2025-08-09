@@ -32,13 +32,13 @@ where
 {
     /// Returns an iterator over the rows of the Lev ciphertext, which are
     /// [`LweCiphertext`](crate::entities::LweCiphertext)s.
-    pub fn lwe_ciphertexts(&self, params: &LweDef) -> LweCiphertextIterator<S> {
+    pub fn lwe_ciphertexts(&self, params: &LweDef) -> LweCiphertextIterator<'_, S> {
         LweCiphertextIterator::new(&self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Returns a mutable iterator over the rows of the Lev ciphertext, which are
     /// [`LweCiphertext`](crate::entities::LweCiphertext)s.
-    pub fn lwe_ciphertexts_mut(&mut self, params: &LweDef) -> LweCiphertextIteratorMut<S> {
+    pub fn lwe_ciphertexts_mut(&mut self, params: &LweDef) -> LweCiphertextIteratorMut<'_, S> {
         LweCiphertextIteratorMut::new(&mut self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 }

@@ -79,12 +79,12 @@ where
     S: TorusOps,
 {
     /// Returns an iterator over the `s` polynomials in a GLWE secret key.
-    pub fn s(&self, params: &GlweDef) -> PolynomialIterator<S> {
+    pub fn s(&self, params: &GlweDef) -> PolynomialIterator<'_, S> {
         PolynomialIterator::new(&self.data, params.dim.polynomial_degree.0)
     }
 
     /// Returns a parallel iterator over the `s` polynomials in a GLWE secret key.
-    pub fn s_par(&self, params: &GlweDef) -> ParallelPolynomialIterator<S> {
+    pub fn s_par(&self, params: &GlweDef) -> ParallelPolynomialIterator<'_, S> {
         ParallelPolynomialIterator::new(&self.data, params.dim.polynomial_degree.0)
     }
 
@@ -164,7 +164,7 @@ where
 {
     /// Returns an mutable iterator over the `s` polynomials in a GLWE secret
     /// key.
-    pub fn s_mut(&mut self, params: &GlweDef) -> PolynomialIteratorMut<S> {
+    pub fn s_mut(&mut self, params: &GlweDef) -> PolynomialIteratorMut<'_, S> {
         PolynomialIteratorMut::new(&mut self.data, params.dim.polynomial_degree.0)
     }
 }

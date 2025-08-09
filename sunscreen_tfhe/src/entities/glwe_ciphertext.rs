@@ -85,7 +85,7 @@ where
     pub fn a_b(
         &self,
         params: &GlweDef,
-    ) -> (PolynomialIterator<Torus<S>>, &PolynomialRef<Torus<S>>) {
+    ) -> (PolynomialIterator<'_, Torus<S>>, &PolynomialRef<Torus<S>>) {
         let (a, b) = self.data.as_ref().split_at(self.split_idx(params));
 
         (
@@ -95,7 +95,7 @@ where
     }
 
     /// Returns an interator over the a polynomials in a GLWE ciphertext.
-    pub fn a(&self, params: &GlweDef) -> PolynomialIterator<Torus<S>> {
+    pub fn a(&self, params: &GlweDef) -> PolynomialIterator<'_, Torus<S>> {
         self.a_b(params).0
     }
 
@@ -109,7 +109,7 @@ where
         &mut self,
         params: &GlweDef,
     ) -> (
-        PolynomialIteratorMut<Torus<S>>,
+        PolynomialIteratorMut<'_, Torus<S>>,
         &mut PolynomialRef<Torus<S>>,
     ) {
         let polynomial_degree = params.dim.polynomial_degree;
@@ -124,7 +124,7 @@ where
     }
 
     /// Returns a mutable iterator over the a polynomials in a GLWE ciphertext.
-    pub fn a_mut(&mut self, params: &GlweDef) -> PolynomialIteratorMut<Torus<S>> {
+    pub fn a_mut(&mut self, params: &GlweDef) -> PolynomialIteratorMut<'_, Torus<S>> {
         self.a_b_mut(params).0
     }
 

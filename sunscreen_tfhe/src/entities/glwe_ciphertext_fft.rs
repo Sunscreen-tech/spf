@@ -45,7 +45,7 @@ impl GlweCiphertextFftRef<Complex<f64>> {
         &self,
         params: &GlweDef,
     ) -> (
-        PolynomialFftIterator<Complex<f64>>,
+        PolynomialFftIterator<'_, Complex<f64>>,
         &PolynomialFftRef<Complex<f64>>,
     ) {
         let (a, b) = self.as_slice().split_at(self.split_idx(params));
@@ -57,7 +57,7 @@ impl GlweCiphertextFftRef<Complex<f64>> {
     }
 
     /// Returns an interator over the a polynomials in a GLWE ciphertext.
-    pub fn a(&self, params: &GlweDef) -> PolynomialFftIterator<Complex<f64>> {
+    pub fn a(&self, params: &GlweDef) -> PolynomialFftIterator<'_, Complex<f64>> {
         self.a_b(params).0
     }
 
@@ -71,7 +71,7 @@ impl GlweCiphertextFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
     ) -> (
-        PolynomialFftIteratorMut<Complex<f64>>,
+        PolynomialFftIteratorMut<'_, Complex<f64>>,
         &mut PolynomialFftRef<Complex<f64>>,
     ) {
         let polynomial_degree = params.dim.polynomial_degree;
@@ -86,7 +86,7 @@ impl GlweCiphertextFftRef<Complex<f64>> {
     }
 
     /// Returns a mutable iterator over the a polynomials in a GLWE ciphertext.
-    pub fn a_mut(&mut self, params: &GlweDef) -> PolynomialFftIteratorMut<Complex<f64>> {
+    pub fn a_mut(&mut self, params: &GlweDef) -> PolynomialFftIteratorMut<'_, Complex<f64>> {
         self.a_b_mut(params).0
     }
 

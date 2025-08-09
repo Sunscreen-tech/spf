@@ -90,7 +90,7 @@ where
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIterator<S> {
+    ) -> GlevCiphertextIterator<'_, S> {
         GlevCiphertextIterator::new(
             &self.data,
             GlevCiphertextRef::<S>::size((params.dim, radix.count)),
@@ -109,7 +109,7 @@ where
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<S> {
+    ) -> GlevCiphertextIteratorMut<'_, S> {
         GlevCiphertextIteratorMut::new(
             &mut self.data,
             GlevCiphertextRef::<S>::size((params.dim, radix.count)),

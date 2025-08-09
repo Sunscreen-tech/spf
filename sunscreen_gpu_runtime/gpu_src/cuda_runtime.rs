@@ -46,7 +46,7 @@ macro_rules! wrap_cuda_driver {
 struct Module(cuda_driver_sys::CUmodule);
 
 impl Module {
-    fn get_function(&self, name: &str) -> Result<Function<'_>> {
+    fn get_function(&self, name: &str) -> Result<Function> {
         let mut kernel_fn = CUfunction::default();
         let name = CString::from_str(name).map_err(|_| Error::NulError)?;
 
@@ -315,12 +315,6 @@ impl Drop for CudaAllocation {
         let _ = unsafe { cudaFree(self.ptr as *mut c_void) };
     }
 }
-
-#[cfg(not(test))]
-pub(crate) const KERNELS: &[u8] = include_bytes!(concat!(
-    env!("OUT_DIR"),
-    "/sunscreen_gpu_runtime.release.fatbin"
-));
 
 #[cfg(test)]
 pub(crate) const KERNELS: &[u8] = include_bytes!(concat!(

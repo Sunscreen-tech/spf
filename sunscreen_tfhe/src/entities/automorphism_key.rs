@@ -45,7 +45,7 @@ impl<S: TorusOps> AutomorphismKeyRef<S> {
         &self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyIterator<S> {
+    ) -> GlweKeyswitchKeyIterator<'_, S> {
         GlweKeyswitchKeyIterator::new(
             &self.data,
             GlweKeyswitchKeyRef::<S>::size((glwe.dim, radix.count)),
@@ -57,7 +57,7 @@ impl<S: TorusOps> AutomorphismKeyRef<S> {
         &mut self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyIteratorMut<S> {
+    ) -> GlweKeyswitchKeyIteratorMut<'_, S> {
         GlweKeyswitchKeyIteratorMut::new(
             &mut self.data,
             GlweKeyswitchKeyRef::<S>::size((glwe.dim, radix.count)),
