@@ -34,7 +34,7 @@ fn can_signed_decompose_polynomial() {
                 .iter_mut()
                 .for_each(|x| *x = Torus::from(thread_rng().next_u64()));
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = d.threads_per_block();
             let num_threads = num_blocks * threads_per_block;
@@ -42,7 +42,7 @@ fn can_signed_decompose_polynomial() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_decompose_polynomial")
-                    (r, stream, 0)
+                    (r, stream)
                     poly,
                     scratch,
                     o1,

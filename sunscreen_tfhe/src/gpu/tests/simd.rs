@@ -29,7 +29,7 @@ fn can_mod_2_pow_64() {
         let mut expected = Polynomial::zero(num_values);
         u64::vector_mod_pow2_q_f64(expected.coeffs_mut(), &data.as_slice(), 64);
 
-        let stream = r.make_stream().unwrap();
+        let stream = r.make_stream(0.into()).unwrap();
 
         let threads_per_block = 128;
 
@@ -37,7 +37,7 @@ fn can_mod_2_pow_64() {
             launch_kernel!(
                 ((threads_per_block, threads_per_block))
                 ("can_reduce_mod_2_pow_64")
-                (r, stream, 0)
+                (r, stream)
                 data,
                 actual,
                 num_values as u32

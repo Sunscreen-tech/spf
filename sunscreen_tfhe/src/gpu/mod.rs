@@ -82,13 +82,13 @@ impl Scratch {
         let size_per_block = *SIZE.get_or_init(|| {
             let size = r.allocate::<u32>(1).unwrap();
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             unsafe {
                 launch_kernel!(
                     ((1, 1))
                     ("query_scratch_size_per_block")
-                    (r, stream, 0)
+                    (r, stream)
                     size
                 )
             }

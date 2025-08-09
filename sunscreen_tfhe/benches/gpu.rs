@@ -44,7 +44,7 @@ mod gpu_benches {
                     let bench_name = format!(
                         "Complex<f64> FFT latency N={n} Device={dev_name} reorder={reorder}"
                     );
-                    let stream = r.make_stream().unwrap();
+                    let stream = r.make_stream(0.into()).unwrap();
                     let num_ffts_sequence = 2 * 2 * 637u32;
 
                     g.borrow_mut()
@@ -68,7 +68,7 @@ mod gpu_benches {
                                 launch_kernel!(
                                     ((num_threads, num_threads))
                                     ("benchmark_fft_f64")
-                                    (r, stream, 0)
+                                    (r, stream)
                                     buffer,
                                     output,
                                     n as u32,
@@ -105,7 +105,7 @@ mod gpu_benches {
                                 launch_kernel!(
                                     ((num_threads, num_threads))
                                     ("benchmark_fft_f32")
-                                    (r, stream, 0)
+                                    (r, stream)
                                     buffer,
                                     output,
                                     n as u32,
@@ -161,7 +161,7 @@ mod gpu_benches {
                             )))
                             .unwrap();
 
-                        let stream = r.make_stream().unwrap();
+                        let stream = r.make_stream(0.into()).unwrap();
                         let tpb = glwe.dim.polynomial_degree.threads_per_block();
                         let threads = pbs_count as u32 * tpb;
                         let grid = (threads, tpb);
@@ -172,7 +172,7 @@ mod gpu_benches {
                                 launch_kernel!(
                                     (grid)
                                     ("synthetic_pbs")
-                                    (r, stream, 0)
+                                    (r, stream)
                                     res,
                                     bsk_dev,
                                     scratch

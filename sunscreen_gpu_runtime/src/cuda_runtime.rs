@@ -194,11 +194,13 @@ impl GpuRuntimeBackend for CudaRuntime {
         }))
     }
 
-    fn make_stream<'a>(&'a self) -> Result<Box<dyn StreamBackend + 'a>> {
+    fn make_stream<'a>(&'a self, device_id: DeviceId) -> Result<Box<dyn StreamBackend + 'a>> {
+        self.set_device_id(device_id);
         let mut stream = CUstream::default();
         wrap_cuda_driver! {cuStreamCreate(&mut stream, 0)};
 
         Ok(Box::new(CudaStream {
+            device_id,
             runtime: self,
             handle: stream,
         }))
@@ -214,15 +216,15 @@ impl GpuRuntimeBackend for CudaRuntime {
         name: &str,
         grid: &dyn Grid,
         args: &[*const c_void],
-        device_id: DeviceId,
     ) -> Result<()> {
-        unsafe { stream.launch_kernel(name, device_id, grid, args)? };
+        unsafe { stream.launch_kernel(name, grid, args)? };
 
         Ok(())
     }
 }
 
 pub struct CudaStream<'a> {
+    device_id: DeviceId,
     runtime: &'a CudaRuntime,
     handle: CUstream,
 }
@@ -242,14 +244,13 @@ impl<'a> StreamBackend for CudaStream<'a> {
     unsafe fn launch_kernel(
         &self,
         name: &str,
-        device_id: DeviceId,
         grid: &dyn Grid,
         args: &[*const c_void],
     ) -> Result<()> {
         let ctx = self
             .runtime
             .ctxs
-            .get(device_id.0)
+            .get(self.device_id.0)
             .ok_or(Error::InvalidDevice)?;
 
         let kernel_fn = ctx.module.get_function(name)?;

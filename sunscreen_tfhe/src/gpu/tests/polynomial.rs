@@ -27,7 +27,7 @@ fn can_roundtrip_polynomial() {
                 *x = i as u64;
             });
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = d.threads_per_block();
             let num_threads = threads_per_block;
@@ -39,7 +39,7 @@ fn can_roundtrip_polynomial() {
                 launch_kernel!(
                     (grid)
                     ("can_polynomial_rountrip_fft")
-                    (r, stream, 0)
+                    (r, stream)
                     x,
                     y,
                     scratch,
@@ -73,7 +73,7 @@ fn can_roundtrip_polynomial_inplace() {
                 *x = i as u64;
             });
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = d.threads_per_block();
             let num_threads = threads_per_block * num_blocks;
@@ -84,7 +84,7 @@ fn can_roundtrip_polynomial_inplace() {
                 launch_kernel!(
                     (grid)
                     ("can_polynomial_rountrip_fft_inplace")
-                    (r, stream, 0)
+                    (r, stream)
                     x,
                     y,
                     *d as u32
@@ -124,14 +124,14 @@ where
                 .iter_mut()
                 .for_each(|x| *x = thread_rng().next_u64().into());
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0usize.into()).unwrap();
             let threads_per_block = d.threads_per_block();
 
             unsafe {
                 launch_kernel!(
                     ((num_blocks * threads_per_block, threads_per_block))
                     (kernel_name)
-                    (r, stream, 0usize)
+                    (r, stream)
                     c,
                     a,
                     b,
@@ -207,14 +207,14 @@ fn can_mad_polynomials() {
             let mut expected = avec_rt!([64]| Complex::<f64>::zero(); len);
             expected.as_mut_slice().clone_from_slice(c.as_slice());
 
-            let stream = r.make_stream().unwrap();
+            let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = d.threads_per_block();
 
             unsafe {
                 launch_kernel!(
                     ((num_blocks * threads_per_block, threads_per_block))
                     ("can_mad_polynomials")
-                    (r, stream, 0usize)
+                    (r, stream)
                     c,
                     a,
                     b,
