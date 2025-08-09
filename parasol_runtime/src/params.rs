@@ -100,10 +100,19 @@ impl Default for Params {
 ///
 /// # Remarks
 /// - This parameter set is compatible with RLWE public-key encryption.
-/// - The noise exponent (2^x) at a given depth inside a CMUX tree is well
-///   approximated (within 3.4% approximation error, valid up to depth 4096) by
-///   `base_2_error_exponent(depth) = -1 / (2.3890e-06 x + 8.3533e+02) - 2.6256e+01`
-///   The error at a computational depth of 256 is about 2^(-251.38).
+/// - The noise exponent (2^x) at a given depth inside a CMUX tree can be
+///   calculated using the following equation for the standard deviation
+///
+///   σ²_total(d) = σ₀² + d² * σₘ² + σₛ²(d), where σₛ(d) = f(x) = -1 / (a * (x + b)) + c"
+///   where
+///     - a = 0.029052727604361776
+///     - b = 2525.7137265334895
+///     - c = 0.02282344595365389
+///     - d is the depth to look at (starting at 1).
+///
+///   This equation can be plugged into the gaussian tails error estimate to derive
+///   the error at a given depth.
+///   The error at a computational depth of 256 is about 2^(-300).
 pub const DEFAULT_128: Params = Params {
     l0_params: LWE_637_128,
     l1_params: GLWE_1_2048_128,
