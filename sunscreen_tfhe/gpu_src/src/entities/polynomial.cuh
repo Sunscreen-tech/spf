@@ -101,8 +101,6 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
         s_in[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);
     }
 
-    __syncthreads();
-
     // twisted_fft operated in-place and returns s_in reinterpreted
     // as Complex<double>*
 #ifdef FFT_NO_REORDER

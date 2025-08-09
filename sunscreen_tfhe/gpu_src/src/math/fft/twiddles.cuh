@@ -92,7 +92,7 @@ public:
     }
 
     static __device__ __inline__ constexpr double2 Get_W_value_inverse(int N, int m)
-    {
+    {    
         return TWIDDLES_INV_F64[N - 2 + m];
     }
 #endif

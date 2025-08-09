@@ -47,3 +47,18 @@ extern "C" __global__ void benchmark_fft_f32(
 ) {
     benchmark_fft(in, out, fft_len, fft_count, reorder);
 }
+
+extern "C" __global__ void benchmark_fft_polynomial(
+    const Polynomial<uint64_t> *__restrict__ in,
+    Polynomial<Complex<double>> *__restrict__ out,
+    uint32_t fft_count
+) {
+    const auto len = PolynomialDegree(2048);
+    auto s_in = get_fft_scratch<Polynomial<uint64_t>>();
+
+    BLOCK_COPY(s_in, in, len.val);
+
+    for (uint32_t i = 0; i < fft_count; i++) {
+        s_in->fft_inplace<Complex<double>>(len);
+    }
+}
