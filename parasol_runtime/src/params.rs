@@ -100,10 +100,28 @@ impl Default for Params {
 ///
 /// # Remarks
 /// - This parameter set is compatible with RLWE public-key encryption.
-/// - The noise exponent (2^x) at a given depth inside a CMUX tree is well
-///   approximated (within 3% approximation error, valid up to depth 10,000) by
-///   `base_2_error_exponent(depth) = -1 / (6.162e-6 * (depth + 304.7668)) - 3.3379`
-///   The error at a computational depth of 1024 is about 2^(-125).
+/// - The noise exponent (2^x) at a given depth inside a CMUX tree can be
+///   calculated using the following equation for the standard deviation
+///
+///   σ²_total(d) = σ₀² + d² * σₘ² + σₛ²(d), where σₛ(d) = f(x) = -1 / (a * (x + b)) + c"
+///   where
+///     - a = 0.029052727604361776
+///     - b = 2525.7137265334895
+///     - c = 0.02282344595365389
+///     - d is the depth to look at (starting at 1).
+///
+///   This equation can be plugged into the gaussian tails error estimate to derive
+///   the error at a given depth. For example, the `parasol_runtime` crate defines
+///   the `probability_away_from_mean_gaussian_log` function to find the error
+///   for a given plaintext modulus
+///
+///   ```rust, ignore
+///   // We use 0.25 as the failure point in a binary scheme. In general for a
+///   // plaintext modulus `p`, we use `1/(2p)` as the failure point.
+///   probability_away_from_mean_gaussian_log(0.25, total_std_256).log_2();
+///   ```
+///
+///   The error at a computational depth of 256 is about 2^(-300).
 pub const DEFAULT_128: Params = Params {
     l0_params: LWE_637_128,
     l1_params: GLWE_1_2048_128,
