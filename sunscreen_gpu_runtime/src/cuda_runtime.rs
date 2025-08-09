@@ -1,21 +1,20 @@
 use core::slice;
 use std::{
+    collections::HashMap,
     ffi::{CStr, CString, c_char},
     marker::PhantomData,
     os::raw::c_void,
-    ptr::{self},
+    ptr::{self, null_mut},
     str::FromStr,
-    sync::OnceLock,
+    sync::{OnceLock, RwLock},
 };
 
 use cuda_driver_sys::{
-    CUfunction, CUstream, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuLaunchKernel,
-    cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize,
-    cudaError_enum,
+    cuCtxCreate_v2, cuCtxDestroy_v2, cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUcontext, CUfunction, CUmodule, CUstream
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
-    cudaMemGetInfo, cudaSetDevice,
+    cudaMemGetInfo,
 };
 
 use crate::{
@@ -41,18 +40,27 @@ macro_rules! wrap_cuda_driver {
         }
     };
 }
-
-#[repr(transparent)]
-struct Module(cuda_driver_sys::CUmodule);
+struct Module {
+    module: CUmodule,
+}
 
 impl Module {
-    fn get_function(&self, name: &str) -> Result<Function<'_>> {
+    fn new(fatbin: &[u8]) -> Result<Self> {
+        let mut module = CUmodule::default();
+        wrap_cuda_driver! {cuModuleLoadData(&raw mut module, fatbin.as_ptr() as *const c_void)};
+
+        Ok(Self { module })
+    }
+
+    fn get_function<'a>(&'a self, name: &str) -> Result<Function> {
         let mut kernel_fn = CUfunction::default();
         let name = CString::from_str(name).map_err(|_| Error::NulError)?;
 
-        wrap_cuda_driver! {cuModuleGetFunction(&raw mut kernel_fn, self.0, name.as_ptr())};
+        wrap_cuda_driver! {cuModuleGetFunction(&raw mut kernel_fn, self.module, name.as_ptr())};
 
-        Ok(Function::new(kernel_fn, self))
+        Ok(Function {
+            inner: kernel_fn
+        })
     }
 }
 
@@ -60,10 +68,6 @@ static INIT: OnceLock<Result<()>> = OnceLock::new();
 
 fn ensure_init() -> Result<()> {
     INIT.get_or_init(|| {
-        for i in 0..num_devices()? {
-            wrap_cuda_runtime!(cudaSetDevice(i as i32));
-        }
-
         Ok(())
     })
     .clone()?;
@@ -87,8 +91,36 @@ fn num_devices() -> Result<usize> {
     Ok(count)
 }
 
-pub struct CudaRuntime {
+pub struct Context {
+    ctx: CUcontext,
+    device_id: i32,
     module: Module,
+}
+
+impl Context {
+    fn new(device_id: i32, fatbin: &[u8]) -> Result<Self> {
+        let mut ctx = CUcontext::default();
+        wrap_cuda_driver! {cuCtxCreate_v2(&raw mut ctx, flags, dev)}
+        wrap_cuda_driver! {cuDevicePrimaryCtxRetain(&raw mut ctx, device_id)};
+
+        let module = Module::new(fatbin)?;
+
+        Ok(Self {
+            ctx,
+            device_id,
+            module,
+        })
+    }
+}
+
+impl Drop for Context {
+    fn drop(&mut self) {
+        let _ = unsafe { cuDevicePrimaryCtxRelease(self.device_id) };
+    }
+}
+
+pub struct CudaRuntime {
+    ctxs: Vec<Context>,
 }
 
 unsafe impl Sync for CudaRuntime {}
@@ -98,19 +130,21 @@ impl CudaRuntime {
     pub fn new(fatbin: &[u8]) -> Result<Self> {
         ensure_init()?;
 
-        let mut module = ptr::null_mut();
+        let num_devices = num_devices().unwrap();
+        let mut ctxs = vec![];
 
-        wrap_cuda_driver! {cuModuleLoadData(&mut module, fatbin.as_ptr() as *const c_void)};
+        for i in 0..num_devices {
+            ctxs.push(Context::new(i as i32, fatbin)?);
+        }
 
-        Ok(Self {
-            module: Module(module),
-        })
+        Ok(Self { ctxs })
     }
 }
 
 impl CudaRuntime {
     fn set_device_id(&self, device_id: DeviceId) -> Result<()> {
-        wrap_cuda_runtime! { cudaSetDevice(device_id.0 as i32) };
+        let ctx = self.ctxs.get(device_id.0).ok_or(Error::InvalidDevice)?;
+        wrap_cuda_driver! { cuCtxSetCurrent(ctx.ctx) };
 
         Ok(())
     }
@@ -133,12 +167,6 @@ impl GpuRuntimeBackend for CudaRuntime {
         wrap_cuda_driver! {cuDeviceComputeCapability(&raw mut major, &raw mut minor, device)};
 
         println!("\tCompute capability: {major}.{minor}",);
-
-        let (mut free, mut total) = (0, 0);
-
-        wrap_cuda_runtime!(cudaMemGetInfo(&raw mut free, &raw mut total));
-
-        println!("\tMemory {free} (bytes free) / {total} (bytes total)");
 
         Ok(())
     }
@@ -191,9 +219,7 @@ impl GpuRuntimeBackend for CudaRuntime {
         args: &[*const c_void],
         device_id: DeviceId,
     ) -> Result<()> {
-        wrap_cuda_runtime! {cudaSetDevice(device_id.0 as i32)};
-
-        unsafe { stream.launch_kernel(name, grid, args)? };
+        unsafe { stream.launch_kernel(name, device_id, grid, args)? };
 
         Ok(())
     }
@@ -219,10 +245,18 @@ impl<'a> StreamBackend for CudaStream<'a> {
     unsafe fn launch_kernel(
         &self,
         name: &str,
+        device_id: DeviceId,
         grid: &dyn Grid,
         args: &[*const c_void],
     ) -> Result<()> {
-        let kernel_fn = self.runtime.module.get_function(name)?;
+        let ctx = self
+            .runtime
+            .ctxs
+            .get(device_id.0)
+            .ok_or(Error::InvalidDevice)?;
+
+        let kernel_fn = ctx.module.get_function(name)?;
+        wrap_cuda_driver!(cuCtxSetCurrent(ctx.ctx));
 
         let dim_x = grid.x();
         let dim_y = grid.y();
@@ -269,18 +303,13 @@ impl<'a> Drop for CudaStream<'a> {
     }
 }
 
-#[repr(transparent)]
-pub struct Function<'a> {
+pub struct Function {
     inner: CUfunction,
-    _phantom: PhantomData<&'a Module>,
 }
 
-impl<'a> Function<'a> {
+impl<'a> Function {
     fn new(inner: CUfunction, _module: &'a Module) -> Self {
-        Self {
-            inner,
-            _phantom: PhantomData,
-        }
+        Self { inner }
     }
 }
 

@@ -197,6 +197,7 @@ pub trait StreamBackend {
     unsafe fn launch_kernel(
         &self,
         kernel_name: &str,
+        device_id: DeviceId,
         grid: &dyn Grid,
         args: &[*const c_void],
     ) -> Result<()>;
