@@ -1,6 +1,5 @@
 use aligned_vec::{AVec, RuntimeAlign, avec_rt};
-use num::{Complex, Float};
-use rustfft::FftNum;
+use bytemuck::Pod;
 use std::{
     cell::RefCell,
     collections::LinkedList,
@@ -8,8 +7,6 @@ use std::{
     mem::{align_of, size_of},
     rc::Rc,
 };
-
-use crate::{Torus, TorusOps};
 
 thread_local! {
     static SCRATCH: RefCell<Option<Scratch>> = const { RefCell::new(None) };
@@ -36,30 +33,6 @@ pub const SIMD_ALIGN: usize = align_of::<std::arch::x86_64::__m512d>();
 
 #[cfg(not(any(target_feature = "neon", target_arch = "x86_64")))]
 pub const SIMD_ALIGN: usize = align_of::<u128>();
-
-/// Indicates this is a "Plain Old Data" type. For `T` qualify as such,
-/// all bit patterns must be considered a properly initialized instance of
-/// `T`.
-///
-/// # Safety
-/// Implementing this trait on types that don't meet the above requirements
-/// may result in undefined behavior.
-pub unsafe trait Pod {}
-
-unsafe impl Pod for u8 {}
-unsafe impl Pod for u16 {}
-unsafe impl Pod for u32 {}
-unsafe impl Pod for u64 {}
-unsafe impl Pod for u128 {}
-unsafe impl Pod for i8 {}
-unsafe impl Pod for i16 {}
-unsafe impl Pod for i32 {}
-unsafe impl Pod for i64 {}
-unsafe impl Pod for i128 {}
-unsafe impl Pod for f32 {}
-unsafe impl Pod for f64 {}
-unsafe impl<T> Pod for Complex<T> where T: Float + FftNum {}
-unsafe impl<S> Pod for Torus<S> where S: TorusOps {}
 
 /// Allocate a scratch buffer in a cache efficient manner. Freed scratch
 /// buffers are reused in subsequent allocations.
@@ -219,6 +192,8 @@ impl<T> Drop for ScratchBuffer<'_, T> {
 
 #[cfg(test)]
 mod tests {
+    use bytemuck::Zeroable;
+
     use super::*;
 
     #[test]
@@ -305,6 +280,7 @@ mod tests {
             x: u32,
         }
 
+        unsafe impl Zeroable for Foo {}
         unsafe impl Pod for Foo {}
 
         let mut scratch = Scratch::new();
@@ -339,8 +315,9 @@ mod tests {
     #[test]
     #[should_panic]
     fn zst_allocations_should_panic() {
-        #[derive(Default)]
+        #[derive(Default, Copy, Clone)]
         struct Foo {}
+        unsafe impl Zeroable for Foo {}
         unsafe impl Pod for Foo {}
 
         let mut scratch = Scratch::new();

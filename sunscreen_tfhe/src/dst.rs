@@ -1,5 +1,6 @@
+use bytemuck::Pod;
+
 use crate::error::*;
-use crate::scratch::Pod;
 
 macro_rules! avec {
     ($elem:expr; $count:expr) => {

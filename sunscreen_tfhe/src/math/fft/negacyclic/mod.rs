@@ -3,6 +3,7 @@ use std::{
     sync::{Arc, OnceLock},
 };
 
+use bytemuck::Pod;
 use num::{Complex, Float, One};
 use realfft::FftNum;
 use rustfft::{Fft, FftPlanner};
@@ -88,7 +89,7 @@ where
 
 impl<T> FrequencyTransform for TwistedFft<T>
 where
-    T: FftNum + Float,
+    T: FftNum + Float + Pod,
 {
     type BaseRepr = T;
     type FrequencyRepr = Complex<T>;
