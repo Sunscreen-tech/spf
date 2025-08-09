@@ -178,7 +178,7 @@ impl CMuxTreeDataFile {
         spread_raw: Vec<Vec<Option<f64>>>,
     ) -> Self {
         Self {
-            version: 1,
+            version: 2,
             time: chrono::Local::now().to_string(),
             cmux_tree_parameters,
             system_info: get_system_info(),
