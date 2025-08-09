@@ -111,7 +111,16 @@ impl Default for Params {
 ///     - d is the depth to look at (starting at 1).
 ///
 ///   This equation can be plugged into the gaussian tails error estimate to derive
-///   the error at a given depth.
+///   the error at a given depth. For example, the `parasol_runtime` crate defines
+///   the `probability_away_from_mean_gaussian_log` function to find the error
+///   for a given plaintext modulus
+///
+///   ```rust, ignore
+///   // We use 0.25 as the failure point in a binary scheme. In general for a
+///   // plaintext modulus `p`, we use `1/(2p)` as the failure point.
+///   probability_away_from_mean_gaussian_log(0.25, total_std_256).log_2();
+///   ```
+///
 ///   The error at a computational depth of 256 is about 2^(-300).
 pub const DEFAULT_128: Params = Params {
     l0_params: LWE_637_128,
