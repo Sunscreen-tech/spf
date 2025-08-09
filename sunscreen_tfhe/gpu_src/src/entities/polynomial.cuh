@@ -6,6 +6,7 @@
 #include "../math/simd.cuh"
 #include "../math/fft/negacyclic.cuh"
 #include "../iter_tools.cuh"
+#include "../features.cuh"
 
 template <typename T>
 class PolynomialFft;
@@ -105,7 +106,7 @@ __device__ inline void Polynomial<uint64_t>::fft<Complex<double>>(
     // twisted_fft operated in-place and returns s_in reinterpreted
     // as Complex<double>*
 #ifdef FFT_NO_REORDER
-    auto s_out = twisted_fft_noreorder(s_in, degree.degree);
+    auto s_out = twisted_fft_noreorder(s_in, degree.val);
 #else
     auto s_out = twisted_fft(s_in, degree.val);
 #endif
@@ -149,7 +150,7 @@ __device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
     // twisted_ifft operates in-place and returns s_in reinterpreted
     // as double*.
 #ifdef FFT_NO_REORDER
-    auto s_out = twisted_ifft_noreorder(s_in, degree.degree);
+    auto s_out = twisted_ifft_noreorder(s_in, degree.val);
 #else
     auto s_out = twisted_ifft(s_in, degree.val);
 #endif

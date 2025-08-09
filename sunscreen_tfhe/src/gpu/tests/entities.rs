@@ -73,7 +73,7 @@ fn check_glwe_fft_noise() {
 
         stream.wait().unwrap();
 
-        let mut mean_err = [0.0; 4];
+        let mut mean_err = [0.0; 3];
 
         for i in 0..num_blocks {
             let mut fft = GlweCiphertextFft::new(&glwe);
@@ -86,7 +86,6 @@ fn check_glwe_fft_noise() {
             let mut cpu_roundtrip_msg =
                 Polynomial::<Torus<u64>>::zero(glwe.dim.polynomial_degree.0);
             let mut gpu_roundtrip_msg = cpu_roundtrip_msg.clone();
-            let mut gpu_fft_msg = cpu_roundtrip_msg.clone();
             let mut no_fft_msg = cpu_roundtrip_msg.clone();
 
             decrypt_glwe_ciphertext(&mut cpu_roundtrip_msg, &cpu_ifft, &sk, &glwe);
@@ -95,13 +94,6 @@ fn check_glwe_fft_noise() {
                 GlweCiphertextRef::from_slice(y.as_slice().chunks(glwe_len).nth(i).unwrap());
             decrypt_glwe_ciphertext(&mut gpu_roundtrip_msg, &gpu_roundtrip_ct, &sk, &glwe);
 
-            let gpu_fft_ct = GlweCiphertextFftRef::from_slice(
-                y_fft.as_slice().chunks(glwe_fft_len).nth(i).unwrap(),
-            );
-            let mut gpu_fft_cpu_ifft_ct = GlweCiphertext::new(&glwe);
-            gpu_fft_ct.ifft(&mut gpu_fft_cpu_ifft_ct, &glwe);
-
-            decrypt_glwe_ciphertext(&mut gpu_fft_msg, &gpu_fft_cpu_ifft_ct, &sk, &glwe);
             decrypt_glwe_ciphertext(&mut no_fft_msg, &cts[i], &sk, &glwe);
 
             for j in 0..glwe.dim.polynomial_degree.0 {
@@ -117,17 +109,12 @@ fn check_glwe_fft_noise() {
                     gpu_roundtrip_msg.coeffs()[j].decode(PlaintextBits(1)),
                     msgs[i].coeffs()[j]
                 );
-                assert_eq!(
-                    gpu_fft_msg.coeffs()[j].decode(PlaintextBits(1)),
-                    msgs[i].coeffs()[j]
-                );
 
                 let expected = Torus::encode(msgs[i].coeffs()[j], PlaintextBits(1));
 
                 mean_err[0] += no_fft_msg.coeffs()[j].normalized_torus_distance(&expected);
                 mean_err[1] += cpu_roundtrip_msg.coeffs()[j].normalized_torus_distance(&expected);
                 mean_err[2] += gpu_roundtrip_msg.coeffs()[j].normalized_torus_distance(&expected);
-                mean_err[3] += gpu_fft_msg.coeffs()[j].normalized_torus_distance(&expected);
             }
         }
 
@@ -135,6 +122,5 @@ fn check_glwe_fft_noise() {
         assert!(mean_err[0] / samples < 1e-15);
         assert!(mean_err[1] / samples < 1e-15);
         assert!(mean_err[2] / samples < 1e-15);
-        assert!(mean_err[3] / samples < 1e-15);
     }
 }

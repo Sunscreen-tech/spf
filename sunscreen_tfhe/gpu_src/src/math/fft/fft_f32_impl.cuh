@@ -23,6 +23,7 @@ SOFTWARE.
 #pragma once
 #include "twiddles.cuh"
 #include "../math.cuh"
+#define WARP 32
 
 __device__ __inline__ float shfl(float *value, int par)
 {

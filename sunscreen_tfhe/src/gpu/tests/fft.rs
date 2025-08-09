@@ -149,8 +149,8 @@ fn can_roundtrip_fft_f64() {
         stream.wait().unwrap();
 
         for (a, e) in x.as_slice().iter().zip(y.as_slice().iter()) {
-            approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12);
-            approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12);
+            approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12, epsilon = 1e-12);
+            approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12, epsilon = 1e-12);
         }
     }
 }

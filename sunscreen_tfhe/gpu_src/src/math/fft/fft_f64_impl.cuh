@@ -23,6 +23,7 @@ SOFTWARE.
 #pragma once
 #include "twiddles.cuh"
 #include "../math.cuh"
+#define WARP 32
 
 __device__ __inline__ double shfl(double *value, int par)
 {
@@ -327,7 +328,7 @@ __device__ __inline__ void reorder_4096(double2 *s_input, double2 *A_DFT_value, 
 }
 
 template <class const_params>
-__device__ void do_SMFFT_CT_DIT(double2 *s_input)
+__device__ inline void do_SMFFT_CT_DIT(double2 *s_input)
 {
 	double2 A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
 	double2 W;
