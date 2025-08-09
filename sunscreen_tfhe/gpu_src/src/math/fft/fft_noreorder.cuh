@@ -45,9 +45,10 @@ __device__ __inline__ T shfl_down(T *value, int par)
 }
 
 /// Forward decimation in time FFT.
-template<class const_params, typename VecT>
-__inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input){
-    using T = typename ScalarOf<VecT>::Ty;
+template <class const_params, typename VecT>
+__inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
+{
+	using T = typename ScalarOf<VecT>::Ty;
 
 	VecT A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
 	VecT W;
@@ -58,175 +59,146 @@ __inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input){
 	int parity, itemp;
 	int A_read_index, B_read_index, C_read_index, D_read_index;
 	int PoT, PoTp1, q;
-	
-	local_id = threadIdx.x & (const_params::warp - 1);
-	warp_id = threadIdx.x/const_params::warp;
 
-	#ifdef TESTING
-	int A_load_id, B_load_id, i, A_n, B_n;
-	A_load_id = threadIdx.x;
-	B_load_id = threadIdx.x + const_params::fft_length_quarter;
-	A_n=threadIdx.x;
-	B_n=threadIdx.x + const_params::fft_length_quarter;
-	for(i=1; i<const_params::fft_exp; i++) {
-		A_n >>= 1;
-		B_n >>= 1;
-		A_load_id <<= 1;
-		A_load_id |= A_n & 1;
-		B_load_id <<= 1;
-		B_load_id |= B_n & 1;
-    }
-    A_load_id &= const_params::fft_length-1;
-	B_load_id &= const_params::fft_length-1;
-	
-	//-----> Scrambling input
-	A_DFT_value=s_input[A_load_id];
-	B_DFT_value=s_input[A_load_id + 1];
-	C_DFT_value=s_input[B_load_id];
-	D_DFT_value=s_input[B_load_id + 1];
-	__syncthreads();
-	s_input[threadIdx.x]         = A_DFT_value;
-	s_input[threadIdx.x + const_params::fft_length_half]   = B_DFT_value;
-	s_input[threadIdx.x + const_params::fft_length_quarter]   = C_DFT_value;
-	s_input[threadIdx.x + const_params::fft_length_three_quarters] = D_DFT_value;
-	__syncthreads();
-	#endif
-	
-	
+	local_id = threadIdx.x & (const_params::warp - 1);
+	warp_id = threadIdx.x / const_params::warp;
+
 	//-----> FFT
 	//-->
-	PoT=1;
-	PoTp1=2;	
+	PoT = 1;
+	PoTp1 = 2;
 
 	//--> First iteration
-	itemp=local_id&1;
-	parity=(1-itemp*2);
-	A_DFT_value=s_input[local_id + (warp_id<<2)*const_params::warp];
-	B_DFT_value=s_input[local_id + (warp_id<<2)*const_params::warp + const_params::warp];
-	C_DFT_value=s_input[local_id + (warp_id<<2)*const_params::warp + 2*const_params::warp];
-	D_DFT_value=s_input[local_id + (warp_id<<2)*const_params::warp + 3*const_params::warp];
-	
+	itemp = local_id & 1;
+	parity = (1 - itemp * 2);
+	A_DFT_value = s_input[local_id + (warp_id << 2) * const_params::warp];
+	B_DFT_value = s_input[local_id + (warp_id << 2) * const_params::warp + const_params::warp];
+	C_DFT_value = s_input[local_id + (warp_id << 2) * const_params::warp + 2 * const_params::warp];
+	D_DFT_value = s_input[local_id + (warp_id << 2) * const_params::warp + 3 * const_params::warp];
+
 	__syncthreads();
-	
-	A_DFT_value.x=parity*A_DFT_value.x + shfl_xor(&A_DFT_value.x, 1);
-	A_DFT_value.y=parity*A_DFT_value.y + shfl_xor(&A_DFT_value.y, 1);
-	B_DFT_value.x=parity*B_DFT_value.x + shfl_xor(&B_DFT_value.x, 1);
-	B_DFT_value.y=parity*B_DFT_value.y + shfl_xor(&B_DFT_value.y, 1);
-	C_DFT_value.x=parity*C_DFT_value.x + shfl_xor(&C_DFT_value.x, 1);
-	C_DFT_value.y=parity*C_DFT_value.y + shfl_xor(&C_DFT_value.y, 1);
-	D_DFT_value.x=parity*D_DFT_value.x + shfl_xor(&D_DFT_value.x, 1);
-	D_DFT_value.y=parity*D_DFT_value.y + shfl_xor(&D_DFT_value.y, 1);
-	
+
+	A_DFT_value.x = parity * A_DFT_value.x + shfl_xor(&A_DFT_value.x, 1);
+	A_DFT_value.y = parity * A_DFT_value.y + shfl_xor(&A_DFT_value.y, 1);
+	B_DFT_value.x = parity * B_DFT_value.x + shfl_xor(&B_DFT_value.x, 1);
+	B_DFT_value.y = parity * B_DFT_value.y + shfl_xor(&B_DFT_value.y, 1);
+	C_DFT_value.x = parity * C_DFT_value.x + shfl_xor(&C_DFT_value.x, 1);
+	C_DFT_value.y = parity * C_DFT_value.y + shfl_xor(&C_DFT_value.y, 1);
+	D_DFT_value.x = parity * D_DFT_value.x + shfl_xor(&D_DFT_value.x, 1);
+	D_DFT_value.y = parity * D_DFT_value.y + shfl_xor(&D_DFT_value.y, 1);
+
 	//--> Second through Fifth iteration (no synchronization)
-	PoT=2;
-	PoTp1=4;
-	for(q=1;q<5;q++){
+	PoT = 2;
+	PoTp1 = 4;
+	for (q = 1; q < 5; q++)
+	{
 		m_param = (local_id & (PoTp1 - 1));
-		itemp = m_param>>q;
-		parity=((itemp<<1)-1);
-		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, itemp*m_param);
-		
-		Aftemp.x = W.x*A_DFT_value.x - W.y*A_DFT_value.y;
-		Aftemp.y = W.x*A_DFT_value.y + W.y*A_DFT_value.x;
-		Bftemp.x = W.x*B_DFT_value.x - W.y*B_DFT_value.y;
-		Bftemp.y = W.x*B_DFT_value.y + W.y*B_DFT_value.x;
-		Cftemp.x = W.x*C_DFT_value.x - W.y*C_DFT_value.y;
-		Cftemp.y = W.x*C_DFT_value.y + W.y*C_DFT_value.x;
-		Dftemp.x = W.x*D_DFT_value.x - W.y*D_DFT_value.y;
-		Dftemp.y = W.x*D_DFT_value.y + W.y*D_DFT_value.x;
-		
-		A_DFT_value.x = Aftemp.x + parity*shfl_xor(&Aftemp.x,PoT);
-		A_DFT_value.y = Aftemp.y + parity*shfl_xor(&Aftemp.y,PoT);
-		B_DFT_value.x = Bftemp.x + parity*shfl_xor(&Bftemp.x,PoT);
-		B_DFT_value.y = Bftemp.y + parity*shfl_xor(&Bftemp.y,PoT);
-		C_DFT_value.x = Cftemp.x + parity*shfl_xor(&Cftemp.x,PoT);
-		C_DFT_value.y = Cftemp.y + parity*shfl_xor(&Cftemp.y,PoT);
-		D_DFT_value.x = Dftemp.x + parity*shfl_xor(&Dftemp.x,PoT);
-		D_DFT_value.y = Dftemp.y + parity*shfl_xor(&Dftemp.y,PoT);	
-		
-		PoT=PoT<<1;
-		PoTp1=PoTp1<<1;
+		itemp = m_param >> q;
+		parity = ((itemp << 1) - 1);
+
+		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, itemp * m_param);
+
+		Aftemp.x = W.x * A_DFT_value.x - W.y * A_DFT_value.y;
+		Aftemp.y = W.x * A_DFT_value.y + W.y * A_DFT_value.x;
+		Bftemp.x = W.x * B_DFT_value.x - W.y * B_DFT_value.y;
+		Bftemp.y = W.x * B_DFT_value.y + W.y * B_DFT_value.x;
+		Cftemp.x = W.x * C_DFT_value.x - W.y * C_DFT_value.y;
+		Cftemp.y = W.x * C_DFT_value.y + W.y * C_DFT_value.x;
+		Dftemp.x = W.x * D_DFT_value.x - W.y * D_DFT_value.y;
+		Dftemp.y = W.x * D_DFT_value.y + W.y * D_DFT_value.x;
+
+		A_DFT_value.x = Aftemp.x + parity * shfl_xor(&Aftemp.x, PoT);
+		A_DFT_value.y = Aftemp.y + parity * shfl_xor(&Aftemp.y, PoT);
+		B_DFT_value.x = Bftemp.x + parity * shfl_xor(&Bftemp.x, PoT);
+		B_DFT_value.y = Bftemp.y + parity * shfl_xor(&Bftemp.y, PoT);
+		C_DFT_value.x = Cftemp.x + parity * shfl_xor(&Cftemp.x, PoT);
+		C_DFT_value.y = Cftemp.y + parity * shfl_xor(&Cftemp.y, PoT);
+		D_DFT_value.x = Dftemp.x + parity * shfl_xor(&Dftemp.x, PoT);
+		D_DFT_value.y = Dftemp.y + parity * shfl_xor(&Dftemp.y, PoT);
+
+		PoT = PoT << 1;
+		PoTp1 = PoTp1 << 1;
 	}
-	
-	itemp = local_id + (warp_id<<2)*const_params::warp;
-	s_input[itemp]                        = A_DFT_value;
-	s_input[itemp + const_params::warp]   = B_DFT_value;
-	s_input[itemp + 2*const_params::warp] = C_DFT_value;
-	s_input[itemp + 3*const_params::warp] = D_DFT_value;
-	
-	for(q=5;q<(const_params::fft_exp-1);q++){
+
+	itemp = local_id + (warp_id << 2) * const_params::warp;
+	s_input[itemp] = A_DFT_value;
+	s_input[itemp + const_params::warp] = B_DFT_value;
+	s_input[itemp + 2 * const_params::warp] = C_DFT_value;
+	s_input[itemp + 3 * const_params::warp] = D_DFT_value;
+
+	for (q = 5; q < (const_params::fft_exp - 1); q++)
+	{
 		__syncthreads();
 		m_param = threadIdx.x & (PoT - 1);
-		j=threadIdx.x>>q;
-		
-		W=FftTwiddles<T>::Get_W_value_inverse(PoTp1,m_param);
+		j = threadIdx.x >> q;
 
-		A_read_index=j*(PoTp1<<1) + m_param;
-		B_read_index=j*(PoTp1<<1) + m_param + PoT;
-		C_read_index=j*(PoTp1<<1) + m_param + PoTp1;
-		D_read_index=j*(PoTp1<<1) + m_param + 3*PoT;
-		
+		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param);
+
+		A_read_index = j * (PoTp1 << 1) + m_param;
+		B_read_index = j * (PoTp1 << 1) + m_param + PoT;
+		C_read_index = j * (PoTp1 << 1) + m_param + PoTp1;
+		D_read_index = j * (PoTp1 << 1) + m_param + 3 * PoT;
+
 		Aftemp = s_input[A_read_index];
 		Bftemp = s_input[B_read_index];
-		A_DFT_value.x=Aftemp.x + W.x*Bftemp.x - W.y*Bftemp.y;
-		A_DFT_value.y=Aftemp.y + W.x*Bftemp.y + W.y*Bftemp.x;		
-		B_DFT_value.x=Aftemp.x - W.x*Bftemp.x + W.y*Bftemp.y;
-		B_DFT_value.y=Aftemp.y - W.x*Bftemp.y - W.y*Bftemp.x;
-		
+		A_DFT_value.x = Aftemp.x + W.x * Bftemp.x - W.y * Bftemp.y;
+		A_DFT_value.y = Aftemp.y + W.x * Bftemp.y + W.y * Bftemp.x;
+		B_DFT_value.x = Aftemp.x - W.x * Bftemp.x + W.y * Bftemp.y;
+		B_DFT_value.y = Aftemp.y - W.x * Bftemp.y - W.y * Bftemp.x;
+
 		Cftemp = s_input[C_read_index];
 		Dftemp = s_input[D_read_index];
-		C_DFT_value.x=Cftemp.x + W.x*Dftemp.x - W.y*Dftemp.y;
-		C_DFT_value.y=Cftemp.y + W.x*Dftemp.y + W.y*Dftemp.x;		
-		D_DFT_value.x=Cftemp.x - W.x*Dftemp.x + W.y*Dftemp.y;
-		D_DFT_value.y=Cftemp.y - W.x*Dftemp.y - W.y*Dftemp.x;
-		
-		s_input[A_read_index]=A_DFT_value;
-		s_input[B_read_index]=B_DFT_value;
-		s_input[C_read_index]=C_DFT_value;
-		s_input[D_read_index]=D_DFT_value;
-		
-		PoT=PoT<<1;
-		PoTp1=PoTp1<<1;
+		C_DFT_value.x = Cftemp.x + W.x * Dftemp.x - W.y * Dftemp.y;
+		C_DFT_value.y = Cftemp.y + W.x * Dftemp.y + W.y * Dftemp.x;
+		D_DFT_value.x = Cftemp.x - W.x * Dftemp.x + W.y * Dftemp.y;
+		D_DFT_value.y = Cftemp.y - W.x * Dftemp.y - W.y * Dftemp.x;
+
+		s_input[A_read_index] = A_DFT_value;
+		s_input[B_read_index] = B_DFT_value;
+		s_input[C_read_index] = C_DFT_value;
+		s_input[D_read_index] = D_DFT_value;
+
+		PoT = PoT << 1;
+		PoTp1 = PoTp1 << 1;
 	}
-	
-	//last iteration
+
+	// last iteration
 	__syncthreads();
 	m_param = threadIdx.x;
-	
-	W=FftTwiddles<T>::Get_W_value_inverse(PoTp1,m_param);
-    
+
+	W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param);
+
 	A_read_index = m_param;
 	B_read_index = m_param + PoT;
-	C_read_index = m_param + (PoT>>1);
-	D_read_index = m_param + 3*(PoT>>1);
-	
+	C_read_index = m_param + (PoT >> 1);
+	D_read_index = m_param + 3 * (PoT >> 1);
+
 	Aftemp = s_input[A_read_index];
 	Bftemp = s_input[B_read_index];
-	A_DFT_value.x=Aftemp.x + W.x*Bftemp.x - W.y*Bftemp.y;
-	A_DFT_value.y=Aftemp.y + W.x*Bftemp.y + W.y*Bftemp.x;		
-	B_DFT_value.x=Aftemp.x - W.x*Bftemp.x + W.y*Bftemp.y;
-	B_DFT_value.y=Aftemp.y - W.x*Bftemp.y - W.y*Bftemp.x;
-	
+	A_DFT_value.x = Aftemp.x + W.x * Bftemp.x - W.y * Bftemp.y;
+	A_DFT_value.y = Aftemp.y + W.x * Bftemp.y + W.y * Bftemp.x;
+	B_DFT_value.x = Aftemp.x - W.x * Bftemp.x + W.y * Bftemp.y;
+	B_DFT_value.y = Aftemp.y - W.x * Bftemp.y - W.y * Bftemp.x;
+
 	Cftemp = s_input[C_read_index];
 	Dftemp = s_input[D_read_index];
-	C_DFT_value.x=Cftemp.x - W.y*Dftemp.x - W.x*Dftemp.y;
-	C_DFT_value.y=Cftemp.y - W.y*Dftemp.y + W.x*Dftemp.x;		
-	D_DFT_value.x=Cftemp.x + W.y*Dftemp.x + W.x*Dftemp.y;
-	D_DFT_value.y=Cftemp.y + W.y*Dftemp.y - W.x*Dftemp.x;
-	
-	s_input[A_read_index]=A_DFT_value;
-	s_input[B_read_index]=B_DFT_value;
-	s_input[C_read_index]=C_DFT_value;
-	s_input[D_read_index]=D_DFT_value;
+	C_DFT_value.x = Cftemp.x - W.y * Dftemp.x - W.x * Dftemp.y;
+	C_DFT_value.y = Cftemp.y - W.y * Dftemp.y + W.x * Dftemp.x;
+	D_DFT_value.x = Cftemp.x + W.y * Dftemp.x + W.x * Dftemp.y;
+	D_DFT_value.y = Cftemp.y + W.y * Dftemp.y - W.x * Dftemp.x;
 
-	__syncthreads();	
+	s_input[A_read_index] = A_DFT_value;
+	s_input[B_read_index] = B_DFT_value;
+	s_input[C_read_index] = C_DFT_value;
+	s_input[D_read_index] = D_DFT_value;
+
+	__syncthreads();
 }
-
 
 template <class const_params, typename VecT>
 __device__ inline void CT_DIF_FFT_4way(VecT *s_input)
 {
-    using T = typename ScalarOf<VecT>::Ty;
+	using T = typename ScalarOf<VecT>::Ty;
 
 	VecT A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
 	VecT W;

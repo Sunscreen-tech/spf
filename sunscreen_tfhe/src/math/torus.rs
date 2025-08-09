@@ -1,4 +1,4 @@
-use bytemuck::{Pod as BytemuckPod, Zeroable};
+use bytemuck::{Pod, Zeroable};
 use num::traits::{
     Bounded, MulAdd, Num, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr,
     WrappingSub,
@@ -14,7 +14,6 @@ use sunscreen_math::{Zero, refify_binary_op};
 use crate::{
     PlaintextBits,
     math::{ReinterpretAsSigned, ReinterpretAsUnsigned},
-    scratch::Pod,
     simd::VectorOps,
 };
 
@@ -73,7 +72,6 @@ pub trait TorusOps:
     + Zero
     + sunscreen_math::One
     + Pod
-    + BytemuckPod
     + Bounded
     + ToF64
     + FromF64
@@ -87,7 +85,7 @@ pub trait TorusOps:
 
 // Sound since Torus is a transparent wrapper and `S` impl `Pod`
 unsafe impl<S: TorusOps> Zeroable for Torus<S> {}
-unsafe impl<S: TorusOps> BytemuckPod for Torus<S> {}
+unsafe impl<S: TorusOps> Pod for Torus<S> {}
 
 /// Convert a type into a 64-bit unsigned integer.
 pub trait ToU64 {
