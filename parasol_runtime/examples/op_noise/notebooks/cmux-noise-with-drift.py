@@ -257,15 +257,17 @@ def _(mo):
 
 @app.cell
 def _(json):
-    # Load experimental data - first try the tool's default output, then fallback to custom name
+    # Load experimental data
     import os
-    
+
     data_files = [
+        "../../../../noise_analysis/analyze_cmux_tree.json",
         "../../../noise_analysis/analyze_cmux_tree.json",
-        "../../noise_analysis/analyze_cmux_tree.json",  
+        "../../noise_analysis/analyze_cmux_tree.json",
+        "../noise_analysis/analyze_cmux_tree.json",
         "analyze_cmux_tree.json",
     ]
-    
+
     results = None
     for filename in data_files:
         if os.path.exists(filename):
@@ -273,9 +275,11 @@ def _(json):
                 results = json.load(f)
             print(f"Loaded data from: {filename}")
             break
-    
+
     if results is None:
-        raise FileNotFoundError("No data file found. Please run the noise analysis tool first.")
+        raise FileNotFoundError(
+            "No data file found. Please run the noise analysis tool first."
+        )
 
     # Extract key parameters
     spread_sample_count = results["cmux_tree_parameters"]["run_options"][
@@ -495,7 +499,7 @@ def _(curve_fit, depths, measured_stds, np, plt, rational_model):
 
 
     # Fit the spread model to the measured data
-    (_, fitted_spread_model) = fit_spread_std(depths, measured_stds)
+    (popt, fitted_spread_model) = fit_spread_std(depths, measured_stds)
 
     # Plot the results to ensure we have a good fit
     plt.figure(figsize=(8, 5))
@@ -511,7 +515,7 @@ def _(curve_fit, depths, measured_stds, np, plt, rational_model):
         depth_fit,
         fitted_spread_model(depth_fit),
         "r-",
-        label="Fitted Spread Model",
+        label=f"Fitted Spread Model with equation y = -1/({popt[0]:.2e}*(x+{popt[1]:.2e})) + {popt[2]:.2e}\n",
     )
     plt.xlabel("Depth")
     plt.ylabel("Standard Deviation")
