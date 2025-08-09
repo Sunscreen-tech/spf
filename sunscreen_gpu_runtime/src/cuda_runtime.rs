@@ -1,16 +1,10 @@
 use core::slice;
 use std::{
-    collections::HashMap,
-    ffi::{CStr, CString, c_char},
-    marker::PhantomData,
-    os::raw::c_void,
-    ptr::{self, null_mut},
-    str::FromStr,
-    sync::{OnceLock, RwLock},
+    collections::HashMap, ffi::{c_char, CStr, CString}, marker::PhantomData, mem::MaybeUninit, os::raw::c_void, ptr::{self, null_mut}, str::FromStr, sync::{OnceLock, RwLock}
 };
 
 use cuda_driver_sys::{
-    cuCtxCreate_v2, cuCtxDestroy_v2, cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUcontext, CUfunction, CUmodule, CUstream
+    cuCtxCreate_v2, cuCtxDestroy_v2, cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuDevicePrimaryCtxGetState, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUcontext, CUdevice, CUfunction, CUmodule, CUstream
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
@@ -92,22 +86,25 @@ fn num_devices() -> Result<usize> {
 }
 
 pub struct Context {
+    device: CUdevice,
     ctx: CUcontext,
-    device_id: i32,
     module: Module,
 }
 
 impl Context {
     fn new(device_id: i32, fatbin: &[u8]) -> Result<Self> {
+        let mut device = CUdevice::default();
+        wrap_cuda_driver! {cuDeviceGet(&raw mut device, device_id)}
+
         let mut ctx = CUcontext::default();
-        wrap_cuda_driver! {cuCtxCreate_v2(&raw mut ctx, flags, dev)}
         wrap_cuda_driver! {cuDevicePrimaryCtxRetain(&raw mut ctx, device_id)};
+        wrap_cuda_driver!( cuCtxSetCurrent(ctx) );
 
         let module = Module::new(fatbin)?;
 
         Ok(Self {
             ctx,
-            device_id,
+            device,
             module,
         })
     }
@@ -115,7 +112,7 @@ impl Context {
 
 impl Drop for Context {
     fn drop(&mut self) {
-        let _ = unsafe { cuDevicePrimaryCtxRelease(self.device_id) };
+        let _ = unsafe { cuDevicePrimaryCtxRelease(self.device) };
     }
 }
 
