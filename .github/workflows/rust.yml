@@ -73,9 +73,7 @@ jobs:
       run: cargo fmt --check
 
     # Check that common feature permutations compile
-    - name: Core compile check
-      run: cargo check --release -vv
-    - name: Full compile check
+    - name: Compile check
       run: cargo check --release
 
     # Build and run the tests
