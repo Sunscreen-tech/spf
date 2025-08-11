@@ -16,7 +16,7 @@
 //! use parasol_runtime::{
 //! fluent::{
 //!     FheCircuitCtx, PackedUInt}, ComputeKey, Encryption, Evaluation, L1GgswCiphertext,
-//!     L1GlweCiphertext, PublicKey, SecretKey, Seed, CircuitProcessor, DEFAULT_128
+//!     L1GlweCiphertext, PublicKey, SecretKey, CircuitProcessor, DEFAULT_128
 //! };
 //! use std::sync::Arc;
 //!

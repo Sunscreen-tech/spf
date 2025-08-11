@@ -75,14 +75,7 @@ where
 
     /// Generate a binary GLWE secret key with a specific seed for deterministic generation.
     pub fn generate_binary_with_seed(params: &GlweDef, seed: &Seed) -> GlweSecretKey<S> {
-        params.assert_valid();
-
-        let len = GlweSecretKeyRef::<S>::size(params.dim);
-        let mut rng = seed.create_rng();
-
-        GlweSecretKey {
-            data: avec_from_iter!((0..len).map(|_| binary_with_seed::<S>(&mut rng))),
-        }
+        GlweSecretKey::generate_binary_with_rng(params, &mut seed.create_rng())
     }
 
     /// Generate a uniform GLWE secret key with a specific seed for deterministic generation.
