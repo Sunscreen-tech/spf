@@ -1,9 +1,8 @@
-use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     LweDef, LweDimension, Torus, TorusOps,
-    dst::OverlaySize,
+    dst::{OverlaySize, dst_allocate},
     macros::{impl_binary_op, impl_unary_op},
 };
 
@@ -40,7 +39,7 @@ impl<S: TorusOps> LweCiphertext<S> {
 
     /// Create a new LWE ciphertext with all coefficients set to zero.
     pub fn zero(params: &LweDef) -> Self {
-        let data = avec![Torus::zero(); LweCiphertextRef::<S>::size(params.dim)];
+        let data = dst_allocate(LweCiphertextRef::<S>::size(params.dim));
 
         Self { data }
     }

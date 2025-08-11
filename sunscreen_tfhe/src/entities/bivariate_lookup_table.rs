@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     CarryBits, GlweDef, GlweDimension, PlaintextBits, Torus, TorusOps,
-    dst::{FromMutSlice, FromSlice, OverlaySize},
+    dst::{FromMutSlice, FromSlice, OverlaySize, dst_allocate},
     entities::PolynomialRef,
     ops::{bootstrapping::generate_bivariate_lut, encryption::trivially_encrypt_glwe_ciphertext},
     scratch::allocate_scratch_ref,
@@ -43,7 +42,7 @@ impl<S: TorusOps> BivariateLookupTable<S> {
         F: Fn(u64, u64) -> u64,
     {
         let mut lut = BivariateLookupTable {
-            data: avec!(Torus::zero(); BivariateLookupTableRef::<S>::size(glwe.dim)),
+            data: dst_allocate(BivariateLookupTableRef::<S>::size(glwe.dim)),
         };
 
         lut.fill_trivial_from_fn(map, glwe, plaintext_bits, carry_bits);

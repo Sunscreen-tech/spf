@@ -3,13 +3,14 @@ pub mod cuda_runtime;
 
 mod error;
 use std::{
-    ffi::c_void,
-    marker::PhantomData,
-    sync::{Arc, OnceLock},
+    borrow::{Borrow, BorrowMut}, ffi::c_void, marker::PhantomData, ops::{Deref, DerefMut}, sync::{
+        atomic::{AtomicBool, Ordering}, Arc, OnceLock
+    }
 };
 
 use bytemuck::{NoUninit, Pod};
 pub use error::*;
+use serde::{Deserialize, Serialize, de::Visitor};
 
 #[derive(Debug, Copy, Clone, PartialEq, Eq)]
 pub struct DeviceId(pub usize);
@@ -40,6 +41,11 @@ impl GpuRuntime {
         Self(Box::new(backend))
     }
 
+    /// Returns the name of this runtime.
+    pub fn name(&self) -> &str {
+        self.0.runtime_name()
+    }
+
     /// Print information about the given device.
     pub fn print_device_info(&self, device_id: DeviceId) -> Result<()> {
         self.0.print_device_info(device_id)
@@ -59,11 +65,12 @@ impl GpuRuntime {
     /// # Remarks
     /// This function will allocate space using virtual pages accessible from both
     /// device and host.
-    pub fn allocate<T: bytemuck::Pod>(&self, len: usize) -> Result<Allocation<T>> {
+    pub fn allocate<T: bytemuck::Pod>(this: &Arc<Self>, len: usize) -> Result<Allocation<T>> {
         let byte_len = len * std::mem::size_of::<T>();
 
         Ok(Allocation {
-            inner: self.0.allocate(byte_len)?,
+            runtime: this.clone(),
+            inner: this.0.allocate(byte_len)?,
             _phantom: PhantomData,
         })
     }
@@ -134,6 +141,8 @@ impl<'a> Stream<'a> {
 }
 
 pub trait GpuRuntimeBackend: Sync + Send {
+    fn runtime_name(&self) -> &str;
+
     /// Print information about the given device.
     fn print_device_info(&self, device_id: DeviceId) -> Result<()>;
 
@@ -206,9 +215,198 @@ pub struct Allocation<T>
 where
     T: Pod,
 {
+    runtime: Arc<GpuRuntime>,
     pub(crate) inner: Box<dyn AllocationBackend>,
     pub(crate) _phantom: PhantomData<T>,
 }
+
+impl<T> std::fmt::Debug for Allocation<T>
+where
+    T: Pod + std::fmt::Debug,
+{
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        <[T] as std::fmt::Debug>::fmt(self.as_slice(), f)
+    }
+}
+
+impl<T> Serialize for Allocation<T>
+where
+    T: Pod + Serialize,
+{
+    fn serialize<S>(&self, serializer: S) -> std::result::Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        <[T] as Serialize>::serialize(self.as_slice(), serializer)
+    }
+}
+
+struct AllocationVisitor<'a, T>
+where
+    T: Pod,
+{
+    gpu_runtime: &'a Arc<GpuRuntime>,
+    _phantom: PhantomData<T>,
+}
+
+impl<'de, 'a, T> Visitor<'de> for AllocationVisitor<'a, T>
+where
+    T: Pod + Deserialize<'de>,
+{
+    type Value = Allocation<T>;
+
+    fn expecting(&self, formatter: &mut std::fmt::Formatter) -> std::fmt::Result {
+        formatter.write_str("a sequency of T elements")
+    }
+
+    fn visit_seq<A>(self, mut seq: A) -> std::result::Result<Self::Value, A::Error>
+    where
+        A: serde::de::SeqAccess<'de>,
+        A::Error: serde::de::Error,
+    {
+        use serde::de::Error;
+
+        let len = seq.size_hint();
+
+        let try_allocate = |len: usize| {
+            GpuRuntime::allocate(self.gpu_runtime, len).map_err(|_| {
+                A::Error::custom(&format!(
+                    "Failed to allocate {} bytes on runtime {}",
+                    std::mem::size_of::<T>() * len,
+                    self.gpu_runtime.name()
+                ))
+            })
+        };
+
+        match len {
+            // If we have a length, we can directly deserialize into the Allocation...
+            Some(len) => {
+                let mut allocation = try_allocate(len)?;
+
+                for i in 0..len {
+                    let next_element = seq
+                        .next_element::<T>()?
+                        .ok_or_else(|| A::Error::invalid_length(i, &self))?;
+
+                    allocation.as_mut_slice()[i] = next_element;
+                }
+
+                Ok(allocation)
+            }
+            // ... If not, deserialize into Vec as Rust's internal allocator is almost certainly
+            // faster than a GPU runtime, which often gets the driver involved. Then, copy
+            // all the data into the allocation.
+            None => {
+                let mut tmp = vec![];
+
+                while let Some(x) = seq.next_element::<T>()? {
+                    tmp.push(x);
+                }
+
+                let mut allocation = try_allocate(tmp.len())?;
+
+                allocation.as_mut_slice().copy_from_slice(tmp.as_slice());
+
+                Ok(allocation)
+            }
+        }
+    }
+}
+
+impl<'de, T> Deserialize<'de> for Allocation<T>
+where
+    T: Pod + Deserialize<'de>,
+{
+    fn deserialize<D>(deserializer: D) -> std::result::Result<Self, D::Error>
+    where
+        D: serde::Deserializer<'de>,
+    {
+        let visitor = AllocationVisitor {
+            gpu_runtime: &get_runtimes()[0],
+            _phantom: PhantomData,
+        };
+
+        deserializer.deserialize_seq(visitor)
+    }
+}
+
+impl<T> Clone for Allocation<T>
+where
+    T: Pod,
+{
+    fn clone(&self) -> Self {
+        let s = self.as_slice();
+
+        // Memory allocation failures tend to kill apps, so unwrapping here is probably
+        // fine.
+        let mut other = GpuRuntime::allocate::<T>(&self.runtime, s.len()).unwrap();
+
+        other.copy_from_slice(s);
+
+        other
+    }
+}
+
+impl<T> PartialEq for Allocation<T>
+where T: PartialEq + Pod
+{
+    fn eq(&self, other: &Self) -> bool {
+        self.as_slice() == other.as_slice()
+    }
+}
+
+impl<T> Borrow<[T]> for Allocation<T>
+where T: Pod
+{
+    fn borrow(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T> BorrowMut<[T]> for Allocation<T>
+where T: Pod
+{
+    fn borrow_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
+impl<T> AsRef<[T]> for Allocation<T>
+where T: Pod
+{
+    fn as_ref(&self) -> &[T] {
+        self.as_slice()
+    }
+}
+
+impl<T> AsMut<[T]> for Allocation<T>
+where T: Pod
+{
+    fn as_mut(&mut self) -> &mut [T] {
+        self.as_mut_slice()
+    }
+}
+
+impl<T> Deref for Allocation<T>
+where T: Pod
+{
+    type Target = [T];
+
+    fn deref(&self) -> &Self::Target {
+        self.as_slice()    
+    }
+}
+
+impl<T> DerefMut for Allocation<T>
+where T: Pod
+{
+    fn deref_mut(&mut self) -> &mut Self::Target {
+        self.as_mut_slice()    
+    }
+}
+
+impl<T> Eq for Allocation<T>
+where T: Eq + Pod { }
 
 impl<T> Allocation<T>
 where
@@ -226,6 +424,14 @@ where
 
     pub fn copy_from_slice(&mut self, other: &[T]) {
         self.as_mut_slice().copy_from_slice(other);
+    }
+
+    pub fn iter(&self) -> impl ExactSizeIterator<Item=&T> {
+        self.as_slice().iter()
+    }
+
+    pub fn iter_mut(&mut self) -> impl ExactSizeIterator<Item=&mut T> {
+        self.as_mut_slice().iter_mut()
     }
 }
 
@@ -360,20 +566,34 @@ impl Grid for ((u32, u32), (u32, u32), (u32, u32)) {
     }
 }
 
-pub fn get_runtimes() -> Arc<Vec<GpuRuntime>> {
-    static RUNTIMES: OnceLock<Arc<Vec<GpuRuntime>>> = OnceLock::new();
+static RUNTIMES: OnceLock<Arc<Vec<Arc<GpuRuntime>>>> = OnceLock::new();
 
+pub fn init_runtimes(
+    // Don't know why the rust compiler complains about this...
+    #[allow(unused)] cubin: &[u8]
+) {
+    static INITIALIZED: AtomicBool = AtomicBool::new(false);
+
+    INITIALIZED
+        .compare_exchange(false, true, Ordering::Relaxed, Ordering::Relaxed)
+        .expect("GPU runtime already initialized");
+
+    let _ = RUNTIMES.get_or_init(|| {
+        let runtimes = vec![
+            #[cfg(feature = "cuda")]
+            Arc::new(GpuRuntime(Box::new(
+                cuda_runtime::CudaRuntime::new(cubin).unwrap(),
+            ))),
+        ];
+
+        Arc::new(runtimes)
+    });
+}
+
+pub fn get_runtimes() -> Arc<Vec<Arc<GpuRuntime>>> {
     RUNTIMES
-        .get_or_init(|| {
-            let runtimes = vec![
-                #[cfg(feature = "cuda")]
-                GpuRuntime(Box::new(
-                    cuda_runtime::CudaRuntime::new(cuda_runtime::KERNELS).unwrap(),
-                )),
-            ];
-
-            Arc::new(runtimes)
-        })
+        .get()
+        .expect("GPU runtimes not initialized.")
         .clone()
 }
 
@@ -393,7 +613,7 @@ mod tests {
     #[test]
     fn can_allocate_data() {
         for runtime in get_runtimes().iter() {
-            let mut data = runtime.allocate::<u64>(1234).unwrap();
+            let mut data = GpuRuntime::allocate::<u64>(runtime, 1234).unwrap();
             let data = data.as_mut_slice();
 
             for (i, d) in data.iter_mut().enumerate() {
@@ -412,9 +632,9 @@ mod tests {
             let x = (0..1234).map(|x| x as f32).collect::<Vec<_>>();
             let y = (1234..2468).map(|x| x as f32).collect::<Vec<_>>();
 
-            let mut x_gpu = runtime.allocate::<f32>(x.len()).unwrap();
-            let mut y_gpu = runtime.allocate::<f32>(y.len()).unwrap();
-            let z_gpu = runtime.allocate::<f32>(y.len()).unwrap();
+            let mut x_gpu = GpuRuntime::allocate::<f32>(runtime, x.len()).unwrap();
+            let mut y_gpu = GpuRuntime::allocate::<f32>(runtime, y.len()).unwrap();
+            let z_gpu = GpuRuntime::allocate::<f32>(runtime, y.len()).unwrap();
 
             let x_gpu_slice = x_gpu.as_mut_slice();
             x_gpu_slice.copy_from_slice(&x);

@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     LweDef, LweDimension, PlaintextBits, Torus, TorusOps,
-    dst::OverlaySize,
+    dst::{OverlaySize, dst_allocate},
     ops::encryption::encode_and_encrypt_lwe_ciphertext,
     rand::{binary, normal_torus},
 };
@@ -55,7 +55,7 @@ where
         sk.assert_is_valid(params.dim);
 
         let mut pk = LwePublicKey {
-            data: avec![Torus::zero(); LwePublicKeyRef::<S>::size(params.dim)],
+            data: dst_allocate(LwePublicKeyRef::<S>::size(params.dim)),
         };
         let enc_zeros = pk.enc_zeros_mut(params);
 

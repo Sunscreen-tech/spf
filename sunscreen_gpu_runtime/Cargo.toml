@@ -9,6 +9,7 @@ cuda-driver-sys = { workspace = true, optional = true }
 cuda-runtime-sys = { workspace = true, optional = true }
 num = { workspace = true }
 parasol_concurrency = { workspace = true }
+serde = { workspace = true }
 thiserror = { workspace = true }
 
 [build-dependencies]

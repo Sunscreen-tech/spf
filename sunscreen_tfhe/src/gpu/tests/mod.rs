@@ -1,15 +1,13 @@
 use num::{Complex, Float, NumCast};
 
-use crate::Torus;
-
-mod entities;
-mod fft;
-mod homomorphisms;
-mod memory;
-mod negacyclic;
-mod polynomial;
-mod signed_decomposition;
-mod simd;
+// mod entities;
+// mod fft;
+// mod homomorphisms;
+// mod memory;
+// mod negacyclic;
+// mod polynomial;
+// mod signed_decomposition;
+// mod simd;
 
 pub fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {
     let denom = if *actual == T::from(0.0).unwrap() {
@@ -47,14 +45,12 @@ pub fn ulps_difference(x: f64, y: f64) -> u64 {
         x_bits + y_bits
     } else if x == 0.0 {
         let y = y.abs();
-        let y_bits = y.to_bits();
 
-        y_bits
+        y.to_bits()
     } else if y == 0.0 {
         let x = x.abs();
-        let x_bits = x.to_bits();
 
-        x_bits
+        x.to_bits()
     } else {
         let x_bits = x.to_bits();
         let y_bits = y.to_bits();

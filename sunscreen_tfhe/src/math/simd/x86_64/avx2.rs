@@ -136,15 +136,19 @@ pub fn vector_shr_round(c: &mut [u64], a: &[u64], n: u32) {
 
 #[cfg(test)]
 mod tests {
-    use crate::{math::simd::VectorOps, simd::x86_64::avx2_available};
+    use crate::{
+        dst::{dst_from_iter, dst_from_slice},
+        math::simd::VectorOps,
+        simd::x86_64::avx2_available,
+    };
 
     #[test]
     fn can_vector_add_u64() {
         if avx2_available() {
-            let a = avec_from_iter!(0..64u64);
-            let b = avec_from_iter!(0..64u64);
-            let mut c = avec_from_iter!((0..64).map(|_| 0u64));
-            let expected = avec_from_iter!(a.iter().zip(b.iter()).map(|(a, b)| a + b));
+            let a = dst_from_slice(&(0..64u64).collect::<Vec<_>>());
+            let b = dst_from_slice(&(0..64u64).collect::<Vec<_>>());
+            let mut c = dst_from_slice(&vec![0u64; 64]);
+            let expected = dst_from_iter(a.iter().zip(b.iter()).map(|(a, b)| a + b));
 
             u64::vector_add(&mut c, &a, &b);
 
@@ -155,10 +159,10 @@ mod tests {
     #[test]
     fn can_vector_sub_u64() {
         if avx2_available() {
-            let a = avec_from_iter!((0..64u64).map(|x| 4 * x));
-            let b = avec_from_iter!(0..64u64);
-            let mut c = avec_from_iter!((0..64).map(|_| 0u64));
-            let expected = avec_from_iter!(a.iter().zip(b.iter()).map(|(a, b)| a - b));
+            let a = dst_from_slice(&(0..64u64).map(|x| 4 * x).collect::<Vec<_>>());
+            let b = dst_from_slice(&(0..64u64).collect::<Vec<_>>());
+            let mut c = dst_from_iter((0..64).map(|_| 0u64));
+            let expected = dst_from_iter(a.iter().zip(b.iter()).map(|(a, b)| a - b));
 
             u64::vector_sub(&mut c, &a, &b);
 

@@ -13,7 +13,8 @@ use crate::{
     },
     gpu::{
         Scratch,
-        test_utils::{PolyDegreeInfo, SUPPORTED_POLY_DEGREES, get_runtimes},
+        get_runtimes,
+        test_utils::{PolyDegreeInfo, SUPPORTED_POLY_DEGREES},
     },
     high_level,
     ops::{

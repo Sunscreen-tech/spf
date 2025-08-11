@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     LweDef, LweDimension, Torus, TorusOps,
-    dst::{AsMutSlice, AsSlice, OverlaySize},
+    dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
 };
 
 use super::{LweCiphertextIterator, LweCiphertextIteratorMut, LweCiphertextRef};
@@ -34,7 +33,7 @@ impl<S: TorusOps> LweCiphertextList<S> {
     /// during classic (and now deprecated) [`circuit_bootstrap_via_pfks`(crate::ops::bootstrapping::circuit_bootstrap_via_pfks).
     pub fn new(lwe: &LweDef, count: usize) -> Self {
         Self {
-            data: avec![Torus::zero(); LweCiphertextListRef::<S>::size((lwe.dim, count))],
+            data: dst_allocate(LweCiphertextListRef::<S>::size((lwe.dim, count))),
         }
     }
 }

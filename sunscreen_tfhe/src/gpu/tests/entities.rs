@@ -9,7 +9,7 @@ use crate::{
         GlweCiphertext, GlweCiphertextFft, GlweCiphertextFftRef, GlweCiphertextRef, GlweSecretKey,
         Polynomial,
     },
-    gpu::test_utils::get_runtimes,
+    gpu::get_runtimes,
     ops::encryption::decrypt_glwe_ciphertext,
 };
 
@@ -41,18 +41,18 @@ fn check_glwe_fft_noise() {
         let glwe_len = GlweCiphertextRef::<u64>::size(glwe.dim);
         let glwe_fft_len = GlweCiphertextFftRef::<Complex<f64>>::size(glwe.dim);
 
-        let mut x = r.allocate::<Torus<u64>>(num_blocks * glwe_len).unwrap();
-        let y = r.allocate::<Torus<u64>>(num_blocks * glwe_len).unwrap();
-        let y_fft = r
-            .allocate::<Complex<f64>>(num_blocks * glwe_fft_len)
-            .unwrap();
+        //let mut x = r.allocate::<Torus<u64>>(num_blocks * glwe_len).unwrap();
+        //let y = r.allocate::<Torus<u64>>(num_blocks * glwe_len).unwrap();
+        //let y_fft = r
+        //     .allocate::<Complex<f64>>(num_blocks * glwe_fft_len)
+        //     .unwrap();
 
-        x.as_mut_slice().copy_from_slice(
-            &cts.iter()
-                .flat_map(|x| x.as_slice())
-                .copied()
-                .collect::<Vec<_>>(),
-        );
+        // x.as_mut_slice().copy_from_slice(
+        //     &cts.iter()
+        //         .flat_map(|x| x.as_slice())
+        //         .copied()
+        //         .collect::<Vec<_>>(),
+        // );
 
         let stream = r.make_stream(0.into()).unwrap();
 

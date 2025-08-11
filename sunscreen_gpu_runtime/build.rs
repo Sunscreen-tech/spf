@@ -17,7 +17,7 @@ mod gpu {
     #[cfg(feature = "cuda")]
     pub fn compile_as_cuda() {
         const ARCH: &[&str] = &[
-            "sm_89", "sm_90", "sm_90a", "sm_100", "sm_100a", "sm_101", "sm_101a", "sm_120",
+            "sm_70", "sm_75", "sm_89", "sm_90", "sm_90a", "sm_100", "sm_100a", "sm_101", "sm_101a", "sm_120",
             "sm_120a",
         ];
 
@@ -26,7 +26,7 @@ mod gpu {
             .flat_map(|x| {
                 [
                     "--generate-code".to_owned(),
-                    format!("arch=compute_89,code={x}"),
+                    format!("arch=compute_70,code={x}"),
                 ]
             })
             .collect::<Vec<_>>();

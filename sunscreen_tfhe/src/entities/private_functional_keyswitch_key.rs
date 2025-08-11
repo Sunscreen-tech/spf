@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, GlweDimension, LweDef, LweDimension, PrivateFunctionalKeyswitchLweCount, RadixCount,
     RadixDecomposition, Torus, TorusOps,
-    dst::{AsMutSlice, AsSlice, OverlaySize},
+    dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
     entities::{
         GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef,
         ParallelGlevCiphertextIterator, ParallelGlevCiphertextIteratorMut,
@@ -69,15 +68,12 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKey<S> {
         lwe_count: &PrivateFunctionalKeyswitchLweCount,
     ) -> Self {
         Self {
-            data: avec![
-                Torus::zero();
-                PrivateFunctionalKeyswitchKeyRef::<S>::size((
-                    from_lwe.dim,
-                    to_glwe.dim,
-                    radix.count,
-                    *lwe_count
-                ))
-            ],
+            data: dst_allocate(PrivateFunctionalKeyswitchKeyRef::<S>::size((
+                from_lwe.dim,
+                to_glwe.dim,
+                radix.count,
+                *lwe_count,
+            ))),
         }
     }
 }

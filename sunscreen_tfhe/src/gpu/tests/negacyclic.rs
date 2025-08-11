@@ -9,7 +9,8 @@ use crate::{
     FrequencyTransform,
     fft::negacyclic,
     gpu::{
-        test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
+        get_runtimes,
+        test_utils::{SUPPORTED_POLY_DEGREES},
         tests::{assert_complex_equalish, get_inv_twisty, get_twisty},
     },
 };

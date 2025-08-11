@@ -1,8 +1,9 @@
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    dst::{OverlaySize, dst_allocate},
 };
 
 use super::{
@@ -69,7 +70,7 @@ where
         let elems = SchemeSwitchKeyRef::<S>::size((glwe.dim, radix.count));
 
         Self {
-            data: avec![Torus::zero(); elems],
+            data: dst_allocate(elems),
         }
     }
 }

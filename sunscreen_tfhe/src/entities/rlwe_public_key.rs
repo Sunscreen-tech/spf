@@ -1,8 +1,7 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::GlweDef;
-use crate::dst::{FromMutSlice, FromSlice};
+use crate::dst::{FromMutSlice, FromSlice, dst_allocate};
 use crate::{GlweDimension, Torus, TorusOps, dst::OverlaySize};
 
 use crate::entities::GlweCiphertextRef;
@@ -38,7 +37,7 @@ where
         assert_eq!(glwe.dim.size.0, 1);
 
         Self {
-            data: avec![Torus::zero(); GlweCiphertextRef::<S>::size(glwe.dim)],
+            data: dst_allocate(GlweCiphertextRef::<S>::size(glwe.dim)),
         }
     }
 }

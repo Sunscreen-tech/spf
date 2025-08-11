@@ -1,8 +1,9 @@
+use bytemuck::Pod;
 use num::Zero;
 
 use crate::{
     PolynomialDegree,
-    dst::{NoWrapper, OverlaySize},
+    dst::{NoWrapper, OverlaySize, dst_allocate},
 };
 
 use super::{PolynomialIterator, PolynomialIteratorMut, PolynomialRef};
@@ -26,12 +27,12 @@ impl<S: Clone> OverlaySize for PolynomialListRef<S> {
 
 impl<S> PolynomialList<S>
 where
-    S: Clone + Zero,
+    S: Clone + Zero + Pod + Default,
 {
     /// Create a new polynomial list, where each polynomial has the same degree.
     pub fn new(degree: PolynomialDegree, count: usize) -> Self {
         Self {
-            data: avec![S::zero(); degree.0 * count],
+            data: dst_allocate(degree.0 * count),
         }
     }
 }

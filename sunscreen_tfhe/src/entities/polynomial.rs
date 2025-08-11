@@ -3,12 +3,16 @@ use std::{
     ops::{Add, AddAssign, Mul, Sub, SubAssign},
 };
 
+use bytemuck::Pod;
 use num::{Complex, Zero};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     FrequencyTransform, PolynomialDegree, ReinterpretAsSigned, ToF64, Torus, TorusOps,
-    dst::{AsMutSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize},
+    dst::{
+        AsMutSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize, dst_allocate, dst_from_iter,
+        dst_from_slice,
+    },
     fft::negacyclic::get_fft,
     polynomial::{polynomial_add_assign, polynomial_external_mad, polynomial_sub_assign},
     scratch::allocate_scratch,
@@ -39,33 +43,22 @@ where
 
 impl<T> Polynomial<T>
 where
-    T: Clone,
+    T: Clone + Pod,
 {
     /// Create a new polynomial from a slice of coefficients.
     pub fn new(data: &[T]) -> Polynomial<T> {
         Polynomial {
-            data: avec_from_slice!(data),
+            data: dst_from_slice(data),
         }
     }
 
     /// Create a new polynomial filled with zeros of a specified length.
     pub fn zero(len: usize) -> Polynomial<T>
     where
-        T: Zero,
+        T: Zero + Default,
     {
         Polynomial {
-            data: avec![T::zero(); len],
-        }
-    }
-}
-
-impl<T> FromIterator<T> for Polynomial<T>
-where
-    T: Clone,
-{
-    fn from_iter<I: IntoIterator<Item = T>>(iter: I) -> Self {
-        Self {
-            data: avec_from_iter!(iter),
+            data: dst_allocate(len),
         }
     }
 }
@@ -89,10 +82,10 @@ where
     pub fn map<F, U>(&self, f: F) -> Polynomial<U>
     where
         F: Fn(&T) -> U,
-        U: Clone,
+        U: Clone + Pod,
     {
         Polynomial {
-            data: avec_from_iter!(self.data.iter().map(f)),
+            data: dst_from_iter(self.data.iter().map(f)),
         }
     }
 
@@ -276,7 +269,7 @@ where
 
 impl<S> Add<Polynomial<S>> for Polynomial<S>
 where
-    S: Add<S, Output = S> + Copy,
+    S: Add<S, Output = S> + Copy + Pod,
 {
     type Output = Polynomial<S>;
 
@@ -287,19 +280,19 @@ where
 
 impl<S> Add<&PolynomialRef<S>> for &PolynomialRef<S>
 where
-    S: Add<S, Output = S> + Copy,
+    S: Add<S, Output = S> + Copy + Pod,
 {
     type Output = Polynomial<S>;
 
     fn add(self, rhs: &PolynomialRef<S>) -> Self::Output {
         assert_eq!(self.data.as_ref().len(), rhs.data.as_ref().len());
 
-        let coeffs = avec_from_iter!(
+        let coeffs = dst_from_iter(
             self.coeffs()
                 .as_ref()
                 .iter()
                 .zip(rhs.coeffs().as_ref().iter())
-                .map(|(a, b)| *a + *b)
+                .map(|(a, b)| *a + *b),
         );
 
         Polynomial { data: coeffs }
@@ -317,7 +310,7 @@ where
 
 impl<S> Sub<Polynomial<S>> for Polynomial<S>
 where
-    S: Sub<S, Output = S> + Copy,
+    S: Sub<S, Output = S> + Copy + Pod,
 {
     type Output = Polynomial<S>;
 
@@ -328,19 +321,19 @@ where
 
 impl<S> Sub<&PolynomialRef<S>> for &PolynomialRef<S>
 where
-    S: Sub<S, Output = S> + Copy,
+    S: Sub<S, Output = S> + Copy + Pod,
 {
     type Output = Polynomial<S>;
 
     fn sub(self, rhs: &PolynomialRef<S>) -> Self::Output {
         assert_eq!(self.data.as_ref().len(), rhs.data.as_ref().len());
 
-        let coeffs = avec_from_iter!(
+        let coeffs = dst_from_iter(
             self.coeffs()
                 .as_ref()
                 .iter()
                 .zip(rhs.coeffs().as_ref().iter())
-                .map(|(a, b)| *a - *b)
+                .map(|(a, b)| *a - *b),
         );
 
         Polynomial { data: coeffs }
@@ -368,7 +361,7 @@ where
         assert_eq!(rhs.len(), self.len());
 
         let mut c = Polynomial {
-            data: avec![Torus::zero(); rhs.len()],
+            data: dst_allocate(rhs.len()),
         };
 
         polynomial_external_mad(&mut c, self, rhs);

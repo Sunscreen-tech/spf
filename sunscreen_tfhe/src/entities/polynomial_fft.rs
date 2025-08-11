@@ -1,8 +1,9 @@
+use bytemuck::Pod;
 use num::Complex;
 
 use crate::{
     FrequencyTransform, FromF64, NumBits, PolynomialDegree,
-    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
+    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_from_slice},
     fft::negacyclic::get_fft,
     scratch::allocate_scratch,
     simd::{self, VectorOps},
@@ -42,12 +43,12 @@ where
 
 impl<T> PolynomialFft<T>
 where
-    T: Clone,
+    T: Clone + Pod,
 {
     /// Create a new polynomial with the given length in the fourier domain.
     pub fn new(data: &[T]) -> Self {
         Self {
-            data: avec_from_slice!(data),
+            data: dst_from_slice(data),
         }
     }
 }

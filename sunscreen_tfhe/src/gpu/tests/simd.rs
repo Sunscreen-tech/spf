@@ -1,7 +1,7 @@
 use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
-use crate::{entities::Polynomial, gpu::test_utils::get_runtimes, simd::VectorOps};
+use crate::{entities::Polynomial, gpu::get_runtimes, simd::VectorOps};
 
 #[test]
 fn can_mod_2_pow_64() {

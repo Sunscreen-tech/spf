@@ -1,8 +1,9 @@
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    dst::{OverlaySize, dst_allocate},
     entities::GlweKeyswitchKeyFftRef,
 };
 
@@ -46,7 +47,7 @@ where
         let elems = GlweKeyswitchKeyRef::<S>::size((params.dim, radix.count));
 
         Self {
-            data: avec![Torus::zero(); elems],
+            data: dst_allocate(elems),
         }
     }
 }

@@ -1,24 +1,21 @@
 use core::slice;
 use std::{
-    collections::HashMap,
     ffi::{CStr, CString, c_char},
-    marker::PhantomData,
-    mem::MaybeUninit,
     os::raw::c_void,
-    ptr::{self, null_mut},
+    ptr::{self},
     str::FromStr,
-    sync::{OnceLock, RwLock},
+    sync::{OnceLock},
 };
 
 use cuda_driver_sys::{
-    CUcontext, CUdevice, CUfunction, CUmodule, CUstream, cuCtxCreate_v2, cuCtxDestroy_v2,
+    CUcontext, CUdevice, CUfunction, CUmodule, CUstream,
     cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName,
-    cuDevicePrimaryCtxGetState, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain,
+    cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain,
     cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2,
     cuStreamSynchronize, cudaError_enum,
 };
 use cuda_runtime_sys::{
-    cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal, cudaMemGetInfo,
+    cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal
 };
 
 use crate::{
@@ -153,6 +150,10 @@ impl CudaRuntime {
 }
 
 impl GpuRuntimeBackend for CudaRuntime {
+    fn runtime_name(&self) -> &str {
+        "CUDA"
+    }
+
     fn print_device_info(&self, device_id: DeviceId) -> Result<()> {
         self.set_device_id(device_id)?;
 
@@ -200,7 +201,7 @@ impl GpuRuntimeBackend for CudaRuntime {
     }
 
     fn make_stream<'a>(&'a self, device_id: DeviceId) -> Result<Box<dyn StreamBackend + 'a>> {
-        self.set_device_id(device_id);
+        self.set_device_id(device_id)?;
         let mut stream = CUstream::default();
         wrap_cuda_driver! {cuStreamCreate(&mut stream, 0)};
 

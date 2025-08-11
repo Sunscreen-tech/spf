@@ -49,6 +49,7 @@ where
 /// A type that supports operations on a Torus.
 pub trait TorusOps:
     BitAnd<Self, Output = Self>
+    + Default
     + WrappingAdd
     + WrappingSub
     + WrappingMul

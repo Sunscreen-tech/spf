@@ -1,9 +1,9 @@
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
-    dst::{NoWrapper, OverlaySize},
+    dst::{NoWrapper, OverlaySize, dst_allocate},
     entities::GlweKeyswitchKey,
 };
 
@@ -41,7 +41,7 @@ impl GlweKeyswitchKeyFft<Complex<f64>> {
         let elems = GlweKeyswitchKeyFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
         Self {
-            data: avec![Complex::zero(); elems],
+            data: dst_allocate(elems),
         }
     }
 }

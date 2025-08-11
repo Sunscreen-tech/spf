@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, GlweDimension, PlaintextBits, Torus, TorusOps,
-    dst::{FromMutSlice, FromSlice, OverlaySize},
+    dst::{FromMutSlice, FromSlice, OverlaySize, dst_allocate},
     entities::PolynomialRef,
     ops::{bootstrapping::generate_lut, encryption::trivially_encrypt_glwe_ciphertext},
     scratch::allocate_scratch_ref,
@@ -41,7 +40,7 @@ impl<S: TorusOps> UnivariateLookupTable<S> {
         F: Fn(u64) -> u64,
     {
         let mut lut = UnivariateLookupTable {
-            data: avec![Torus::zero(); UnivariateLookupTableRef::<S>::size(glwe.dim)],
+            data: dst_allocate(UnivariateLookupTableRef::<S>::size(glwe.dim)),
         };
 
         lut.fill_trivial_from_fns(&[map], glwe, plaintext_bits);
@@ -66,7 +65,7 @@ impl<S: TorusOps> UnivariateLookupTable<S> {
         assert!(maps.len() > 1);
 
         let mut lut = UnivariateLookupTable {
-            data: avec![Torus::zero(); UnivariateLookupTableRef::<S>::size(glwe.dim)],
+            data: dst_allocate(UnivariateLookupTableRef::<S>::size(glwe.dim)),
         };
 
         lut.fill_trivial_from_fns(maps, glwe, plaintext_bits);
