@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use itertools::Itertools;
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use crate::{
     ArgsBuilder, Byte, Memory, ToArg,
@@ -46,7 +46,7 @@ fn casting(cast_type: CastType, encrypted_computation: bool) {
         let enc = &enc;
 
         // Get a random 32 bit value
-        let value = thread_rng().next_u32();
+        let value = rng().next_u32();
         let expected = match cast_type {
             CastType::SignExtension => {
                 let mut sign_bit = value & (1 << (input_width - 1));

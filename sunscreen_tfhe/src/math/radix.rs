@@ -163,7 +163,7 @@ fn round<S: TorusOps>(x: Torus<S>, radix: &RadixDecomposition) -> S {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         PlaintextBits, PolynomialDegree,
@@ -288,11 +288,11 @@ mod tests {
         let d = PolynomialDegree(8);
 
         for _ in 0..50 {
-            let radix = (thread_rng().next_u32() % 7) + 1;
+            let radix = (rng().next_u32() % 7) + 1;
             let radix = RadixLog(radix as usize);
 
             let count = loop {
-                let count = (thread_rng().next_u32() % 7) + 1;
+                let count = (rng().next_u32() % 7) + 1;
 
                 if (radix.0 * count as usize) < u64::BITS as usize {
                     break count;
@@ -340,11 +340,11 @@ mod tests {
     }
 
     fn random_radix() -> RadixDecomposition {
-        let radix = (thread_rng().next_u32() % 7) + 1;
+        let radix = (rng().next_u32() % 7) + 1;
         let radix = RadixLog(radix as usize);
 
         let count = loop {
-            let count = (thread_rng().next_u32() % 7) + 1;
+            let count = (rng().next_u32() % 7) + 1;
 
             if (radix.0 * count as usize) < u64::BITS as usize {
                 break count;
@@ -363,7 +363,7 @@ mod tests {
     fn can_decompose_scalar() {
         for _ in 0..50 {
             let radix = random_radix();
-            let val = Torus::from(thread_rng().next_u64());
+            let val = Torus::from(rng().next_u64());
             /*let radix = RadixDecomposition {
                             count: RadixCount(3),
                             radix_log: RadixLog(4),

@@ -314,7 +314,7 @@ impl<T> Ring for Polynomial<T> where T: Ring {}
 
 #[cfg(test)]
 mod tests {
-    use rand::{distributions::Uniform, prelude::Distribution, thread_rng};
+    use rand::{distr::Uniform, prelude::Distribution, rng};
     use sunscreen_math_macros::BarrettConfig;
 
     use crate::{
@@ -594,15 +594,15 @@ mod tests {
         type TestPoly = Polynomial<Zq<1, BarrettBackend<1, Cfg>>>;
 
         fn test_case() {
-            let target_den_degree = Uniform::from(2..50).sample(&mut thread_rng());
-            let target_num_degree = Uniform::from(1..200).sample(&mut thread_rng());
+            let target_den_degree = Uniform::try_from(2..50).unwrap().sample(&mut rng());
+            let target_num_degree = Uniform::try_from(1..200).unwrap().sample(&mut rng());
 
             let mut num = TestPoly { coeffs: vec![] };
 
             let mut den = num.clone();
 
             for _ in 0..target_den_degree {
-                let coeff = Uniform::from(0..1234u64).sample(&mut thread_rng());
+                let coeff = Uniform::try_from(0..1234u64).unwrap().sample(&mut rng());
                 den.coeffs.push(R::from(coeff));
             }
 
@@ -610,7 +610,7 @@ mod tests {
             den.coeffs.push(R::one());
 
             for _ in 0..=target_num_degree {
-                let coeff = Uniform::from(0..1234u64).sample(&mut thread_rng());
+                let coeff = Uniform::try_from(0..1234u64).unwrap().sample(&mut rng());
                 num.coeffs.push(R::from(coeff));
             }
 

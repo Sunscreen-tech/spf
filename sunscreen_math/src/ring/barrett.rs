@@ -215,7 +215,7 @@ mod tests_one_limb {
         #[barrett_config(modulus = "0x7FFFFFFFFFFFFFFF", num_limbs = 1)]
         struct Cfg;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1024 {
             mul_test_case::<Cfg>(rng.next_u64(), rng.next_u64());
@@ -228,7 +228,7 @@ mod tests_one_limb {
         #[barrett_config(modulus = "0x8000000000000000", num_limbs = 1)]
         struct Cfg;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1024 {
             mul_test_case::<Cfg>(rng.next_u64(), rng.next_u64());
@@ -241,7 +241,7 @@ mod tests_one_limb {
         #[barrett_config(modulus = "0xDEADBEEF", num_limbs = 1)]
         struct Cfg;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1024 {
             mul_test_case::<Cfg>(rng.next_u64(), rng.next_u64());
@@ -254,7 +254,7 @@ mod tests_one_limb {
         #[barrett_config(modulus = "0xFFFFFFFFFFFFFFFF", num_limbs = 2)]
         struct Cfg;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1024 {
             let mut a = vec![0; 8 * 4];
@@ -270,7 +270,7 @@ mod tests_one_limb {
         #[barrett_config(modulus = "0x7FFFFFFFFFFFFFFFFFFFFFFFFFFFFFFF", num_limbs = 2)]
         struct Cfg;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1024 {
             let mut a = vec![0; 8 * 4];
@@ -289,7 +289,7 @@ mod tests_one_limb {
         )]
         struct Cfg;
 
-        let mut rng = rand::thread_rng();
+        let mut rng = rand::rng();
 
         for _ in 0..1024 {
             let mut a = vec![0; 8 * 8];

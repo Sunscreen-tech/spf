@@ -271,15 +271,15 @@ impl From<u128> for Fg159 {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use super::*;
 
     #[test]
     fn can_add_fg() {
         for _ in 0..1000 {
-            let a = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
-            let b = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
+            let a = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
+            let b = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
 
             let c = a + b;
             let expected = ((a.0 as u128 + b.0 as u128) % GOLDILOCKS_PRIME as u128) as u64;
@@ -291,8 +291,8 @@ mod tests {
     #[test]
     fn can_sub_fg() {
         for _ in 0..1000 {
-            let a = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
-            let b = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
+            let a = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
+            let b = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
 
             let c = a - b;
             let expected = ((a.0 as u128 + (GOLDILOCKS_PRIME - b.0) as u128)
@@ -305,7 +305,7 @@ mod tests {
     #[test]
     fn can_neg_fg() {
         for _ in 0..1000 {
-            let a = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
+            let a = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
 
             let c = -a;
             let expected = Fg(0) - a;
@@ -327,8 +327,8 @@ mod tests {
 
         for _ in 0..1000 {
             test_case(
-                thread_rng().next_u64() % GOLDILOCKS_PRIME,
-                thread_rng().next_u64() % GOLDILOCKS_PRIME,
+                rng().next_u64() % GOLDILOCKS_PRIME,
+                rng().next_u64() % GOLDILOCKS_PRIME,
             );
         }
     }
@@ -336,9 +336,9 @@ mod tests {
     #[test]
     fn can_mad_fg() {
         for _ in 0..1000 {
-            let a = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
-            let b = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
-            let c = Fg(thread_rng().next_u64() % GOLDILOCKS_PRIME);
+            let a = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
+            let b = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
+            let c = Fg(rng().next_u64() % GOLDILOCKS_PRIME);
 
             let acutal = a.mad(b, c);
             let expected =

@@ -1,4 +1,4 @@
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
@@ -32,7 +32,7 @@ fn can_signed_decompose_polynomial() {
 
             poly.as_mut_slice()
                 .iter_mut()
-                .for_each(|x| *x = Torus::from(thread_rng().next_u64()));
+                .for_each(|x| *x = Torus::from(rng().next_u64()));
 
             let stream = r.make_stream(0.into()).unwrap();
 

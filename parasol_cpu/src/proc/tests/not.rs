@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use parasol_runtime::test_utils::get_secret_keys_128;
 
@@ -44,7 +44,7 @@ fn can_not(val: u32, encrypted_computation: bool) {
 #[test]
 fn can_not_plaintext_inputs() {
     for _ in 0..10 {
-        let val = thread_rng().next_u32();
+        let val = rng().next_u32();
         can_not(val, false);
     }
 }
@@ -52,7 +52,7 @@ fn can_not_plaintext_inputs() {
 #[test]
 fn can_not_ciphertext_inputs() {
     for _ in 0..10 {
-        let val = thread_rng().next_u32();
+        let val = rng().next_u32();
         can_not(val, true);
     }
 }

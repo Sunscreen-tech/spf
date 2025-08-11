@@ -588,7 +588,7 @@ pub fn gradeschool_reduce_impl(params: MultiplierParams) -> MuxCircuit {
 #[cfg(test)]
 mod tests {
     use biodivine_lib_bdd::BddValuation;
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{graph_ops::Bit, test_mux_circuit, util::try_to_bits};
 
@@ -602,8 +602,8 @@ mod tests {
             dbg!(circuit.metrics());
 
             for _ in 0..100 {
-                let a_raw = thread_rng().next_u64() % (0x1 << n) as u64;
-                let b_raw = thread_rng().next_u64() % (0x1 << m) as u64;
+                let a_raw = rng().next_u64() % (0x1 << n) as u64;
+                let b_raw = rng().next_u64() % (0x1 << m) as u64;
 
                 let a = try_to_bits(a_raw, n).unwrap();
                 let b = try_to_bits(b_raw, m).unwrap();
@@ -699,8 +699,8 @@ mod tests {
 
             for _ in 0..100 {
                 // Do everything as u128 to prevent overflow.
-                let a = (rand::thread_rng().next_u32() % (0x1 << n)) as u128;
-                let b = (rand::thread_rng().next_u32() % (0x1 << m)) as u128;
+                let a = (rand::rng().next_u32() % (0x1 << n)) as u128;
+                let b = (rand::rng().next_u32() % (0x1 << m)) as u128;
 
                 let (n_lo, n_hi) = partition_integer(n);
                 let (m_lo, m_hi) = partition_integer(m);

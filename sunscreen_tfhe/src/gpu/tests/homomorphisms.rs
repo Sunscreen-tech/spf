@@ -1,5 +1,5 @@
 use num::Complex;
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
@@ -142,7 +142,7 @@ fn can_glwe_polynomial_mad() {
         let c_glwe = (0..num_blocks)
             .map(|_| {
                 let msg = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| thread_rng().next_u64() % 2)
+                    .map(|_| rng().next_u64() % 2)
                     .collect::<Vec<_>>();
                 let msg = Polynomial::new(&msg);
 
@@ -155,7 +155,7 @@ fn can_glwe_polynomial_mad() {
         let a_glwe = (0..num_blocks)
             .map(|_| {
                 let msg = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| thread_rng().next_u64() % 2)
+                    .map(|_| rng().next_u64() % 2)
                     .collect::<Vec<_>>();
                 let msg = Polynomial::new(&msg);
 
@@ -168,7 +168,7 @@ fn can_glwe_polynomial_mad() {
         let b_poly = (0..num_blocks)
             .map(|_| {
                 let poly = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| thread_rng().next_u64() % 16)
+                    .map(|_| rng().next_u64() % 16)
                     .collect::<Vec<_>>();
                 let poly = Polynomial::new(&poly);
 
@@ -274,7 +274,7 @@ fn can_polynomial_glev_mad() {
         let c_glwe = (0..num_blocks)
             .map(|_| {
                 let msg = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| thread_rng().next_u64() % 2)
+                    .map(|_| rng().next_u64() % 2)
                     .collect::<Vec<_>>();
                 let msg = Polynomial::new(&msg);
 
@@ -287,7 +287,7 @@ fn can_polynomial_glev_mad() {
         let a_poly = (0..num_blocks)
             .map(|_| {
                 let poly = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| Torus::from(thread_rng().next_u64()))
+                    .map(|_| Torus::from(rng().next_u64()))
                     .collect::<Vec<_>>();
                 Polynomial::new(&poly)
             })
@@ -296,7 +296,7 @@ fn can_polynomial_glev_mad() {
         let b_glev = (0..num_blocks)
             .map(|_| {
                 let msg = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| Torus::encode(thread_rng().next_u64() % 2, PlaintextBits(1)))
+                    .map(|_| Torus::encode(rng().next_u64() % 2, PlaintextBits(1)))
                     .collect::<Vec<_>>();
                 let msg = Polynomial::new(&msg);
 
@@ -416,7 +416,7 @@ fn can_glwe_ggsw_mad() {
         let sk = GlweSecretKey::generate_binary(&glwe);
 
         let c_msg = (0..num_blocks)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>();
         let c_glwe_fft = c_msg
             .iter()
@@ -430,7 +430,7 @@ fn can_glwe_ggsw_mad() {
             .collect::<Vec<_>>();
 
         let a_msg = (0..num_blocks)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>();
         let a_glwe = a_msg
             .iter()
@@ -443,7 +443,7 @@ fn can_glwe_ggsw_mad() {
             .collect::<Vec<_>>();
 
         let b_msg = (0..num_blocks)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>();
 
         let b_ggsw_fft = b_msg
@@ -552,7 +552,7 @@ fn can_cmux() {
         let sk = GlweSecretKey::generate_binary(&glwe);
 
         let a_msg = (0..num_blocks)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>();
         let a_glwe = a_msg
             .iter()
@@ -565,7 +565,7 @@ fn can_cmux() {
             .collect::<Vec<_>>();
 
         let b_msg = (0..num_blocks)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>();
         let b_glwe = b_msg
             .iter()
@@ -578,7 +578,7 @@ fn can_cmux() {
             .collect::<Vec<_>>();
 
         let sel_msg = (0..num_blocks)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>();
 
         let sel_ggsw_fft = sel_msg

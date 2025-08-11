@@ -150,7 +150,7 @@ pub fn public_functional_keyswitch<S, F>(
 #[cfg(test)]
 mod tests {
 
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         PlaintextBits,
@@ -219,10 +219,10 @@ mod tests {
         );
 
         for _ in 0..10 {
-            let lwe_count = thread_rng().next_u64() as usize % glwe_params.dim.polynomial_degree.0;
+            let lwe_count = rng().next_u64() as usize % glwe_params.dim.polynomial_degree.0;
 
             let pts = (0..lwe_count)
-                .map(|_| thread_rng().next_u64() % (0x1 << plaintext_bits.0))
+                .map(|_| rng().next_u64() % (0x1 << plaintext_bits.0))
                 .collect::<Vec<_>>();
 
             let lwes = pts

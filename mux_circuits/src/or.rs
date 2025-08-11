@@ -24,7 +24,7 @@ pub fn make_or_circuit(inputs: u16) -> MuxCircuit {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{graph_ops::Bit, test_mux_circuit};
 
@@ -37,10 +37,10 @@ mod tests {
 
             for _ in 0..10 {
                 let a = (0..i)
-                    .map(|_| thread_rng().next_u32() % 2 == 1)
+                    .map(|_| rng().next_u32() % 2 == 1)
                     .collect::<Vec<_>>();
                 let b = (0..i)
-                    .map(|_| thread_rng().next_u32() % 2 == 1)
+                    .map(|_| rng().next_u32() % 2 == 1)
                     .collect::<Vec<_>>();
 
                 let inputs = a

@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use parasol_runtime::Encryption;
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use crate::{
     ArgsBuilder, FheComputer, Memory,
@@ -80,8 +80,8 @@ fn run_comparison_test(
     let (mut proc, enc) = make_computer_128();
 
     for _ in 0..=5 {
-        let val1 = thread_rng().next_u64() as u32;
-        let val2 = thread_rng().next_u64() as u32;
+        let val1 = rng().next_u64() as u32;
+        let val2 = rng().next_u64() as u32;
         run_single_test(
             &mut proc,
             &enc,
@@ -94,7 +94,7 @@ fn run_comparison_test(
     }
 
     for _ in 0..=5 {
-        let val1 = (thread_rng().next_u64() % 16) as u32;
+        let val1 = (rng().next_u64() % 16) as u32;
 
         run_single_test(
             &mut proc,

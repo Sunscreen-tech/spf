@@ -208,7 +208,7 @@ pub fn generate_circuit_bootstrapping_pfks_keys<S: TorusOps>(
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         PlaintextBits,
@@ -221,8 +221,7 @@ mod tests {
     #[test]
     fn can_create_private_functional_keyswitch_key() {
         for _ in 0..5 {
-            let lwe_count =
-                PrivateFunctionalKeyswitchLweCount((thread_rng().next_u64() as usize % 8) + 1);
+            let lwe_count = PrivateFunctionalKeyswitchLweCount((rng().next_u64() as usize % 8) + 1);
 
             let lwe_key = keygen::generate_binary_lwe_sk(&TEST_LWE_DEF_1);
             let glwe_key = keygen::generate_binary_glwe_sk(&TEST_GLWE_DEF_1);
@@ -287,8 +286,7 @@ mod tests {
     #[test]
     fn can_private_functional_keyswitch() {
         for _ in 0..5 {
-            let lwe_count =
-                PrivateFunctionalKeyswitchLweCount((thread_rng().next_u64() as usize % 8) + 1);
+            let lwe_count = PrivateFunctionalKeyswitchLweCount((rng().next_u64() as usize % 8) + 1);
 
             let lwe_key = keygen::generate_binary_lwe_sk(&TEST_LWE_DEF_1);
             let glwe_key = keygen::generate_binary_glwe_sk(&TEST_GLWE_DEF_1);
@@ -320,7 +318,7 @@ mod tests {
             let plaintext_bits = PlaintextBits(4);
 
             let pts = (0..lwe_count.0)
-                .map(|_x| thread_rng().next_u64() % (0x1u64 << plaintext_bits.0))
+                .map(|_x| rng().next_u64() % (0x1u64 << plaintext_bits.0))
                 .collect::<Vec<u64>>();
             let lwe_cts = pts
                 .iter()

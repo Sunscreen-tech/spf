@@ -1,5 +1,5 @@
 use num::Complex;
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
@@ -26,7 +26,7 @@ fn check_glwe_fft_noise() {
         let msg_cts = (0..num_blocks)
             .map(|x| {
                 let msg = (0..glwe.dim.polynomial_degree.0)
-                    .map(|_| thread_rng().next_u64() % 2)
+                    .map(|_| rng().next_u64() % 2)
                     .collect::<Vec<_>>();
                 let msg = Polynomial::new(&msg);
                 let ct = sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1));

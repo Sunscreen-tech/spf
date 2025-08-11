@@ -1,7 +1,7 @@
 use std::sync::Arc;
 
 use parasol_runtime::{Encryption, test_utils::get_secret_keys_128};
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use crate::{
     ArgsBuilder, FheComputer, Memory,
@@ -69,8 +69,8 @@ fn run_shift_test(
     let mask = 0b111;
 
     for _ in 0..=10 {
-        let value = thread_rng().next_u32() as u8;
-        let shift = (thread_rng().next_u32() & mask) as u8;
+        let value = rng().next_u32() as u8;
+        let shift = (rng().next_u32() & mask) as u8;
 
         run_single_test(
             &mut proc,

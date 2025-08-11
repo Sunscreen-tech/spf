@@ -1,4 +1,4 @@
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{entities::Polynomial, gpu::test_utils::get_runtimes, simd::VectorOps};
@@ -14,14 +14,10 @@ fn can_mod_2_pow_64() {
         let actual = r.allocate::<u64>(num_values as usize).unwrap();
 
         data.as_mut_slice().iter_mut().for_each(|x| {
-            let a = thread_rng().next_u32() as f64;
-            let b = thread_rng().next_u64() as f64;
+            let a = rng().next_u32() as f64;
+            let b = rng().next_u64() as f64;
 
-            let sign = if thread_rng().next_u64() % 2 == 0 {
-                1.0
-            } else {
-                -1.0
-            };
+            let sign = if rng().next_u64() % 2 == 0 { 1.0 } else { -1.0 };
 
             *x = sign * a * b;
         });

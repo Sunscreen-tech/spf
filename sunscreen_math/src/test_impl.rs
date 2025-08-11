@@ -2,7 +2,7 @@
 ///! of multiexp are quite complex. This module provides simple
 ///! sequential implementations to compare against.
 use curve25519_dalek::{ristretto::RistrettoPoint, scalar::Scalar, traits::Identity};
-use rand::thread_rng;
+use rand::rng;
 
 use crate::{multiexp_num_buckets, multiexp_num_windows};
 
@@ -218,7 +218,7 @@ pub(crate) fn compute_bucket_points(
 
 #[test]
 fn test_impl_get_scalar_window() {
-    let expected = Scalar::random(&mut thread_rng());
+    let expected = Scalar::random(&mut rng());
 
     for window_size in 10..33 {
         let mut windows = vec![];

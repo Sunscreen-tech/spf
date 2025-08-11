@@ -1,6 +1,7 @@
 use std::fmt::Debug;
 
-use rand::{Rng, RngCore, SeedableRng, thread_rng};
+use rand::{Rng, rng};
+use rand_chacha::rand_core::{RngCore, SeedableRng};
 
 // Re-export ChaCha12Rng for cross-platform deterministic generation
 pub use rand_chacha::ChaCha12Rng as SeededRng;
@@ -35,7 +36,7 @@ impl Seed {
     /// Generate a cryptographically secure random seed.
     pub fn generate() -> Self {
         let mut bytes = [0u8; 32];
-        thread_rng().fill_bytes(&mut bytes);
+        rng().fill_bytes(&mut bytes);
         Seed(bytes)
     }
 
@@ -88,17 +89,17 @@ where
 /// Sample a random torus element from the a normal distribution
 /// with a mean of 0 and the given stddev
 pub fn normal_torus<S: TorusOps>(std: Stddev) -> Torus<S> {
-    normal_torus_with_sampler(std, |dist| thread_rng().sample(dist))
+    normal_torus_with_sampler(std, |dist| rng().sample(dist))
 }
 
 /// Generate a random torus element uniformly
 pub fn uniform_torus<S: TorusOps>() -> Torus<S> {
-    Torus::from(S::from_u64(thread_rng().next_u64()))
+    Torus::from(S::from_u64(rng().next_u64()))
 }
 
 /// Generate a random binary torus element
 pub fn binary<S: TorusOps>() -> S {
-    S::from_u64(thread_rng().next_u64() % 2)
+    S::from_u64(rng().next_u64() % 2)
 }
 
 /// Fill in a polynomial with random binary coefficients

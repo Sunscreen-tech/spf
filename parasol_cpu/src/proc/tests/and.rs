@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use crate::{ArgsBuilder, Memory, proc::IsaOp, register_names::*, test_utils::make_computer_128};
 
@@ -61,8 +61,8 @@ fn can_and_ciphertext_inputs() {
     };
 
     for _ in 0..=10 {
-        let val1 = (thread_rng().next_u64() % 16) as u8;
-        let val2 = (thread_rng().next_u64() % 16) as u8;
+        let val1 = (rng().next_u64() % 16) as u8;
+        let val2 = (rng().next_u64() % 16) as u8;
         test(val1, val2);
     }
 }

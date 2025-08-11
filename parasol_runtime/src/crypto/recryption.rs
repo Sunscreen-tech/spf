@@ -1,7 +1,7 @@
 use crate::{
     Encryption, KeylessEvaluation, L1GlweCiphertext, Params, PublicKey, safe_bincode::GetSize,
 };
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
     OverlaySize,
@@ -71,7 +71,7 @@ pub fn generate_one_time_pad(
 ) -> (PublicOneTimePad, SecretOneTimePad) {
     let key = Polynomial::new(
         &(0..params.l1_poly_degree().0)
-            .map(|_| thread_rng().next_u64() % 2)
+            .map(|_| rng().next_u64() % 2)
             .collect::<Vec<_>>(),
     );
     let secret = SecretOneTimePad { key };
@@ -132,7 +132,7 @@ mod tests {
 
         let expected = Polynomial::new(
             &(0..DEFAULT_128.l1_poly_degree().0)
-                .map(|_| thread_rng().next_u64() % 2)
+                .map(|_| rng().next_u64() % 2)
                 .collect::<Vec<_>>(),
         );
 

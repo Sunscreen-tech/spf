@@ -584,7 +584,7 @@ fn num_messages<S: TorusOps + TorusZq>(statements: &[ProofStatement<S>]) -> usiz
 mod tests {
     use logproof::{InnerProductVerifierKnowledge, LogProof, LogProofGenerators};
     use merlin::Transcript;
-    use rand::{thread_rng, RngCore};
+    use rand::{rng, RngCore};
 
     use crate::{
         high_level::*,
@@ -904,12 +904,12 @@ mod tests {
             let sk = keygen::generate_binary_lwe_sk(&params);
             let pk = keygen::generate_lwe_pk(&sk, &params);
 
-            let num_messages = thread_rng().next_u64() as usize % 7 + 1;
-            let num_secret_encryptions = thread_rng().next_u64() as usize % 8;
-            let num_public_encryptions = thread_rng().next_u64() as usize % 8;
+            let num_messages = rng().next_u64() as usize % 7 + 1;
+            let num_secret_encryptions = rng().next_u64() as usize % 8;
+            let num_public_encryptions = rng().next_u64() as usize % 8;
 
             let messages = (0..num_messages)
-                .map(|_| thread_rng().next_u64() % 2)
+                .map(|_| rng().next_u64() % 2)
                 .collect::<Vec<_>>();
 
             // Skip trivial cases. I don't think SDLP allows it and it's boring..
@@ -923,7 +923,7 @@ mod tests {
             let mut public_info = vec![];
 
             for _ in 0..num_secret_encryptions {
-                let msg_id = thread_rng().next_u64() as usize % num_messages;
+                let msg_id = rng().next_u64() as usize % num_messages;
 
                 let (ct, noise) = encryption::encrypt_lwe_secret_and_return_randomness(
                     messages[msg_id],
@@ -946,7 +946,7 @@ mod tests {
             }
 
             for _ in 0..num_public_encryptions {
-                let msg_id = thread_rng().next_u64() as usize % num_messages;
+                let msg_id = rng().next_u64() as usize % num_messages;
 
                 let (ct, noise) = encryption::encrypt_lwe_and_return_randomness(
                     messages[msg_id],

@@ -318,7 +318,7 @@ mod tests {
     };
 
     use super::*;
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     #[test]
     fn polynomial_iteration_mut() {
@@ -588,13 +588,13 @@ mod tests {
         for _ in 0..20 {
             let sk = keygen::generate_binary_glwe_sk(&TEST_GLWE_DEF_1);
 
-            let plaintext_bits = (thread_rng().next_u64()) % 8 + 1;
+            let plaintext_bits = (rng().next_u64()) % 8 + 1;
             let plaintext_bits = PlaintextBits(plaintext_bits as u32);
 
-            let scalar = thread_rng().next_u64() % 64;
+            let scalar = rng().next_u64() % 64;
 
             let pt = (0..TEST_GLWE_DEF_1.dim.polynomial_degree.0)
-                .map(|_| thread_rng().next_u64() % plaintext_bits.0 as u64)
+                .map(|_| rng().next_u64() % plaintext_bits.0 as u64)
                 .collect::<Vec<_>>();
             let pt = Polynomial::new(&pt);
 
@@ -620,11 +620,11 @@ mod tests {
 
         let sk = keygen::generate_binary_glwe_sk(&glwe);
 
-        let plaintext_bits = (thread_rng().next_u64()) % 8 + 1;
+        let plaintext_bits = (rng().next_u64()) % 8 + 1;
         let plaintext_bits = PlaintextBits(plaintext_bits as u32);
 
         let pt = (0..glwe.dim.polynomial_degree.0)
-            .map(|_| thread_rng().next_u64() % plaintext_bits.0 as u64)
+            .map(|_| rng().next_u64() % plaintext_bits.0 as u64)
             .collect::<Vec<_>>();
         let pt = Polynomial::new(&pt);
 
