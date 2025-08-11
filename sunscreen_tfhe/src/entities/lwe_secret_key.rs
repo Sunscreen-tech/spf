@@ -62,6 +62,10 @@ where
     }
 
     /// Generate a binary LWE secret key with a specific seed for deterministic generation.
+    ///
+    /// # Security
+    /// The key generation is deterministic based on the seed, which means that
+    /// the seed should be considered secret as well and kept secure.
     pub fn generate_binary_with_seed(params: &LweDef, seed: &Seed) -> Self {
         LweSecretKey::generate_binary_with_rng(params, &mut seed.create_rng())
     }
@@ -77,7 +81,10 @@ where
     }
 
     /// Generate a binary LWE secret key using a provided mutable RNG.
-    pub fn generate_binary_with_rng(params: &LweDef, rng: &mut crate::rand::SeededRng) -> Self {
+    pub(crate) fn generate_binary_with_rng(
+        params: &LweDef,
+        rng: &mut crate::rand::SeededRng,
+    ) -> Self {
         let len = LweSecretKeyRef::<S>::size(params.dim);
 
         LweSecretKey {

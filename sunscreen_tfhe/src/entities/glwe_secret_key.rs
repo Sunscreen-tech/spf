@@ -74,6 +74,10 @@ where
     }
 
     /// Generate a binary GLWE secret key with a specific seed for deterministic generation.
+    ///
+    /// # Security
+    /// The key generation is deterministic based on the seed, which means that
+    /// the seed should be considered secret as well and kept secure.
     pub fn generate_binary_with_seed(params: &GlweDef, seed: &Seed) -> GlweSecretKey<S> {
         GlweSecretKey::generate_binary_with_rng(params, &mut seed.create_rng())
     }
@@ -91,7 +95,7 @@ where
     }
 
     /// Generate a binary GLWE secret key using a provided mutable RNG.
-    pub fn generate_binary_with_rng(
+    pub(crate) fn generate_binary_with_rng(
         params: &GlweDef,
         rng: &mut crate::rand::SeededRng,
     ) -> GlweSecretKey<S> {
