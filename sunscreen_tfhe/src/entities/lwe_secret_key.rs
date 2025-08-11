@@ -63,12 +63,7 @@ where
 
     /// Generate a binary LWE secret key with a specific seed for deterministic generation.
     pub fn generate_binary_with_seed(params: &LweDef, seed: &Seed) -> Self {
-        let len = LweSecretKeyRef::<S>::size(params.dim);
-        let mut rng = seed.create_rng();
-
-        LweSecretKey {
-            data: avec_from_iter!((0..len).map(|_| binary_with_seed::<S>(&mut rng))),
-        }
+        LweSecretKey::generate_binary_with_rng(params, &mut seed.create_rng())
     }
 
     /// Generate a uniform LWE secret key with a specific seed for deterministic generation.
