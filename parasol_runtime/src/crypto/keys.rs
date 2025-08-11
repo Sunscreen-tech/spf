@@ -8,6 +8,7 @@ use sunscreen_tfhe::entities::{
     LweKeyswitchKeyRef, LweSecretKey, LweSecretKeyRef, RlwePublicKey, RlwePublicKeyRef,
     SchemeSwitchKey, SchemeSwitchKeyFft, SchemeSwitchKeyRef,
 };
+pub use sunscreen_tfhe::high_level::keygen::Seed;
 use sunscreen_tfhe::high_level::{fft, keygen};
 use sunscreen_tfhe::ops::automorphisms::generate_automorphism_key;
 use sunscreen_tfhe::ops::bootstrapping::generate_scheme_switch_key;
@@ -134,6 +135,52 @@ impl SecretKey {
     /// ([`crate::DEFAULT_128`])
     pub fn generate_with_default_params() -> Self {
         Self::generate(&Params::default())
+    }
+
+    /// Generate a [`SecretKey`] under the given parameter set with a specific seed.
+    ///
+    /// # Remarks
+    /// The same seed will always produce the same key, making this function deterministic.
+    /// This is useful for reproducible testing or when you need to regenerate the same key.
+    ///
+    /// # Examples
+    /// ```
+    /// use parasol_runtime::{SecretKey, Seed, DEFAULT_128};
+    ///
+    /// // Generate a random seed
+    /// let seed = Seed::generate();
+    ///
+    /// // Generate a deterministic key
+    /// let sk1 = SecretKey::generate_with_seed(&DEFAULT_128, &seed);
+    /// let sk2 = SecretKey::generate_with_seed(&DEFAULT_128, &seed);
+    ///
+    /// // sk1 and sk2 will be identical
+    /// ```
+    pub fn generate_with_seed(params: &Params, seed: &Seed) -> Self {
+        let (lwe_0, glwe_1) = keygen::generate_binary_lwe_glwe_sk_with_seed(
+            &params.l0_params,
+            &params.l1_params,
+            seed,
+        );
+
+        Self { lwe_0, glwe_1 }
+    }
+
+    /// Generate a [`SecretKey`] with the default parameter set
+    /// ([`crate::DEFAULT_128`]) and a specific seed.
+    ///
+    /// # Remarks
+    /// The same seed will always produce the same key, making this function deterministic.
+    ///
+    /// # Examples
+    /// ```
+    /// use parasol_runtime::{SecretKey, Seed};
+    ///
+    /// let seed = Seed::from_bytes([42u8; 32]);
+    /// let sk = SecretKey::generate_with_default_params_and_seed(&seed);
+    /// ```
+    pub fn generate_with_default_params_and_seed(seed: &Seed) -> Self {
+        Self::generate_with_seed(&Params::default(), seed)
     }
 }
 
@@ -387,5 +434,63 @@ impl ComputeKey {
         let params = Params::default();
 
         Self::generate(secret_key, &params)
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use crate::{DEFAULT_128, SecretKey, Seed};
+
+    // Helper function to compare secret keys by comparing their data
+    fn secret_keys_equal(sk1: &SecretKey, sk2: &SecretKey) -> bool {
+        // Compare LWE secret key data
+        let lwe_equal = sk1.lwe_0.s() == sk2.lwe_0.s();
+
+        // Compare GLWE secret key data using serialization
+        let glwe1_bytes = bincode::serialize(&sk1.glwe_1).expect("Failed to serialize GLWE key");
+        let glwe2_bytes = bincode::serialize(&sk2.glwe_1).expect("Failed to serialize GLWE key");
+        let glwe_equal = glwe1_bytes == glwe2_bytes;
+
+        lwe_equal && glwe_equal
+    }
+
+    #[test]
+    fn test_secret_key_seeded_deterministic() {
+        // Test that the same seed produces identical secret keys
+        let seed = Seed::from_bytes([42u8; 32]);
+
+        let sk1 = SecretKey::generate_with_seed(&DEFAULT_128, &seed);
+        let sk2 = SecretKey::generate_with_seed(&DEFAULT_128, &seed);
+
+        // Keys should be functionally identical
+        assert!(
+            secret_keys_equal(&sk1, &sk2),
+            "Keys generated from same seed should be identical"
+        );
+    }
+
+    #[test]
+    fn test_secret_key_different_seeds() {
+        // Test that different seeds produce different keys
+        let seed1 = Seed::from_bytes([1u8; 32]);
+        let seed2 = Seed::from_bytes([2u8; 32]);
+
+        let sk1 = SecretKey::generate_with_seed(&DEFAULT_128, &seed1);
+        let sk2 = SecretKey::generate_with_seed(&DEFAULT_128, &seed2);
+
+        // Keys should be different (produce different results)
+        assert!(!secret_keys_equal(&sk1, &sk2));
+    }
+
+    #[test]
+    fn test_secret_key_with_default_params_and_seed() {
+        // Test the convenience method produces the same key as the full method
+        let seed = Seed::from_bytes([123u8; 32]);
+
+        let sk1 = SecretKey::generate_with_default_params_and_seed(&seed);
+        let sk2 = SecretKey::generate_with_seed(&DEFAULT_128, &seed);
+
+        // Should be equivalent
+        assert!(secret_keys_equal(&sk1, &sk2));
     }
 }

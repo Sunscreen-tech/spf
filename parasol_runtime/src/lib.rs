@@ -16,7 +16,7 @@
 //! use parasol_runtime::{
 //! fluent::{
 //!     FheCircuitCtx, PackedUInt}, ComputeKey, Encryption, Evaluation, L1GgswCiphertext,
-//!     L1GlweCiphertext, PublicKey, SecretKey, CircuitProcessor, DEFAULT_128
+//!     L1GlweCiphertext, PublicKey, SecretKey, Seed, CircuitProcessor, DEFAULT_128
 //! };
 //! use std::sync::Arc;
 //!
@@ -80,7 +80,7 @@ pub use circuit_processor::{CircuitProcessor, CompletionHandler, RuntimeError};
 pub use crypto::{
     ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, KeylessEvaluation, L0LweCiphertext,
     L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey,
-    PublicOneTimePad, SecretKey, SecretOneTimePad, TrivialOne, TrivialZero,
+    PublicOneTimePad, SecretKey, SecretOneTimePad, Seed, TrivialOne, TrivialZero,
     ciphertext::CiphertextType, decrypt_one_time_pad, generate_one_time_pad, recrypt_one_time_pad,
     recryption,
 };

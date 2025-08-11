@@ -8,7 +8,7 @@ use crate::{
     ops::encryption::{
         decrypt_glwe_ciphertext, encrypt_ggsw_ciphertext, encrypt_glwe_ciphertext_secret,
     },
-    rand::{binary, uniform_torus},
+    rand::{Seed, binary, binary_with_seed, uniform_torus, uniform_torus_with_seed},
 };
 
 use super::{
@@ -71,6 +71,44 @@ where
     /// widely used.
     pub fn generate_uniform(params: &GlweDef) -> GlweSecretKey<S> {
         Self::generate(params, || uniform_torus::<S>().inner())
+    }
+
+    /// Generate a binary GLWE secret key with a specific seed for deterministic generation.
+    pub fn generate_binary_with_seed(params: &GlweDef, seed: &Seed) -> GlweSecretKey<S> {
+        params.assert_valid();
+
+        let len = GlweSecretKeyRef::<S>::size(params.dim);
+        let mut rng = seed.create_rng();
+
+        GlweSecretKey {
+            data: avec_from_iter!((0..len).map(|_| binary_with_seed::<S>(&mut rng))),
+        }
+    }
+
+    /// Generate a uniform GLWE secret key with a specific seed for deterministic generation.
+    pub fn generate_uniform_with_seed(params: &GlweDef, seed: &Seed) -> GlweSecretKey<S> {
+        params.assert_valid();
+
+        let len = GlweSecretKeyRef::<S>::size(params.dim);
+        let mut rng = seed.create_rng();
+
+        GlweSecretKey {
+            data: avec_from_iter!((0..len).map(|_| uniform_torus_with_seed::<S>(&mut rng).inner())),
+        }
+    }
+
+    /// Generate a binary GLWE secret key using a provided mutable RNG.
+    pub fn generate_binary_with_rng(
+        params: &GlweDef,
+        rng: &mut crate::rand::SeededRng,
+    ) -> GlweSecretKey<S> {
+        params.assert_valid();
+
+        let len = GlweSecretKeyRef::<S>::size(params.dim);
+
+        GlweSecretKey {
+            data: avec_from_iter!((0..len).map(|_| binary_with_seed::<S>(rng))),
+        }
     }
 }
 
@@ -171,7 +209,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{GLWE_1_2048_128, high_level::*};
+    use crate::{GLWE_1_2048_128, high_level::*, rand::Seed};
 
     use num::traits::{WrappingAdd, WrappingNeg, WrappingSub};
 
@@ -384,5 +422,49 @@ mod tests {
         let sk2 = sk.wrapping_neg();
 
         assert_eq!(sk2_expected, sk2.data)
+    }
+
+    #[test]
+    fn seeded_binary_glwe_deterministic() {
+        let params = GLWE_1_2048_128;
+        let seed = Seed::from_bytes([42u8; 32]);
+
+        let sk1 = keygen::generate_binary_glwe_sk_with_seed(&params, &seed);
+        let sk2 = keygen::generate_binary_glwe_sk_with_seed(&params, &seed);
+
+        // Keys should be identical
+        assert_eq!(sk1.data, sk2.data);
+
+        // Values should be binary
+        for s_poly in sk1.s(&params) {
+            for coeff in s_poly.coeffs() {
+                assert!(*coeff == 0 || *coeff == 1);
+            }
+        }
+    }
+
+    #[test]
+    fn seeded_uniform_glwe_deterministic() {
+        let params = GLWE_1_2048_128;
+        let seed = Seed::from_bytes([123u8; 32]);
+
+        let sk1 = keygen::generate_uniform_glwe_sk_with_seed(&params, &seed);
+        let sk2 = keygen::generate_uniform_glwe_sk_with_seed(&params, &seed);
+
+        // Keys should be identical
+        assert_eq!(sk1.data, sk2.data);
+    }
+
+    #[test]
+    fn seeded_glwe_different_seeds() {
+        let params = GLWE_1_2048_128;
+        let seed1 = Seed::from_bytes([1u8; 32]);
+        let seed2 = Seed::from_bytes([2u8; 32]);
+
+        let sk1 = keygen::generate_binary_glwe_sk_with_seed(&params, &seed1);
+        let sk2 = keygen::generate_binary_glwe_sk_with_seed(&params, &seed2);
+
+        // Keys should be different
+        assert_ne!(sk1.data, sk2.data);
     }
 }

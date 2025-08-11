@@ -75,6 +75,9 @@ pub mod keygen {
         },
     };
 
+    // Re-export Seed for convenience
+    pub use crate::rand::Seed;
+
     /// Generate a new binary [`LweSecretKey`] under the given LWE parameters.
     ///
     /// # Remarks
@@ -103,7 +106,7 @@ pub mod keygen {
     ///
     /// These keys may *not* directly be used to create bootstrapping keys.
     /// However, in threshold schemes that use them, usually you derive
-    /// a binary key from uniform key shares.
+    /// uniform shares in addition to a binary key.
     ///
     /// # Panics
     /// If [`LweDef`] is invalid.
@@ -156,8 +159,6 @@ pub mod keygen {
     }
 
     /// Generate a new GLWE secret key under the given GLWE parameters.
-    /// The key will consist of uniform coefficients over the Torus's
-    /// isomorphic ring.
     ///
     /// # Remarks
     /// Any functions that use this key will need the same [`GlweDef`].
@@ -173,6 +174,129 @@ pub mod keygen {
     /// can decrypt any messages encrypted under it.
     pub fn generate_uniform_glwe_sk(params: &GlweDef) -> GlweSecretKey<u64> {
         GlweSecretKey::generate_uniform(params)
+    }
+
+    /// Generate a new binary [`LweSecretKey`] under the given LWE parameters with a specific seed.
+    ///
+    /// # Remarks
+    /// Any functions that use this key will need the same [`LweDef`].
+    ///
+    /// These keys may be used to create bootstrapping keys.
+    ///
+    /// # Arguments
+    /// * `params` - Parameters for the LWE secret key  
+    /// * `seed` - Seed for deterministic generation
+    ///
+    /// # Panics
+    /// If [`LweDef`] is invalid.
+    ///
+    /// # Security
+    /// These keys are *not* secure under some threshold cryptography settings.
+    /// Under those settings, you should use [`generate_uniform_lwe_sk_with_seed`].
+    ///
+    /// This key is secret and care should be taken as to which parties
+    /// possess it. Anyone who possesses the returned [`LweSecretKey`]
+    /// can decrypt any messages encrypted under it.
+    pub fn generate_binary_lwe_sk_with_seed(params: &LweDef, seed: &Seed) -> LweSecretKey<u64> {
+        LweSecretKey::generate_binary_with_seed(params, seed)
+    }
+
+    /// Generate a new uniform [`LweSecretKey`] under the given LWE parameters with a specific seed.
+    ///
+    /// # Remarks
+    /// Any functions that use this key will need the same [`LweDef`].
+    ///
+    /// These keys may *not* directly be used to create bootstrapping keys.
+    /// However, in threshold schemes that use them, usually you derive
+    /// uniform shares in addition to a binary key.
+    ///
+    /// # Arguments
+    /// * `params` - Parameters for the LWE secret key  
+    /// * `seed` - Seed for deterministic generation
+    ///
+    /// # Panics
+    /// If [`LweDef`] is invalid.
+    ///
+    /// # Security
+    /// This key is secret and care should be taken as to which parties
+    /// possess it. Anyone who possesses the returned [`LweSecretKey`]
+    /// can decrypt any messages encrypted under it.
+    pub fn generate_uniform_lwe_sk_with_seed(params: &LweDef, seed: &Seed) -> LweSecretKey<u64> {
+        LweSecretKey::generate_uniform_with_seed(params, seed)
+    }
+
+    /// Generate a new binary GLWE secret key under the given GLWE parameters with a specific seed.
+    ///
+    /// # Remarks
+    /// Any functions that use this key will need the same [`GlweDef`].
+    ///
+    /// # Arguments
+    /// * `params` - Parameters for the GLWE secret key  
+    /// * `seed` - Seed for deterministic generation
+    ///
+    /// # Panics
+    /// If [`GlweDef`] is invalid.
+    ///
+    /// # Security
+    /// Binary [GlweSecretKey]s are insecure in some threshold cryptography
+    /// settings. Under those settings, you should use
+    /// [`generate_uniform_glwe_sk_with_seed`].
+    ///
+    /// This key is secret and care should be taken as to which parties
+    /// possess it. Anyone who possesses the returned [`GlweSecretKey`]
+    /// can decrypt any messages encrypted under it.
+    pub fn generate_binary_glwe_sk_with_seed(params: &GlweDef, seed: &Seed) -> GlweSecretKey<u64> {
+        GlweSecretKey::generate_binary_with_seed(params, seed)
+    }
+
+    /// Generate a new uniform GLWE secret key under the given GLWE parameters with a specific seed.
+    ///
+    /// # Remarks
+    /// Any functions that use this key will need the same [`GlweDef`].
+    ///
+    /// # Arguments
+    /// * `params` - Parameters for the GLWE secret key  
+    /// * `seed` - Seed for deterministic generation
+    ///
+    /// # Panics
+    /// If [`GlweDef`] is invalid.
+    ///
+    /// # Security
+    /// This key is secret and care should be taken as to which parties
+    /// possess it. Anyone who possesses the returned [`GlweSecretKey`]
+    /// can decrypt any messages encrypted under it.
+    pub fn generate_uniform_glwe_sk_with_seed(params: &GlweDef, seed: &Seed) -> GlweSecretKey<u64> {
+        GlweSecretKey::generate_uniform_with_seed(params, seed)
+    }
+
+    /// Generate both LWE and GLWE secret keys from a single seed.
+    ///
+    /// This function generates both keys using a single RNG stream initialized from the seed,
+    /// ensuring that the same seed always produces the same pair of keys.
+    ///
+    /// # Arguments
+    /// * `lwe_params` - Parameters for the LWE secret key
+    /// * `glwe_params` - Parameters for the GLWE secret key  
+    /// * `seed` - Seed for deterministic generation
+    ///
+    /// # Returns
+    /// A tuple containing (LweSecretKey, GlweSecretKey)
+    pub fn generate_binary_lwe_glwe_sk_with_seed(
+        lwe_params: &LweDef,
+        glwe_params: &GlweDef,
+        seed: &Seed,
+    ) -> (LweSecretKey<u64>, GlweSecretKey<u64>) {
+        use crate::entities::{GlweSecretKey, LweSecretKey};
+
+        let mut rng = seed.create_rng();
+
+        // Generate LWE secret key first using the shared RNG
+        let lwe_sk = LweSecretKey::generate_binary_with_rng(lwe_params, &mut rng);
+
+        // Generate GLWE secret key with the same RNG (continuing from where LWE left off)
+        let glwe_sk = GlweSecretKey::generate_binary_with_rng(glwe_params, &mut rng);
+
+        (lwe_sk, glwe_sk)
     }
 
     /// Generate a new bootstrapping key, which is used in bootstrapping operations.

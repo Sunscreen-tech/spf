@@ -19,6 +19,7 @@ num = { workspace = true }
 num-complex = { workspace = true, features = ["bytemuck"] }
 paste = { workspace = true }
 rand = { workspace = true }
+rand_chacha = { workspace = true }
 rand_distr = { workspace = true }
 raw-cpuid = { workspace = true }
 rayon = { workspace = true }
