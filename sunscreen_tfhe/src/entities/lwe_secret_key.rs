@@ -6,7 +6,7 @@ use crate::{
     dst::{NoWrapper, OverlaySize},
     macros::{impl_binary_op, impl_unary_op},
     ops::encryption::encode_and_encrypt_lwe_ciphertext,
-    rand::{binary, uniform_torus},
+    rand::{Seed, binary, binary_with_seed, uniform_torus, uniform_torus_with_seed},
 };
 
 use super::{LweCiphertext, LweCiphertextRef};
@@ -39,7 +39,7 @@ impl<S> LweSecretKey<S>
 where
     S: TorusOps,
 {
-    fn generate(params: &LweDef, torus_element_generator: fn() -> S) -> Self {
+    fn generate(params: &LweDef, torus_element_generator: impl Fn() -> S) -> Self {
         let len = LweSecretKeyRef::<S>::size(params.dim);
 
         LweSecretKey {
@@ -59,6 +59,37 @@ where
     /// widely used.
     pub fn generate_uniform(params: &LweDef) -> Self {
         Self::generate(params, || uniform_torus::<S>().inner())
+    }
+
+    /// Generate a binary LWE secret key with a specific seed for deterministic generation.
+    ///
+    /// # Security
+    /// The key generation is deterministic based on the seed, which means that
+    /// the seed should be considered secret as well and kept secure.
+    pub fn generate_binary_with_seed(params: &LweDef, seed: &Seed) -> Self {
+        LweSecretKey::generate_binary_with_rng(params, &mut seed.create_rng())
+    }
+
+    /// Generate a uniform LWE secret key with a specific seed for deterministic generation.
+    pub fn generate_uniform_with_seed(params: &LweDef, seed: &Seed) -> Self {
+        let len = LweSecretKeyRef::<S>::size(params.dim);
+        let mut rng = seed.create_rng();
+
+        LweSecretKey {
+            data: avec_from_iter!((0..len).map(|_| uniform_torus_with_seed::<S>(&mut rng).inner())),
+        }
+    }
+
+    /// Generate a binary LWE secret key using a provided mutable RNG.
+    pub(crate) fn generate_binary_with_rng(
+        params: &LweDef,
+        rng: &mut crate::rand::SeededRng,
+    ) -> Self {
+        let len = LweSecretKeyRef::<S>::size(params.dim);
+
+        LweSecretKey {
+            data: avec_from_iter!((0..len).map(|_| binary_with_seed::<S>(rng))),
+        }
     }
 }
 

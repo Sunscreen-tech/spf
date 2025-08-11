@@ -529,7 +529,7 @@ impl GetSize for L1GlevCiphertext {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         DEFAULT_128,
@@ -572,7 +572,7 @@ mod tests {
 
         for _ in 0..100 {
             // generate a random plaintext polynomial
-            let num = thread_rng().next_u64();
+            let num = rng().next_u64();
             let mut pt = Polynomial::zero(DEFAULT_128.l1_poly_degree().0);
             for i in 0..64 {
                 pt.coeffs_mut()[i] = (num >> i) & 1;

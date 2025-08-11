@@ -80,7 +80,7 @@ pub use circuit_processor::{CircuitProcessor, CompletionHandler, RuntimeError};
 pub use crypto::{
     ComputeKey, ComputeKeyNonFft, Encryption, Evaluation, KeylessEvaluation, L0LweCiphertext,
     L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext, PublicKey,
-    PublicOneTimePad, SecretKey, SecretOneTimePad, TrivialOne, TrivialZero,
+    PublicOneTimePad, SecretKey, SecretOneTimePad, Seed, TrivialOne, TrivialZero,
     ciphertext::CiphertextType, decrypt_one_time_pad, generate_one_time_pad, recrypt_one_time_pad,
     recryption,
 };

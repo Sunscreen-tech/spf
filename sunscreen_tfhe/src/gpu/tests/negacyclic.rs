@@ -2,7 +2,7 @@ use core::f64;
 
 use num::{Complex, Zero};
 use num_complex::ComplexFloat;
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
@@ -138,7 +138,7 @@ fn can_apply_twist() {
 
             x.as_mut_slice()
                 .iter_mut()
-                .for_each(|x| *x = thread_rng().next_u64() as f64);
+                .for_each(|x| *x = rng().next_u64() as f64);
 
             let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = n.threads_per_block();
@@ -191,12 +191,9 @@ fn can_remove_twist() {
                 .unwrap();
             let result = r.allocate::<f64>((num_blocks * *n) as usize).unwrap();
 
-            x.as_mut_slice().iter_mut().for_each(|x| {
-                *x = Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            });
+            x.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
 
             let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = n.threads_per_block();

@@ -305,7 +305,7 @@ enum Order {
 /// a random permutation from the list of ciphertexts and a second permutation
 /// with the opposite value from the first.
 fn choose_permutation<T: Clone>(a: &[T], b: &[T]) -> Vec<(Order, T, T)> {
-    let mut rng = rand::thread_rng();
+    let mut rng = rand::rng();
     let mut a_permuted = a.to_vec();
     let mut b_permuted = b.to_vec();
 

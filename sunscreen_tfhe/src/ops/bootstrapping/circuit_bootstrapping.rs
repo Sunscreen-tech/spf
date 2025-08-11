@@ -515,7 +515,7 @@ pub fn apply_pfks_on_ggsw_components<S: TorusOps>(
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
@@ -674,7 +674,7 @@ mod tests {
         );
 
         for _ in 0..1 {
-            let val = thread_rng().next_u64() % 2;
+            let val = rng().next_u64() % 2;
 
             let ct = encryption::encrypt_lwe_secret(val, &sk_0, &level_0_params, PlaintextBits(1));
 

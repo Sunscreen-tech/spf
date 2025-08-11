@@ -1,4 +1,4 @@
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::gpu::{Scratch, test_utils::get_runtimes};
@@ -19,7 +19,7 @@ fn can_copy_to_and_from_shared_memory() {
         input
             .as_mut_slice()
             .iter_mut()
-            .for_each(|x| *x = thread_rng().next_u32());
+            .for_each(|x| *x = rng().next_u32());
 
         let stream = r.make_stream(0.into()).unwrap();
         let block_size = 128u32;
@@ -58,10 +58,10 @@ fn can_use_scratch() {
 
         a.as_mut_slice()
             .iter_mut()
-            .for_each(|x| *x = thread_rng().next_u32());
+            .for_each(|x| *x = rng().next_u32());
         b.as_mut_slice()
             .iter_mut()
-            .for_each(|x| *x = thread_rng().next_u32());
+            .for_each(|x| *x = rng().next_u32());
 
         let stream = r.make_stream(0.into()).unwrap();
         let block_size = 128u32;

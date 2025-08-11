@@ -37,15 +37,15 @@ div_rounded!(isize);
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use super::*;
 
     #[test]
     fn test_div_rounded() {
         for _ in 0..1_000 {
-            let a = thread_rng().next_u64();
-            let mut b = thread_rng().next_u64();
+            let a = rng().next_u64();
+            let mut b = rng().next_u64();
 
             if b == 0 {
                 b = 1;

@@ -57,7 +57,7 @@ pub fn ripple_carry_adder(n: usize, m: usize, cin: bool) -> MuxCircuit {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{convert_value_to_bits, graph_ops::Bit, test_mux_circuit};
 
@@ -69,8 +69,8 @@ mod tests {
             let circuit = ripple_carry_adder(N, N, cin);
 
             for _ in 0..100 {
-                let a_raw = thread_rng().next_u64() & ((0x1 << N) - 1);
-                let b_raw = thread_rng().next_u64() & ((0x1 << N) - 1);
+                let a_raw = rng().next_u64() & ((0x1 << N) - 1);
+                let b_raw = rng().next_u64() & ((0x1 << N) - 1);
 
                 let a = convert_value_to_bits(a_raw as u128, N as u32)
                     .iter()
@@ -82,7 +82,7 @@ mod tests {
                     .collect::<Vec<_>>();
 
                 let carry_in = if cin {
-                    vec![Bit(thread_rng().next_u64() % 2 == 1)]
+                    vec![Bit(rng().next_u64() % 2 == 1)]
                 } else {
                     vec![]
                 };

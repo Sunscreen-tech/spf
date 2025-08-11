@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use crate::{
     ArgsBuilder, Memory,
@@ -63,8 +63,8 @@ fn can_unsigned_mul_plain_plain() {
         for _ in 0..10 {
             let mask = get_mask(width);
 
-            let a = thread_rng().next_u64() as u128 & mask;
-            let b = thread_rng().next_u64() as u128 & mask;
+            let a = rng().next_u64() as u128 & mask;
+            let b = rng().next_u64() as u128 & mask;
 
             case(a, b, width);
         }
@@ -109,8 +109,8 @@ where
     for _ in 0..10 {
         let mask = (0x1 << N) - 1;
 
-        let a = thread_rng().next_u64() & mask;
-        let b = thread_rng().next_u64() & mask;
+        let a = rng().next_u64() & mask;
+        let b = rng().next_u64() & mask;
 
         case(a, b, N as u32);
     }

@@ -479,7 +479,7 @@ impl<S: TorusOps> MulAdd<S, Self> for Torus<S> {
 
 #[cfg(test)]
 mod tests {
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use super::*;
 
@@ -581,8 +581,8 @@ mod tests {
         // b.normalized_torus() = a.normalized_torus() + normalized_torus_distance(a, b)
 
         for _ in 0..100 {
-            let a = Torus::<u64>::from(thread_rng().next_u64());
-            let b = Torus::<u64>::from(thread_rng().next_u64());
+            let a = Torus::<u64>::from(rng().next_u64());
+            let b = Torus::<u64>::from(rng().next_u64());
 
             let a_norm = a.normalized_torus();
             let b_norm = b.normalized_torus();

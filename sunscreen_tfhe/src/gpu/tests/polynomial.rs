@@ -1,6 +1,6 @@
 use aligned_vec::avec_rt;
 use num::{Complex, Zero};
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
@@ -119,10 +119,10 @@ where
 
             a.as_mut_slice()
                 .iter_mut()
-                .for_each(|x| *x = thread_rng().next_u64().into());
+                .for_each(|x| *x = rng().next_u64().into());
             b.as_mut_slice()
                 .iter_mut()
-                .for_each(|x| *x = thread_rng().next_u64().into());
+                .for_each(|x| *x = rng().next_u64().into());
 
             let stream = r.make_stream(0usize.into()).unwrap();
             let threads_per_block = d.threads_per_block();
@@ -185,24 +185,15 @@ fn can_mad_polynomials() {
             let mut a = r.allocate::<Complex<f64>>(len).unwrap();
             let mut b = r.allocate::<Complex<f64>>(len).unwrap();
 
-            a.as_mut_slice().iter_mut().for_each(|x| {
-                *x = Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            });
-            b.as_mut_slice().iter_mut().for_each(|x| {
-                *x = Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            });
-            c.as_mut_slice().iter_mut().for_each(|x| {
-                *x = Complex::new(
-                    thread_rng().next_u64() as f64,
-                    thread_rng().next_u64() as f64,
-                )
-            });
+            a.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
+            b.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
+            c.as_mut_slice()
+                .iter_mut()
+                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
 
             let mut expected = avec_rt!([64]| Complex::<f64>::zero(); len);
             expected.as_mut_slice().clone_from_slice(c.as_slice());

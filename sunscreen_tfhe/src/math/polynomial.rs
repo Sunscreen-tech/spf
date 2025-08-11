@@ -212,7 +212,7 @@ mod tests {
 
     use super::*;
     use num::{Complex, Zero};
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
     use sunscreen_math::{
         BarrettConfig, One,
         poly::Polynomial as BasePolynomial,
@@ -264,17 +264,15 @@ mod tests {
         }
 
         for _ in 0..50 {
-            let len = thread_rng().next_u64() % 8 + 1;
+            let len = rng().next_u64() % 8 + 1;
             let len = 0x1 << len;
 
             let a = (0..len)
-                .map(|_| Torus::from(thread_rng().next_u64()))
+                .map(|_| Torus::from(rng().next_u64()))
                 .collect::<Vec<_>>();
             let a = Polynomial::new(&a);
 
-            let b = (0..len)
-                .map(|_| thread_rng().next_u64())
-                .collect::<Vec<_>>();
+            let b = (0..len).map(|_| rng().next_u64()).collect::<Vec<_>>();
             let b = Polynomial::new(&b);
 
             case(&a, &b);
@@ -334,13 +332,13 @@ mod tests {
             // a is uniform torus elements, b is "small" as we'll encounter
             // during radix decomposition.
             let a = (0..n)
-                .map(|_| Torus::from(rand::thread_rng().next_u64()))
+                .map(|_| Torus::from(rand::rng().next_u64()))
                 .collect::<Vec<_>>();
             let a = Polynomial::new(&a);
             let b = (0..n)
                 .map(|_| {
                     let signed =
-                        (rand::thread_rng().next_u64() % (0x1 << 16)).reinterpret_as_signed() - 16;
+                        (rand::rng().next_u64() % (0x1 << 16)).reinterpret_as_signed() - 16;
 
                     signed.reinterpret_as_unsigned()
                 })

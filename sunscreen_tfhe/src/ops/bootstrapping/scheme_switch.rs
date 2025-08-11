@@ -322,7 +322,7 @@ pub fn scheme_switch<S>(
 #[cfg(test)]
 mod tests {
 
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         PlaintextBits, RadixCount, RadixLog, Torus,
@@ -748,7 +748,7 @@ mod tests {
     #[test]
     fn scheme_switch_correct_message() {
         for _ in 0..10 {
-            let message = thread_rng().next_u64() % 2;
+            let message = rng().next_u64() % 2;
             _scheme_switch_correct_message(message);
         }
     }
@@ -811,7 +811,7 @@ mod tests {
     #[test]
     fn can_cmux_after_scheme_switch() {
         for _ in 0..10 {
-            let message = thread_rng().next_u64() % 2;
+            let message = rng().next_u64() % 2;
             _can_cmux_after_scheme_switch(message);
         }
     }

@@ -31,7 +31,7 @@ pub fn negator(n: usize) -> MuxCircuit {
 mod tests {
     use std::fmt::{Display, Formatter};
 
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         convert_value_to_bits, graph_ops::Bit, test_mux_circuit,
@@ -53,8 +53,8 @@ mod tests {
     }
 
     fn random_case() -> Case {
-        let n = (thread_rng().next_u32() as usize % 32) + 1;
-        let b = thread_rng().next_u64() & ((0x1 << n) - 1);
+        let n = (rng().next_u32() as usize % 32) + 1;
+        let b = rng().next_u64() & ((0x1 << n) - 1);
 
         Case { n, b }
     }

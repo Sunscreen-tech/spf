@@ -1,6 +1,6 @@
 use std::sync::Arc;
 
-use rand::{RngCore, thread_rng};
+use rand::{RngCore, rng};
 
 use crate::{
     ArgsBuilder, Memory,
@@ -29,11 +29,11 @@ fn can_cmux(encrypted_computation: bool) {
     let sk = get_secret_keys_128();
 
     // Make an array of size 10 of random numbers modulo 20
-    let random_conditions = (0..10).map(|_| thread_rng().next_u32() % 20);
+    let random_conditions = (0..10).map(|_| rng().next_u32() % 20);
 
     for bound in random_conditions {
-        let a = thread_rng().next_u32();
-        let b = thread_rng().next_u32();
+        let a = rng().next_u32();
+        let b = rng().next_u32();
 
         let expected = if bound > 10 { a } else { b };
 

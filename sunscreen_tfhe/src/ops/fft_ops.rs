@@ -499,7 +499,7 @@ mod tests {
     use std::time::Duration;
 
     use encryption::{decrypt_glwe, encrypt_glwe};
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         GLWE_1_2048_128, PlaintextBits, RadixCount, RadixLog, Torus,
@@ -542,12 +542,12 @@ mod tests {
         let sk = keygen::generate_binary_glwe_sk(&glwe_params);
 
         for _ in 0..100 {
-            let sel = thread_rng().next_u64() % 2;
+            let sel = rng().next_u64() % 2;
 
             let ggsw = encryption::encrypt_ggsw(sel, &sk, &glwe_params, &radix, bits);
 
             let glwe_pt = (0..glwe_params.dim.polynomial_degree.0)
-                .map(|_| thread_rng().next_u64() % 2)
+                .map(|_| rng().next_u64() % 2)
                 .collect::<Vec<_>>();
             let glwe_pt = Polynomial::new(&glwe_pt);
 
@@ -584,19 +584,19 @@ mod tests {
         let bits = PlaintextBits(1);
 
         for _ in 0..100 {
-            let sel = thread_rng().next_u64() % 2;
+            let sel = rng().next_u64() % 2;
 
             let sel_ct = encryption::encrypt_ggsw(sel, &sk, &glwe, &radix, bits);
 
             let a = (0..glwe.dim.polynomial_degree.0)
-                .map(|_| thread_rng().next_u64() % 2)
+                .map(|_| rng().next_u64() % 2)
                 .collect::<Vec<_>>();
             let a = Polynomial::new(&a);
 
             let a_ct = encryption::encrypt_glwe(&a, &sk, &glwe, bits);
 
             let b = (0..glwe.dim.polynomial_degree.0)
-                .map(|_| thread_rng().next_u64() % 2)
+                .map(|_| rng().next_u64() % 2)
                 .collect::<Vec<_>>();
             let b = Polynomial::new(&b);
 
@@ -786,7 +786,7 @@ mod tests {
     fn scheme_switch_fft_correct_message() {
         let n = 100;
         for _ in 0..n {
-            let message = thread_rng().next_u64() % 2;
+            let message = rng().next_u64() % 2;
             _scheme_switch_fft_correct_message(message);
         }
     }
@@ -854,7 +854,7 @@ mod tests {
     #[test]
     fn can_cmux_after_scheme_switch_fft() {
         for _ in 0..10 {
-            let message = thread_rng().next_u64() % 2;
+            let message = rng().next_u64() % 2;
             _can_cmux_after_scheme_switch_fft(message);
         }
     }

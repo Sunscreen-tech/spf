@@ -85,7 +85,7 @@ where
 #[cfg(test)]
 mod tests {
 
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::{
         PlaintextBits,
@@ -116,7 +116,7 @@ mod tests {
                 &TEST_RADIX,
             );
 
-            let msg = thread_rng().next_u64() % (1 << bits.0);
+            let msg = rng().next_u64() % (1 << bits.0);
 
             let original_ct = original_sk.encrypt(msg, &from_lwe, bits).0;
 

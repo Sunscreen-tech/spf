@@ -377,7 +377,7 @@ impl Muxable for L1GlevCiphertext {
 mod tests {
     use bit::Bit;
     use generic_int::GenericInt;
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
     use uint::UInt;
 
     use crate::test_utils::{
@@ -401,19 +401,19 @@ mod tests {
     }
 
     fn rand_u16() -> u128 {
-        (thread_rng().next_u64() & 0xFFFF) as u128
+        (rng().next_u64() & 0xFFFF) as u128
     }
 
     fn rand_i16() -> i128 {
-        (thread_rng().next_u64() & 0xFFFF) as i16 as i128
+        (rng().next_u64() & 0xFFFF) as i16 as i128
     }
 
     fn rand_u32() -> u128 {
-        (thread_rng().next_u64() & 0xFFFFFFFF) as u128
+        (rng().next_u64() & 0xFFFFFFFF) as u128
     }
 
     fn rand_i32() -> i128 {
-        (thread_rng().next_u64() & 0xFFFFFFFF) as i32 as i128
+        (rng().next_u64() & 0xFFFFFFFF) as i32 as i128
     }
 
     #[test]

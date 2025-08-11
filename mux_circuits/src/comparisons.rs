@@ -187,7 +187,7 @@ fn unsigned_comparison_impl(
 mod tests {
     use std::fmt::{Display, Formatter};
 
-    use rand::{RngCore, thread_rng};
+    use rand::{RngCore, rng};
 
     use crate::convert_value_to_bits;
 
@@ -212,9 +212,9 @@ mod tests {
         }
 
         fn random_case() -> Case {
-            let n = (thread_rng().next_u32() as usize % 32) + 1;
-            let a = thread_rng().next_u64() & ((0x1 << n) - 1);
-            let b = thread_rng().next_u64() & ((0x1 << n) - 1);
+            let n = (rng().next_u32() as usize % 32) + 1;
+            let a = rng().next_u64() & ((0x1 << n) - 1);
+            let b = rng().next_u64() & ((0x1 << n) - 1);
 
             Case { n, a, b }
         }
@@ -292,19 +292,19 @@ mod tests {
         }
 
         fn random_case() -> Case {
-            let n = (thread_rng().next_u32() as usize % 32) + 1;
-            let a = thread_rng().next_u64() & ((0x1 << n) - 1);
+            let n = (rng().next_u32() as usize % 32) + 1;
+            let a = rng().next_u64() & ((0x1 << n) - 1);
 
             // With a 1/4 chance let a == b
-            let same_value = thread_rng().next_u64() & 0x3;
+            let same_value = rng().next_u64() & 0x3;
             let b = if same_value == 0 {
                 a
             } else {
-                thread_rng().next_u64() & ((0x1 << n) - 1)
+                rng().next_u64() & ((0x1 << n) - 1)
             };
 
-            let greater = thread_rng().next_u64() & 0x1 == 0;
-            let equality = thread_rng().next_u64() & 0x1 == 0;
+            let greater = rng().next_u64() & 0x1 == 0;
+            let equality = rng().next_u64() & 0x1 == 0;
 
             Case {
                 n,
