@@ -72,18 +72,23 @@ impl Seed {
 /// `T_q`.
 pub struct Stddev(pub f64);
 
+/// Generate a normal torus element using a sampling function
+fn normal_torus_with_sampler<S: TorusOps, F>(std: Stddev, sampler: F) -> Torus<S>
+where
+    F: FnOnce(&Normal<f64>) -> f64,
+{
+    let dist = Normal::new(0., std.0).expect("Standard deviation must be finite and non-negative");
+    let sample = sampler(&dist);
+    let q = (S::BITS as f64).exp2();
+    let e = f64::round(sample * q) as i64;
+    let e: u64 = i64::cast_unsigned(e);
+    Torus::from(S::from_u64(e))
+}
+
 /// Sample a random torus element from the a normal distribution
 /// with a mean of 0 and the given stddev
 pub fn normal_torus<S: TorusOps>(std: Stddev) -> Torus<S> {
-    let dist = Normal::new(0., std.0).expect("Standard deviation must be finite and non-negative");
-
-    let e_0 = thread_rng().sample(dist);
-    let q = (S::BITS as f64).exp2();
-
-    let e = f64::round(e_0 * q) as i64;
-    let e: u64 = i64::cast_unsigned(e);
-
-    Torus::from(S::from_u64(e))
+    normal_torus_with_sampler(std, |dist| thread_rng().sample(dist))
 }
 
 /// Generate a random torus element uniformly
@@ -123,15 +128,7 @@ pub fn uniform_torus_with_seed<S: TorusOps>(rng: &mut SeededRng) -> Torus<S> {
 
 /// Sample a random torus element from a normal distribution using a seeded RNG
 pub fn normal_torus_with_seed<S: TorusOps>(std: Stddev, rng: &mut SeededRng) -> Torus<S> {
-    let dist = Normal::new(0., std.0).expect("Standard deviation must be finite and non-negative");
-
-    let e_0 = rng.sample(dist);
-    let q = (S::BITS as f64).exp2();
-
-    let e = f64::round(e_0 * q) as i64;
-    let e: u64 = i64::cast_unsigned(e);
-
-    Torus::from(S::from_u64(e))
+    normal_torus_with_sampler(std, |dist| rng.sample(dist))
 }
 
 #[cfg(test)]
