@@ -608,7 +608,7 @@ pub fn get_runtimes() -> Arc<Vec<Arc<GpuRuntime>>> {
         .clone()
 }
 
-#[cfg(test)]
+#[cfg(all(test, feature = "gpu"))]
 mod tests {
     use super::*;
 
