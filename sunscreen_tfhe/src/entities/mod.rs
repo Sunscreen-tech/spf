@@ -4,6 +4,9 @@ pub use automorphism_key::*;
 mod automorphism_key_fft;
 pub use automorphism_key_fft::*;
 
+mod dst_array;
+pub use dst_array::*;
+
 mod public_functional_keyswitch_key;
 pub use public_functional_keyswitch_key::*;
 

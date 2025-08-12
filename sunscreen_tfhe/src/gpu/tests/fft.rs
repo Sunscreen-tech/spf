@@ -7,7 +7,7 @@ use sunscreen_gpu_runtime::launch_kernel;
 use rustfft::FftPlanner;
 
 use crate::gpu::{
-    test_utils::get_runtimes,
+    get_runtimes,
     tests::{assert_complex_equalish, ulps_difference},
 };
 

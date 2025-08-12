@@ -1,7 +1,7 @@
 use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
-use crate::gpu::{Scratch, test_utils::get_runtimes};
+use crate::gpu::{Scratch, get_runtimes};
 
 #[test]
 fn can_copy_to_and_from_shared_memory() {

@@ -9,7 +9,8 @@ use crate::{
     entities::{Polynomial, PolynomialFftRef, PolynomialRef},
     gpu::{
         Scratch,
-        test_utils::{PolyDegreeInfo, SUPPORTED_POLY_DEGREES, get_runtimes},
+        get_runtimes,
+        test_utils::{PolyDegreeInfo, SUPPORTED_POLY_DEGREES},
     },
     polynomial::{polynomial_add, polynomial_sub},
 };

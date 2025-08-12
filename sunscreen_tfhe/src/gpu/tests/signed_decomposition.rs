@@ -5,7 +5,7 @@ use crate::{
     RadixCount, RadixDecomposition, RadixLog, Torus,
     dst::{AsSlice, FromSlice},
     entities::{Polynomial, PolynomialRef},
-    gpu::test_utils::{SUPPORTED_POLY_DEGREES, get_runtimes},
+    gpu::{get_runtimes, test_utils::{SUPPORTED_POLY_DEGREES}},
     radix::PolynomialRadixIterator,
 };
 

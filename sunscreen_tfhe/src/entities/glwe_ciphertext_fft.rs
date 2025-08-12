@@ -1,9 +1,9 @@
-use num::{Complex, Zero, complex::Complex64};
+use num::{Complex, complex::Complex64};
 use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, TorusOps,
-    dst::{AsMutSlice, AsSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize},
+    dst::{AsMutSlice, AsSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize, dst_allocate},
 };
 
 use super::{GlweCiphertextRef, PolynomialFftIterator, PolynomialFftIteratorMut, PolynomialFftRef};
@@ -34,7 +34,7 @@ impl GlweCiphertextFft<Complex<f64>> {
         let len = GlweCiphertextFftRef::size(params.dim);
 
         Self {
-            data: avec![Complex::zero(); len],
+            data: dst_allocate(len),
         }
     }
 }

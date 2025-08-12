@@ -624,13 +624,18 @@ mod tests {
 
         let plaintext_bits = crate::PlaintextBits(1);
 
-        let a = (0..TEST_GLWE_DEF_1.dim.polynomial_degree.0 as u64)
-            .map(|x| x % 2)
-            .collect::<Polynomial<_>>();
+        let a = Polynomial::new(
+            &(0..TEST_GLWE_DEF_1.dim.polynomial_degree.0 as u64)
+                .map(|x| x % 2)
+                .collect::<Vec<_>>(),
+        );
+
         let a = encryption::trivial_glwe(&a, &TEST_GLWE_DEF_1, plaintext_bits);
-        let b = (0..TEST_GLWE_DEF_1.dim.polynomial_degree.0 as u64)
-            .map(|x| (x + 1) % 2)
-            .collect::<Polynomial<_>>();
+        let b = Polynomial::new(
+            &(0..TEST_GLWE_DEF_1.dim.polynomial_degree.0 as u64)
+                .map(|x| (x + 1) % 2)
+                .collect::<Vec<_>>(),
+        );
         let b = encryption::trivial_glwe(&b, &TEST_GLWE_DEF_1, plaintext_bits);
 
         let sel = encryption::encrypt_ggsw(1, &sk, &TEST_GLWE_DEF_1, &TEST_RADIX, plaintext_bits);

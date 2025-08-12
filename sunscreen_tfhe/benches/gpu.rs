@@ -3,22 +3,19 @@ use criterion::{criterion_group, criterion_main};
 
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 mod gpu_benches {
-    use std::{cell::RefCell, collections::HashSet};
+    use std::{cell::RefCell, collections::HashSet, sync::Arc};
 
     use criterion::Criterion;
     use num::Complex;
     use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
     use sunscreen_tfhe::{
-        GLWE_1_1024_128, GLWE_1_2048_128, LWE_637_128, OverlaySize, RadixCount, RadixDecomposition,
-        RadixLog, Torus,
-        entities::{
-            BootstrapKey, BootstrapKeyFftRef, GlweCiphertextRef, GlweSecretKey, LweSecretKey,
-        },
-        gpu::{Scratch, test_utils::get_runtimes},
+        GLWE_1_2048_128, LWE_637_128, OverlaySize, RadixCount, RadixDecomposition, RadixLog, Torus,
+        entities::{BootstrapKeyFftRef, GlweCiphertextRef, GlweSecretKey, LweSecretKey},
+        gpu::{Scratch, get_runtimes},
         high_level,
     };
 
-    pub fn for_each_device_type<F: Fn(&str, &GpuRuntime)>(f: F) {
+    pub fn for_each_device_type<F: Fn(&str, &Arc<GpuRuntime>)>(f: F) {
         let mut used_devices = HashSet::new();
 
         let runtimes = get_runtimes();
@@ -38,7 +35,7 @@ mod gpu_benches {
     pub fn fft(c: &mut Criterion) {
         let g = RefCell::new(c.benchmark_group("FFT"));
 
-        for_each_device_type(|dev_name, r: &GpuRuntime| {
+        for_each_device_type(|dev_name, r| {
             for reorder in [false, true] {
                 for n in [1024] {
                     let bench_name = format!(
@@ -50,14 +47,14 @@ mod gpu_benches {
                     g.borrow_mut()
                         .throughput(criterion::Throughput::Elements(num_ffts_sequence as u64));
                     g.borrow_mut().bench_function(&bench_name, |b| {
-                        let mut buffer = r.allocate::<Complex<f64>>(n).unwrap();
+                        let mut buffer = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
                         buffer.copy_from_slice(
                             &(0..n)
                                 .map(|x| Complex::new(x as f64, x as f64))
                                 .collect::<Vec<_>>(),
                         );
 
-                        let output = r.allocate::<Complex<f64>>(n).unwrap();
+                        let output = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
 
                         let num_ffts_sequence = 2 * 2 * 637u32;
 
@@ -89,14 +86,14 @@ mod gpu_benches {
                     g.borrow_mut()
                         .throughput(criterion::Throughput::Elements(num_ffts_sequence as u64));
                     g.borrow_mut().bench_function(&bench_name, |b| {
-                        let mut buffer = r.allocate::<Complex<f32>>(n).unwrap();
+                        let mut buffer = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
                         buffer.copy_from_slice(
                             &(0..n)
                                 .map(|x| Complex::new(x as f32, x as f32))
                                 .collect::<Vec<_>>(),
                         );
 
-                        let output = r.allocate::<Complex<f32>>(n).unwrap();
+                        let output = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
 
                         b.iter(|| {
                             let num_threads = n as u32 / 4;
@@ -124,7 +121,7 @@ mod gpu_benches {
     }
 
     pub fn synthetic_pbs(c: &mut Criterion) {
-        let mut g = RefCell::new(c.benchmark_group("Synthetic PBS"));
+        let g = RefCell::new(c.benchmark_group("Synthetic PBS"));
 
         for_each_device_type(|dev_name, r| {
             for log_count in 0..12 {
@@ -148,18 +145,16 @@ mod gpu_benches {
                 g.borrow_mut().bench_function(
                     &format!("Synthetic PBS {dev_name} count={pbs_count}"),
                     |b| {
-                        let res = r
-                            .allocate::<Torus<u64>>(
-                                pbs_count * GlweCiphertextRef::<u64>::size(glwe.dim),
-                            )
-                            .unwrap();
-                        let mut bsk_dev = r
-                            .allocate::<Complex<f64>>(BootstrapKeyFftRef::size((
-                                lwe.dim,
-                                glwe.dim,
-                                pbs_radix.count,
-                            )))
-                            .unwrap();
+                        let res = GpuRuntime::allocate::<Torus<u64>>(
+                            r,
+                            pbs_count * GlweCiphertextRef::<u64>::size(glwe.dim),
+                        )
+                        .unwrap();
+                        let mut bsk_dev = GpuRuntime::allocate::<Complex<f64>>(
+                            r,
+                            BootstrapKeyFftRef::size((lwe.dim, glwe.dim, pbs_radix.count)),
+                        )
+                        .unwrap();
 
                         let stream = r.make_stream(0.into()).unwrap();
                         let tpb = glwe.dim.polynomial_degree.threads_per_block();

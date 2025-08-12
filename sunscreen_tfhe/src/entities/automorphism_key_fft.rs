@@ -1,9 +1,9 @@
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition,
-    dst::NoWrapper,
+    dst::{NoWrapper, dst_allocate},
     entities::{
         GlweKeyswitchKeyFftIterator, GlweKeyswitchKeyFftIteratorMut, GlweKeyswitchKeyFftRef,
     },
@@ -33,7 +33,7 @@ impl AutomorphismKeyFft<Complex<f64>> {
         let len = AutomorphismKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count));
 
         Self {
-            data: avec![Complex::zero(); len],
+            data: dst_allocate(len),
         }
     }
 }

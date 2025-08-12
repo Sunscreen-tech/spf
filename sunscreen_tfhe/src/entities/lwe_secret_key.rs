@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     LweDef, LweDimension, PlaintextBits, Torus, TorusOps,
-    dst::{NoWrapper, OverlaySize},
+    dst::{NoWrapper, OverlaySize, dst_from_iter, dst_from_slice},
     macros::{impl_binary_op, impl_unary_op},
     ops::encryption::encode_and_encrypt_lwe_ciphertext,
     rand::{Seed, binary, binary_with_seed, uniform_torus, uniform_torus_with_seed},
@@ -43,7 +43,11 @@ where
         let len = LweSecretKeyRef::<S>::size(params.dim);
 
         LweSecretKey {
-            data: avec_from_iter!((0..len).map(|_| torus_element_generator())),
+            data: dst_from_slice(
+                &(0..len)
+                    .map(|_| torus_element_generator())
+                    .collect::<Vec<_>>(),
+            ),
         }
     }
 
@@ -76,7 +80,7 @@ where
         let mut rng = seed.create_rng();
 
         LweSecretKey {
-            data: avec_from_iter!((0..len).map(|_| uniform_torus_with_seed::<S>(&mut rng).inner())),
+            data: dst_from_iter((0..len).map(|_| uniform_torus_with_seed::<S>(&mut rng).inner())),
         }
     }
 
@@ -88,7 +92,7 @@ where
         let len = LweSecretKeyRef::<S>::size(params.dim);
 
         LweSecretKey {
-            data: avec_from_iter!((0..len).map(|_| binary_with_seed::<S>(rng))),
+            data: dst_from_iter((0..len).map(|_| binary_with_seed::<S>(rng))),
         }
     }
 }

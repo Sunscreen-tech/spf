@@ -1,8 +1,8 @@
-use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
+    LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    dst::{OverlaySize, dst_allocate},
 };
 
 use super::{LevCiphertextIterator, LevCiphertextIteratorMut, LevCiphertextRef};
@@ -48,7 +48,7 @@ where
             LweKeyswitchKeyRef::<S>::size((original_params.dim, new_params.dim, radix.count));
 
         Self {
-            data: avec![Torus::zero(); elems],
+            data: dst_allocate(elems),
         }
     }
 }

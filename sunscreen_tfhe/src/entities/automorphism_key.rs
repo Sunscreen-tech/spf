@@ -1,9 +1,9 @@
 use num::Complex;
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition, Torus, TorusOps,
+    dst::dst_allocate,
     entities::{
         AutomorphismKeyFft, GlweKeyswitchKeyIterator, GlweKeyswitchKeyIteratorMut,
         GlweKeyswitchKeyRef,
@@ -34,7 +34,7 @@ impl<S: TorusOps> AutomorphismKey<S> {
         let len = AutomorphismKeyRef::<S>::size((glwe.dim, radix.count));
 
         Self {
-            data: avec![Torus::zero(); len],
+            data: dst_allocate(len),
         }
     }
 }

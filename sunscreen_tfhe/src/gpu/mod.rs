@@ -1,4 +1,4 @@
-use std::sync::OnceLock;
+use std::sync::{Arc, OnceLock};
 
 use sunscreen_gpu_runtime::{Allocation, AsKernelArg, GpuRuntime, Grid, launch_kernel};
 
@@ -11,35 +11,22 @@ mod tests;
 
 use sunscreen_gpu_runtime::Result;
 
+#[doc(hidden)]
+pub fn get_runtimes() -> Arc<Vec<Arc<GpuRuntime>>> {
+    static RUNTIMES: OnceLock<Arc<Vec<Arc<GpuRuntime>>>> = OnceLock::new();
+
+    RUNTIMES
+        .get_or_init(|| {
+            sunscreen_gpu_runtime::init_runtimes(GPU_KERNELS);
+            sunscreen_gpu_runtime::get_runtimes()
+        })
+        .clone()
+}
+
 #[cfg(any(feature = "test_kernels", test))]
 #[doc(hidden)]
 pub mod test_utils {
-    use std::{
-        ops::Deref,
-        sync::{Arc, OnceLock},
-    };
-
-    use sunscreen_gpu_runtime::GpuRuntime;
-
-    #[cfg(feature = "cuda")]
-    use sunscreen_gpu_runtime::cuda_runtime::CudaRuntime;
-
-    use super::GPU_KERNELS;
-
-    pub fn get_runtimes() -> Arc<Vec<GpuRuntime>> {
-        static RUNTIMES: OnceLock<Arc<Vec<GpuRuntime>>> = OnceLock::new();
-
-        RUNTIMES
-            .get_or_init(|| {
-                let runtimes: Vec<GpuRuntime> = vec![
-                    #[cfg(feature = "cuda")]
-                    GpuRuntime::new(CudaRuntime::new(GPU_KERNELS).unwrap()),
-                ];
-
-                Arc::new(runtimes)
-            })
-            .clone()
-    }
+    use std::ops::Deref;
 
     #[derive(Clone, Copy, Debug)]
     pub struct PolyDegreeInfo(pub u32);
@@ -76,11 +63,11 @@ pub struct Scratch {
 
 impl Scratch {
     /// Allocate a new scratch buffer compatible with the given launch grid.
-    pub fn new<G: Grid>(r: &GpuRuntime, grid: G) -> Result<Self> {
+    pub fn new<G: Grid>(r: &Arc<GpuRuntime>, grid: G) -> Result<Self> {
         static SIZE: OnceLock<u32> = OnceLock::new();
 
         let size_per_block = *SIZE.get_or_init(|| {
-            let size = r.allocate::<u32>(1).unwrap();
+            let size = GpuRuntime::allocate::<u32>(r, 1).unwrap();
 
             let stream = r.make_stream(0.into()).unwrap();
 
@@ -105,7 +92,7 @@ impl Scratch {
         let num_blocks = threads.next_multiple_of(block) / block;
 
         Ok(Self {
-            alloc: r.allocate::<u8>((size_per_block * num_blocks) as usize)?,
+            alloc: GpuRuntime::allocate::<u8>(r, (size_per_block * num_blocks) as usize)?,
         })
     }
 }

@@ -2,35 +2,14 @@ use bytemuck::Pod;
 
 use crate::error::*;
 
-macro_rules! avec {
-    ($elem:expr; $count:expr) => {
-        aligned_vec::AVec::__from_elem(crate::scratch::SIMD_ALIGN, $elem, $count)
-    };
-}
-
-macro_rules! avec_from_iter {
-    ($iter:expr) => {
-        aligned_vec::AVec::<_, aligned_vec::ConstAlign<{ $crate::scratch::SIMD_ALIGN }>>::from_iter(
-            crate::scratch::SIMD_ALIGN,
-            $iter,
-        )
-    };
-}
-
-macro_rules! avec_from_slice {
-    ($slice:expr) => {
-        aligned_vec::AVec::<_, aligned_vec::ConstAlign<{$crate::scratch::SIMD_ALIGN}>>::from_slice(crate::scratch::SIMD_ALIGN, $slice)
-    };
-}
-
 macro_rules! dst {
     ($(#[$meta:meta])* $t:ty, $ref_t:ty, $wrapper:ty, ($($derive:ident),* $(,)? ), ($($t_bounds:ty),* $(,)? )) => {
         paste::paste! {
 
             $(#[$meta])*
             #[derive($($derive,)* PartialEq)]
-            pub struct $t<T> where T: Clone $(+ $t_bounds)* {
-                data: aligned_vec::AVec<$wrapper<T>, aligned_vec::ConstAlign<{ crate::scratch::SIMD_ALIGN }>>
+            pub struct $t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)* {
+                data: $crate::dst::Allocation<$wrapper<T>>
             }
 
             /// A reference to the data structure.
@@ -101,7 +80,7 @@ macro_rules! dst {
                 }
             }
 
-            impl<T> std::borrow::Borrow< $ref_t <T>> for $t<T> where T: Clone $(+ $t_bounds)* {
+            impl<T> std::borrow::Borrow< $ref_t <T>> for $t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)* {
                 fn borrow(&self) -> &$ref_t<T> {
                     let ptr = self.data.as_slice() as *const [$wrapper<T>] as *const $ref_t<T>;
 
@@ -110,14 +89,14 @@ macro_rules! dst {
                 }
             }
 
-            impl<T> std::convert::AsRef< $ref_t <T>> for $t<T> where T: Clone $(+ $t_bounds)*
+            impl<T> std::convert::AsRef< $ref_t <T>> for $t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)*
             {
                 fn as_ref(&self) -> &$ref_t<T> {
                     <Self as std::borrow::Borrow<$ref_t <T>>>::borrow(self)
                 }
             }
 
-            impl<T> std::borrow::BorrowMut< $ref_t<T>> for $t<T> where T: Clone $(+ $t_bounds)* {
+            impl<T> std::borrow::BorrowMut< $ref_t<T>> for $t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)* {
                 fn borrow_mut(&mut self) -> &mut $ref_t<T> {
                     let ptr = self.data.as_mut_slice() as *mut [$wrapper<T>] as *mut $ref_t<T>;
 
@@ -126,15 +105,18 @@ macro_rules! dst {
                 }
             }
 
-            impl<T> std::borrow::ToOwned for $ref_t<T> where T: Clone $(+ $t_bounds)* {
+            impl<T> std::borrow::ToOwned for $ref_t<T> where T: Clone + Default + bytemuck::Pod $(+ $t_bounds)* {
                 type Owned = $t<T>;
 
                 fn to_owned(&self) -> Self::Owned {
-                    $t { data: aligned_vec::AVec::from_slice(crate::scratch::SIMD_ALIGN, &self.data) }
+                    let mut data = $crate::dst::dst_allocate(self.data.len());
+                    data.as_mut_slice().clone_from_slice(&self.data);
+
+                    $t { data }
                 }
             }
 
-            impl<T> std::ops::Deref for $t<T> where T: Clone $(+ $t_bounds)* {
+            impl<T> std::ops::Deref for $t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)* {
                 type Target = $ref_t<T>;
 
                 fn deref(&self) -> &Self::Target {
@@ -142,10 +124,24 @@ macro_rules! dst {
                 }
             }
 
-            impl<T> std::ops::DerefMut for $t<T> where T: Clone $(+ $t_bounds)* {
+            impl<T> std::ops::DerefMut for $t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)* {
                 fn deref_mut(&mut self) -> &mut Self::Target {
                     <Self as std::borrow::BorrowMut::<$ref_t<T>>>::borrow_mut(self)
                 }
+            }
+
+            #[cfg(feature = "gpu")]
+            impl<T> sunscreen_gpu_runtime::AsKernelArg for $ref_t<T> where T: Clone + bytemuck::Pod $(+ $t_bounds)* {
+                fn as_kernel_arg(&self) -> *const std::ffi::c_void {
+                    (&self.data).as_ptr() as *const std::ffi::c_void
+                }
+            }
+
+            impl<T> $crate::dst::InnermostType for $t<T>
+            where
+                T: Clone + bytemuck::Pod $(+ $t_bounds)*
+            {
+                type Ty = $wrapper<T>;
             }
         }
     };
@@ -482,6 +478,10 @@ macro_rules! dst_iter {
     };
 }
 
+pub trait InnermostType {
+    type Ty: Pod;
+}
+
 pub type NoWrapper<T> = T;
 
 pub(crate) trait AsSlice<T> {
@@ -537,7 +537,6 @@ impl<S: Pod> OverlaySize for [S] {
         t
     }
 }
-
 pub trait FromSlice<T> {
     fn from_slice(data: &[T]) -> &Self;
 }
@@ -668,3 +667,81 @@ mod tests {
         assert_eq!(data, expected);
     }
 }
+
+#[cfg(feature = "gpu")]
+mod alloc {
+    use bytemuck::Pod;
+
+    pub(crate) type Allocation<T> = sunscreen_gpu_runtime::Allocation<T>;
+
+    pub fn dst_allocate<T>(len: usize) -> Allocation<T>
+    where
+        T: Pod + Default,
+    {
+        use sunscreen_gpu_runtime::GpuRuntime;
+
+        use crate::gpu::get_runtimes;
+
+        GpuRuntime::allocate(&get_runtimes()[0], len).unwrap()
+    }
+
+    pub fn dst_from_iter<T, I: ExactSizeIterator<Item = T>>(iter: I) -> Allocation<T>
+    where
+        T: Pod,
+    {
+        let mut allocation = dst_allocate(iter.len());
+
+        for (o, i) in allocation.as_mut_slice().iter_mut().zip(iter) {
+            *o = i;
+        }
+
+        allocation
+    }
+
+    pub fn dst_from_slice<T>(data: &[T]) -> Allocation<T>
+    where
+        T: Pod,
+    {
+        let mut allocation = dst_allocate(data.len());
+
+        allocation.as_mut_slice().copy_from_slice(data);
+
+        allocation
+    }
+}
+
+#[cfg(not(feature = "gpu"))]
+mod alloc {
+    use aligned_vec::{AVec, ConstAlign, avec};
+    use bytemuck::Pod;
+
+    use crate::scratch::SIMD_ALIGN;
+
+    pub(crate) type Allocation<T> = AVec<T, ConstAlign<{ SIMD_ALIGN }>>;
+
+    pub fn dst_allocate<T>(len: usize) -> Allocation<T>
+    where
+        T: Pod + Default,
+    {
+        avec![[SIMD_ALIGN]| T::default(); len]
+    }
+
+    pub fn dst_from_iter<T, I: ExactSizeIterator<Item = T>>(iter: I) -> Allocation<T>
+    where
+        T: Pod,
+    {
+        aligned_vec::AVec::<_, aligned_vec::ConstAlign<{ SIMD_ALIGN }>>::from_iter(
+            crate::scratch::SIMD_ALIGN,
+            iter,
+        )
+    }
+
+    pub fn dst_from_slice<T>(data: &[T]) -> Allocation<T>
+    where
+        T: Pod,
+    {
+        AVec::from_slice(SIMD_ALIGN, data)
+    }
+}
+
+pub(crate) use alloc::*;

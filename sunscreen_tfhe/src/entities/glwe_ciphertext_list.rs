@@ -1,9 +1,8 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, GlweDimension, Torus, TorusOps,
-    dst::{AsMutSlice, AsSlice, OverlaySize},
+    dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
     entities::{GlweCiphertextIterator, GlweCiphertextIteratorMut, GlweCiphertextRef},
 };
 
@@ -30,7 +29,7 @@ impl<S: TorusOps> GlweCiphertextList<S> {
     /// Create a new zero [GlweCiphertextList] with the given parameters.
     pub fn new(lwe: &GlweDef, count: usize) -> Self {
         Self {
-            data: avec![Torus::zero(); GlweCiphertextListRef::<S>::size((lwe.dim, count))],
+            data: dst_allocate(GlweCiphertextListRef::<S>::size((lwe.dim, count))),
         }
     }
 }

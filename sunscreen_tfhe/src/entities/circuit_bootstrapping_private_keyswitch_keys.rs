@@ -1,10 +1,9 @@
 use serde::{Deserialize, Serialize};
-use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, GlweDimension, LweDef, LweDimension, PrivateFunctionalKeyswitchLweCount, RadixCount,
     RadixDecomposition, Torus, TorusOps,
-    dst::{AsMutSlice, AsSlice, OverlaySize},
+    dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
 };
 
 use super::{
@@ -45,7 +44,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeys<S> {
         ));
 
         Self {
-            data: avec![Torus::zero(); len],
+            data: dst_allocate(len),
         }
     }
 }

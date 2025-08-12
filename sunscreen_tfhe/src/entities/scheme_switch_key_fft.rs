@@ -1,9 +1,9 @@
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
-    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize},
+    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
     entities::SchemeSwitchKeyRef,
 };
 
@@ -47,7 +47,7 @@ impl SchemeSwitchKeyFft<Complex<f64>> {
         let len = SchemeSwitchKeyFftRef::size((params.dim, radix.count));
 
         SchemeSwitchKeyFft {
-            data: avec![Complex::zero(); len],
+            data: dst_allocate(len),
         }
     }
 }

@@ -1,8 +1,9 @@
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps, dst::OverlaySize,
+    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
+    dst::{OverlaySize, dst_allocate, dst_from_slice},
     ops::ciphertext::external_product_ggsw_glwe,
 };
 
@@ -42,7 +43,7 @@ where
         let elems = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
         Self {
-            data: avec![Torus::zero(); elems],
+            data: dst_allocate(elems),
         }
     }
 
@@ -53,7 +54,7 @@ where
         assert_eq!(data.len(), elems);
 
         Self {
-            data: avec_from_slice!(data),
+            data: dst_from_slice(data),
         }
     }
 
