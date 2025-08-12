@@ -113,7 +113,6 @@ macro_rules! dst {
                     data.as_mut_slice().clone_from_slice(&self.data);
 
                     $t { data }
-                    //$t { data: aligned_vec::AVec::from_slice(crate::scratch::SIMD_ALIGN, &self.data) }
                 }
             }
 
