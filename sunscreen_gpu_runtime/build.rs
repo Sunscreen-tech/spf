@@ -17,8 +17,8 @@ mod gpu {
     #[cfg(feature = "cuda")]
     pub fn compile_as_cuda() {
         const ARCH: &[&str] = &[
-            "sm_70", "sm_75", "sm_89", "sm_90", "sm_90a", "sm_100", "sm_100a", "sm_101", "sm_101a", "sm_120",
-            "sm_120a",
+            "sm_70", "sm_75", "sm_89", "sm_90", "sm_90a", "sm_100", "sm_100a", "sm_101", "sm_101a",
+            "sm_120", "sm_120a",
         ];
 
         let gencode_flags = ARCH

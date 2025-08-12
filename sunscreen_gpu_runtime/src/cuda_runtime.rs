@@ -4,18 +4,17 @@ use std::{
     os::raw::c_void,
     ptr::{self},
     str::FromStr,
-    sync::{OnceLock},
+    sync::OnceLock,
 };
 
 use cuda_driver_sys::{
-    CUcontext, CUdevice, CUfunction, CUmodule, CUstream,
-    cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName,
-    cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain,
-    cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2,
-    cuStreamSynchronize, cudaError_enum,
+    CUcontext, CUdevice, CUfunction, CUmodule, CUstream, cuCtxSetCurrent,
+    cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuDevicePrimaryCtxRelease,
+    cuDevicePrimaryCtxRetain, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData,
+    cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum,
 };
 use cuda_runtime_sys::{
-    cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal
+    cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
 };
 
 use crate::{

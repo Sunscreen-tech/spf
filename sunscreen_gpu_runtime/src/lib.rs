@@ -3,9 +3,14 @@ pub mod cuda_runtime;
 
 mod error;
 use std::{
-    borrow::{Borrow, BorrowMut}, ffi::c_void, marker::PhantomData, ops::{Deref, DerefMut}, sync::{
-        atomic::{AtomicBool, Ordering}, Arc, OnceLock
-    }
+    borrow::{Borrow, BorrowMut},
+    ffi::c_void,
+    marker::PhantomData,
+    ops::{Deref, DerefMut},
+    sync::{
+        Arc, OnceLock,
+        atomic::{AtomicBool, Ordering},
+    },
 };
 
 use bytemuck::{NoUninit, Pod};
@@ -348,7 +353,8 @@ where
 }
 
 impl<T> PartialEq for Allocation<T>
-where T: PartialEq + Pod
+where
+    T: PartialEq + Pod,
 {
     fn eq(&self, other: &Self) -> bool {
         self.as_slice() == other.as_slice()
@@ -356,7 +362,8 @@ where T: PartialEq + Pod
 }
 
 impl<T> Borrow<[T]> for Allocation<T>
-where T: Pod
+where
+    T: Pod,
 {
     fn borrow(&self) -> &[T] {
         self.as_slice()
@@ -364,7 +371,8 @@ where T: Pod
 }
 
 impl<T> BorrowMut<[T]> for Allocation<T>
-where T: Pod
+where
+    T: Pod,
 {
     fn borrow_mut(&mut self) -> &mut [T] {
         self.as_mut_slice()
@@ -372,7 +380,8 @@ where T: Pod
 }
 
 impl<T> AsRef<[T]> for Allocation<T>
-where T: Pod
+where
+    T: Pod,
 {
     fn as_ref(&self) -> &[T] {
         self.as_slice()
@@ -380,7 +389,8 @@ where T: Pod
 }
 
 impl<T> AsMut<[T]> for Allocation<T>
-where T: Pod
+where
+    T: Pod,
 {
     fn as_mut(&mut self) -> &mut [T] {
         self.as_mut_slice()
@@ -388,25 +398,26 @@ where T: Pod
 }
 
 impl<T> Deref for Allocation<T>
-where T: Pod
+where
+    T: Pod,
 {
     type Target = [T];
 
     fn deref(&self) -> &Self::Target {
-        self.as_slice()    
+        self.as_slice()
     }
 }
 
 impl<T> DerefMut for Allocation<T>
-where T: Pod
+where
+    T: Pod,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
-        self.as_mut_slice()    
+        self.as_mut_slice()
     }
 }
 
-impl<T> Eq for Allocation<T>
-where T: Eq + Pod { }
+impl<T> Eq for Allocation<T> where T: Eq + Pod {}
 
 impl<T> Allocation<T>
 where
@@ -426,11 +437,11 @@ where
         self.as_mut_slice().copy_from_slice(other);
     }
 
-    pub fn iter(&self) -> impl ExactSizeIterator<Item=&T> {
+    pub fn iter(&self) -> impl ExactSizeIterator<Item = &T> {
         self.as_slice().iter()
     }
 
-    pub fn iter_mut(&mut self) -> impl ExactSizeIterator<Item=&mut T> {
+    pub fn iter_mut(&mut self) -> impl ExactSizeIterator<Item = &mut T> {
         self.as_mut_slice().iter_mut()
     }
 }
@@ -570,7 +581,7 @@ static RUNTIMES: OnceLock<Arc<Vec<Arc<GpuRuntime>>>> = OnceLock::new();
 
 pub fn init_runtimes(
     // Don't know why the rust compiler complains about this...
-    #[allow(unused)] cubin: &[u8]
+    #[allow(unused)] cubin: &[u8],
 ) {
     static INITIALIZED: AtomicBool = AtomicBool::new(false);
 

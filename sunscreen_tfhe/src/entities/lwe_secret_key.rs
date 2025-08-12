@@ -2,7 +2,11 @@ use num::Zero;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::{dst_from_iter, dst_from_slice, NoWrapper, OverlaySize}, macros::{impl_binary_op, impl_unary_op}, ops::encryption::encode_and_encrypt_lwe_ciphertext, rand::{binary, binary_with_seed, uniform_torus, uniform_torus_with_seed, Seed}, LweDef, LweDimension, PlaintextBits, Torus, TorusOps
+    LweDef, LweDimension, PlaintextBits, Torus, TorusOps,
+    dst::{NoWrapper, OverlaySize, dst_from_iter, dst_from_slice},
+    macros::{impl_binary_op, impl_unary_op},
+    ops::encryption::encode_and_encrypt_lwe_ciphertext,
+    rand::{Seed, binary, binary_with_seed, uniform_torus, uniform_torus_with_seed},
 };
 
 use super::{LweCiphertext, LweCiphertextRef};

@@ -1,9 +1,14 @@
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::{dst_from_iter, FromSlice, NoWrapper, OverlaySize}, entities::GgswCiphertext, macros::{impl_binary_op, impl_unary_op}, ops::encryption::{
+    GlweDef, GlweDimension, PlaintextBits, RadixDecomposition, Torus, TorusOps,
+    dst::{FromSlice, NoWrapper, OverlaySize, dst_from_iter},
+    entities::GgswCiphertext,
+    macros::{impl_binary_op, impl_unary_op},
+    ops::encryption::{
         decrypt_glwe_ciphertext, encrypt_ggsw_ciphertext, encrypt_glwe_ciphertext_secret,
-    }, rand::{binary, binary_with_seed, uniform_torus, uniform_torus_with_seed, Seed}, GlweDef, GlweDimension, PlaintextBits, RadixDecomposition, Torus, TorusOps
+    },
+    rand::{Seed, binary, binary_with_seed, uniform_torus, uniform_torus_with_seed},
 };
 
 use super::{
@@ -85,7 +90,7 @@ where
         let mut rng = seed.create_rng();
 
         GlweSecretKey {
-            data: dst_from_iter((0..len).map(|_| uniform_torus_with_seed::<S>(&mut rng).inner()))
+            data: dst_from_iter((0..len).map(|_| uniform_torus_with_seed::<S>(&mut rng).inner())),
         }
     }
 
@@ -201,7 +206,7 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::{dst::dst_from_iter, high_level::*, rand::Seed, GLWE_1_2048_128};
+    use crate::{GLWE_1_2048_128, dst::dst_from_iter, high_level::*, rand::Seed};
 
     use num::traits::{WrappingAdd, WrappingNeg, WrappingSub};
 
