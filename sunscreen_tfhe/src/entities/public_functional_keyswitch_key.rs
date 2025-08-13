@@ -3,7 +3,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
-    entities::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef},
+    entities::{DstIterator, DstIteratorMut, GlevCiphertextRef},
 };
 
 use super::GlweCiphertextRef;
@@ -46,10 +46,10 @@ impl<S: TorusOps> PublicFunctionalKeyswitchKeyRef<S> {
         &self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIterator<'_, S> {
+    ) -> DstIterator<'_, GlevCiphertextRef<S>> {
         let stride = GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count));
 
-        GlevCiphertextIterator::new(self.as_slice(), stride)
+        DstIterator::new(self.as_slice(), stride)
     }
 
     /// Iterate over the rows of the [`PublicFunctionalKeyswitchKey`] mutably.
@@ -57,9 +57,9 @@ impl<S: TorusOps> PublicFunctionalKeyswitchKeyRef<S> {
         &mut self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<'_, S> {
+    ) -> DstIteratorMut<'_, GlevCiphertextRef<S>> {
         let stride = GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count));
 
-        GlevCiphertextIteratorMut::new(self.as_mut_slice(), stride)
+        DstIteratorMut::new(self.as_mut_slice(), stride)
     }
 }

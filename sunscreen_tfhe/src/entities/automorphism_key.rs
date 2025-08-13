@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::dst_allocate,
-    entities::{
-        AutomorphismKeyFft, GlweKeyswitchKeyIterator, GlweKeyswitchKeyIteratorMut,
-        GlweKeyswitchKeyRef,
-    },
+    entities::{AutomorphismKeyFft, DstIterator, DstIteratorMut, GlweKeyswitchKeyRef},
 };
 
 dst! {
@@ -45,8 +42,8 @@ impl<S: TorusOps> AutomorphismKeyRef<S> {
         &self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyIterator<'_, S> {
-        GlweKeyswitchKeyIterator::new(
+    ) -> DstIterator<'_, GlweKeyswitchKeyRef<S>> {
+        DstIterator::new(
             &self.data,
             GlweKeyswitchKeyRef::<S>::size((glwe.dim, radix.count)),
         )
@@ -57,8 +54,8 @@ impl<S: TorusOps> AutomorphismKeyRef<S> {
         &mut self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyIteratorMut<'_, S> {
-        GlweKeyswitchKeyIteratorMut::new(
+    ) -> DstIteratorMut<'_, GlweKeyswitchKeyRef<S>> {
+        DstIteratorMut::new(
             &mut self.data,
             GlweKeyswitchKeyRef::<S>::size((glwe.dim, radix.count)),
         )

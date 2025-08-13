@@ -28,7 +28,6 @@ dst! {
     (Debug, Clone, Serialize, Deserialize),
     ()
 }
-dst_iter! { PolynomialIterator, PolynomialIteratorMut, ParallelPolynomialIterator, ParallelPolynomialIteratorMut, NoWrapper, PolynomialRef, () }
 
 impl<T> OverlaySize for PolynomialRef<T>
 where

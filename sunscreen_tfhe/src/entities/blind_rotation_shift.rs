@@ -4,10 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
-    entities::{
-        GgswCiphertextFftIterator, GgswCiphertextFftIteratorMut, GgswCiphertextFftRef,
-        GgswCiphertextIterator, GgswCiphertextIteratorMut, GgswCiphertextRef,
-    },
+    entities::{DstIterator, DstIteratorMut, GgswCiphertextFftRef, GgswCiphertextRef},
 };
 
 dst! {
@@ -52,10 +49,10 @@ impl<S: TorusOps> BlindRotationShiftRef<S> {
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GgswCiphertextIterator<'_, S> {
+    ) -> DstIterator<'_, GgswCiphertextRef<S>> {
         let stride = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
-        GgswCiphertextIterator::new(self.as_slice(), stride)
+        DstIterator::new(self.as_slice(), stride)
     }
 
     /// Iterate over the rows of the [BlindRotationShift] mutably.
@@ -63,10 +60,10 @@ impl<S: TorusOps> BlindRotationShiftRef<S> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GgswCiphertextIteratorMut<'_, S> {
+    ) -> DstIteratorMut<'_, GgswCiphertextRef<S>> {
         let stride = GgswCiphertextRef::<S>::size((params.dim, radix.count));
 
-        GgswCiphertextIteratorMut::new(self.as_mut_slice(), stride)
+        DstIteratorMut::new(self.as_mut_slice(), stride)
     }
 }
 
@@ -109,10 +106,10 @@ impl BlindRotationShiftFftRef<Complex<f64>> {
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GgswCiphertextFftIterator<'_, Complex<f64>> {
+    ) -> DstIterator<'_, GgswCiphertextFftRef<Complex<f64>>> {
         let stride = GgswCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
-        GgswCiphertextFftIterator::new(self.as_slice(), stride)
+        DstIterator::new(self.as_slice(), stride)
     }
 
     /// Iterate over the rows of the [BlindRotationShiftFft] mutably.
@@ -120,10 +117,10 @@ impl BlindRotationShiftFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GgswCiphertextFftIteratorMut<'_, Complex<f64>> {
+    ) -> DstIteratorMut<'_, GgswCiphertextFftRef<Complex<f64>>> {
         let stride = GgswCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
-        GgswCiphertextFftIteratorMut::new(self.as_mut_slice(), stride)
+        DstIteratorMut::new(self.as_mut_slice(), stride)
     }
 
     /// Compute the inverse FFT of the [BlindRotationShiftFft] and store the

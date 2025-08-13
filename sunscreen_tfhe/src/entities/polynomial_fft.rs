@@ -20,15 +20,6 @@ dst! {
     (Debug, Clone),
     ()
 }
-dst_iter!(
-    PolynomialFftIterator,
-    PolynomialFftIteratorMut,
-    ParallelPolynomialFftIterator,
-    ParallelPolynomialFftIteratorMut,
-    NoWrapper,
-    PolynomialFftRef,
-    ()
-);
 
 impl<T> OverlaySize for PolynomialFftRef<T>
 where

@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{NoWrapper, OverlaySize, dst_allocate},
-    entities::GlweKeyswitchKey,
+    entities::{DstIterator, DstIteratorMut, GlweKeyswitchKey},
 };
 
-use super::{GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, GlevCiphertextFftRef};
+use super::GlevCiphertextFftRef;
 
 // TODO: This GLWE keyswitch only works for switching to a new key with the same
 // parameter. Copy what is above but changed for polynomials to enable
@@ -21,7 +21,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     ()
 }
-dst_iter! { GlweKeyswitchKeyFftIterator, GlweKeyswitchKeyFftIteratorMut, ParallelGlweKeyswitchKeyFftIterator, ParallelGlweKeyswitchKeyFftIteratorMut, NoWrapper, GlweKeyswitchKeyFftRef, ()}
 
 impl OverlaySize for GlweKeyswitchKeyFftRef<Complex<f64>> {
     type Inputs = (GlweDimension, RadixCount);
@@ -53,10 +52,10 @@ impl GlweKeyswitchKeyFftRef<Complex<f64>> {
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextFftIterator<'_, Complex<f64>> {
+    ) -> DstIterator<'_, GlevCiphertextFftRef<Complex<f64>>> {
         let stride = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
-        GlevCiphertextFftIterator::new(&self.data, stride)
+        DstIterator::new(&self.data, stride)
     }
 
     /// Returns a mutable iterator over the rows of the GLWE keyswitch key, which are
@@ -65,10 +64,10 @@ impl GlweKeyswitchKeyFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextFftIteratorMut<'_, Complex<f64>> {
+    ) -> DstIteratorMut<'_, GlevCiphertextFftRef<Complex<f64>>> {
         let stride = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
-        GlevCiphertextFftIteratorMut::new(&mut self.data, stride)
+        DstIteratorMut::new(&mut self.data, stride)
     }
 
     /// Takes the IFFT of these FFT'd keys and writes the result into the given [`GlweKeyswitchKey`].

@@ -4,10 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
-    entities::GlweKeyswitchKeyFftRef,
+    entities::{DstIterator, DstIteratorMut, GlweKeyswitchKeyFftRef},
 };
 
-use super::{GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef};
+use super::GlevCiphertextRef;
 
 // TODO: This GLWE keyswitch only works for switching to a new key with the same
 // parameter. Copy what is above but changed for polynomials to enable
@@ -21,7 +21,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps,)
 }
-dst_iter! { GlweKeyswitchKeyIterator, GlweKeyswitchKeyIteratorMut, ParallelGlweKeyswitchKeyIterator, ParallelGlweKeyswitchKeyIteratorMut, Torus, GlweKeyswitchKeyRef, (TorusOps,)}
 
 impl<S> OverlaySize for GlweKeyswitchKeyRef<S>
 where
@@ -62,10 +61,10 @@ where
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIterator<'_, S> {
+    ) -> DstIterator<'_, GlevCiphertextRef<S>> {
         let stride = GlevCiphertextRef::<S>::size((params.dim, radix.count));
 
-        GlevCiphertextIterator::new(&self.data, stride)
+        DstIterator::new(&self.data, stride)
     }
 
     /// Returns a mutable iterator over the rows of the GLWE keyswitch key, which are
@@ -74,10 +73,10 @@ where
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<'_, S> {
+    ) -> DstIteratorMut<'_, GlevCiphertextRef<S>> {
         let stride = GlevCiphertextRef::<S>::size((params.dim, radix.count));
 
-        GlevCiphertextIteratorMut::new(&mut self.data, stride)
+        DstIteratorMut::new(&mut self.data, stride)
     }
 
     /// Takes the FFT of these keyswitch keys and write the result into the given

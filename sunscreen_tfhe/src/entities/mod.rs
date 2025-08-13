@@ -16,9 +16,6 @@ pub use public_functional_keyswitch_key::*;
 mod blind_rotation_shift;
 pub use blind_rotation_shift::*;
 
-mod lwe_ciphertext_list;
-pub use lwe_ciphertext_list::*;
-
 mod private_functional_keyswitch_key;
 pub use private_functional_keyswitch_key::*;
 
@@ -39,9 +36,6 @@ pub use glwe_secret_key::*;
 
 mod glwe_ciphertext;
 pub use glwe_ciphertext::*;
-
-mod glwe_ciphertext_list;
-pub use glwe_ciphertext_list::*;
 
 mod glwe_ciphertext_fft;
 pub use glwe_ciphertext_fft::*;
@@ -87,9 +81,6 @@ pub use polynomial::*;
 
 mod polynomial_fft;
 pub use polynomial_fft::*;
-
-mod polynomial_list;
-pub use polynomial_list::*;
 
 mod scheme_switch_key;
 pub use scheme_switch_key::*;

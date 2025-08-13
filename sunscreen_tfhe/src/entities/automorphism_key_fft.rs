@@ -4,9 +4,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, OverlaySize, RadixCount, RadixDecomposition,
     dst::{NoWrapper, dst_allocate},
-    entities::{
-        GlweKeyswitchKeyFftIterator, GlweKeyswitchKeyFftIteratorMut, GlweKeyswitchKeyFftRef,
-    },
+    entities::{DstIterator, DstIteratorMut, GlweKeyswitchKeyFftRef},
 };
 
 dst! {
@@ -45,8 +43,8 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
         &self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyFftIterator<'_, Complex<f64>> {
-        GlweKeyswitchKeyFftIterator::new(
+    ) -> DstIterator<'_, GlweKeyswitchKeyFftRef<Complex<f64>>> {
+        DstIterator::new(
             &self.data,
             GlweKeyswitchKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
         )
@@ -58,8 +56,8 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
         &mut self,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlweKeyswitchKeyFftIteratorMut<'_, Complex<f64>> {
-        GlweKeyswitchKeyFftIteratorMut::new(
+    ) -> DstIteratorMut<'_, GlweKeyswitchKeyFftRef<Complex<f64>>> {
+        DstIteratorMut::new(
             &mut self.data,
             GlweKeyswitchKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
         )

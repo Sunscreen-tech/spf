@@ -3,9 +3,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut},
 };
 
-use super::{LevCiphertextIterator, LevCiphertextIteratorMut, LevCiphertextRef};
+use super::LevCiphertextRef;
 
 dst! {
     /// A LWE keyswitch key used to switch a ciphertext from one key to another.
@@ -63,10 +64,10 @@ where
         &self,
         new_params: &LweDef,
         radix: &RadixDecomposition,
-    ) -> LevCiphertextIterator<'_, S> {
+    ) -> DstIterator<'_, LevCiphertextRef<S>> {
         let stride = LevCiphertextRef::<S>::size((new_params.dim, radix.count));
 
-        LevCiphertextIterator::new(&self.data, stride)
+        DstIterator::new(&self.data, stride)
     }
 
     /// Returns a mutable iterator over the rows of the LWE keyswitch key, which are
@@ -75,10 +76,10 @@ where
         &mut self,
         new_params: &LweDef,
         radix: &RadixDecomposition,
-    ) -> LevCiphertextIteratorMut<'_, S> {
+    ) -> DstIteratorMut<'_, LevCiphertextRef<S>> {
         let stride = LevCiphertextRef::<S>::size((new_params.dim, radix.count));
 
-        LevCiphertextIteratorMut::new(&mut self.data, stride)
+        DstIteratorMut::new(&mut self.data, stride)
     }
 }
 

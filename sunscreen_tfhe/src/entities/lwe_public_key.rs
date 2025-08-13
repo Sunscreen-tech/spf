@@ -4,14 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     LweDef, LweDimension, PlaintextBits, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut},
     ops::encryption::encode_and_encrypt_lwe_ciphertext,
     rand::{binary, normal_torus},
 };
 
-use super::{
-    LweCiphertext, LweCiphertextIterator, LweCiphertextIteratorMut, LweCiphertextRef,
-    LweSecretKeyRef,
-};
+use super::{LweCiphertext, LweCiphertextRef, LweSecretKeyRef};
 
 /// Randomness used to encrypt a message with a public key.
 #[derive(Debug)]
@@ -72,13 +70,13 @@ where
     S: TorusOps,
 {
     /// Get the public key data as an iterator.
-    pub fn enc_zeros(&self, params: &LweDef) -> LweCiphertextIterator<'_, S> {
-        LweCiphertextIterator::new(&self.data, LweCiphertextRef::<S>::size(params.dim))
+    pub fn enc_zeros(&self, params: &LweDef) -> DstIterator<'_, LweCiphertextRef<S>> {
+        DstIterator::new(&self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Get the public key data as a mutable iterator.
-    pub fn enc_zeros_mut(&mut self, params: &LweDef) -> LweCiphertextIteratorMut<'_, S> {
-        LweCiphertextIteratorMut::new(&mut self.data, LweCiphertextRef::<S>::size(params.dim))
+    pub fn enc_zeros_mut(&mut self, params: &LweDef) -> DstIteratorMut<'_, LweCiphertextRef<S>> {
+        DstIteratorMut::new(&mut self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Encrypt a message as an LWE ciphertext using a public key, returning the

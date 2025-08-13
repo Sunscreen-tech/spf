@@ -3,7 +3,9 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, PlaintextBits, RadixDecomposition, Torus, TorusOps,
     dst::{FromSlice, NoWrapper, OverlaySize, dst_from_iter},
-    entities::GgswCiphertext,
+    entities::{
+        DstIterator, DstIteratorMut, GgswCiphertext, ParallelDstIterator, ParallelDstIteratorMut,
+    },
     macros::{impl_binary_op, impl_unary_op},
     ops::encryption::{
         decrypt_glwe_ciphertext, encrypt_ggsw_ciphertext, encrypt_glwe_ciphertext_secret,
@@ -11,10 +13,7 @@ use crate::{
     rand::{Seed, binary, binary_with_seed, uniform_torus, uniform_torus_with_seed},
 };
 
-use super::{
-    GlweCiphertext, GlweCiphertextRef, LweSecretKeyRef, ParallelPolynomialIterator, Polynomial,
-    PolynomialIterator, PolynomialIteratorMut, PolynomialRef,
-};
+use super::{GlweCiphertext, GlweCiphertextRef, LweSecretKeyRef, Polynomial, PolynomialRef};
 
 dst! {
     /// A GLWE secret key. This is a list of `s` polynomials of degree `n` where
@@ -114,13 +113,24 @@ where
     S: TorusOps,
 {
     /// Returns an iterator over the `s` polynomials in a GLWE secret key.
-    pub fn s(&self, params: &GlweDef) -> PolynomialIterator<'_, S> {
-        PolynomialIterator::new(&self.data, params.dim.polynomial_degree.0)
+    pub fn s(&self, params: &GlweDef) -> DstIterator<'_, PolynomialRef<S>> {
+        DstIterator::new(&self.data, params.dim.polynomial_degree.0)
+    }
+
+    /// Returns an mutable iterator over the `s` polynomials in a GLWE secret
+    /// key.
+    pub fn s_mut(&mut self, params: &GlweDef) -> DstIteratorMut<'_, PolynomialRef<S>> {
+        DstIteratorMut::new(&mut self.data, params.dim.polynomial_degree.0)
     }
 
     /// Returns a parallel iterator over the `s` polynomials in a GLWE secret key.
-    pub fn s_par(&self, params: &GlweDef) -> ParallelPolynomialIterator<'_, S> {
-        ParallelPolynomialIterator::new(&self.data, params.dim.polynomial_degree.0)
+    pub fn s_par(&self, params: &GlweDef) -> ParallelDstIterator<'_, PolynomialRef<S>> {
+        ParallelDstIterator::new(&self.data, params.dim.polynomial_degree.0)
+    }
+
+    /// Returns a mutable parallel iterator over the `s` polynomials in a GLWE secret key.
+    pub fn s_par_mut(&mut self, params: &GlweDef) -> ParallelDstIteratorMut<'_, PolynomialRef<S>> {
+        ParallelDstIteratorMut::new(&mut self.data, params.dim.polynomial_degree.0)
     }
 
     /// Decrypts and decodes a GLWE ciphertext into a polynomial.
@@ -190,17 +200,6 @@ where
     /// [`sample_extract`](crate::ops::ciphertext::sample_extract).
     pub fn to_lwe_secret_key(&self) -> &LweSecretKeyRef<S> {
         LweSecretKeyRef::from_slice(&self.data)
-    }
-}
-
-impl<S> GlweSecretKeyRef<S>
-where
-    S: TorusOps,
-{
-    /// Returns an mutable iterator over the `s` polynomials in a GLWE secret
-    /// key.
-    pub fn s_mut(&mut self, params: &GlweDef) -> PolynomialIteratorMut<'_, S> {
-        PolynomialIteratorMut::new(&mut self.data, params.dim.polynomial_degree.0)
     }
 }
 

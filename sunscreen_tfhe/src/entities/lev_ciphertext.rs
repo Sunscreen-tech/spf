@@ -1,8 +1,12 @@
 use serde::{Deserialize, Serialize};
 
-use crate::{LweDef, LweDimension, RadixCount, Torus, TorusOps, dst::OverlaySize};
+use crate::{
+    LweDef, LweDimension, RadixCount, Torus, TorusOps,
+    dst::OverlaySize,
+    entities::{DstIterator, DstIteratorMut},
+};
 
-use super::{LweCiphertextIterator, LweCiphertextIteratorMut, LweCiphertextRef};
+use super::LweCiphertextRef;
 
 // Iteration over LWE ciphertexts
 dst! {
@@ -13,7 +17,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps,)
 }
-dst_iter! { LevCiphertextIterator, LevCiphertextIteratorMut, ParallelLevCiphertextIterator, ParallelLevCiphertextIteratorMut, Torus, LevCiphertextRef, (TorusOps,)}
 
 impl<S> OverlaySize for LevCiphertextRef<S>
 where
@@ -32,13 +35,16 @@ where
 {
     /// Returns an iterator over the rows of the Lev ciphertext, which are
     /// [`LweCiphertext`](crate::entities::LweCiphertext)s.
-    pub fn lwe_ciphertexts(&self, params: &LweDef) -> LweCiphertextIterator<'_, S> {
-        LweCiphertextIterator::new(&self.data, LweCiphertextRef::<S>::size(params.dim))
+    pub fn lwe_ciphertexts(&self, params: &LweDef) -> DstIterator<'_, LweCiphertextRef<S>> {
+        DstIterator::new(&self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Returns a mutable iterator over the rows of the Lev ciphertext, which are
     /// [`LweCiphertext`](crate::entities::LweCiphertext)s.
-    pub fn lwe_ciphertexts_mut(&mut self, params: &LweDef) -> LweCiphertextIteratorMut<'_, S> {
-        LweCiphertextIteratorMut::new(&mut self.data, LweCiphertextRef::<S>::size(params.dim))
+    pub fn lwe_ciphertexts_mut(
+        &mut self,
+        params: &LweDef,
+    ) -> DstIteratorMut<'_, LweCiphertextRef<S>> {
+        DstIteratorMut::new(&mut self.data, LweCiphertextRef::<S>::size(params.dim))
     }
 }
