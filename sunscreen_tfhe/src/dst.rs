@@ -143,6 +143,14 @@ macro_rules! dst {
             {
                 type Ty = $wrapper<T>;
             }
+
+
+            impl<T> $crate::dst::InnermostType for $ref_t<T>
+            where
+                T: Clone + bytemuck::Pod $(+ $t_bounds)*
+            {
+                type Ty = $wrapper<T>;
+            }
         }
     };
 }
@@ -484,11 +492,11 @@ pub trait InnermostType {
 
 pub type NoWrapper<T> = T;
 
-pub(crate) trait AsSlice<T> {
+pub trait AsSlice<T> {
     fn as_slice(&self) -> &[T];
 }
 
-pub(crate) trait AsMutSlice<T> {
+pub trait AsMutSlice<T> {
     fn as_mut_slice(&mut self) -> &mut [T];
 }
 

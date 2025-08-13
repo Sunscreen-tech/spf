@@ -10,6 +10,7 @@ use crate::{
     dst::{
         Allocation, AsMutSlice, AsSlice, FromMutSlice, FromSlice, InnermostType, Len, dst_allocate,
     },
+    entities::{DstIterator, DstIteratorMut},
 };
 
 /// An array of objects that share a single allocation. Borrowing results in
@@ -148,7 +149,7 @@ where
     <T as InnermostType>::Ty: Pod + PartialEq,
 {
     fn from_slice(data: &[<T as InnermostType>::Ty]) -> &Self {
-        unsafe { &*(data.as_ptr() as *const &DstArrayRef<T>) }
+        unsafe { &*(data as *const [<T as InnermostType>::Ty] as *const DstArrayRef<T>) }
     }
 }
 
@@ -158,7 +159,7 @@ where
     <T as InnermostType>::Ty: Pod + PartialEq,
 {
     fn from_mut_slice(data: &mut [<T as InnermostType>::Ty]) -> &mut Self {
-        unsafe { &mut *(data.as_mut_ptr() as *mut &mut DstArrayRef<T>) }
+        unsafe { &mut *(data as *mut [<T as InnermostType>::Ty] as *mut DstArrayRef<T>) }
     }
 }
 
@@ -183,5 +184,21 @@ where
             .clone_from_slice(bytemuck::cast_slice(&self.data));
 
         DstArray { data: cloned }
+    }
+}
+
+impl<T> DstArrayRef<T>
+where
+    T: InnermostType + OverlaySize + ToOwned + AsSlice<<T as InnermostType>::Ty> + ?Sized,
+    <T as InnermostType>::Ty: Pod + PartialEq,
+{
+    /// Create an iterator that emits `&T`s contained in the DST
+    pub fn iter(&self, size_info: <T as OverlaySize>::Inputs) -> DstIterator<T> {
+        DstIterator::new(&self.data, T::size(size_info))
+    }
+
+    /// Create a mutable iterator that emits `&mut T`s contained in the DST
+    pub fn iter_mut(&mut self, size_info: <T as OverlaySize>::Inputs) -> DstIteratorMut<T> {
+        DstIteratorMut::new(&mut self.data, T::size(size_info))
     }
 }

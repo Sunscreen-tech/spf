@@ -7,6 +7,9 @@ pub use automorphism_key_fft::*;
 mod dst_array;
 pub use dst_array::*;
 
+mod dst_iterator;
+pub use dst_iterator::*;
+
 mod public_functional_keyswitch_key;
 pub use public_functional_keyswitch_key::*;
 
