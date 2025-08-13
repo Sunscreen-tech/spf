@@ -7,8 +7,8 @@ use crate::{
     dst::FromMutSlice,
     entities::{
         AutomorphismKeyFftRef, BootstrapKeyFftRef, CircuitBootstrappingKeyswitchKeysRef,
-        GgswCiphertextFftRef, GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef,
-        LweCiphertextListRef, LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
+        DstArrayRef, GgswCiphertextFftRef, GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef,
+        LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
     ops::{
         automorphisms::trace,
@@ -200,8 +200,8 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
     // and undo our rotation.
     allocate_scratch_ref!(
         lo_noise_lwe_decomps,
-        LweCiphertextListRef<S>,
-        (glwe_2.as_lwe_def().dim, cbs_radix.count.0)
+        DstArrayRef<LweCiphertextRef<S>>,
+        (cbs_radix.count.0, glwe_2.as_lwe_def().dim)
     );
     extract_and_rotate_lo_noise_glwe(lo_noise_lwe_decomps, lo_noise_glwe, glwe_2, cbs_radix);
 
@@ -222,7 +222,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
 /// Sample extract the first ℓ coefficients out of the input GLWE and undo the rotation
 /// we applied when applying our functional bootstrap.
 fn extract_and_rotate_lo_noise_glwe<S>(
-    lo_noise_lwe_decomps: &mut LweCiphertextListRef<S>,
+    lo_noise_lwe_decomps: &mut DstArrayRef<LweCiphertextRef<S>>,
     lo_noise_glwe: &GlweCiphertextRef<S>,
     glwe: &GlweDef,
     cbs_radix: &RadixDecomposition,
@@ -232,7 +232,7 @@ fn extract_and_rotate_lo_noise_glwe<S>(
     allocate_scratch_ref!(extracted, LweCiphertextRef<S>, (glwe.as_lwe_def().dim));
 
     for (i, lo_noise_lwe_decomp) in lo_noise_lwe_decomps
-        .ciphertexts_mut(&glwe.as_lwe_def())
+        .iter_mut(glwe.as_lwe_def().dim)
         .enumerate()
     {
         let cur_level = i + 1;
@@ -484,7 +484,7 @@ fn fill_multifunctional_cbs_decomposition_lut<S: TorusOps>(
 /// Bootstraps a level 2 GLWE ciphertext to a level 1 GLWE ciphertext.
 pub fn apply_pfks_on_ggsw_components<S: TorusOps>(
     result: &mut GgswCiphertextRef<S>,
-    lwes_2: &LweCiphertextListRef<S>,
+    lwes_2: &DstArrayRef<LweCiphertextRef<S>>,
     cbsksk: &CircuitBootstrappingKeyswitchKeysRef<S>,
     glwe_2: &GlweDef,
     glwe_1: &GlweDef,
@@ -497,7 +497,7 @@ pub fn apply_pfks_on_ggsw_components<S: TorusOps>(
         pfks_radix,
     )) {
         for (decomp, glwe) in lwes_2
-            .ciphertexts(&glwe_2.as_lwe_def())
+            .iter(glwe_2.as_lwe_def().dim)
             .zip(glev.glwe_ciphertexts_mut(glwe_1))
         {
             private_functional_keyswitch(
@@ -521,8 +521,8 @@ mod tests {
         GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
         dst::AsSlice,
         entities::{
-            AutomorphismKey, AutomorphismKeyFft, GgswCiphertext, GgswCiphertextFft, GlweCiphertext,
-            LweCiphertextList, SchemeSwitchKey, SchemeSwitchKeyFft,
+            AutomorphismKey, AutomorphismKeyFft, DstArray, GgswCiphertext, GgswCiphertextFft,
+            GlweCiphertext, LweCiphertext, SchemeSwitchKey, SchemeSwitchKeyFft,
         },
         high_level::{self, TEST_LWE_DEF_1, encryption, fft, keygen},
         ops::{
@@ -547,7 +547,7 @@ mod tests {
 
         let mut lo_noise_glwe = GlweCiphertext::<u64>::new(&glwe_params);
         let mut low_noise_lwe_decomp =
-            LweCiphertextList::<u64>::new(&glwe_params.as_lwe_def(), cbs_radix.count.0);
+            DstArray::<LweCiphertext<u64>>::new(cbs_radix.count.0, glwe_params.as_lwe_def().dim);
 
         let sk = keygen::generate_binary_lwe_sk(&TEST_LWE_DEF_1);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
@@ -581,7 +581,7 @@ mod tests {
         );
 
         for (i, lwe_2) in low_noise_lwe_decomp
-            .ciphertexts(&glwe_params.as_lwe_def())
+            .iter(glwe_params.as_lwe_def().dim)
             .enumerate()
         {
             let cur_level = i + 1;
@@ -616,7 +616,7 @@ mod tests {
         );
 
         for (i, lwe_2) in low_noise_lwe_decomp
-            .ciphertexts(&glwe_params.as_lwe_def())
+            .iter(glwe_params.as_lwe_def().dim)
             .enumerate()
         {
             let cur_level = i + 1;

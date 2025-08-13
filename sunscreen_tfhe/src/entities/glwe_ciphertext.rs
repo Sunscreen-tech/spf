@@ -4,15 +4,12 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixDecomposition, Torus, TorusOps,
     dst::{FromMutSlice, FromSlice, OverlaySize, dst_allocate, dst_from_iter},
-    entities::GgswCiphertextRef,
+    entities::{DstIterator, DstIteratorMut, GgswCiphertextRef},
     macros::{impl_binary_op, impl_unary_op},
     ops::ciphertext::external_product_ggsw_glwe,
 };
 
-use super::{
-    GlweCiphertextFftRef, GlweSecretKeyRef, PolynomialIterator, PolynomialIteratorMut,
-    PolynomialRef,
-};
+use super::{GlweCiphertextFftRef, GlweSecretKeyRef, PolynomialRef};
 
 dst! {
     /// A GLWE ciphertext.
@@ -22,7 +19,6 @@ dst! {
     (Debug, Clone, Serialize, Deserialize),
     (TorusOps)
 }
-dst_iter! { GlweCiphertextIterator, GlweCiphertextIteratorMut, ParallelGlweCiphertextIterator, ParallelGlweCiphertextIteratorMut, Torus, GlweCiphertextRef, (TorusOps,) }
 
 // Also implements the assign operators.
 impl_binary_op!(Add, GlweCiphertext, (TorusOps,));
@@ -85,17 +81,20 @@ where
     pub fn a_b(
         &self,
         params: &GlweDef,
-    ) -> (PolynomialIterator<'_, Torus<S>>, &PolynomialRef<Torus<S>>) {
+    ) -> (
+        DstIterator<'_, PolynomialRef<Torus<S>>>,
+        &PolynomialRef<Torus<S>>,
+    ) {
         let (a, b) = self.data.as_ref().split_at(self.split_idx(params));
 
         (
-            PolynomialIterator::new(a, params.dim.polynomial_degree.0),
+            DstIterator::new(a, params.dim.polynomial_degree.0),
             PolynomialRef::from_slice(b),
         )
     }
 
     /// Returns an interator over the a polynomials in a GLWE ciphertext.
-    pub fn a(&self, params: &GlweDef) -> PolynomialIterator<'_, Torus<S>> {
+    pub fn a(&self, params: &GlweDef) -> DstIterator<'_, PolynomialRef<Torus<S>>> {
         self.a_b(params).0
     }
 
@@ -109,7 +108,7 @@ where
         &mut self,
         params: &GlweDef,
     ) -> (
-        PolynomialIteratorMut<'_, Torus<S>>,
+        DstIteratorMut<'_, PolynomialRef<Torus<S>>>,
         &mut PolynomialRef<Torus<S>>,
     ) {
         let polynomial_degree = params.dim.polynomial_degree;
@@ -118,13 +117,13 @@ where
         let (a, b) = self.data.as_mut().split_at_mut(split_idx);
 
         (
-            PolynomialIteratorMut::new(a, polynomial_degree.0),
+            DstIteratorMut::new(a, polynomial_degree.0),
             PolynomialRef::from_mut_slice(b),
         )
     }
 
     /// Returns a mutable iterator over the a polynomials in a GLWE ciphertext.
-    pub fn a_mut(&mut self, params: &GlweDef) -> PolynomialIteratorMut<'_, Torus<S>> {
+    pub fn a_mut(&mut self, params: &GlweDef) -> DstIteratorMut<'_, PolynomialRef<Torus<S>>> {
         self.a_b_mut(params).0
     }
 

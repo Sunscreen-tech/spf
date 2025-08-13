@@ -4,12 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut},
 };
 
-use super::{
-    GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef, GlweCiphertextRef,
-    SchemeSwitchKeyFftRef,
-};
+use super::{GlevCiphertextRef, GlweCiphertextRef, SchemeSwitchKeyFftRef};
 
 /// Calculates the number of entries in an upper/lower triangular square matrix,
 /// including the diagonal.
@@ -38,7 +36,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps,)
 }
-dst_iter! { SchemeSwitchKeyIterator, SchemeSwitchKeyIteratorMut, ParallelSchemeSwitchKeyIterator, ParallelSchemeSwitchKeyIteratorMut, Torus, SchemeSwitchKeyRef, (TorusOps,)}
 
 impl<S> OverlaySize for SchemeSwitchKeyRef<S>
 where
@@ -91,8 +88,8 @@ where
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIterator<'_, S> {
-        GlevCiphertextIterator::new(
+    ) -> DstIterator<'_, GlevCiphertextRef<S>> {
+        DstIterator::new(
             &self.data,
             GlevCiphertextRef::<S>::size((params.dim, radix.count)),
         )
@@ -110,8 +107,8 @@ where
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<'_, S> {
-        GlevCiphertextIteratorMut::new(
+    ) -> DstIteratorMut<'_, GlevCiphertextRef<S>> {
+        DstIteratorMut::new(
             &mut self.data,
             GlevCiphertextRef::<S>::size((params.dim, radix.count)),
         )

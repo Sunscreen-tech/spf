@@ -4,13 +4,10 @@ use crate::{
     GlweDef, GlweDimension, LweDef, LweDimension, PrivateFunctionalKeyswitchLweCount, RadixCount,
     RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut, ParallelDstIterator, ParallelDstIteratorMut},
 };
 
-use super::{
-    ParallelPrivateFunctionalKeyswitchKeyIter, ParallelPrivateFunctionalKeyswitchKeyIterMut,
-    PrivateFunctionalKeyswitchKeyIter, PrivateFunctionalKeyswitchKeyIterMut,
-    PrivateFunctionalKeyswitchKeyRef,
-};
+use super::PrivateFunctionalKeyswitchKeyRef;
 
 dst! {
     /// Key for Circuit Bootstrapping Key Switching.
@@ -56,7 +53,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> PrivateFunctionalKeyswitchKeyIter<'_, S> {
+    ) -> DstIterator<'_, PrivateFunctionalKeyswitchKeyRef<S>> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -64,7 +61,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
             PrivateFunctionalKeyswitchLweCount(1),
         ));
 
-        PrivateFunctionalKeyswitchKeyIter::new(self.as_slice(), stride)
+        DstIterator::new(self.as_slice(), stride)
     }
 
     /// Get a parallel iterator over the contained [`PrivateFunctionalKeyswitchKey`](crate::entities::PrivateFunctionalKeyswitchKey)s.
@@ -73,7 +70,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelPrivateFunctionalKeyswitchKeyIter<'_, S> {
+    ) -> ParallelDstIterator<'_, PrivateFunctionalKeyswitchKeyRef<S>> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -81,7 +78,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
             PrivateFunctionalKeyswitchLweCount(1),
         ));
 
-        ParallelPrivateFunctionalKeyswitchKeyIter::new(self.as_slice(), stride)
+        ParallelDstIterator::new(self.as_slice(), stride)
     }
 
     /// Get a mutable iterator over the contained [`PrivateFunctionalKeyswitchKey`](crate::entities::PrivateFunctionalKeyswitchKey)s.
@@ -90,7 +87,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> PrivateFunctionalKeyswitchKeyIterMut<'_, S> {
+    ) -> DstIteratorMut<'_, PrivateFunctionalKeyswitchKeyRef<S>> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -98,7 +95,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
             PrivateFunctionalKeyswitchLweCount(1),
         ));
 
-        PrivateFunctionalKeyswitchKeyIterMut::new(self.as_mut_slice(), stride)
+        DstIteratorMut::new(self.as_mut_slice(), stride)
     }
 
     /// Get a mutable parallel iterator over the contained [`PrivateFunctionalKeyswitchKey`](crate::entities::PrivateFunctionalKeyswitchKey)s.
@@ -107,7 +104,7 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelPrivateFunctionalKeyswitchKeyIterMut<'_, S> {
+    ) -> ParallelDstIteratorMut<'_, PrivateFunctionalKeyswitchKeyRef<S>> {
         let stride = PrivateFunctionalKeyswitchKeyRef::<S>::size((
             lwe.dim,
             glwe.dim,
@@ -115,6 +112,6 @@ impl<S: TorusOps> CircuitBootstrappingKeyswitchKeysRef<S> {
             PrivateFunctionalKeyswitchLweCount(1),
         ));
 
-        ParallelPrivateFunctionalKeyswitchKeyIterMut::new(self.as_mut_slice(), stride)
+        ParallelDstIteratorMut::new(self.as_mut_slice(), stride)
     }
 }

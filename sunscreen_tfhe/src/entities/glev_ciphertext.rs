@@ -4,11 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut},
 };
 
-use super::{
-    GlevCiphertextFftRef, GlweCiphertextIterator, GlweCiphertextIteratorMut, GlweCiphertextRef,
-};
+use super::{GlevCiphertextFftRef, GlweCiphertextRef};
 
 dst! {
     /// A GLev ciphertext. For the FFT variant, see
@@ -19,7 +18,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps,)
 }
-dst_iter! { GlevCiphertextIterator, GlevCiphertextIteratorMut, ParallelGlevCiphertextIterator, ParallelGlevCiphertextIteratorMut, Torus, GlevCiphertextRef, (TorusOps,)}
 
 impl<S> OverlaySize for GlevCiphertextRef<S>
 where
@@ -52,14 +50,17 @@ where
 {
     /// Returns an iterator over the rows of the GLEV ciphertext, which are
     /// [`GlweCiphertext`](crate::entities::GlweCiphertext)s.
-    pub fn glwe_ciphertexts(&self, params: &GlweDef) -> GlweCiphertextIterator<'_, S> {
-        GlweCiphertextIterator::new(&self.data, GlweCiphertextRef::<S>::size(params.dim))
+    pub fn glwe_ciphertexts(&self, params: &GlweDef) -> DstIterator<'_, GlweCiphertextRef<S>> {
+        DstIterator::new(&self.data, GlweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Returns a mutable iterator over the rows of the GLEV ciphertext, which are
     /// [`GlweCiphertext](crate::entities::GlweCiphertext)s.
-    pub fn glwe_ciphertexts_mut(&mut self, params: &GlweDef) -> GlweCiphertextIteratorMut<'_, S> {
-        GlweCiphertextIteratorMut::new(&mut self.data, GlweCiphertextRef::<S>::size(params.dim))
+    pub fn glwe_ciphertexts_mut(
+        &mut self,
+        params: &GlweDef,
+    ) -> DstIteratorMut<'_, GlweCiphertextRef<S>> {
+        DstIteratorMut::new(&mut self.data, GlweCiphertextRef::<S>::size(params.dim))
     }
 
     /// Compute the FFT of each of the GLWE ciphertexts in the GLEV ciphertext.

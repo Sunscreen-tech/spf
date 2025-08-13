@@ -5,8 +5,7 @@ use crate::{
     RadixDecomposition, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, OverlaySize, dst_allocate},
     entities::{
-        GlevCiphertextIterator, GlevCiphertextIteratorMut, GlevCiphertextRef,
-        ParallelGlevCiphertextIterator, ParallelGlevCiphertextIteratorMut,
+        DstIterator, DstIteratorMut, GlevCiphertextRef, ParallelDstIterator, ParallelDstIteratorMut,
     },
 };
 
@@ -22,15 +21,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     (TorusOps)
 }
-dst_iter!(
-    PrivateFunctionalKeyswitchKeyIter,
-    PrivateFunctionalKeyswitchKeyIterMut,
-    ParallelPrivateFunctionalKeyswitchKeyIter,
-    ParallelPrivateFunctionalKeyswitchKeyIterMut,
-    Torus,
-    PrivateFunctionalKeyswitchKeyRef,
-    (TorusOps,)
-);
 
 impl<S: TorusOps> OverlaySize for PrivateFunctionalKeyswitchKeyRef<S> {
     type Inputs = (
@@ -89,8 +79,8 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKeyRef<S> {
         &self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIterator<'_, S> {
-        GlevCiphertextIterator::new(
+    ) -> DstIterator<'_, GlevCiphertextRef<S>> {
+        DstIterator::new(
             self.as_slice(),
             GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
         )
@@ -106,8 +96,8 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKeyRef<S> {
         &mut self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextIteratorMut<'_, S> {
-        GlevCiphertextIteratorMut::new(
+    ) -> DstIteratorMut<'_, GlevCiphertextRef<S>> {
+        DstIteratorMut::new(
             self.as_mut_slice(),
             GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
         )
@@ -123,8 +113,8 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKeyRef<S> {
         &mut self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelGlevCiphertextIterator<'_, S> {
-        ParallelGlevCiphertextIterator::new(
+    ) -> ParallelDstIterator<'_, GlevCiphertextRef<S>> {
+        ParallelDstIterator::new(
             self.as_slice(),
             GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
         )
@@ -140,8 +130,8 @@ impl<S: TorusOps> PrivateFunctionalKeyswitchKeyRef<S> {
         &mut self,
         to_glwe: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> ParallelGlevCiphertextIteratorMut<'_, S> {
-        ParallelGlevCiphertextIteratorMut::new(
+    ) -> ParallelDstIteratorMut<'_, GlevCiphertextRef<S>> {
+        ParallelDstIteratorMut::new(
             self.as_mut_slice(),
             GlevCiphertextRef::<S>::size((to_glwe.dim, radix.count)),
         )

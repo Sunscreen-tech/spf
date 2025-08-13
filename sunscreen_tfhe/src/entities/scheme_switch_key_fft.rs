@@ -4,12 +4,11 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
-    entities::SchemeSwitchKeyRef,
+    entities::{DstIterator, DstIteratorMut, SchemeSwitchKeyRef},
 };
 
 use super::{
-    GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, GlevCiphertextFftRef,
-    GlweCiphertextFftRef, get_linear_index, triangular_number_entries,
+    GlevCiphertextFftRef, GlweCiphertextFftRef, get_linear_index, triangular_number_entries,
 };
 
 dst! {
@@ -21,7 +20,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     ()
 }
-dst_iter! { SchemeSwitchKeyFftIterator, SchemeSwitchKeyFftIteratorMut, ParallelSchemeSwitchKeyFftIterator, ParallelSchemeSwitchKeyFftIteratorMut, NoWrapper, SchemeSwitchKeyFftRef, ()}
 
 impl OverlaySize for SchemeSwitchKeyFftRef<Complex<f64>> {
     // GLWE, Radix
@@ -66,10 +64,10 @@ impl SchemeSwitchKeyFftRef<Complex<f64>> {
         &self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextFftIterator<'_, Complex<f64>> {
+    ) -> DstIterator<'_, GlevCiphertextFftRef<Complex<f64>>> {
         let stride = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
-        GlevCiphertextFftIterator::new(self.as_slice(), stride)
+        DstIterator::new(self.as_slice(), stride)
     }
 
     /// Returns a mutable iterator over the components of the scheme switch key
@@ -84,10 +82,10 @@ impl SchemeSwitchKeyFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
         radix: &RadixDecomposition,
-    ) -> GlevCiphertextFftIteratorMut<'_, Complex<f64>> {
+    ) -> DstIteratorMut<'_, GlevCiphertextFftRef<Complex<f64>>> {
         let stride = GlevCiphertextFftRef::<Complex<f64>>::size((params.dim, radix.count));
 
-        GlevCiphertextFftIteratorMut::new(self.as_mut_slice(), stride)
+        DstIteratorMut::new(self.as_mut_slice(), stride)
     }
 
     /// Gets the GLev ciphertext at the given tuple index (i,j) representing the

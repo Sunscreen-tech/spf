@@ -1,6 +1,6 @@
 use crate::{
     RadixCount, RadixDecomposition, RadixLog,
-    entities::{PolynomialIterator, PolynomialRef},
+    entities::{DstIterator, PolynomialRef},
     math::{Torus, TorusOps},
     polynomial::polynomial_scalar_mad,
 };
@@ -119,7 +119,7 @@ where
 /// The digits should iterate from least to most significant.
 pub fn recompose_and_add<S>(
     dst: &mut PolynomialRef<Torus<S>>,
-    digits: &mut PolynomialIterator<S>,
+    digits: &mut DstIterator<PolynomialRef<S>>,
     radix: RadixLog,
     count: RadixCount,
 ) where
@@ -167,7 +167,7 @@ mod tests {
 
     use crate::{
         PlaintextBits, PolynomialDegree,
-        entities::{Polynomial, PolynomialList},
+        entities::{DstArray, Polynomial},
         rand::uniform_torus,
         scratch::allocate_scratch_ref,
     };
@@ -314,7 +314,7 @@ mod tests {
                 Torus::from((c.inner() & mask).wrapping_add(round << lsb))
             });
 
-            let mut digits = PolynomialList::new(d, count.0);
+            let mut digits = DstArray::<Polynomial<u64>>::new(count.0, d);
 
             allocate_scratch_ref!(scratch, PolynomialRef<u64>, (PolynomialDegree(x.len())));
 

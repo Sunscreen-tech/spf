@@ -4,9 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, TorusOps,
     dst::{AsMutSlice, AsSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut},
 };
 
-use super::{GlweCiphertextRef, PolynomialFftIterator, PolynomialFftIteratorMut, PolynomialFftRef};
+use super::{GlweCiphertextRef, PolynomialFftRef};
 
 dst! {
     /// The FFT variant of a GLWE ciphertext. See
@@ -17,7 +18,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     ()
 }
-dst_iter! { GlweCiphertextFftIterator, GlweCiphertextFftIteratorMut, ParallelGlweCiphertextFftIterator, ParallelGlweCiphertextFftIteratorMut, NoWrapper, GlweCiphertextFftRef, ()}
 
 impl OverlaySize for GlweCiphertextFftRef<Complex<f64>> {
     type Inputs = GlweDimension;
@@ -45,19 +45,19 @@ impl GlweCiphertextFftRef<Complex<f64>> {
         &self,
         params: &GlweDef,
     ) -> (
-        PolynomialFftIterator<'_, Complex<f64>>,
+        DstIterator<'_, PolynomialFftRef<Complex<f64>>>,
         &PolynomialFftRef<Complex<f64>>,
     ) {
         let (a, b) = self.as_slice().split_at(self.split_idx(params));
 
         (
-            PolynomialFftIterator::new(a, params.dim.polynomial_degree.0 / 2),
+            DstIterator::new(a, params.dim.polynomial_degree.0 / 2),
             PolynomialFftRef::from_slice(b),
         )
     }
 
     /// Returns an interator over the a polynomials in a GLWE ciphertext.
-    pub fn a(&self, params: &GlweDef) -> PolynomialFftIterator<'_, Complex<f64>> {
+    pub fn a(&self, params: &GlweDef) -> DstIterator<'_, PolynomialFftRef<Complex<f64>>> {
         self.a_b(params).0
     }
 
@@ -71,7 +71,7 @@ impl GlweCiphertextFftRef<Complex<f64>> {
         &mut self,
         params: &GlweDef,
     ) -> (
-        PolynomialFftIteratorMut<'_, Complex<f64>>,
+        DstIteratorMut<'_, PolynomialFftRef<Complex<f64>>>,
         &mut PolynomialFftRef<Complex<f64>>,
     ) {
         let polynomial_degree = params.dim.polynomial_degree;
@@ -80,13 +80,16 @@ impl GlweCiphertextFftRef<Complex<f64>> {
         let (a, b) = self.as_mut_slice().split_at_mut(split_idx);
 
         (
-            PolynomialFftIteratorMut::new(a, polynomial_degree.0 / 2),
+            DstIteratorMut::new(a, polynomial_degree.0 / 2),
             PolynomialFftRef::from_mut_slice(b),
         )
     }
 
     /// Returns a mutable iterator over the a polynomials in a GLWE ciphertext.
-    pub fn a_mut(&mut self, params: &GlweDef) -> PolynomialFftIteratorMut<'_, Complex<f64>> {
+    pub fn a_mut(
+        &mut self,
+        params: &GlweDef,
+    ) -> DstIteratorMut<'_, PolynomialFftRef<Complex<f64>>> {
         self.a_b_mut(params).0
     }
 

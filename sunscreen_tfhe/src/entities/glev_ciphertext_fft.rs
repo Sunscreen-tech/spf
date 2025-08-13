@@ -4,12 +4,10 @@ use serde::{Deserialize, Serialize};
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{NoWrapper, OverlaySize, dst_allocate},
+    entities::{DstIterator, DstIteratorMut},
 };
 
-use super::{
-    GlevCiphertextRef, GlweCiphertextFftIterator, GlweCiphertextFftIteratorMut,
-    GlweCiphertextFftRef,
-};
+use super::{GlevCiphertextRef, GlweCiphertextFftRef};
 
 dst! {
     /// The FFT variant of a GLEV ciphertext. See
@@ -20,7 +18,6 @@ dst! {
     (Clone, Debug, Serialize, Deserialize),
     ()
 }
-dst_iter! { GlevCiphertextFftIterator, GlevCiphertextFftIteratorMut, ParallelGlevCiphertextFftIterator, ParallelGlevCiphertextFftIteratorMut, NoWrapper, GlevCiphertextFftRef, ()}
 
 impl GlevCiphertextFft<Complex<f64>> {
     /// Create a new zero GLev ciphertext with the given parameters.
@@ -47,8 +44,8 @@ impl GlevCiphertextFftRef<Complex<f64>> {
     pub fn glwe_ciphertexts(
         &self,
         params: &GlweDef,
-    ) -> GlweCiphertextFftIterator<'_, Complex<f64>> {
-        GlweCiphertextFftIterator::new(
+    ) -> DstIterator<'_, GlweCiphertextFftRef<Complex<f64>>> {
+        DstIterator::new(
             &self.data,
             GlweCiphertextFftRef::<Complex<f64>>::size(params.dim),
         )
@@ -59,8 +56,8 @@ impl GlevCiphertextFftRef<Complex<f64>> {
     pub fn glwe_ciphertexts_mut(
         &mut self,
         params: &GlweDef,
-    ) -> GlweCiphertextFftIteratorMut<'_, Complex<f64>> {
-        GlweCiphertextFftIteratorMut::new(
+    ) -> DstIteratorMut<'_, GlweCiphertextFftRef<Complex<f64>>> {
+        DstIteratorMut::new(
             &mut self.data,
             GlweCiphertextFftRef::<Complex<f64>>::size(params.dim),
         )

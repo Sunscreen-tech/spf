@@ -10,7 +10,7 @@ use crate::{
     dst::{
         Allocation, AsMutSlice, AsSlice, FromMutSlice, FromSlice, InnermostType, Len, dst_allocate,
     },
-    entities::{DstIterator, DstIteratorMut},
+    entities::{DstIterator, DstIteratorMut, ParallelDstIterator, ParallelDstIteratorMut},
 };
 
 /// An array of objects that share a single allocation. Borrowing results in
@@ -28,7 +28,7 @@ where
 
 impl<T> Len for DstArrayRef<T>
 where
-    T: InnermostType + OverlaySize + ToOwned,
+    T: InnermostType + OverlaySize + ToOwned + ?Sized,
     <T as InnermostType>::Ty: Pod + PartialEq,
 {
     fn len(&self) -> usize {
@@ -38,7 +38,7 @@ where
 
 impl<T> OverlaySize for DstArrayRef<T>
 where
-    T: Pod + InnermostType + OverlaySize + Deref,
+    T: InnermostType + OverlaySize + ToOwned + ?Sized,
     <T as InnermostType>::Ty: Pod + PartialEq,
 {
     type Inputs = (usize, <T as OverlaySize>::Inputs);
@@ -200,5 +200,30 @@ where
     /// Create a mutable iterator that emits `&mut T`s contained in the DST
     pub fn iter_mut(&mut self, size_info: <T as OverlaySize>::Inputs) -> DstIteratorMut<T> {
         DstIteratorMut::new(&mut self.data, T::size(size_info))
+    }
+}
+
+impl<T> DstArrayRef<T>
+where
+    T: InnermostType
+        + OverlaySize
+        + ToOwned
+        + AsSlice<<T as InnermostType>::Ty>
+        + Sync
+        + Send
+        + ?Sized,
+    <T as InnermostType>::Ty: Pod + PartialEq,
+{
+    /// A parallel iterator over the elements in the array.
+    pub fn par_iter(&self, size_info: <T as OverlaySize>::Inputs) -> ParallelDstIterator<T> {
+        ParallelDstIterator::new(&self.data, T::size(size_info))
+    }
+
+    /// A mutable parallel iterator over the elements in the array.
+    pub fn par_iter_mut(
+        &mut self,
+        size_info: <T as OverlaySize>::Inputs,
+    ) -> ParallelDstIteratorMut<T> {
+        ParallelDstIteratorMut::new(&mut self.data, T::size(size_info))
     }
 }
