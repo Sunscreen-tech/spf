@@ -10,7 +10,7 @@ use serde::{Deserialize, Serialize};
 use crate::{
     FrequencyTransform, PolynomialDegree, ReinterpretAsSigned, ToF64, Torus, TorusOps,
     dst::{
-        AsMutSlice, FromMutSlice, FromSlice, InnermostType, NoWrapper, OverlaySize, dst_allocate,
+        AsMutSlice, FromMutSlice, FromSlice, NoWrapper, OverlaySize, dst_allocate,
         dst_from_iter, dst_from_slice,
     },
     fft::negacyclic::get_fft,

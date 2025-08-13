@@ -253,7 +253,7 @@ where
             std::slice::from_raw_parts_mut(ptr, self.stride as usize)
         };
 
-        self.front += self.stride as isize;
+        self.front += self.stride;
 
         Some(<T as FromMutSlice<<T as InnermostType>::Ty>>::from_mut_slice(slice))
     }
@@ -449,7 +449,7 @@ mod tests {
     fn iter_mut_stride_mismatch() {
         let mut data = (0..31).collect::<Vec<_>>();
 
-        DstIterator::<FooRef<usize>>::new(&mut data, 3);
+        DstIteratorMut::<FooRef<usize>>::new(&mut data, 3);
     }
 
     #[test]
