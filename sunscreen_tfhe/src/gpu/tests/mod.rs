@@ -1,5 +1,6 @@
 use num::{Complex, Float, NumCast};
 
+mod basics;
 mod entities;
 mod fft;
 mod homomorphisms;
@@ -8,6 +9,7 @@ mod homomorphisms;
 // mod polynomial;
 // mod signed_decomposition;
 // mod simd;
+mod test_utils;
 
 pub fn assert_equalish<T: Float + NumCast + std::fmt::Display>(actual: &T, expected: &T, eps: T) {
     let denom = if *actual == T::from(0.0).unwrap() {
