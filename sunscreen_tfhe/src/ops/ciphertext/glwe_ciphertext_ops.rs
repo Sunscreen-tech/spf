@@ -68,7 +68,7 @@ pub fn sample_extract<S>(
 
         for j in (h + 1)..N {
             // Note we add N to h first, otherwise h - j might underflow.
-            a_lwe[Ni + j] = num::traits::WrappingNeg::wrapping_neg(&a_glwe_i_coeffs[h + N - j]);
+            a_lwe[Ni + j] = -a_glwe_i_coeffs[h + N - j];
         }
     }
 

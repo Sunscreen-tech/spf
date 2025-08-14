@@ -50,7 +50,7 @@ pub(crate) fn encrypt_ggsw_ciphertext_generic<S>(
             // Negate the product.
             for c in m_times_s.coeffs_mut().iter_mut() {
                 // Have to call the trait directly because deref is implemented on Torus
-                *c = num::traits::WrappingNeg::wrapping_neg(c);
+                *c = -(*c);
             }
 
             &m_times_s
@@ -256,7 +256,7 @@ mod tests {
                 // Negate the product.
                 for c in m_times_s.coeffs_mut().iter_mut() {
                     // Have to call the trait directly because deref is implemented on Torus
-                    *c = num::traits::WrappingNeg::wrapping_neg(c);
+                    *c = -(*c);
                 }
 
                 &m_times_s

@@ -240,7 +240,7 @@ mod alloc {
 
     pub fn dst_from_iter<T, I: ExactSizeIterator<Item = T>>(iter: I) -> Allocation<T>
     where
-        T: Pod,
+        T: Pod + Default,
     {
         let mut allocation = dst_allocate(iter.len());
 
@@ -253,7 +253,7 @@ mod alloc {
 
     pub fn dst_from_slice<T>(data: &[T]) -> Allocation<T>
     where
-        T: Pod,
+        T: Pod + Default,
     {
         let mut allocation = dst_allocate(data.len());
 
@@ -281,7 +281,7 @@ mod alloc {
 
     pub fn dst_from_iter<T, I: ExactSizeIterator<Item = T>>(iter: I) -> Allocation<T>
     where
-        T: Pod,
+        T: Pod + Default,
     {
         aligned_vec::AVec::<_, aligned_vec::ConstAlign<{ SIMD_ALIGN }>>::from_iter(
             crate::scratch::SIMD_ALIGN,
@@ -291,7 +291,7 @@ mod alloc {
 
     pub fn dst_from_slice<T>(data: &[T]) -> Allocation<T>
     where
-        T: Pod,
+        T: Pod + Default,
     {
         AVec::from_slice(SIMD_ALIGN, data)
     }

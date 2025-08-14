@@ -4,6 +4,8 @@ use std::{
 };
 
 use bytemuck::Pod;
+#[cfg(feature = "gpu")]
+use sunscreen_gpu_runtime::AsKernelArg;
 
 use crate::{
     OverlaySize,
@@ -225,5 +227,28 @@ where
         size_info: <T as OverlaySize>::Inputs,
     ) -> ParallelDstIteratorMut<T> {
         ParallelDstIteratorMut::new(&mut self.data, T::size(size_info))
+    }
+}
+
+#[cfg(feature = "gpu")]
+impl<T> AsKernelArg for DstArray<T>
+where
+    T: Deref,
+    <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
+    <<T as Deref>::Target as InnermostType>::Ty: PartialEq,
+{
+    fn as_kernel_arg(&self) -> *const std::ffi::c_void {
+        (self.deref()).as_kernel_arg()
+    }
+}
+
+#[cfg(feature = "gpu")]
+impl<T> AsKernelArg for DstArrayRef<T>
+where
+    T: InnermostType + OverlaySize + ToOwned + ?Sized,
+    <T as InnermostType>::Ty: PartialEq,
+{
+    fn as_kernel_arg(&self) -> *const std::ffi::c_void {
+        (&self.data).as_ptr() as *const std::ffi::c_void
     }
 }

@@ -473,7 +473,7 @@ macro_rules! impl_as_kernel_arg {
 
 impl_as_kernel_arg!(u8, u16, u32, u64, i8, i16, i32, i64);
 
-pub trait AllocationBackend {
+pub trait AllocationBackend: Sync + Send {
     fn ptr(&self) -> *const u8;
 
     fn ptr_mut(&self) -> *mut u8;

@@ -3,6 +3,7 @@ use num::traits::{
     Bounded, MulAdd, Num, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr,
     WrappingSub,
 };
+
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Binary, Debug, LowerHex, UpperHex},
@@ -361,8 +362,8 @@ impl<S: TorusOps> Add<&Torus<S>> for &Torus<S> {
 }
 
 impl<S: TorusOps> WrappingAdd for Torus<S> {
-    fn wrapping_add(&self, rhs: &Self) -> Self {
-        self + rhs
+    fn wrapping_add(&self, rhs: &Torus<S>) -> Self {
+        self.add(rhs)
     }
 }
 
@@ -376,8 +377,8 @@ impl<S: TorusOps> Sub<&Torus<S>> for &Torus<S> {
 }
 
 impl<S: TorusOps> WrappingSub for Torus<S> {
-    fn wrapping_sub(&self, rhs: &Self) -> Self {
-        self - rhs
+    fn wrapping_sub(&self, rhs: &Torus<S>) -> Self {
+        self.sub(rhs)
     }
 }
 
@@ -386,7 +387,7 @@ impl<S: TorusOps> Mul<&S> for &Torus<S> {
     type Output = Torus<S>;
 
     fn mul(self, rhs: &S) -> Self::Output {
-        Self::Output::from(self.wrapping_mul(rhs))
+        Self::Output::from(self.0.wrapping_mul(rhs))
     }
 }
 

@@ -4,15 +4,15 @@ use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
     GLWE_1_2048_128, OverlaySize, PlaintextBits, Torus,
-    dst::{AsSlice, FromSlice},
+    dst::{AsMutSlice, AsSlice, FromSlice},
     entities::{
-        GlweCiphertext, GlweCiphertextFft, GlweCiphertextFftRef, GlweCiphertextRef, GlweSecretKey,
-        Polynomial,
+        DstArray, GlweCiphertext, GlweCiphertextFft, GlweCiphertextRef, GlweSecretKey, Polynomial,
     },
     gpu::get_runtimes,
     ops::encryption::decrypt_glwe_ciphertext,
 };
 
+#[ignore]
 #[test]
 fn check_glwe_fft_noise() {
     let runtimes = get_runtimes();
@@ -23,36 +23,26 @@ fn check_glwe_fft_noise() {
     for r in runtimes.iter() {
         let sk = GlweSecretKey::generate_binary(&glwe);
 
-        let msg_cts = (0..num_blocks)
-            .map(|x| {
+        let msgs = (0..num_blocks)
+            .map(|_| {
                 let msg = (0..glwe.dim.polynomial_degree.0)
                     .map(|_| rng().next_u64() % 2)
                     .collect::<Vec<_>>();
-                let msg = Polynomial::new(&msg);
-                let ct = sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1));
-
-                (msg, ct)
+                Polynomial::new(&msg)
             })
             .collect::<Vec<_>>();
 
-        let msgs = msg_cts.iter().map(|x| x.0.clone()).collect::<Vec<_>>();
-        let cts = msg_cts.iter().map(|x| x.1.clone()).collect::<Vec<_>>();
+        let mut cts = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let results = cts.clone();
+        let results_fft = DstArray::<GlweCiphertextFft<Complex<f64>>>::new(num_blocks, glwe.dim);
+
+        for (ct, msg) in cts.iter_mut(glwe.dim).zip(msgs.iter()) {
+            let ct_enc = sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1));
+
+            ct.as_mut_slice().clone_from_slice(ct_enc.as_slice());
+        }
 
         let glwe_len = GlweCiphertextRef::<u64>::size(glwe.dim);
-        let glwe_fft_len = GlweCiphertextFftRef::<Complex<f64>>::size(glwe.dim);
-
-        //let mut x = r.allocate::<Torus<u64>>(num_blocks * glwe_len).unwrap();
-        //let y = r.allocate::<Torus<u64>>(num_blocks * glwe_len).unwrap();
-        //let y_fft = r
-        //     .allocate::<Complex<f64>>(num_blocks * glwe_fft_len)
-        //     .unwrap();
-
-        // x.as_mut_slice().copy_from_slice(
-        //     &cts.iter()
-        //         .flat_map(|x| x.as_slice())
-        //         .copied()
-        //         .collect::<Vec<_>>(),
-        // );
 
         let stream = r.make_stream(0.into()).unwrap();
 
@@ -64,9 +54,9 @@ fn check_glwe_fft_noise() {
                 ((threads, tpb))
                 ("compare_glwe_fft")
                 (r, stream)
-                y,
-                y_fft,
-                x
+                results,
+                results_fft,
+                cts
             )
         }
         .unwrap();
@@ -78,7 +68,9 @@ fn check_glwe_fft_noise() {
         for i in 0..num_blocks {
             let mut fft = GlweCiphertextFft::new(&glwe);
 
-            cts[i].fft(&mut fft, &glwe);
+            let result = results.iter(glwe.dim).nth(i).unwrap();
+            let ct = cts.iter(glwe.dim).nth(i).unwrap();
+            ct.fft(&mut fft, &glwe);
 
             let mut cpu_ifft = GlweCiphertext::<u64>::new(&glwe);
             fft.ifft(&mut cpu_ifft, &glwe);
@@ -91,10 +83,10 @@ fn check_glwe_fft_noise() {
             decrypt_glwe_ciphertext(&mut cpu_roundtrip_msg, &cpu_ifft, &sk, &glwe);
 
             let gpu_roundtrip_ct =
-                GlweCiphertextRef::from_slice(y.as_slice().chunks(glwe_len).nth(i).unwrap());
+                GlweCiphertextRef::from_slice(result.as_slice().chunks(glwe_len).nth(i).unwrap());
             decrypt_glwe_ciphertext(&mut gpu_roundtrip_msg, &gpu_roundtrip_ct, &sk, &glwe);
 
-            decrypt_glwe_ciphertext(&mut no_fft_msg, &cts[i], &sk, &glwe);
+            decrypt_glwe_ciphertext(&mut no_fft_msg, ct, &sk, &glwe);
 
             for j in 0..glwe.dim.polynomial_degree.0 {
                 assert_eq!(

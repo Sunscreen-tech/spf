@@ -344,7 +344,7 @@ impl AllocationBackend for CudaAllocation {
 
 impl Drop for CudaAllocation {
     fn drop(&mut self) {
-        let _ = unsafe { cudaFree(self.ptr as *mut c_void) };
+        //let _ = unsafe { cudaFree(self.ptr as *mut c_void) };
     }
 }
 

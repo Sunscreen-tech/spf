@@ -1,6 +1,6 @@
 use num::{Complex, Float, NumCast};
 
-// mod entities;
+mod entities;
 // mod fft;
 // mod homomorphisms;
 // mod memory;

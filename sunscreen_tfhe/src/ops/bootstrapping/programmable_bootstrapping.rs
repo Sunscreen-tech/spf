@@ -178,7 +178,7 @@ pub(crate) fn generate_lut<S, F>(
     // Negate the first half of p_0 in the LUT in preparation for it to be
     // rotated.
     c[0..stride / 2].iter_mut().for_each(|c| {
-        *c = num::traits::WrappingNeg::wrapping_neg(c);
+        *c = -(*c);
     });
 
     c.rotate_left(stride / 2);
