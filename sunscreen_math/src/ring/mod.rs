@@ -54,10 +54,10 @@ pub trait WrappingSemantics:
     Copy
     + Clone
     + std::fmt::Debug
-    + WrappingAdd<WrappingOutput=Self>
-    + WrappingMul<WrappingOutput=Self>
-    + WrappingSub<WrappingOutput=Self>
-    + WrappingNeg<WrappingOutput=Self>
+    + WrappingAdd<WrappingOutput = Self>
+    + WrappingMul<WrappingOutput = Self>
+    + WrappingSub<WrappingOutput = Self>
+    + WrappingNeg<WrappingOutput = Self>
     + Zero
     + One
     + Eq
