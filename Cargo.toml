@@ -93,7 +93,7 @@ codegen-units = 1
 debug = true
 
 [profile.dev.package.sunscreen_tfhe]
-opt-level = 0
+opt-level = 3
 
 [patch.crates-io]
 num-traits = { git = "https://github.com/rickwebiii/num-traits.git", branch = "rweber/wrapping" }
