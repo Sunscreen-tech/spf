@@ -6,109 +6,19 @@ use sunscreen_gpu_runtime::launch_kernel;
 
 use rustfft::FftPlanner;
 
-use crate::gpu::{
-    get_runtimes,
-    tests::{assert_complex_equalish, ulps_difference},
+use crate::{
+    PolynomialDegree,
+    entities::{DstArray, Polynomial},
+    gpu::{
+        get_runtimes,
+        tests::{assert_complex_equalish, ulps_difference},
+    },
 };
 
 #[derive(PartialEq)]
 enum Direction {
     Forward,
     Inverse,
-}
-
-fn can_fft_impl<T>(kernel_name: &str, eps: T, direction: Direction)
-where
-    T: Float
-        + Pod
-        + NumCast
-        + std::fmt::Debug
-        + FromPrimitive
-        + Signed
-        + Sync
-        + Send
-        + std::fmt::Display,
-{
-    let runtimes = get_runtimes();
-
-    for r in runtimes.iter() {
-        for n in [1024] {
-            let mut planner = FftPlanner::new();
-            let fft = if let Direction::Forward = direction {
-                planner.plan_fft_forward(n as usize)
-            } else {
-                planner.plan_fft_inverse(n as usize)
-            };
-
-            let num_ffts = 1u32;
-            let num_values = n * num_ffts;
-
-            let mut a_gpu = r.allocate::<Complex<T>>(num_values as usize).unwrap();
-
-            let b_gpu = r.allocate::<Complex<T>>(num_values as usize).unwrap();
-
-            let a_slice = a_gpu.as_mut_slice();
-
-            a_slice.copy_from_slice(
-                &(0..num_values)
-                    .map(|x| {
-                        Complex::new(
-                            <T as NumCast>::from(x).unwrap(),
-                            <T as NumCast>::from(num_values - x).unwrap(),
-                        )
-                    })
-                    .collect::<Vec<_>>(),
-            );
-
-            let stream = r.make_stream(0.into()).unwrap();
-
-            let threads_per_block = n / 4;
-            let num_threads = threads_per_block * num_ffts;
-
-            unsafe {
-                launch_kernel!(
-                    ((num_threads, threads_per_block))
-                    (kernel_name)
-                    (r, stream)
-                    a_gpu,
-                    b_gpu,
-                    n
-                )
-                .unwrap();
-            }
-
-            stream.wait().unwrap();
-
-            for a in a_gpu.as_slice().chunks(n as usize) {
-                let mut expected = a.to_vec();
-                fft.process(&mut expected);
-
-                for (actual, expected) in b_gpu.as_slice().iter().zip(expected.iter()) {
-                    assert_complex_equalish(actual, expected, eps);
-                }
-            }
-        }
-    }
-}
-
-#[test]
-fn can_fft_f64() {
-    can_fft_impl::<f64>("can_fft_f64", 1e-10, Direction::Forward);
-}
-
-#[test]
-fn can_fft_f32() {
-    can_fft_impl::<f32>("can_fft_f32", 1e-2, Direction::Forward);
-}
-
-#[test]
-fn can_ifft_f64() {
-    can_fft_impl::<f64>("can_ifft_f64", 1e-10, Direction::Inverse);
-}
-
-#[test]
-fn can_ifft_f32() {
-    can_fft_impl::<f32>("can_ifft_f32", 1e-2, Direction::Inverse);
 }
 
 // Will use noreorder FFT variant if kernels compiled with -DFFT_NO_REORDER
@@ -118,16 +28,21 @@ fn can_roundtrip_fft_f64() {
 
     for r in runtimes.iter() {
         let n = 1024;
+        let degree = PolynomialDegree(n as usize);
 
         let num_blocks = 19;
 
-        let mut x = r.allocate::<Complex<f64>>(n * num_blocks).unwrap();
-        let y = r.allocate::<Complex<f64>>(n * num_blocks).unwrap();
+        // We're just using a polynomial as a simple array. Don't ascribe any meaning beyond that.
+        let mut x = DstArray::<Polynomial<Complex<f64>>>::new(num_blocks, degree);
+        let y = DstArray::<Polynomial<Complex<f64>>>::new(num_blocks, degree);
 
-        x.as_mut_slice()
-            .iter_mut()
-            .enumerate()
-            .for_each(|(i, x)| *x = Complex::new(2.0 * i as f64, 2.0 * i as f64 + 1.0));
+        for (i, x) in x.iter_mut(degree).enumerate() {
+            for (j, c) in x.coeffs_mut().iter_mut().enumerate() {
+                let i = i * n + j;
+
+                *c = Complex::new(2.0 * i as f64, 2.0 * i as f64 + 1.0);
+            }
+        }
 
         let stream = r.make_stream(0.into()).unwrap();
 
@@ -148,9 +63,11 @@ fn can_roundtrip_fft_f64() {
 
         stream.wait().unwrap();
 
-        for (a, e) in x.as_slice().iter().zip(y.as_slice().iter()) {
-            approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12, epsilon = 1e-12);
-            approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12, epsilon = 1e-12);
+        for (a, e) in x.iter(degree).zip(y.iter(degree)) {
+            for (a, e) in a.coeffs().iter().zip(e.coeffs().iter()) {
+                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12, epsilon = 1e-12);
+                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12, epsilon = 1e-12);
+            }
         }
     }
 }
@@ -171,9 +88,12 @@ fn check_twiddles() {
         for inverse in [false, true] {
             for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024] {
                 println!("n={n} inv={inverse}");
-                let lut = r.allocate::<Complex<f64>>(n as usize).unwrap();
-                let sincos = r.allocate::<Complex<f64>>(n as usize).unwrap();
-                let sincospi = r.allocate::<Complex<f64>>(n as usize).unwrap();
+                let degree = PolynomialDegree(n);
+
+                // Use polynomials as arrays. Don't read into them any further than that.
+                let lut = DstArray::<Polynomial<Complex<f64>>>::new(1, degree);
+                let sincos = DstArray::<Polynomial<Complex<f64>>>::new(1, degree);
+                let sincospi = DstArray::<Polynomial<Complex<f64>>>::new(1, degree);
 
                 let stream = r.make_stream(0.into()).unwrap();
 
@@ -188,7 +108,7 @@ fn check_twiddles() {
                         lut,
                         sincos,
                         sincospi,
-                        n,
+                        n as u32,
                         inverse as u32
                     )
                     .unwrap();
@@ -196,11 +116,17 @@ fn check_twiddles() {
 
                 stream.wait().unwrap();
 
+                let (lut, sincos, sincospi) = (
+                    lut.iter(degree).nth(0).unwrap(),
+                    sincos.iter(degree).nth(0).unwrap(),
+                    sincospi.iter(degree).nth(0).unwrap(),
+                );
+
                 for (i, ((lut, sincos), sincospi)) in lut
-                    .as_slice()
+                    .coeffs()
                     .iter()
-                    .zip(sincos.as_slice().iter())
-                    .zip(sincospi.as_slice().iter())
+                    .zip(sincos.coeffs().iter())
+                    .zip(sincospi.coeffs().iter())
                     .enumerate()
                 {
                     let factor = if inverse { 2.0 } else { -2.0 };

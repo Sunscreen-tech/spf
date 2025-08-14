@@ -1,7 +1,7 @@
 use num::{Complex, Float, NumCast};
 
 mod entities;
-// mod fft;
+mod fft;
 // mod homomorphisms;
 // mod memory;
 // mod negacyclic;

@@ -81,7 +81,6 @@ fn check_glwe_fft_noise() {
 
             decrypt_glwe_ciphertext(&mut cpu_roundtrip_msg, &cpu_ifft, &sk, &glwe);
 
-            
             decrypt_glwe_ciphertext(&mut gpu_roundtrip_msg, &result_ct, &sk, &glwe);
 
             decrypt_glwe_ciphertext(&mut no_fft_msg, input_ct, &sk, &glwe);
