@@ -158,13 +158,7 @@ pub fn derive_barrett_config(input: proc_macro::TokenStream) -> TokenStream {
 /// use sunscreen_math_macros::refify_binary_op;
 ///
 /// pub trait WrappingSemantics:
-///     Copy +
-///     Clone +
-///     std::fmt::Debug +
-///     WrappingAdd<WrappingOutput = Self> +
-///     WrappingMul<WrappingOutput = Self> +
-///     WrappingSub<WrappingOutput = Self> +
-///     WrappingNeg<WrappingOutput = Self>
+///     Copy + Clone + std::fmt::Debug + WrappingAdd + WrappingMul + WrappingSub + WrappingNeg
 /// {
 /// }
 ///
@@ -189,7 +183,7 @@ pub fn derive_barrett_config(input: proc_macro::TokenStream) -> TokenStream {
 ///     type Output = ZInt<T>;
 ///
 ///     fn add(self, rhs: &ZInt<T>) -> Self::Output {
-///         ZInt(self.0.wrapping_add(rhs.0))
+///         ZInt(self.0.wrapping_add(&rhs.0))
 ///     }
 /// }
 /// ```
