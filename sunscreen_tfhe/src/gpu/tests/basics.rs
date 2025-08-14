@@ -1,4 +1,8 @@
-use crate::{entities::{DstArray, Polynomial}, gpu::get_runtimes, PolynomialDegree};
+use crate::{
+    PolynomialDegree,
+    entities::{DstArray, Polynomial},
+    gpu::get_runtimes,
+};
 
 #[test]
 fn can_clone_allocation() {

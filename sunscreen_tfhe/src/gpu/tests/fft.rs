@@ -9,10 +9,7 @@ use rustfft::FftPlanner;
 use crate::{
     PolynomialDegree,
     entities::{DstArray, Polynomial},
-    gpu::{
-        get_runtimes,
-        tests::{assert_complex_equalish, ulps_difference},
-    },
+    gpu::{get_runtimes, tests::ulps_difference},
 };
 
 #[derive(PartialEq)]

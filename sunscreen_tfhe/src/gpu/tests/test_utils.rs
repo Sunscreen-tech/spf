@@ -21,10 +21,25 @@ pub(crate) fn glwe_encrypt<F>(
     }
 }
 
-pub(crate) fn random_poly(polys: &mut DstArrayRef<PolynomialRef<u64>>, degree: &PolynomialDegree) {
+pub(crate) fn random_poly_mod(
+    polys: &mut DstArrayRef<PolynomialRef<u64>>,
+    degree: &PolynomialDegree,
+    modulus: u64,
+) {
     for poly in polys.iter_mut(*degree) {
         for c in poly.coeffs_mut().iter_mut() {
-            *c = rng().next_u64() % 16;
+            *c = rng().next_u64() % modulus;
+        }
+    }
+}
+
+pub(crate) fn random_poly_mod_2_pow_64(
+    polys: &mut DstArrayRef<PolynomialRef<u64>>,
+    degree: &PolynomialDegree,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for c in poly.coeffs_mut().iter_mut() {
+            *c = rng().next_u64();
         }
     }
 }

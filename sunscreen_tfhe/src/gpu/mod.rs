@@ -26,34 +26,9 @@ pub fn get_runtimes() -> Arc<Vec<Arc<GpuRuntime>>> {
 #[cfg(any(feature = "test_kernels", test))]
 #[doc(hidden)]
 pub mod test_utils {
-    use std::ops::Deref;
+    use crate::PolynomialDegree;
 
-    #[derive(Clone, Copy, Debug)]
-    pub struct PolyDegreeInfo(pub u32);
-
-    impl PolyDegreeInfo {
-        pub fn threads_per_block(&self) -> u32 {
-            self.0 / 8
-        }
-    }
-
-    impl From<u32> for PolyDegreeInfo {
-        fn from(value: u32) -> Self {
-            assert!(value.is_power_of_two());
-
-            Self(value)
-        }
-    }
-
-    impl Deref for PolyDegreeInfo {
-        type Target = u32;
-
-        fn deref(&self) -> &Self::Target {
-            &self.0
-        }
-    }
-
-    pub const SUPPORTED_POLY_DEGREES: &[PolyDegreeInfo] = &[PolyDegreeInfo(2048u32)];
+    pub const SUPPORTED_POLY_DEGREES: &[PolynomialDegree] = &[PolynomialDegree(2048usize)];
 }
 
 /// Scratch space used during GPU computation.

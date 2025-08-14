@@ -59,6 +59,13 @@ extern "C" __global__ void can_glwe_polynomial_mad(
 
     glwe_polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, glwe);
 
+    printf(
+        "%le %le\n", 
+        c_i_fft->a_b(0, glwe)->coeffs()[threadIdx.x].re(),
+        c_i_fft->a_b(0, glwe)->coeffs()[threadIdx.x].im()
+    );
+    //printf("%lf %lf\n", b_i_fft->coeffs()[threadIdx.x].re(), b_i_fft->coeffs()[threadIdx.x].im());
+
     // Store the IFFT back to c_i.
     c_i_fft->ifft(c_i, glwe);
 }
