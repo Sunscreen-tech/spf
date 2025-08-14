@@ -5,7 +5,9 @@ use num::{Float, complex::Complex};
 use realfft::{ComplexToReal, FftNum, RealFftPlanner, RealToComplex};
 use sunscreen_math::{One, Zero as SunscreenZero};
 
-use crate::fft::negacyclic::{hack_complex_slice_cast_to_rustfft, hack_complex_slice_cast_to_rustfft_mut};
+use crate::fft::negacyclic::{
+    hack_complex_slice_cast_to_rustfft, hack_complex_slice_cast_to_rustfft_mut,
+};
 use crate::{FrequencyTransform, Inverse, Pow, RootOfUnity};
 
 /// A struct that can perform a real FFT.

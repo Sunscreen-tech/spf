@@ -232,9 +232,10 @@ where
 
 #[cfg(feature = "gpu")]
 impl<T> AsKernelArg for DstArray<T>
-where T: Deref,
+where
+    T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: PartialEq
+    <<T as Deref>::Target as InnermostType>::Ty: PartialEq,
 {
     fn as_kernel_arg(&self) -> *const std::ffi::c_void {
         (self.deref()).as_kernel_arg()
@@ -243,8 +244,9 @@ where T: Deref,
 
 #[cfg(feature = "gpu")]
 impl<T> AsKernelArg for DstArrayRef<T>
-where T: InnermostType + OverlaySize + ToOwned + ?Sized,
-    <T as InnermostType>::Ty: PartialEq
+where
+    T: InnermostType + OverlaySize + ToOwned + ?Sized,
+    <T as InnermostType>::Ty: PartialEq,
 {
     fn as_kernel_arg(&self) -> *const std::ffi::c_void {
         (&self.data).as_ptr() as *const std::ffi::c_void

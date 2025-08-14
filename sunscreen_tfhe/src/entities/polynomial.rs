@@ -174,9 +174,7 @@ where
 
         // If the degree is N (or of the form N + k*2N), the polynomial is negated.
         if degree == len {
-            self.data
-                .iter_mut()
-                .for_each(|x| *x = -(*x));
+            self.data.iter_mut().for_each(|x| *x = -(*x));
             return;
         }
 
@@ -211,9 +209,7 @@ where
 
         // If the degree is N (or of the form N + k*2N), the polynomial is negated.
         if degree == len {
-            self.data
-                .iter_mut()
-                .for_each(|x| *x = -(*x));
+            self.data.iter_mut().for_each(|x| *x = -(*x));
             return;
         }
 

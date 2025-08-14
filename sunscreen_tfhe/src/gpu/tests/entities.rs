@@ -3,10 +3,13 @@ use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    dst::{AsMutSlice, AsSlice, FromSlice}, entities::{
-        DstArray, GlweCiphertext, GlweCiphertextFft, GlweCiphertextRef,
-        GlweSecretKey, Polynomial,
-    }, gpu::get_runtimes, ops::encryption::{decrypt_glwe_ciphertext}, OverlaySize, PlaintextBits, Torus, GLWE_1_2048_128
+    GLWE_1_2048_128, OverlaySize, PlaintextBits, Torus,
+    dst::{AsMutSlice, AsSlice, FromSlice},
+    entities::{
+        DstArray, GlweCiphertext, GlweCiphertextFft, GlweCiphertextRef, GlweSecretKey, Polynomial,
+    },
+    gpu::get_runtimes,
+    ops::encryption::decrypt_glwe_ciphertext,
 };
 
 #[ignore]
@@ -33,7 +36,7 @@ fn check_glwe_fft_noise() {
         let results = cts.clone();
         let results_fft = DstArray::<GlweCiphertextFft<Complex<f64>>>::new(num_blocks, glwe.dim);
 
-        for (ct, msg) in cts.iter_mut(glwe.dim).zip(msgs.iter()) {           
+        for (ct, msg) in cts.iter_mut(glwe.dim).zip(msgs.iter()) {
             let ct_enc = sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1));
 
             ct.as_mut_slice().clone_from_slice(ct_enc.as_slice());

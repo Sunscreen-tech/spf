@@ -1,5 +1,8 @@
 use bytemuck::{Pod, Zeroable};
-use num::traits::{Bounded, MulAdd, Num, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub};
+use num::traits::{
+    Bounded, MulAdd, Num, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr,
+    WrappingSub,
+};
 
 use serde::{Deserialize, Serialize};
 use std::{
@@ -48,12 +51,12 @@ where
 pub trait TorusOps:
     BitAnd<Self, Output = Self>
     + Default
-    + WrappingAdd<WrappingOutput=Self>
-    + WrappingSub<WrappingOutput=Self>
-    + WrappingMul<WrappingOutput=Self>
-    + WrappingShl<WrappingOutput=Self>
-    + WrappingShr<WrappingOutput=Self>
-    + WrappingNeg<WrappingOutput=Self>
+    + WrappingAdd<WrappingOutput = Self>
+    + WrappingSub<WrappingOutput = Self>
+    + WrappingMul<WrappingOutput = Self>
+    + WrappingShl<WrappingOutput = Self>
+    + WrappingShr<WrappingOutput = Self>
+    + WrappingNeg<WrappingOutput = Self>
     + BitAnd
     + ReinterpretAsSigned
     + Num
@@ -343,8 +346,7 @@ impl<S: TorusOps> Neg for Torus<S> {
     }
 }
 
-impl<S: TorusOps> WrappingNeg for Torus<S>
-{
+impl<S: TorusOps> WrappingNeg for Torus<S> {
     type WrappingOutput = Torus<S>;
 
     fn wrapping_neg(self) -> Self::WrappingOutput {

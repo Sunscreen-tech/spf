@@ -35,14 +35,22 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 }
 
 #[inline(always)]
-pub fn vector_add<T: Sized + WrappingAdd<WrappingOutput = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+pub fn vector_add<T: Sized + WrappingAdd<WrappingOutput = T> + Clone>(
+    c: &mut [T],
+    a: &[T],
+    b: &[T],
+) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
         *c = a.wrapping_add(b);
     }
 }
 
 #[inline(always)]
-pub fn vector_sub<T: Sized + WrappingSub<WrappingOutput = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+pub fn vector_sub<T: Sized + WrappingSub<WrappingOutput = T> + Clone>(
+    c: &mut [T],
+    a: &[T],
+    b: &[T],
+) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
         *c = a.wrapping_sub(b);
     }
@@ -133,7 +141,12 @@ where
 #[inline(always)]
 pub fn vector_shr_round<S>(c: &mut [S], a: &[S], n: u32)
 where
-    S: Clone + Copy + Shr<u32, Output = S> + BitAnd<S, Output = S> + One + WrappingAdd<WrappingOutput = S>,
+    S: Clone
+        + Copy
+        + Shr<u32, Output = S>
+        + BitAnd<S, Output = S>
+        + One
+        + WrappingAdd<WrappingOutput = S>,
 {
     for (c, a) in c.iter_mut().zip(a.iter()) {
         let round_bit = (*a >> (n - 1)) & S::one();

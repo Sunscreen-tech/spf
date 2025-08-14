@@ -24,37 +24,44 @@ pub fn get_fft(log_n: usize) -> &'static TwistedFft<f64> {
 
 // TODO: Remove these functions. They're terrible hacks.
 /// A shitty hack to work around conflicting versions of num-complex.
-/// 
+///
 /// Casts a slice of the newer complex values to a slice of the older version.
 /// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_to_rustfft<T>(x: &[Complex<T>]) -> &[rustfft::num_complex::Complex<T>] {
+pub fn hack_complex_slice_cast_to_rustfft<T>(
+    x: &[Complex<T>],
+) -> &[rustfft::num_complex::Complex<T>] {
     unsafe { std::mem::transmute(x) }
 }
 
 /// A shitty hack to work around conflicting versions of num-complex.
-/// 
+///
 /// Casts a slice of the newer complex values to a slice of the older version.
 /// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_to_rustfft_mut<T>(x: &mut [Complex<T>]) -> &mut [rustfft::num_complex::Complex<T>] {
+pub fn hack_complex_slice_cast_to_rustfft_mut<T>(
+    x: &mut [Complex<T>],
+) -> &mut [rustfft::num_complex::Complex<T>] {
     unsafe { std::mem::transmute(x) }
 }
 
 /// A shitty hack to work around conflicting versions of num-complex.
-/// 
+///
 /// Casts a slice of the older complex values to a slice of the newer version.
 /// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_from_rustfft<T>(x: &[rustfft::num_complex::Complex<T>]) -> &[Complex<T>] {
+pub fn hack_complex_slice_cast_from_rustfft<T>(
+    x: &[rustfft::num_complex::Complex<T>],
+) -> &[Complex<T>] {
     unsafe { std::mem::transmute(x) }
 }
 
 /// A shitty hack to work around conflicting versions of num-complex.
-/// 
+///
 /// Casts a slice of the older complex values to a slice of the newer version.
 /// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_from_rustfft_mut<T>(x: &mut [rustfft::num_complex::Complex<T>]) -> &mut [Complex<T>] {
+pub fn hack_complex_slice_cast_from_rustfft_mut<T>(
+    x: &mut [rustfft::num_complex::Complex<T>],
+) -> &mut [Complex<T>] {
     unsafe { std::mem::transmute(x) }
 }
-
 
 /// Perform FFT with a twist so points can be used for
 /// negacyclic convolution.
