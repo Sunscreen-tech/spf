@@ -51,12 +51,12 @@ where
 pub trait TorusOps:
     BitAnd<Self, Output = Self>
     + Default
-    + WrappingAdd<WrappingOutput = Self>
-    + WrappingSub<WrappingOutput = Self>
-    + WrappingMul<WrappingOutput = Self>
-    + WrappingShl<WrappingOutput = Self>
-    + WrappingShr<WrappingOutput = Self>
-    + WrappingNeg<WrappingOutput = Self>
+    + WrappingAdd
+    + WrappingSub
+    + WrappingMul
+    + WrappingShl
+    + WrappingShr
+    + WrappingNeg
     + BitAnd
     + ReinterpretAsSigned
     + Num
@@ -347,9 +347,7 @@ impl<S: TorusOps> Neg for Torus<S> {
 }
 
 impl<S: TorusOps> WrappingNeg for Torus<S> {
-    type WrappingOutput = Torus<S>;
-
-    fn wrapping_neg(self) -> Self::WrappingOutput {
+    fn wrapping_neg(&self) -> Self {
         Self::from(self.0.wrapping_neg())
     }
 }
@@ -359,15 +357,12 @@ impl<S: TorusOps> Add<&Torus<S>> for &Torus<S> {
     type Output = Torus<S>;
 
     fn add(self, rhs: &Torus<S>) -> Self::Output {
-        Self::Output::from(self.0.wrapping_add(rhs.0))
+        Self::Output::from(self.0.wrapping_add(&rhs.0))
     }
 }
 
-#[refify_binary_op]
-impl<S: TorusOps> WrappingAdd<&Torus<S>> for &Torus<S> {
-    type WrappingOutput = Torus<S>;
-
-    fn wrapping_add(self, rhs: &Torus<S>) -> Self::WrappingOutput {
+impl<S: TorusOps> WrappingAdd for Torus<S> {
+    fn wrapping_add(&self, rhs: &Torus<S>) -> Self {
         self.add(rhs)
     }
 }
@@ -377,15 +372,12 @@ impl<S: TorusOps> Sub<&Torus<S>> for &Torus<S> {
     type Output = Torus<S>;
 
     fn sub(self, rhs: &Torus<S>) -> Self::Output {
-        Self::Output::from(self.0.wrapping_sub(rhs.0))
+        Self::Output::from(self.0.wrapping_sub(&rhs.0))
     }
 }
 
-#[refify_binary_op]
-impl<S: TorusOps> WrappingSub<&Torus<S>> for &Torus<S> {
-    type WrappingOutput = Torus<S>;
-
-    fn wrapping_sub(self, rhs: &Torus<S>) -> Self::WrappingOutput {
+impl<S: TorusOps> WrappingSub for Torus<S> {
+    fn wrapping_sub(&self, rhs: &Torus<S>) -> Self {
         self.sub(rhs)
     }
 }
@@ -395,16 +387,7 @@ impl<S: TorusOps> Mul<&S> for &Torus<S> {
     type Output = Torus<S>;
 
     fn mul(self, rhs: &S) -> Self::Output {
-        Self::Output::from(self.0.wrapping_mul(*rhs))
-    }
-}
-
-#[refify_binary_op]
-impl<S: TorusOps> WrappingMul<&S> for &Torus<S> {
-    type WrappingOutput = Torus<S>;
-
-    fn wrapping_mul(self, rhs: &S) -> Self::WrappingOutput {
-        self.mul(rhs)
+        Self::Output::from(self.0.wrapping_mul(rhs))
     }
 }
 

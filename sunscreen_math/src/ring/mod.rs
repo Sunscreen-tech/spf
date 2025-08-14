@@ -54,10 +54,10 @@ pub trait WrappingSemantics:
     Copy
     + Clone
     + std::fmt::Debug
-    + WrappingAdd<WrappingOutput = Self>
-    + WrappingMul<WrappingOutput = Self>
-    + WrappingSub<WrappingOutput = Self>
-    + WrappingNeg<WrappingOutput = Self>
+    + WrappingAdd
+    + WrappingMul
+    + WrappingSub
+    + WrappingNeg
     + Zero
     + One
     + Eq
@@ -220,7 +220,7 @@ where
     type Output = ZInt<T>;
 
     fn sub(self, rhs: &ZInt<T>) -> Self::Output {
-        self.0.wrapping_sub(rhs.0).into()
+        self.0.wrapping_sub(&rhs.0).into()
     }
 }
 
@@ -232,7 +232,7 @@ where
     type Output = ZInt<T>;
 
     fn add(self, rhs: &ZInt<T>) -> Self::Output {
-        self.0.wrapping_add(rhs.0).into()
+        self.0.wrapping_add(&rhs.0).into()
     }
 }
 
@@ -244,7 +244,7 @@ where
     type Output = ZInt<T>;
 
     fn mul(self, rhs: &ZInt<T>) -> Self::Output {
-        self.0.wrapping_mul(rhs.0).into()
+        self.0.wrapping_mul(&rhs.0).into()
     }
 }
 

@@ -22,47 +22,6 @@ pub fn get_fft(log_n: usize) -> &'static TwistedFft<f64> {
     &cache[log_n]
 }
 
-// TODO: Remove these functions. They're terrible hacks.
-/// A shitty hack to work around conflicting versions of num-complex.
-///
-/// Casts a slice of the newer complex values to a slice of the older version.
-/// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_to_rustfft<T>(
-    x: &[Complex<T>],
-) -> &[rustfft::num_complex::Complex<T>] {
-    unsafe { std::mem::transmute(x) }
-}
-
-/// A shitty hack to work around conflicting versions of num-complex.
-///
-/// Casts a slice of the newer complex values to a slice of the older version.
-/// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_to_rustfft_mut<T>(
-    x: &mut [Complex<T>],
-) -> &mut [rustfft::num_complex::Complex<T>] {
-    unsafe { std::mem::transmute(x) }
-}
-
-/// A shitty hack to work around conflicting versions of num-complex.
-///
-/// Casts a slice of the older complex values to a slice of the newer version.
-/// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_from_rustfft<T>(
-    x: &[rustfft::num_complex::Complex<T>],
-) -> &[Complex<T>] {
-    unsafe { std::mem::transmute(x) }
-}
-
-/// A shitty hack to work around conflicting versions of num-complex.
-///
-/// Casts a slice of the older complex values to a slice of the newer version.
-/// Both have the same layout, so this should be kosher.
-pub fn hack_complex_slice_cast_from_rustfft_mut<T>(
-    x: &mut [rustfft::num_complex::Complex<T>],
-) -> &mut [Complex<T>] {
-    unsafe { std::mem::transmute(x) }
-}
-
 /// Perform FFT with a twist so points can be used for
 /// negacyclic convolution.
 ///
@@ -109,7 +68,7 @@ where
         let twist_inv = twist
             .iter()
             .copied()
-            .map(|t| t.powf(-<T as num::One>::one()))
+            .map(|t| t.powf(-T::one()))
             .collect::<Vec<_>>();
 
         debug_assert!(twist.iter().zip(twist_inv.iter()).all(|(a, b)| {
@@ -142,12 +101,8 @@ where
 
         simd::complex_twist(output, &x[0..n_div_2], &x[n_div_2..x.len()], &self.twist);
 
-        let mut scratch = allocate_scratch::<Complex<T>>(self.fwd.get_inplace_scratch_len());
-
-        // TODO: Remove this hack once num-complex propagates through deps.
-        let scratch_slice = hack_complex_slice_cast_to_rustfft_mut(scratch.as_mut_slice());
-
-        let output = hack_complex_slice_cast_to_rustfft_mut(output);
+        let mut scratch = allocate_scratch(self.fwd.get_inplace_scratch_len());
+        let scratch_slice = scratch.as_mut_slice();
 
         self.fwd.process_with_scratch(output, scratch_slice);
     }
@@ -156,15 +111,13 @@ where
         assert_eq!(data.len(), self.rev.len());
 
         let mut ifft = allocate_scratch(data.len());
-        let ifft_slice = hack_complex_slice_cast_to_rustfft_mut(ifft.as_mut_slice());
-        ifft_slice.copy_from_slice(hack_complex_slice_cast_to_rustfft(data));
+        let ifft_slice = ifft.as_mut_slice();
+        ifft_slice.copy_from_slice(data);
 
         let mut scratch = allocate_scratch(self.rev.get_inplace_scratch_len());
-        let scratch_slice = hack_complex_slice_cast_to_rustfft_mut(scratch.as_mut_slice());
+        let scratch_slice = scratch.as_mut_slice();
 
         self.rev.process_with_scratch(ifft_slice, scratch_slice);
-
-        let ifft_slice = hack_complex_slice_cast_from_rustfft(ifft_slice);
 
         simd::complex_untwist(output, ifft_slice, &self.twist_inv);
     }

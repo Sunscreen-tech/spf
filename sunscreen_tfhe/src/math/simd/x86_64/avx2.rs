@@ -59,9 +59,9 @@ where
     T: FromU64
         + Shr<usize, Output = T>
         + BitAnd<T, Output = T>
-        + WrappingSub<WrappingOutput = T>
+        + WrappingSub<Output = T>
         + Shl<usize, Output = T>
-        + WrappingAdd<WrappingOutput = T>
+        + WrappingAdd<Output = T>
         + Copy,
 {
     for (s, r) in s.iter_mut().zip(r.iter_mut()) {
@@ -71,8 +71,8 @@ where
         let digit = *s & mask;
         *s = *s >> radix_log;
         let carry = digit >> (radix_log - 1);
-        *s = s.wrapping_add(carry);
-        *r = digit.wrapping_sub(carry << radix_log);
+        *s = s.wrapping_add(&carry);
+        *r = digit.wrapping_sub(&(carry << radix_log));
     }
 }
 

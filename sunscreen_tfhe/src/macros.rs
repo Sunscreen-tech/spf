@@ -9,7 +9,7 @@ macro_rules! impl_binary_op {
             {
                 fn [<$op:lower _assign>](&mut self, rhs: Self) {
                     self.data.iter_mut().zip(rhs.data.iter()).for_each(|(a, b)| {
-                        *a = num::traits::[<Wrapping $op>]::[<wrapping_ $op:lower>](*a, *b);
+                        *a = num::traits::[<Wrapping $op>]::[<wrapping_ $op:lower>](a, b);
                     });
                 }
             }
@@ -33,9 +33,7 @@ macro_rules! impl_binary_op {
             where
                 S: TorusOps,
             {
-                type WrappingOutput = Self;
-
-                fn [<wrapping_ $op:lower>](self, rhs: Self) -> Self {
+                fn [<wrapping_ $op:lower>](&self, rhs: &Self) -> Self {
                     std::ops::$op::[< $op:lower >](self.as_ref(), rhs.as_ref())
                 }
             }
@@ -86,7 +84,7 @@ macro_rules! impl_unary_op {
                     // We call the wrapping trait instead of using the dot
                     // syntax because the dot syntax can dereference the value
                     // and can cause problems with Deref.
-                    let data = $crate::dst::dst_from_iter(self.data.iter().map(|a| num::traits::[<Wrapping $op>]::[<wrapping_ $op:lower>](*a)));
+                    let data = $crate::dst::dst_from_iter(self.data.iter().map(|a| num::traits::[<Wrapping $op>]::[<wrapping_ $op:lower>](a)));
 
                     $type { data }
                 }
@@ -98,9 +96,7 @@ macro_rules! impl_unary_op {
             where
                 S: TorusOps,
             {
-                type WrappingOutput = Self;
-
-                fn [<wrapping_ $op:lower>](self) -> Self {
+                fn [<wrapping_ $op:lower>](&self) -> Self {
                     std::ops::$op::[<$op:lower>](self.as_ref())
                 }
             }

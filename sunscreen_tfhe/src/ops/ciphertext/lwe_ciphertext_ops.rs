@@ -138,7 +138,7 @@ fn modulus_switch<S: TorusOps>(x: S, log_chi: usize, log_v: usize, log_modulus: 
 
     // TODO: Non-power-of_two input moduli
 
-    (x.wrapping_add(round) & mask) << log_v
+    (x.wrapping_add(&round) & mask) << log_v
 }
 
 #[cfg(test)]

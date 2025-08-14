@@ -239,7 +239,7 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_add(*b)),
+                .map(|(a, b)| a.wrapping_add(b)),
         );
 
         let sk3 = sk + sk2;
@@ -258,7 +258,7 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_add(*b)),
+                .map(|(a, b)| a.wrapping_add(b)),
         );
 
         sk2 += sk;
@@ -277,7 +277,7 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_add(*b)),
+                .map(|(a, b)| a.wrapping_add(b)),
         );
 
         let sk3 = sk.as_ref() + sk2.as_ref();
@@ -296,10 +296,10 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_add(*b)),
+                .map(|(a, b)| a.wrapping_add(b)),
         );
 
-        let sk3 = sk.wrapping_add(sk2);
+        let sk3 = sk.wrapping_add(&sk2);
 
         assert_eq!(sk3_expected, sk3.data)
     }
@@ -317,7 +317,7 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_sub(*b)),
+                .map(|(a, b)| a.wrapping_sub(b)),
         );
 
         let sk3 = sk - sk2;
@@ -336,7 +336,7 @@ mod tests {
             sk2.data
                 .iter()
                 .zip(sk.data.iter())
-                .map(|(a, b)| a.wrapping_sub(*b)),
+                .map(|(a, b)| a.wrapping_sub(b)),
         );
 
         sk2 -= sk;
@@ -355,7 +355,7 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_sub(*b)),
+                .map(|(a, b)| a.wrapping_sub(b)),
         );
 
         let sk3 = sk.as_ref() - sk2.as_ref();
@@ -374,10 +374,10 @@ mod tests {
             sk.data
                 .iter()
                 .zip(sk2.data.iter())
-                .map(|(a, b)| a.wrapping_sub(*b)),
+                .map(|(a, b)| a.wrapping_sub(b)),
         );
 
-        let sk3 = sk.wrapping_sub(sk2);
+        let sk3 = sk.wrapping_sub(&sk2);
 
         assert_eq!(sk3_expected, sk3.data)
     }

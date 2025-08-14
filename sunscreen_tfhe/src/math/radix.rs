@@ -40,7 +40,7 @@ fn get_next_digit<S: TorusOps>(cur: &mut S, radix_log: usize) -> S {
     *cur = *cur >> radix_log;
     let carry = digit >> (radix_log - 1);
     *cur = *cur + carry;
-    digit = digit.wrapping_sub(carry << radix_log);
+    digit = digit.wrapping_sub(&(carry << radix_log));
 
     digit
 }
@@ -149,7 +149,7 @@ pub fn scale_by_decomposition_factor<S: TorusOps>(
     let shift = S::BITS as usize - radix.radix_log.0 * (j + 1);
     let factor = <S as sunscreen_math::One>::one() << shift;
 
-    val.wrapping_mul(factor)
+    val.wrapping_mul(&factor)
 }
 
 #[inline(always)]
@@ -158,7 +158,7 @@ fn round<S: TorusOps>(x: Torus<S>, radix: &RadixDecomposition) -> S {
     let shift = S::BITS as usize - radix.radix_log.0 * radix.count.0;
     let round_bit = (x.inner() >> (shift - 1)) & S::from_u64(0x1);
 
-    (x.inner() >> shift).wrapping_add(round_bit)
+    (x.inner() >> shift).wrapping_add(&round_bit)
 }
 
 #[cfg(test)]
