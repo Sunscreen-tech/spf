@@ -4,7 +4,7 @@ use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
     GLWE_1_2048_128, OverlaySize, PlaintextBits, Torus,
-    dst::{AsMutSlice, AsSlice, FromSlice},
+    dst::{AsMutSlice, AsSlice},
     entities::{
         DstArray, GlweCiphertext, GlweCiphertextFft, GlweCiphertextRef, GlweSecretKey, Polynomial,
     },
@@ -12,7 +12,6 @@ use crate::{
     ops::encryption::decrypt_glwe_ciphertext,
 };
 
-#[ignore]
 #[test]
 fn check_glwe_fft_noise() {
     let runtimes = get_runtimes();
@@ -68,9 +67,9 @@ fn check_glwe_fft_noise() {
         for i in 0..num_blocks {
             let mut fft = GlweCiphertextFft::new(&glwe);
 
-            let result = results.iter(glwe.dim).nth(i).unwrap();
-            let ct = cts.iter(glwe.dim).nth(i).unwrap();
-            ct.fft(&mut fft, &glwe);
+            let result_ct = results.iter(glwe.dim).nth(i).unwrap();
+            let input_ct = cts.iter(glwe.dim).nth(i).unwrap();
+            input_ct.fft(&mut fft, &glwe);
 
             let mut cpu_ifft = GlweCiphertext::<u64>::new(&glwe);
             fft.ifft(&mut cpu_ifft, &glwe);
@@ -82,11 +81,10 @@ fn check_glwe_fft_noise() {
 
             decrypt_glwe_ciphertext(&mut cpu_roundtrip_msg, &cpu_ifft, &sk, &glwe);
 
-            let gpu_roundtrip_ct =
-                GlweCiphertextRef::from_slice(result.as_slice().chunks(glwe_len).nth(i).unwrap());
-            decrypt_glwe_ciphertext(&mut gpu_roundtrip_msg, &gpu_roundtrip_ct, &sk, &glwe);
+            
+            decrypt_glwe_ciphertext(&mut gpu_roundtrip_msg, &result_ct, &sk, &glwe);
 
-            decrypt_glwe_ciphertext(&mut no_fft_msg, ct, &sk, &glwe);
+            decrypt_glwe_ciphertext(&mut no_fft_msg, input_ct, &sk, &glwe);
 
             for j in 0..glwe.dim.polynomial_degree.0 {
                 assert_eq!(
