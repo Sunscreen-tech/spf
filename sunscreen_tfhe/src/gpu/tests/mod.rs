@@ -2,7 +2,7 @@ use num::{Complex, Float, NumCast};
 
 mod entities;
 mod fft;
-// mod homomorphisms;
+mod homomorphisms;
 // mod memory;
 // mod negacyclic;
 // mod polynomial;

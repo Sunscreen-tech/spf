@@ -94,4 +94,4 @@ codegen-units = 1
 debug = true
 
 [profile.dev.package.sunscreen_tfhe]
-opt-level = 0
+opt-level = 3
