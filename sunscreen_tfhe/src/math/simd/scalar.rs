@@ -35,16 +35,16 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 }
 
 #[inline(always)]
-pub fn vector_add<T: Sized + WrappingAdd<Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+pub fn vector_add<T: Sized + WrappingAdd<WrappingOutput = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
-        *c = a.wrapping_add(&b);
+        *c = a.wrapping_add(b);
     }
 }
 
 #[inline(always)]
-pub fn vector_sub<T: Sized + WrappingSub<Output = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
+pub fn vector_sub<T: Sized + WrappingSub<WrappingOutput = T> + Clone>(c: &mut [T], a: &[T], b: &[T]) {
     for (c, (a, b)) in c.iter_mut().zip(a.iter().cloned().zip(b.iter().cloned())) {
-        *c = a.wrapping_sub(&b);
+        *c = a.wrapping_sub(b);
     }
 }
 
@@ -54,9 +54,9 @@ where
     T: FromU64
         + Shr<usize, Output = T>
         + BitAnd<T, Output = T>
-        + WrappingSub<Output = T>
+        + WrappingSub<WrappingOutput = T>
         + Shl<usize, Output = T>
-        + WrappingAdd<Output = T>
+        + WrappingAdd<WrappingOutput = T>
         + Copy,
 {
     for (s, r) in s.iter_mut().zip(r.iter_mut()) {
@@ -66,8 +66,8 @@ where
         let digit = *s & mask;
         *s = *s >> radix_log;
         let carry = digit >> (radix_log - 1);
-        *s = s.wrapping_add(&carry);
-        *r = digit.wrapping_sub(&(carry << radix_log));
+        *s = s.wrapping_add(carry);
+        *r = digit.wrapping_sub(carry << radix_log);
     }
 }
 
@@ -133,12 +133,12 @@ where
 #[inline(always)]
 pub fn vector_shr_round<S>(c: &mut [S], a: &[S], n: u32)
 where
-    S: Clone + Copy + Shr<u32, Output = S> + BitAnd<S, Output = S> + One + WrappingAdd<Output = S>,
+    S: Clone + Copy + Shr<u32, Output = S> + BitAnd<S, Output = S> + One + WrappingAdd<WrappingOutput = S>,
 {
     for (c, a) in c.iter_mut().zip(a.iter()) {
         let round_bit = (*a >> (n - 1)) & S::one();
 
-        *c = (*a >> n).wrapping_add(&round_bit);
+        *c = (*a >> n).wrapping_add(round_bit);
     }
 }
 

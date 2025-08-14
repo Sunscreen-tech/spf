@@ -11,10 +11,10 @@ where
     assert_eq!(c_a.len(), a_a.len());
 
     for (c, a) in c_a.iter_mut().zip(a_a.iter()) {
-        *c = num::traits::WrappingAdd::wrapping_add(c, a);
+        *c += a;
     }
 
-    *c_b = num::traits::WrappingAdd::wrapping_add(c_b, a_b);
+    *c_b += a_b;
 }
 
 /// Subtract one LWE ciphertext from another, storing the result in the provided
@@ -36,10 +36,10 @@ pub(crate) fn sub_lwe_ciphertexts<S>(
     assert_eq!(c_a.len(), b_a.len());
 
     for (c, (a, b)) in c_a.iter_mut().zip(a_a.iter().zip(b_a.iter())) {
-        *c = num::traits::WrappingSub::wrapping_sub(a, b);
+        *c = a - b;
     }
 
-    *c_b = num::traits::WrappingSub::wrapping_sub(a_b, b_b);
+    *c_b = a_b - b_b;
 }
 
 /// Multiplies an LWE ciphertext by a scalar, storing the result in the provided
@@ -138,7 +138,7 @@ fn modulus_switch<S: TorusOps>(x: S, log_chi: usize, log_v: usize, log_modulus: 
 
     // TODO: Non-power-of_two input moduli
 
-    (x.wrapping_add(&round) & mask) << log_v
+    (x.wrapping_add(round) & mask) << log_v
 }
 
 #[cfg(test)]

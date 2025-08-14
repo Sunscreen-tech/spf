@@ -144,30 +144,38 @@ impl Neg for Fg {
 }
 
 impl WrappingAdd for Fg {
+    type WrappingOutput = Self;
+
     #[inline]
-    fn wrapping_add(&self, v: &Self) -> Self {
+    fn wrapping_add(self, v: Self) -> Self {
         self + v
     }
 }
 
 impl WrappingMul for Fg {
+    type WrappingOutput = Self;
+
     #[inline]
-    fn wrapping_mul(&self, v: &Self) -> Self {
+    fn wrapping_mul(self, v: Self) -> Self {
         self * v
     }
 }
 
 impl WrappingSub for Fg {
+    type WrappingOutput = Self;
+
     #[inline]
-    fn wrapping_sub(&self, v: &Self) -> Self {
+    fn wrapping_sub(self, v: Self) -> Self {
         self - v
     }
 }
 
 impl WrappingNeg for Fg {
+    type WrappingOutput = Self;
+
     #[inline]
-    fn wrapping_neg(&self) -> Self {
-        -*self
+    fn wrapping_neg(self) -> Self {
+        -self
     }
 }
 

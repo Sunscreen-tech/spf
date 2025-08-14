@@ -1,8 +1,6 @@
-use std::ops::Mul;
-
 use crate::{PlaintextBits, Torus, TorusOps, entities::PolynomialRef, simd::VectorOps};
 
-use num::traits::WrappingSub;
+use num::traits::{WrappingMul, WrappingSub};
 use sunscreen_math::{One, Zero};
 
 /// Encode a polynomial for encryption.
@@ -61,15 +59,15 @@ pub fn decode_polynomial<S>(
 /// If p.len() is not a power of 2.
 pub fn polynomial_pow_k<S, T>(p_k: &mut PolynomialRef<S>, p: &PolynomialRef<S>, k: usize)
 where
-    S: Clone + Copy + Mul<T, Output = S>,
-    T: Clone + Copy + One + Zero + WrappingSub<Output = T>,
+    S: Clone + Copy + WrappingMul<T, WrappingOutput = S>,
+    T: Clone + Copy + One + Zero + WrappingSub<WrappingOutput = T>,
 {
     assert_eq!(p.len(), p_k.len());
     assert!(p.len().is_power_of_two());
 
     let degree = p.len();
     let one = T::one();
-    let minus_one = T::zero().wrapping_sub(&one);
+    let minus_one = T::zero().wrapping_sub(one);
 
     for i in 0..degree {
         let i_k = i * k % degree;
@@ -82,7 +80,7 @@ where
             minus_one
         };
 
-        p_k.coeffs_mut()[i_k] = p.coeffs()[i] * sign;
+        p_k.coeffs_mut()[i_k] = p.coeffs()[i].wrapping_mul(sign);
     }
 }
 
@@ -149,9 +147,9 @@ mod tests {
         for i in 0..128 {
             let expected = match i {
                 0 => 17,
-                70 => 0.wrapping_sub(&19),
+                70 => 0u64.wrapping_sub(19u64),
                 90 => 52,
-                125 => 0.wrapping_sub(&45),
+                125 => 0u64.wrapping_sub(45u64),
                 _ => 0,
             };
 

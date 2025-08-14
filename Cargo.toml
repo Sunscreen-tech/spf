@@ -45,8 +45,7 @@ find_cuda_helper = "0.2"
 indicatif = "0.17"
 itertools = "0.14"
 log = "0.4"
-num = { version = "0.4", features = ["serde"] }
-num-complex = { version = "0.4", features = ["bytemuck"] }
+num = { git = "https://github.com/rickwebiii/num.git", features = ["serde", "bytemuck"], branch = "rweber/wrapping" }
 num_cpus = "1"
 paste = "1"
 petgraph = { version = "0.7", features = ["serde-1"] }
@@ -94,4 +93,12 @@ codegen-units = 1
 debug = true
 
 [profile.dev.package.sunscreen_tfhe]
-opt-level = 3
+opt-level = 0
+
+[patch.crates-io]
+num-traits = { git = "https://github.com/rickwebiii/num-traits.git", branch = "rweber/wrapping" }
+num-bigint = { git = "https://github.com/rickwebiii/num-bigint.git", branch = "rweber/wrapping" }
+num-integer = { git = "https://github.com/rickwebiii/num-integer.git", branch = "rweber/wrapping" }
+num-complex = { git = "https://github.com/rickwebiii/num-complex.git", branch = "rweber/wrapping" }
+num-rational = { git = "https://github.com/rickwebiii/num-rational.git", branch = "rweber/wrapping" }
+num-iter = { git = "https://github.com/rickwebiii/num-iter.git", branch = "rweber/wrapping" }

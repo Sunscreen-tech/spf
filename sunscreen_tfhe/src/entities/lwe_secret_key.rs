@@ -187,7 +187,7 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_add(b))
+            .map(|(a, b)| a.wrapping_add(*b))
             .collect::<Vec<_>>();
 
         let sk3 = sk + sk2;
@@ -206,7 +206,7 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_add(b))
+            .map(|(a, b)| a.wrapping_add(*b))
             .collect::<Vec<_>>();
 
         sk2 += sk;
@@ -225,7 +225,7 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_add(b))
+            .map(|(a, b)| a.wrapping_add(*b))
             .collect::<Vec<_>>();
 
         let sk3 = sk.as_ref() + sk2.as_ref();
@@ -244,10 +244,10 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_add(b))
+            .map(|(a, b)| a.wrapping_add(*b))
             .collect::<Vec<_>>();
 
-        let sk3 = sk.wrapping_add(&sk2);
+        let sk3 = sk.wrapping_add(sk2);
 
         assert_eq!(sk3_expected, sk3.s())
     }
@@ -265,7 +265,7 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_sub(b))
+            .map(|(a, b)| a.wrapping_sub(*b))
             .collect::<Vec<_>>();
 
         let sk3 = sk - sk2;
@@ -284,7 +284,7 @@ mod tests {
             .s()
             .iter()
             .zip(sk.s().iter())
-            .map(|(a, b)| a.wrapping_sub(b))
+            .map(|(a, b)| a.wrapping_sub(*b))
             .collect::<Vec<_>>();
 
         sk2 -= sk;
@@ -303,7 +303,7 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_sub(b))
+            .map(|(a, b)| a.wrapping_sub(*b))
             .collect::<Vec<_>>();
 
         let sk3 = sk.as_ref() - sk2.as_ref();
@@ -322,10 +322,10 @@ mod tests {
             .s()
             .iter()
             .zip(sk2.s().iter())
-            .map(|(a, b)| a.wrapping_sub(b))
+            .map(|(a, b)| a.wrapping_sub(*b))
             .collect::<Vec<_>>();
 
-        let sk3 = sk.wrapping_sub(&sk2);
+        let sk3 = sk.wrapping_sub(sk2);
 
         assert_eq!(sk3_expected, sk3.s())
     }

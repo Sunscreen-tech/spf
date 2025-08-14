@@ -34,7 +34,7 @@ where
 
 impl<T> PolynomialFft<T>
 where
-    T: Clone + Pod,
+    T: Clone + Pod + Default,
 {
     /// Create a new polynomial with the given length in the fourier domain.
     pub fn new(data: &[T]) -> Self {

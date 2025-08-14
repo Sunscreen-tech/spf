@@ -5,6 +5,7 @@ use num::{Float, complex::Complex};
 use realfft::{ComplexToReal, FftNum, RealFftPlanner, RealToComplex};
 use sunscreen_math::{One, Zero as SunscreenZero};
 
+use crate::fft::negacyclic::{hack_complex_slice_cast_to_rustfft, hack_complex_slice_cast_to_rustfft_mut};
 use crate::{FrequencyTransform, Inverse, Pow, RootOfUnity};
 
 /// A struct that can perform a real FFT.
@@ -47,11 +48,16 @@ where
     fn forward(&self, data: &[Self::BaseRepr], output: &mut [Self::FrequencyRepr]) {
         assert_eq!(data.len() / 2 + 1, output.len());
 
+        let output = hack_complex_slice_cast_to_rustfft_mut(output);
+
         self.fplan.process(&mut data.to_owned(), output).unwrap();
     }
 
     fn reverse(&self, data: &[Self::FrequencyRepr], output: &mut [Self::BaseRepr]) {
-        self.rplan.process(&mut data.to_owned(), output).unwrap();
+        let mut data = data.to_owned();
+        let data_slice = hack_complex_slice_cast_to_rustfft_mut(&mut data);
+
+        self.rplan.process(data_slice, output).unwrap();
 
         output.iter_mut().for_each(|x| {
             *x = *x * self.scale;

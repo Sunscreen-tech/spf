@@ -42,7 +42,7 @@ where
 
 impl<T> Polynomial<T>
 where
-    T: Clone + Pod,
+    T: Clone + Pod + Default,
 {
     /// Create a new polynomial from a slice of coefficients.
     pub fn new(data: &[T]) -> Polynomial<T> {
@@ -81,7 +81,7 @@ where
     pub fn map<F, U>(&self, f: F) -> Polynomial<U>
     where
         F: Fn(&T) -> U,
-        U: Clone + Pod,
+        U: Clone + Pod + Default,
     {
         Polynomial {
             data: dst_from_iter(self.data.iter().map(f)),
@@ -176,7 +176,7 @@ where
         if degree == len {
             self.data
                 .iter_mut()
-                .for_each(|x| *x = num::traits::WrappingNeg::wrapping_neg(x));
+                .for_each(|x| *x = -(*x));
             return;
         }
 
@@ -190,7 +190,7 @@ where
         };
 
         for i in negate_segment {
-            self.data[i] = num::traits::WrappingNeg::wrapping_neg(&self.data[i]);
+            self.data[i] = -self.data[i];
         }
     }
 
@@ -213,7 +213,7 @@ where
         if degree == len {
             self.data
                 .iter_mut()
-                .for_each(|x| *x = num::traits::WrappingNeg::wrapping_neg(x));
+                .for_each(|x| *x = -(*x));
             return;
         }
 
@@ -223,7 +223,7 @@ where
         let negate_segment = if degree < len { 0..degree } else { shift..len };
 
         for i in negate_segment {
-            self.data[i] = num::traits::WrappingNeg::wrapping_neg(&self.data[i]);
+            self.data[i] = -self.data[i];
         }
     }
 
@@ -268,7 +268,7 @@ where
 
 impl<S> Add<Polynomial<S>> for Polynomial<S>
 where
-    S: Add<S, Output = S> + Copy + Pod,
+    S: Add<S, Output = S> + Copy + Pod + Default,
 {
     type Output = Polynomial<S>;
 
@@ -279,7 +279,7 @@ where
 
 impl<S> Add<&PolynomialRef<S>> for &PolynomialRef<S>
 where
-    S: Add<S, Output = S> + Copy + Pod,
+    S: Add<S, Output = S> + Copy + Pod + Default,
 {
     type Output = Polynomial<S>;
 
@@ -309,7 +309,7 @@ where
 
 impl<S> Sub<Polynomial<S>> for Polynomial<S>
 where
-    S: Sub<S, Output = S> + Copy + Pod,
+    S: Sub<S, Output = S> + Copy + Pod + Default,
 {
     type Output = Polynomial<S>;
 
@@ -320,7 +320,7 @@ where
 
 impl<S> Sub<&PolynomialRef<S>> for &PolynomialRef<S>
 where
-    S: Sub<S, Output = S> + Copy + Pod,
+    S: Sub<S, Output = S> + Copy + Pod + Default,
 {
     type Output = Polynomial<S>;
 

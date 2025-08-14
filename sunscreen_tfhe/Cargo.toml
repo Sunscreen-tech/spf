@@ -16,7 +16,6 @@ categories = ["cryptography"]
 aligned-vec = { workspace = true }
 bytemuck = { workspace = true }
 num = { workspace = true }
-num-complex = { workspace = true, features = ["bytemuck"] }
 paste = { workspace = true }
 rand = { workspace = true }
 rand_chacha = { workspace = true }
@@ -42,7 +41,7 @@ find_cuda_helper = { workspace = true, optional = true }
 rug = { workspace = true, optional = true }
 
 [features]
-default = [] #["cuda", "test_kernels"]
+default = []#["cuda", "test_kernels"]
 cuda = ["gpu", "sunscreen_gpu_runtime/cuda", "dep:find_cuda_helper", "test_kernels"]
 gpu = ["dep:sunscreen_gpu_runtime"]
 test_kernels = ["gpu", "dep:rug"]
