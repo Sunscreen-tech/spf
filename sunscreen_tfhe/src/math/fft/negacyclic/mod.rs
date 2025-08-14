@@ -164,7 +164,7 @@ where
 
         self.rev.process_with_scratch(ifft_slice, scratch_slice);
 
-        let ifft_slice = hack_complex_slice_cast_from_rustfft(&ifft_slice);
+        let ifft_slice = hack_complex_slice_cast_from_rustfft(ifft_slice);
 
         simd::complex_untwist(output, ifft_slice, &self.twist_inv);
     }
