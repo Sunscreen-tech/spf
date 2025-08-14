@@ -1,12 +1,9 @@
-use aligned_vec::avec_rt;
-use num::{Complex, Zero};
-use rand::{RngCore, rng};
+use num::Zero;
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    Torus,
-    dst::{AsSlice, FromMutSlice, FromSlice},
-    entities::{DstArray, Polynomial, PolynomialFftRef, PolynomialRef},
+    dst::AsSlice,
+    entities::{DstArray, Polynomial, PolynomialRef},
     gpu::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,

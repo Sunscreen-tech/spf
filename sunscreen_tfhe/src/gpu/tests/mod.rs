@@ -1,4 +1,4 @@
-use num::{Complex, Float, NumCast};
+use num::{Complex, Float};
 
 mod basics;
 mod entities;

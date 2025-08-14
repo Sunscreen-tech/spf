@@ -1,10 +1,8 @@
 use std::f64::consts::PI;
 
-use bytemuck::Pod;
-use num::{Complex, Float, FromPrimitive, NumCast, Signed};
+use num::{Complex, Float};
 use sunscreen_gpu_runtime::launch_kernel;
 
-use rustfft::FftPlanner;
 
 use crate::{
     PolynomialDegree,

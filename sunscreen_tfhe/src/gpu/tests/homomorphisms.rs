@@ -1,32 +1,25 @@
-use num::Complex;
-use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    GLWE_1_2048_128, GlweDef, OverlaySize, PlaintextBits, PolynomialDegree, RadixCount,
-    RadixDecomposition, RadixLog, Torus,
-    dst::{AsSlice, FromSlice},
+    GLWE_1_2048_128, GlweDef, PlaintextBits,
+    dst::AsSlice,
     entities::{
-        DstArray, DstArrayRef, GgswCiphertextFftRef, GlevCiphertext, GlevCiphertextFftRef,
-        GlweCiphertext, GlweCiphertextFft, GlweCiphertextFftRef, GlweCiphertextRef, GlweSecretKey,
-        Polynomial, PolynomialFft, PolynomialFftRef, PolynomialRef,
+        DstArray,
+        GlweCiphertext, GlweCiphertextRef, GlweSecretKey,
+        Polynomial,
     },
     gpu::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
         tests::test_utils::{
-            glwe_encrypt, monotonic_msg, one_poly, random_msg, random_poly_mod, zero_msg,
+            glwe_encrypt, random_msg, random_poly_mod,
         },
     },
     high_level,
     ops::{
         ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts},
-        encryption::{
-            decrypt_glwe_ciphertext, encrypt_glwe_ciphertext_secret, encrypt_secret_glev_ciphertext,
-        },
-        fft_ops::{decomposed_polynomial_glev_mad, glwe_polynomial_mad},
+        fft_ops::glwe_polynomial_mad,
     },
-    radix::PolynomialRadixIterator,
 };
 
 fn glwe_op_test<F>(baseline_op: F, kernel_name: &str)
