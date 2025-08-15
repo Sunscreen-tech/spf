@@ -154,7 +154,7 @@ mod cuda {
                 .arg("--std=c++20")
                 .arg("--expt-relaxed-constexpr")
                 .arg("-O4")
-                .arg("--use_fast_math")
+                //.arg("--use_fast_math")
                 .args(&gencode_flags)
                 .arg("-I")
                 .arg(outdir.join("codegen"))

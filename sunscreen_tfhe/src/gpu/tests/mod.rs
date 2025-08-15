@@ -8,7 +8,7 @@ mod homomorphisms;
 // mod negacyclic;
 mod polynomial;
 // mod signed_decomposition;
-// mod simd;
+mod simd;
 mod test_utils;
 
 pub fn ulps_difference(x: f64, y: f64) -> u64 {

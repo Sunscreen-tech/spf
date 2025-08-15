@@ -1,4 +1,7 @@
-use rand::{RngCore, rng};
+#![allow(unused)]
+
+use num::Complex;
+use rand::{rng, Rng, RngCore};
 
 use crate::{
     GlweDef, PlaintextBits, PolynomialDegree, Torus,
@@ -77,4 +80,12 @@ pub(crate) fn monotonic_msg(i: usize, degree: PolynomialDegree) -> Polynomial<To
             .map(|x| Torus::encode((i * degree.0 + x) as u64, PlaintextBits(1)))
             .collect::<Vec<_>>(),
     )
+}
+
+pub(crate) fn fill_complex_rand_mod(data: &mut [Complex<f64>], modulus: f64) {
+    for c in data.iter_mut() {
+        c.re = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+        c.im = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+    }
+    
 }

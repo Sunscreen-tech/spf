@@ -2,14 +2,9 @@ use num::Zero;
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    dst::AsSlice,
-    entities::{DstArray, Polynomial, PolynomialRef},
-    gpu::{
-        Scratch, get_runtimes,
-        test_utils::SUPPORTED_POLY_DEGREES,
-        tests::test_utils::{random_poly_mod, random_poly_mod_2_pow_64},
-    },
-    polynomial::{polynomial_add, polynomial_sub},
+    dst::AsSlice, entities::{DstArray, Polynomial, PolynomialRef}, gpu::{
+        get_runtimes, test_utils::SUPPORTED_POLY_DEGREES, tests::test_utils::{glwe_encrypt, random_poly_mod, random_poly_mod_2_pow_64}, Scratch
+    }, high_level, polynomial::{polynomial_add, polynomial_sub}
 };
 
 fn polynomial_roundtrip_test(kernel: &str) {
@@ -21,12 +16,12 @@ fn polynomial_roundtrip_test(kernel: &str) {
             let mut x = DstArray::<Polynomial<u64>>::new(num_blocks, d);
             let y = x.clone();
 
-            random_poly_mod(&mut x, &d, 0x1 << 32);
+            random_poly_mod(&mut x, &d, 0x1 << 48);
 
             let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = d.threads_per_block();
-            let num_threads = threads_per_block;
+            let num_threads = num_blocks as u32 * threads_per_block;
 
             let grid = (num_threads, threads_per_block);
             let scratch = Scratch::new(r, grid).unwrap();
@@ -119,73 +114,70 @@ fn can_add_polynomials() {
     poly_op_test(|c, a, b| polynomial_add(c, a, b), "can_add_polynomials");
 }
 
-/*
 #[test]
 fn can_mad_polynomials() {
     let runtimes = get_runtimes();
-    let num_blocks = 13u32;
+    let num_blocks = 13;
 
     for r in runtimes.iter() {
         for d in SUPPORTED_POLY_DEGREES.iter().copied() {
-            let d = PolyDegreeInfo(*d / 2);
+            let mut c = DstArray::<Polynomial<u64>>::new(num_blocks, d);
+            let mut a = c.clone();
+            let mut b = c.clone();
 
-            let len = (num_blocks * *d / 2) as usize;
-            let mut c = r.allocate::<Complex<f64>>(len).unwrap();
-            let mut a = r.allocate::<Complex<f64>>(len).unwrap();
-            let mut b = r.allocate::<Complex<f64>>(len).unwrap();
+            // Do something representative of a base decomposition.
+            // a and c are random over the full u64, while b is over 16-bit integers
+            //random_poly_mod_2_pow_64(&mut c, &d);
+            //random_poly_mod_2_pow_64(&mut a, &d);
+            random_poly_mod(&mut c, &d, 0x1 << 48);
+            random_poly_mod(&mut a, &d, 0x1 << 48);
+            random_poly_mod(&mut b, &d, 0x1 << 4);
 
-            a.as_mut_slice()
-                .iter_mut()
-                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
-            b.as_mut_slice()
-                .iter_mut()
-                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
-            c.as_mut_slice()
-                .iter_mut()
-                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
-
-            let mut expected = avec_rt!([64]| Complex::<f64>::zero(); len);
-            expected.as_mut_slice().clone_from_slice(c.as_slice());
+            let c_orig = c.clone();
 
             let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = d.threads_per_block();
+            let num_threads = num_blocks as u32 * threads_per_block;
+            let grid = (num_threads, threads_per_block);
+
+            let scratch = Scratch::new(r, grid).unwrap();
 
             unsafe {
                 launch_kernel!(
-                    ((num_blocks * threads_per_block, threads_per_block))
+                    (grid)
                     ("can_mad_polynomials")
                     (r, stream)
                     c,
                     a,
                     b,
-                    *d
+                    scratch,
+                    d.0 as u32
                 )
             }
             .unwrap();
 
             stream.wait().unwrap();
 
-            for (((c, a), b), e) in c
-                .as_slice()
-                .chunks(*d as usize)
-                .zip(a.as_slice().chunks(*d as usize))
-                .zip(b.as_slice().chunks(*d as usize))
-                .zip(expected.chunks_mut(*d as usize))
-            {
-                let a = PolynomialFftRef::from_slice(a);
-                let b = PolynomialFftRef::from_slice(b);
-                let c = PolynomialFftRef::from_slice(c);
+            for i in 0..num_blocks {
+                let c_orig = c_orig.iter(d).nth(i).unwrap();
+                let a = a.iter(d).nth(i).unwrap();
+                let b = b.iter(d).nth(i).unwrap();
 
-                let expected = PolynomialFftRef::from_mut_slice(e);
+                let mut c_fft = high_level::fft::fft_polynomial(&c_orig, &d);
+                let a_fft = high_level::fft::fft_polynomial(&a, &d);
+                let b_fft = high_level::fft::fft_polynomial(&b, &d);
 
-                expected.multiply_add(&a, &b);
+                let actual = c.iter(d).nth(i).unwrap();
 
-                for (a, e) in c.as_slice().iter().zip(expected.as_slice().iter()) {
-                    approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-11);
-                    approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-11);
+                c_fft.multiply_add(&a_fft, &b_fft);
+
+                let mut expected = Polynomial::<u64>::zero(d.0);
+                c_fft.ifft(&mut expected);
+
+                for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
+                    assert_eq!(a, e);
                 }
             }
         }
     }
 }
- */
