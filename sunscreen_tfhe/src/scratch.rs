@@ -138,35 +138,6 @@ impl Scratch {
                     Box::into_raw(allocation)
                 }
             }
-
-            /*
-            if allocation.is_none() {
-                // If we don't have an existing allocation, make one
-                let allocation = Allocation {
-                    data: avec_rt!([alignment]| u8::default(); u8_len),
-                };
-
-                let allocation = Box::new(allocation);
-                Box::into_raw(allocation)
-            } else if (*allocation.unwrap()).data.alignment() < alignment
-                || (*allocation.unwrap()).data.len() < u8_len
-            {
-                // If we found an allocation, but its size and len requirements
-                // are insufficient.
-                let allocation = allocation.unwrap();
-                let drop_box = Box::from_raw(allocation);
-                std::mem::drop(drop_box);
-
-                let allocation = Allocation {
-                    data: avec_rt!([alignment]| u8::default(); u8_len),
-                };
-
-                let allocation = Box::new(allocation);
-                Box::into_raw(allocation)
-            } else {
-                // Otherwise, reuse the allocation.
-                allocation.unwrap()
-            } */
         };
 
         ScratchBuffer {
