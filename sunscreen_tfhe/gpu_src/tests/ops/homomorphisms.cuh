@@ -36,9 +36,10 @@ extern "C" __global__ void can_glwe_add(
 }
 
 extern "C" __global__ void can_glwe_polynomial_mad(
-    DstArray<GlweCiphertextFft<Complex<double>>> *__restrict__ c,
-    const DstArray<GlweCiphertextFft<Complex<double>>> *__restrict__ a,
-    const DstArray<PolynomialFft<Complex<double>>> *__restrict__ b)
+    DstArray<GlweCiphertext<uint64_t>> *__restrict__ c,
+    const DstArray<GlweCiphertext<uint64_t>> *__restrict__ a,
+    const DstArray<Polynomial<uint64_t>> *__restrict__ b,
+    uint8_t *__restrict__ scratch_buffer)
 {
     const auto &glwe = GLWE_1_2048_128;
 
@@ -46,7 +47,20 @@ extern "C" __global__ void can_glwe_polynomial_mad(
     auto a_i = a->nth(blockIdx.x, glwe);
     auto b_i = b->nth(blockIdx.x, glwe.polynomial_degree());
 
-    glwe_polynomial_mad(c_i, a_i, b_i, glwe);
+    auto scratch = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
+
+    auto c_i_fft = scratch.alloc<GlweCiphertextFft<Complex<double>>>(glwe);
+    auto a_i_fft = scratch.alloc<GlweCiphertextFft<Complex<double>>>(glwe);
+    auto b_i_fft = scratch.alloc<PolynomialFft<Complex<double>>>(glwe.polynomial_degree());
+
+    c_i->fft(*c_i_fft, glwe);
+    a_i->fft(*a_i_fft, glwe);
+    b_i->fft(*b_i_fft, glwe.polynomial_degree());
+
+    glwe_polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, glwe);
+
+    // Store the IFFT back to c_i.
+    c_i_fft->ifft(c_i, glwe);
 }
 
 extern "C" __global__ void can_polynomial_glev_mad(

@@ -150,7 +150,7 @@ mod gpu_benches {
                             pbs_count * GlweCiphertextRef::<u64>::size(glwe.dim),
                         )
                         .unwrap();
-                        let mut bsk_dev = GpuRuntime::allocate::<Complex<f64>>(
+                        let bsk_dev = GpuRuntime::allocate::<Complex<f64>>(
                             r,
                             BootstrapKeyFftRef::size((lwe.dim, glwe.dim, pbs_radix.count)),
                         )

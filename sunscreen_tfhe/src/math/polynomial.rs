@@ -169,7 +169,7 @@ fn polynomial_mad_impl<S, T, U>(
     assert_eq!(a.len(), b.len());
     assert_eq!(a.len(), c.len());
 
-    let len = a.len();
+    let len: usize = a.len();
 
     // Polynomial's length is a power of 2, so use mask to perform modulus.
     let mask = len - 1;

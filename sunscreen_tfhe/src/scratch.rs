@@ -107,6 +107,39 @@ impl Scratch {
         let allocation = unsafe {
             let allocation = self.stack.borrow_mut().pop_back();
 
+            match allocation {
+                Some(a) => {
+                    // If we found an allocation, but its size and len requirements
+                    // are insufficient.
+                    if (*allocation.unwrap()).data.alignment() < alignment
+                        || (*allocation.unwrap()).data.len() < u8_len
+                    {
+                        let allocation = allocation.unwrap();
+                        let drop_box = Box::from_raw(allocation);
+                        std::mem::drop(drop_box);
+
+                        let allocation = Allocation {
+                            data: avec_rt!([alignment]| u8::default(); u8_len),
+                        };
+
+                        let allocation = Box::new(allocation);
+                        Box::into_raw(allocation)
+                    } else {
+                        a
+                    }
+                }
+                None => {
+                    // If we don't have an existing allocation, make one
+                    let allocation = Allocation {
+                        data: avec_rt!([alignment]| u8::default(); u8_len),
+                    };
+
+                    let allocation = Box::new(allocation);
+                    Box::into_raw(allocation)
+                }
+            }
+
+            /*
             if allocation.is_none() {
                 // If we don't have an existing allocation, make one
                 let allocation = Allocation {
@@ -133,7 +166,7 @@ impl Scratch {
             } else {
                 // Otherwise, reuse the allocation.
                 allocation.unwrap()
-            }
+            } */
         };
 
         ScratchBuffer {
