@@ -195,12 +195,12 @@ where
     <T as InnermostType>::Ty: Pod + PartialEq,
 {
     /// Create an iterator that emits `&T`s contained in the DST
-    pub fn iter(&self, size_info: <T as OverlaySize>::Inputs) -> DstIterator<T> {
+    pub fn iter(&self, size_info: <T as OverlaySize>::Inputs) -> DstIterator<'_, T> {
         DstIterator::new(&self.data, T::size(size_info))
     }
 
     /// Create a mutable iterator that emits `&mut T`s contained in the DST
-    pub fn iter_mut(&mut self, size_info: <T as OverlaySize>::Inputs) -> DstIteratorMut<T> {
+    pub fn iter_mut(&mut self, size_info: <T as OverlaySize>::Inputs) -> DstIteratorMut<'_, T> {
         DstIteratorMut::new(&mut self.data, T::size(size_info))
     }
 }
@@ -217,7 +217,7 @@ where
     <T as InnermostType>::Ty: Pod + PartialEq,
 {
     /// A parallel iterator over the elements in the array.
-    pub fn par_iter(&self, size_info: <T as OverlaySize>::Inputs) -> ParallelDstIterator<T> {
+    pub fn par_iter(&self, size_info: <T as OverlaySize>::Inputs) -> ParallelDstIterator<'_, T> {
         ParallelDstIterator::new(&self.data, T::size(size_info))
     }
 
@@ -225,7 +225,7 @@ where
     pub fn par_iter_mut(
         &mut self,
         size_info: <T as OverlaySize>::Inputs,
-    ) -> ParallelDstIteratorMut<T> {
+    ) -> ParallelDstIteratorMut<'_, T> {
         ParallelDstIteratorMut::new(&mut self.data, T::size(size_info))
     }
 }
