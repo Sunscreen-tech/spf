@@ -1,10 +1,10 @@
-use num::{Complex, Float};
+use num::Complex;
 
 mod basics;
 mod entities;
 mod fft;
 mod homomorphisms;
-// mod memory;
+mod memory;
 // mod negacyclic;
 mod polynomial;
 // mod signed_decomposition;
