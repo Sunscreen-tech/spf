@@ -145,15 +145,16 @@ extern "C" __global__ void can_mad_polynomials(
 
     polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, degree);
 
+    // Set the modulo-reduced result
     c_i_fft->ifft(c_i, degree);
     PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
 
     auto s_in = get_fft_scratch<Complex<double>>();
     BLOCK_COPY(s_in, c_i_fft->coeffs(), n_div_2.val);
 
+    // Compute the non modulo-reduced result so we can check it as well in our test.
     auto s_out = twisted_ifft_noreorder(s_in, degree.val);
 
     auto result_i = result->nth(blockIdx.x, degree);
-
     BLOCK_COPY(result_i->coeffs(), s_out, degree.val);
 }
