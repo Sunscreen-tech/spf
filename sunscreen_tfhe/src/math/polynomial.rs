@@ -3,7 +3,7 @@ use std::{
     ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
 
-use num::{Complex, traits::MulAdd};
+use num::traits::MulAdd;
 
 use crate::{
     ToF64, Torus, TorusOps,
