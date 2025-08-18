@@ -66,8 +66,13 @@ fn can_mod_2_pow_64() {
     }
 }
 
+// This test computes the ULPs error between the CPU and GPU in computing c += a * b over
+// Complex values. For example:
+//
+// `CPU mean ULPs: 0.8287291526794434, GPU mean ULPs 0.5459342002868652`
+#[ignore]
 #[test]
-fn can_complex_mad() {
+fn analyze_complex_mad() {
     let runtimes = get_runtimes();
     for r in runtimes.iter() {
         let degree = PolynomialDegree(2048 * 1024);
@@ -173,6 +178,6 @@ fn can_complex_mad() {
             mean_ulps_gpu / (2.0 * degree.0 as f64)
         );
 
-        panic!()
+        panic!("Analysis complete. Failing test so results get printed.");
     }
 }
