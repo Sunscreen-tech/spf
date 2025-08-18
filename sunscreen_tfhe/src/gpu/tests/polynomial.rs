@@ -1,3 +1,6 @@
+use std::num::Wrapping;
+
+use approx::Relative;
 use num::{Complex, Zero};
 use rand::{Rng, rng};
 use sunscreen_gpu_runtime::launch_kernel;
@@ -428,6 +431,109 @@ fn can_mad_polynomials() {
                     approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-5);
                 }
             }
+        }
+    }
+}
+
+#[ignore]
+#[test]
+fn analyze_polynomial_mad() {
+    let runtimes = get_runtimes();
+    let num_blocks = 1024;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let result = DstArray::<Polynomial<f64>>::new(num_blocks, d);
+
+            let mut c = DstArray::<Polynomial<u64>>::new(num_blocks, d);
+            let mut a = c.clone();
+            let mut b = c.clone();
+
+            // Do something representative of a base decomposition.
+            // a and c are random over the full u64, while b is over 16-bit integers
+            // random_poly_mod_2_pow_64(&mut c, &d);
+            // Our input is 2^18 to account for us summing like 4 polynomials in a
+            // CMUX.
+            random_poly_mod(&mut c, &d, 0x1 << 18);
+            random_poly_mod_2_pow_64(&mut a, &d);
+            random_poly_mod(&mut b, &d, 0x1 << 16);
+
+            let c_orig = c.clone();
+
+            let stream = r.make_stream(0.into()).unwrap();
+            let threads_per_block = d.threads_per_block();
+            let num_threads = num_blocks as u32 * threads_per_block;
+            let grid = (num_threads, threads_per_block);
+
+            let scratch = Scratch::new(r, grid).unwrap();
+
+            unsafe {
+                launch_kernel!(
+                    (grid)
+                    ("can_mad_polynomials")
+                    (r, stream)
+                    result,
+                    c,
+                    a,
+                    b,
+                    scratch,
+                    d.0 as u32
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            let mut relative_err_cpu = vec![0.0; d.0];
+            let mut relative_err_gpu = vec![0.0; d.0];
+
+            for i in 0..num_blocks {
+                // Get the expected result doing the same negacyclic FFT convolution on the CPU.
+                let c_orig = c_orig.iter(d).nth(i).unwrap();
+                let a = a.iter(d).nth(i).unwrap();
+                let b = b.iter(d).nth(i).unwrap();
+
+                let mut c_fft = high_level::fft::fft_polynomial(&c_orig, &d);
+                let a_fft = high_level::fft::fft_polynomial(&a, &d);
+                let b_fft = high_level::fft::fft_polynomial(&b, &d);
+
+                let gpu = c.iter(d).nth(i).unwrap();
+
+                c_fft.multiply_add(&a_fft, &b_fft);
+
+                let mut cpu_fft = Polynomial::<u64>::zero(d.0);
+                c_fft.ifft(&mut cpu_fft);
+
+                // Compute the true value using naive multiplication
+                let mut cpu_exact = c_orig.map(|x| Wrapping(*x));
+                let a = a.map(|x| Wrapping(*x));
+                let b = b.map(|x| Wrapping(*x));
+                polynomial_mad(&mut cpu_exact, &a, &b);
+
+                for (i, ((cpu_fft, gpu_fft), cpu_exact)) in gpu
+                    .coeffs()
+                    .iter()
+                    .zip(cpu_fft.coeffs().iter())
+                    .zip(cpu_exact.coeffs())
+                    .enumerate()
+                {
+                    relative_err_cpu[i] +=
+                        (*cpu_fft as f64 - (cpu_exact.0 as f64)).abs() / 2.0f64.powf(64.0);
+                    relative_err_gpu[i] +=
+                        (*gpu_fft as f64 - (cpu_exact.0 as f64)).abs() / 2.0f64.powf(64.0);
+                }
+            }
+
+            // Print the mean error relative to exactly computed Torus elements.
+            for i in 0..d.0 {
+                println!(
+                    "Coefficient {i}: CPU: {:e} GPU: {:e}",
+                    relative_err_cpu[i] / num_blocks as f64,
+                    relative_err_gpu[i] / num_blocks as f64
+                );
+            }
+
+            panic!("Analysis complete.");
         }
     }
 }
