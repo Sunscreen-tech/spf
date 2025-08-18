@@ -150,26 +150,6 @@ fn analyze_complex_mad() {
 
             mean_ulps_gpu += ulps_difference(actual[i].im, expected.im) as f64;
             mean_ulps_cpu += ulps_difference(cpu.im, expected.im) as f64;
-
-            // assert!(
-            //     ulps_difference(actual[i].re, expected.re) < 5,
-            //     "ulps: {}, a 0b{:64b}, e 0b{:64b}, baseline ulps: {}",
-            //     ulps_difference(actual[i].re, expected.re),
-            //     actual[i].re.to_bits(),
-            //     expected.re.to_bits(),
-            //     ulps_difference(cpu.re, expected.re)
-            // );
-            // assert!(
-            //     ulps_difference(actual[i].im, expected.im) < 5,
-            //     "ulps: {}, a 0b{:64b}, e 0b{:64b}, baseline ulps: {}",
-            //     ulps_difference(actual[i].im, expected.im),
-            //     actual[i].im.to_bits(),
-            //     expected.im.to_bits(),
-            //     ulps_difference(cpu.im, expected.im)
-            // );
-
-            // approx::assert_relative_eq!(actual[i].re, expected.re, max_relative = 1e-10);
-            // approx::assert_relative_eq!(actual[i].im, expected.im, max_relative = 1e-10);
         }
 
         println!(
