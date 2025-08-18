@@ -3,17 +3,11 @@ use sunscreen_gpu_runtime::launch_kernel;
 use crate::{
     GLWE_1_2048_128, GlweDef, PlaintextBits,
     dst::AsSlice,
-    entities::{
-        DstArray,
-        GlweCiphertext, GlweCiphertextRef, GlweSecretKey,
-        Polynomial,
-    },
+    entities::{DstArray, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, Polynomial},
     gpu::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
-        tests::test_utils::{
-            glwe_encrypt, random_msg, random_poly_mod,
-        },
+        tests::test_utils::{glwe_encrypt, random_msg, random_poly_mod},
     },
     high_level,
     ops::{

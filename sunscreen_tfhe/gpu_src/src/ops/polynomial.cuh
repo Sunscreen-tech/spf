@@ -39,6 +39,6 @@ __device__ inline void polynomial_mad(
     // FFT'd polynomials are half length.
     BLOCK_FOR_EACH(i, params.val / 2)
     {
-        c->coeffs()[i] += a->coeffs()[i] * b->coeffs()[i];
+        c->coeffs()[i].mad_inplace(a->coeffs()[i], b->coeffs()[i]);
     }
 }

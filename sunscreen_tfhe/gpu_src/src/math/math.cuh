@@ -122,8 +122,8 @@ public:
 
     __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
     {
-        return Complex(__fma_rn(this->val.x, rhs.val.x, -this->val.y * rhs.val.y),
-                       __fma_rn(this->val.x, rhs.val.y, this->val.y * rhs.val.x));
+        return Complex(this->re() * rhs.re() - this->im() * rhs.im(),
+                       this->re() * rhs.im() + this->im() * rhs.re());
     }
 
     __device__ inline Complex<T> operator*(const T &rhs) const
@@ -164,6 +164,14 @@ public:
         return this->val;
     }
 
+    /// @brief computes this += a * b;
+    /// @return 
+    __device__ inline void mad_inplace(const Complex<T> &a, const Complex<T> &b) {
+        this->re() = fma(a.re(), b.re(), this->re());
+        this->im() = fma(a.re(), b.im(), this->im());
+        this->re() = fma(-a.im(), b.im(), this->re());
+        this->im() = fma(a.im(), b.re(), this->im());
+    }
 private:
     VecT val;
 };
@@ -222,6 +230,14 @@ public:
         return this->val.y;
     }
 
+    /// @brief computes this += a * b;
+    /// @return 
+    __device__ inline void mad_inplace(const Complex<T> &a, const Complex<T> &b) {
+        this->re() = fma(a.re(), b.re(), this->re());
+        this->im() = fma(a.re(), b.im(), this->im());
+        this->re() = fma(-a.im(), b.im(), this->re());
+        this->im() = fma(a.im(), b.re(), this->im());
+    }
 private:
     VecT val;
 };

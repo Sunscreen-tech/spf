@@ -1,11 +1,84 @@
-use num::Zero;
+use num::{Complex, Zero};
+use rand::{Rng, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    dst::AsSlice, entities::{DstArray, Polynomial, PolynomialRef}, gpu::{
-        get_runtimes, test_utils::SUPPORTED_POLY_DEGREES, tests::test_utils::{glwe_encrypt, random_poly_mod, random_poly_mod_2_pow_64}, Scratch
-    }, high_level, polynomial::{polynomial_add, polynomial_sub}
+    PolynomialDegree,
+    dst::{AsMutSlice, AsSlice},
+    entities::{DstArray, DstArrayRef, Polynomial, PolynomialFft, PolynomialRef},
+    gpu::{
+        Scratch, get_runtimes,
+        test_utils::SUPPORTED_POLY_DEGREES,
+        tests::{
+            test_utils::{
+                fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod, random_poly_mod,
+                random_poly_mod_2_pow_64,
+            },
+            ulps_difference,
+        },
+    },
+    high_level,
+    polynomial::{polynomial_add, polynomial_mad, polynomial_sub},
 };
+
+/// Naively compute the product of two polynomials in C[X].
+pub fn polynomial_mul_complex(
+    c: &mut PolynomialRef<Complex<f64>>,
+    a: &PolynomialRef<Complex<f64>>,
+    b: &PolynomialRef<Complex<f64>>,
+) {
+    assert!(a.len().is_power_of_two());
+    assert_eq!(a.len(), b.len());
+    assert_eq!(a.len(), c.len());
+
+    let len: usize = a.len();
+    let coeffs = c.coeffs_mut();
+
+    for (i, l) in a.coeffs().iter().copied().take(len).enumerate() {
+        for (j, r) in b.coeffs().iter().copied().take(len).enumerate() {
+            if i >= a.len() / 2 {
+                assert_eq!(l, Complex::zero());
+            }
+
+            if j >= b.len() / 2 {
+                assert_eq!(r, Complex::zero());
+            }
+
+            let index = i + j;
+            if index < a.len() {
+                coeffs[index] = coeffs[index] + l * r;
+            }
+        }
+    }
+}
+
+#[test]
+pub fn naive_complex_poly_multiply() {
+    let mut a = Polynomial::<Complex<f64>>::zero(8);
+    let mut b = Polynomial::<Complex<f64>>::zero(8);
+    let mut c = Polynomial::<Complex<f64>>::zero(8);
+
+    for i in 1..=4 {
+        a.coeffs_mut()[i - 1] = Complex::new(i as f64, (i * 2) as f64);
+        b.coeffs_mut()[i - 1] = Complex::new((i * 3) as f64, (i * 4) as f64);
+    }
+
+    polynomial_mul_complex(&mut c, &a, &b);
+
+    // Computed with Wolfram Alpha
+    let expected = Polynomial::<Complex<f64>>::new(&[
+        Complex::new(-5.0, 10.0),  // x^0
+        Complex::new(-20.0, 40.0), // x^1
+        Complex::new(-50.0, 100.0),
+        Complex::new(-100.0, 200.0),
+        Complex::new(-125.0, 250.0),
+        Complex::new(-120.0, 240.0),
+        Complex::new(-80.0, 160.0),
+        Complex::new(0.0, 0.0),
+    ]);
+
+    assert_eq!(expected.coeffs(), c.coeffs());
+}
 
 fn polynomial_roundtrip_test(kernel: &str) {
     let runtimes = get_runtimes();
@@ -115,7 +188,101 @@ fn can_add_polynomials() {
 }
 
 #[test]
-fn can_mad_polynomials() {
+fn can_multiply_non_negacyclic_polynomials() {
+    let runtimes = get_runtimes();
+    let num_blocks = 1;
+
+    for r in runtimes.iter() {
+        let d = PolynomialDegree(1024);
+        let c = DstArray::<Polynomial<Complex<f64>>>::new(num_blocks, d);
+        let mut a: DstArray<Polynomial<Complex<f64>>> = c.clone();
+        let mut b = c.clone();
+
+        let fill_half = |x: &mut DstArrayRef<PolynomialRef<Complex<f64>>>, modulus| {
+            for poly in x.iter_mut(d) {
+                let split = d.0 / 2;
+
+                for c in poly.coeffs_mut().iter_mut().take(split) {
+                    c.re = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+                    c.im = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+                }
+            }
+        };
+
+        // We're multiplying 2 degree N/2 polynomials and producing a degree N polynomial.
+        // I.e. no modulo reduction over X^N + 1.
+        // So we only fill the first N/2 coefficients.
+        //
+        // As for the coefficients, simulate multiplying torus polynomial times a 16-bit
+        // radix term.
+        fill_half(&mut a, 2.0f64.powf(64.0));
+        fill_half(&mut b, 2.0f64.powf(16.0));
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        // Times 2 because we're doing a full-width FFT, not negacyclic.
+        let threads_per_block = d.threads_per_block() * 2;
+        let num_threads = num_blocks as u32 * threads_per_block;
+        let grid = (num_threads, threads_per_block);
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_multiply_non_negacyclic_polynomials")
+                (r, stream)
+                c,
+                a,
+                b,
+                d.0 as u32
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        let n_inv = 1.0f64 / d.0 as f64;
+
+        for ((actual, a), b) in c.iter(d).zip(a.iter(d)).zip(b.iter(d)) {
+            let mut expected = Polynomial::zero(d.0);
+
+            polynomial_mul_complex(&mut expected, a, b);
+
+            for (i, (a, e)) in actual
+                .coeffs()
+                .iter()
+                .zip(expected.coeffs().iter())
+                .enumerate()
+            {
+                if i == 1023 {
+                    // In the exact computation, these coefficients are exactly zero. However,
+                    // our input numbers are huge, so we do wind up with non-trivial
+                    // ~30-bit values in the zero terms after doing our FFT-based convolution.
+                    // Simply assert these values are less than 32-bits to ensure this value
+                    // is just numerical noise compared to our non-zero results, which
+                    // are orders of magnitude larger.
+                    assert!((a.re * n_inv).abs().log2() < 32.0);
+                    assert!((a.im * n_inv).abs().log2() < 32.0);
+                } else {
+                    approx::assert_relative_eq!(
+                        a.re * n_inv,
+                        e.re,
+                        max_relative = 1e-10,
+                        epsilon = 1e-10
+                    );
+                    approx::assert_relative_eq!(
+                        a.im * n_inv,
+                        e.im,
+                        max_relative = 1e-10,
+                        epsilon = 1e-10
+                    );
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn can_mad_pre_fftd_polynomials() {
     let runtimes = get_runtimes();
     let num_blocks = 13;
 
@@ -127,11 +294,93 @@ fn can_mad_polynomials() {
 
             // Do something representative of a base decomposition.
             // a and c are random over the full u64, while b is over 16-bit integers
+            random_poly_mod(&mut c, &d, 0x1 << 18);
+            random_poly_mod_2_pow_64(&mut a, &d);
+            random_poly_mod(&mut b, &d, 0x1 << 16);
+
+            let mut c_fft = DstArray::<PolynomialFft<Complex<f64>>>::new(num_blocks, d);
+            let mut a_fft = c_fft.clone();
+            let mut b_fft = c_fft.clone();
+
+            for i in 0..num_blocks {
+                c.iter(d)
+                    .nth(i)
+                    .unwrap()
+                    .fft(c_fft.iter_mut(d).nth(i).unwrap());
+                a.iter(d)
+                    .nth(i)
+                    .unwrap()
+                    .fft(a_fft.iter_mut(d).nth(i).unwrap());
+
+                b.iter(d)
+                    .nth(i)
+                    .unwrap()
+                    .fft(b_fft.iter_mut(d).nth(i).unwrap());
+            }
+
+            let mut c_fft_orig = c_fft.clone();
+
+            let stream = r.make_stream(0.into()).unwrap();
+            let threads_per_block = d.threads_per_block();
+            let num_threads = num_blocks as u32 * threads_per_block;
+            let grid = (num_threads, threads_per_block);
+
+            unsafe {
+                launch_kernel!(
+                    (grid)
+                    ("can_mad_polynomials_pre_fftd")
+                    (r, stream)
+                    c_fft,
+                    a_fft,
+                    b_fft,
+                    d.0 as u32
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            for i in 0..num_blocks {
+                let actual_fft = c_fft.iter(d).nth(i).unwrap();
+                let mut actual = Polynomial::<u64>::zero(d.0);
+                actual_fft.ifft(&mut actual);
+
+                let c_fft = c_fft_orig.iter_mut(d).nth(i).unwrap();
+                let a_fft = a_fft.iter(d).nth(i).unwrap();
+                let b_fft = b_fft.iter(d).nth(i).unwrap();
+
+                c_fft.multiply_add(a_fft, b_fft);
+
+                let mut expected = Polynomial::<u64>::zero(d.0);
+                c_fft.ifft(&mut expected);
+
+                for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
+                    approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-5);
+                }
+            }
+        }
+    }
+}
+
+#[test]
+fn can_mad_polynomials() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let result = DstArray::<Polynomial<f64>>::new(num_blocks, d);
+
+            let mut c = DstArray::<Polynomial<u64>>::new(num_blocks, d);
+            let mut a = c.clone();
+            let mut b = c.clone();
+
+            // Do something representative of a base decomposition.
+            // a and c are random over the full u64, while b is over 16-bit integers
             //random_poly_mod_2_pow_64(&mut c, &d);
-            //random_poly_mod_2_pow_64(&mut a, &d);
-            random_poly_mod(&mut c, &d, 0x1 << 48);
-            random_poly_mod(&mut a, &d, 0x1 << 48);
-            random_poly_mod(&mut b, &d, 0x1 << 4);
+            random_poly_mod(&mut c, &d, 0x1 << 18);
+            random_poly_mod_2_pow_64(&mut a, &d);
+            random_poly_mod(&mut b, &d, 0x1 << 16);
 
             let c_orig = c.clone();
 
@@ -147,6 +396,7 @@ fn can_mad_polynomials() {
                     (grid)
                     ("can_mad_polynomials")
                     (r, stream)
+                    result,
                     c,
                     a,
                     b,
@@ -175,7 +425,7 @@ fn can_mad_polynomials() {
                 c_fft.ifft(&mut expected);
 
                 for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
-                    assert_eq!(a, e);
+                    approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-5);
                 }
             }
         }

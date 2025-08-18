@@ -3,7 +3,13 @@ use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    entities::{DstArray, Polynomial}, gpu::{get_runtimes, tests::test_utils::fill_complex_rand_mod}, simd::VectorOps, PolynomialDegree
+    PolynomialDegree,
+    entities::{DstArray, Polynomial},
+    gpu::{
+        get_runtimes,
+        tests::{test_utils::fill_complex_rand_mod, ulps_difference},
+    },
+    simd::VectorOps,
 };
 
 #[test]
@@ -64,15 +70,24 @@ fn can_mod_2_pow_64() {
 fn can_complex_mad() {
     let runtimes = get_runtimes();
     for r in runtimes.iter() {
-        let degree = PolynomialDegree(2048 * 128);
+        let degree = PolynomialDegree(2048 * 1024);
 
         let mut c = DstArray::<Polynomial<Complex<f64>>>::new(1, degree);
         let mut a = DstArray::<Polynomial<Complex<f64>>>::new(1, degree);
         let mut b = DstArray::<Polynomial<Complex<f64>>>::new(1, degree);
 
-        fill_complex_rand_mod(c.iter_mut(degree).nth(0).unwrap().coeffs_mut(), 2.0f64.powf(64.0f64));
-        fill_complex_rand_mod(a.iter_mut(degree).nth(0).unwrap().coeffs_mut(), 2.0f64.powf(64.0f64));
-        fill_complex_rand_mod(b.iter_mut(degree).nth(0).unwrap().coeffs_mut(), 2.0f64.powf(16.0f64));
+        fill_complex_rand_mod(
+            c.iter_mut(degree).nth(0).unwrap().coeffs_mut(),
+            2.0f64.powf(64.0f64),
+        );
+        fill_complex_rand_mod(
+            a.iter_mut(degree).nth(0).unwrap().coeffs_mut(),
+            2.0f64.powf(64.0f64),
+        );
+        fill_complex_rand_mod(
+            b.iter_mut(degree).nth(0).unwrap().coeffs_mut(),
+            2.0f64.powf(16.0f64),
+        );
 
         let c_orig = c.clone();
 
@@ -103,10 +118,61 @@ fn can_complex_mad() {
             b.iter(degree).nth(0).unwrap().coeffs(),
         );
 
+        let mut mean_ulps_cpu = 0.0;
+        let mut mean_ulps_gpu = 0.0;
+
         for i in 0..n as usize {
-            let expected = c_orig[i] + a[i] * b[i];
-            approx::assert_relative_eq!(actual[i].re, expected.re, max_relative = 1e-10);
-            approx::assert_relative_eq!(actual[i].im, expected.im, max_relative = 1e-10);
+            let cpu = c_orig[i] + a[i] * b[i];
+
+            fn compute_true_value(
+                c: Complex<f64>,
+                a: Complex<f64>,
+                b: Complex<f64>,
+            ) -> Complex<f64> {
+                let a = rug::Complex::with_val(512, (a.re, a.im));
+                let b = rug::Complex::with_val(512, (b.re, b.im));
+                let c = rug::Complex::with_val(512, (c.re, c.im));
+
+                let res = a * b + c;
+
+                Complex::new(res.real().to_f64(), res.imag().to_f64())
+            }
+
+            let expected = compute_true_value(c_orig[i], a[i], b[i]);
+
+            mean_ulps_gpu += ulps_difference(actual[i].re, expected.re) as f64;
+            mean_ulps_cpu += ulps_difference(cpu.re, expected.re) as f64;
+
+            mean_ulps_gpu += ulps_difference(actual[i].im, expected.im) as f64;
+            mean_ulps_cpu += ulps_difference(cpu.im, expected.im) as f64;
+
+            // assert!(
+            //     ulps_difference(actual[i].re, expected.re) < 5,
+            //     "ulps: {}, a 0b{:64b}, e 0b{:64b}, baseline ulps: {}",
+            //     ulps_difference(actual[i].re, expected.re),
+            //     actual[i].re.to_bits(),
+            //     expected.re.to_bits(),
+            //     ulps_difference(cpu.re, expected.re)
+            // );
+            // assert!(
+            //     ulps_difference(actual[i].im, expected.im) < 5,
+            //     "ulps: {}, a 0b{:64b}, e 0b{:64b}, baseline ulps: {}",
+            //     ulps_difference(actual[i].im, expected.im),
+            //     actual[i].im.to_bits(),
+            //     expected.im.to_bits(),
+            //     ulps_difference(cpu.im, expected.im)
+            // );
+
+            // approx::assert_relative_eq!(actual[i].re, expected.re, max_relative = 1e-10);
+            // approx::assert_relative_eq!(actual[i].im, expected.im, max_relative = 1e-10);
         }
+
+        println!(
+            "CPU mean ULPs: {}, GPU mean ULPs {}",
+            mean_ulps_cpu / (2.0 * degree.0 as f64),
+            mean_ulps_gpu / (2.0 * degree.0 as f64)
+        );
+
+        panic!()
     }
 }

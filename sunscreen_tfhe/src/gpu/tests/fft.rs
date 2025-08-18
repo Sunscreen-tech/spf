@@ -3,7 +3,6 @@ use std::f64::consts::PI;
 use num::{Complex, Float};
 use sunscreen_gpu_runtime::launch_kernel;
 
-
 use crate::{
     PolynomialDegree,
     entities::{DstArray, Polynomial},

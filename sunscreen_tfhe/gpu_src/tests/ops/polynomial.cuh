@@ -3,13 +3,14 @@
 #include "../../src/entities/polynomial.cuh"
 #include "../../src/entities/scratch.cuh"
 #include "../../src/ops/polynomial.cuh"
+#include "../../src/params.cuh"
 
 extern "C" __global__ void can_polynomial_rountrip_fft(
     const DstArray<Polynomial<uint64_t>> *__restrict__ x,
     DstArray<Polynomial<uint64_t>> *__restrict__ y,
     uint8_t *scratch_buf,
-    const uint32_t n
-) {
+    const uint32_t n)
+{
     auto degree = PolynomialDegree(n);
     auto allocator = PerBlockStackAllocator(scratch_buf, get_scratch_size());
     auto tmp = allocator.alloc<PolynomialFft<Complex<double>>>(degree);
@@ -24,8 +25,8 @@ extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
     const DstArray<Polynomial<uint64_t>> *__restrict__ x,
     DstArray<Polynomial<uint64_t>> *__restrict__ y,
     uint8_t *scratch_buf, // Unused, but want to match interface of can_polynomial_rountrip_fft
-    const uint32_t n
-) {
+    const uint32_t n)
+{
     auto degree = PolynomialDegree(n);
     auto x_i = x->nth(blockIdx.x, degree);
     auto y_i = y->nth(blockIdx.x, degree);
@@ -44,8 +45,8 @@ extern "C" __global__ void can_sub_polynomials(
     DstArray<Polynomial<uint64_t>> *c,
     const DstArray<Polynomial<uint64_t>> *a,
     const DstArray<Polynomial<uint64_t>> *b,
-    uint32_t d
-) {
+    uint32_t d)
+{
     auto degree = PolynomialDegree(d);
 
     auto c_i = c->nth(blockIdx.x, degree);
@@ -59,8 +60,8 @@ extern "C" __global__ void can_add_polynomials(
     DstArray<Polynomial<uint64_t>> *c,
     const DstArray<Polynomial<uint64_t>> *a,
     const DstArray<Polynomial<uint64_t>> *b,
-    uint32_t d
-) {
+    uint32_t d)
+{
     auto degree = PolynomialDegree(d);
 
     auto c_i = c->nth(blockIdx.x, degree);
@@ -70,13 +71,63 @@ extern "C" __global__ void can_add_polynomials(
     polynomial_add(c_i, a_i, b_i, degree);
 }
 
+extern "C" __global__ void can_mad_polynomials_pre_fftd(
+    DstArray<PolynomialFft<Complex<double>>> *__restrict__ c_fft,
+    const DstArray<PolynomialFft<Complex<double>>> *__restrict__ a_fft,
+    const DstArray<PolynomialFft<Complex<double>>> *__restrict__ b_fft,
+    uint32_t d)
+{
+    auto degree = PolynomialDegree(d);
+
+    auto c_i_fft = c_fft->nth(blockIdx.x, degree);
+    auto a_i_fft = a_fft->nth(blockIdx.x, degree);
+    auto b_i_fft = b_fft->nth(blockIdx.x, degree);
+
+    polynomial_mad(c_i_fft, a_i_fft, b_i_fft, degree);
+}
+
+extern "C" __global__ void can_multiply_non_negacyclic_polynomials(
+    DstArray<Polynomial<Complex<double>>> *__restrict__ c,
+    const DstArray<Polynomial<Complex<double>>> *__restrict__ a,
+    const DstArray<Polynomial<Complex<double>>> *__restrict__ b,
+    const uint32_t d)
+{
+    auto degree = PolynomialDegree(d);
+
+    __shared__ Complex<double> a_s[1024];
+    __shared__ Complex<double> b_s[1024];
+    __shared__ Complex<double> c_s[1024];
+
+    auto a_i = a->nth(blockIdx.x, degree);
+    auto b_i = b->nth(blockIdx.x, degree);
+    auto c_i = c->nth(blockIdx.x, degree);
+
+    BLOCK_COPY(a_s, a_i->coeffs(), d);
+    BLOCK_COPY(b_s, b_i->coeffs(), d);
+
+    fft_noreorder(a_s, d);
+    fft_noreorder(b_s, d);
+
+    BLOCK_FOR_EACH(i, d)
+    {
+        c_s[i] = a_s[i] * b_s[i];
+    }
+
+    __syncthreads();
+
+    ifft_noreorder(c_s, d);
+
+    BLOCK_COPY(c_i->coeffs(), c_s, d);
+}
+
 extern "C" __global__ void can_mad_polynomials(
-    DstArray<Polynomial<uint64_t>> *c,
-    const DstArray<Polynomial<uint64_t>> *a,
-    const DstArray<Polynomial<uint64_t>> *b,
-    uint8_t* scratch_buf,
-    uint32_t d
-) {
+    DstArray<Polynomial<double>> *__restrict__ result,
+    DstArray<Polynomial<uint64_t>> *__restrict__ c,
+    const DstArray<Polynomial<uint64_t>> *__restrict__ a,
+    const DstArray<Polynomial<uint64_t>> *__restrict__ b,
+    uint8_t *scratch_buf,
+    uint32_t d)
+{
     auto degree = PolynomialDegree(d);
     auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());
 
@@ -95,4 +146,14 @@ extern "C" __global__ void can_mad_polynomials(
     polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, degree);
 
     c_i_fft->ifft(c_i, degree);
+    PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
+
+    auto s_in = get_fft_scratch<Complex<double>>();
+    BLOCK_COPY(s_in, c_i_fft->coeffs(), n_div_2.val);
+
+    auto s_out = twisted_ifft_noreorder(s_in, degree.val);
+
+    auto result_i = result->nth(blockIdx.x, degree);
+
+    BLOCK_COPY(result_i->coeffs(), s_out, degree.val);
 }
