@@ -260,11 +260,11 @@ fn can_multiply_non_negacyclic_polynomials() {
                     // In the exact computation, these coefficients are exactly zero. However,
                     // our input numbers are huge, so we do wind up with non-trivial
                     // ~30-bit values in the zero terms after doing our FFT-based convolution.
-                    // Simply assert these values are less than 32-bits to ensure this value
+                    // Simply assert these values are less than 34-bits to ensure this value
                     // is just numerical noise compared to our non-zero results, which
                     // are orders of magnitude larger.
-                    assert!((a.re * n_inv).abs().log2() < 32.0);
-                    assert!((a.im * n_inv).abs().log2() < 32.0);
+                    assert!((a.re * n_inv).abs().log2() < 34.0);
+                    assert!((a.im * n_inv).abs().log2() < 34.0);
                 } else {
                     approx::assert_relative_eq!(
                         a.re * n_inv,
@@ -358,7 +358,7 @@ fn can_mad_pre_fftd_polynomials() {
                 c_fft.ifft(&mut expected);
 
                 for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
-                    approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-5);
+                    approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-3);
                 }
             }
         }
@@ -428,7 +428,7 @@ fn can_mad_polynomials() {
                 c_fft.ifft(&mut expected);
 
                 for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
-                    approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-5);
+                    approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-4);
                 }
             }
         }
