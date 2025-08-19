@@ -1,11 +1,11 @@
 use rand::{RngCore, rng};
-use sunscreen_gpu_runtime::launch_kernel;
+use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
 
 use crate::{
     RadixCount, RadixDecomposition, RadixLog, Torus,
     dst::{AsSlice, FromSlice},
     entities::{Polynomial, PolynomialRef},
-    gpu::{get_runtimes, test_utils::{SUPPORTED_POLY_DEGREES}},
+    gpu::{get_runtimes, test_utils::SUPPORTED_POLY_DEGREES},
     radix::PolynomialRadixIterator,
 };
 
@@ -16,14 +16,14 @@ fn can_signed_decompose_polynomial() {
     for r in runtimes.iter() {
         for d in SUPPORTED_POLY_DEGREES.iter().copied() {
             let num_blocks = 13;
-            let len = (num_blocks * *d) as usize;
+            let len = num_blocks * d.0;
 
-            let mut poly = r.allocate::<Torus<u64>>(len).unwrap();
-            let scratch = r.allocate::<Torus<u64>>(len).unwrap();
-            let o1 = r.allocate::<u64>(len).unwrap();
-            let o2 = r.allocate::<u64>(len).unwrap();
-            let o3 = r.allocate::<u64>(len).unwrap();
-            let o4 = r.allocate::<u64>(len).unwrap();
+            let mut poly = GpuRuntime::allocate::<Torus<u64>>(r, len).unwrap();
+            let scratch = GpuRuntime::allocate::<Torus<u64>>(r, len).unwrap();
+            let o1 = GpuRuntime::allocate::<u64>(r, len).unwrap();
+            let o2 = GpuRuntime::allocate::<u64>(r, len).unwrap();
+            let o3 = GpuRuntime::allocate::<u64>(r, len).unwrap();
+            let o4 = GpuRuntime::allocate::<u64>(r, len).unwrap();
 
             let radix = RadixDecomposition {
                 count: RadixCount(4),
@@ -37,7 +37,7 @@ fn can_signed_decompose_polynomial() {
             let stream = r.make_stream(0.into()).unwrap();
 
             let threads_per_block = d.threads_per_block();
-            let num_threads = num_blocks * threads_per_block;
+            let num_threads = num_blocks as u32 * threads_per_block;
             unsafe {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
@@ -57,11 +57,11 @@ fn can_signed_decompose_polynomial() {
 
             for ((((poly, o1), o2), o3), o4) in poly
                 .as_slice()
-                .chunks(*d as usize)
-                .zip(o1.as_slice().chunks(*d as usize))
-                .zip(o2.as_slice().chunks(*d as usize))
-                .zip(o3.as_slice().chunks(*d as usize))
-                .zip(o4.as_slice().chunks(*d as usize))
+                .chunks(d.0)
+                .zip(o1.as_slice().chunks(d.0))
+                .zip(o2.as_slice().chunks(d.0))
+                .zip(o3.as_slice().chunks(d.0))
+                .zip(o4.as_slice().chunks(d.0))
             {
                 let poly = PolynomialRef::from_slice(poly);
                 let o1 = PolynomialRef::from_slice(o1);
@@ -69,8 +69,8 @@ fn can_signed_decompose_polynomial() {
                 let o3 = PolynomialRef::from_slice(o3);
                 let o4 = PolynomialRef::from_slice(o4);
 
-                let mut scratch = Polynomial::zero(*d as usize);
-                let mut actual = Polynomial::zero(*d as usize);
+                let mut scratch = Polynomial::zero(d.0);
+                let mut actual = Polynomial::zero(d.0);
 
                 let mut baseline = PolynomialRadixIterator::new(poly, &mut scratch, &radix);
 
