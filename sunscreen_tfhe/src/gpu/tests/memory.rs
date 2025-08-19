@@ -1,5 +1,5 @@
 use rand::{RngCore, rng};
-use sunscreen_gpu_runtime::launch_kernel;
+use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
 
 use crate::gpu::{Scratch, get_runtimes};
 
@@ -13,8 +13,8 @@ fn can_copy_to_and_from_shared_memory() {
         // Must match what's in kernel.
         const N: usize = 2345;
 
-        let mut input = r.allocate::<u32>(num_blocks * N).unwrap();
-        let output = r.allocate::<u32>(num_blocks * N).unwrap();
+        let mut input = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
+        let output = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
 
         input
             .as_mut_slice()
@@ -52,9 +52,9 @@ fn can_use_scratch() {
         // Must match what's in kernel.
         const N: usize = 2345;
 
-        let mut a = r.allocate::<u32>(num_blocks * N).unwrap();
-        let mut b = r.allocate::<u32>(num_blocks * N).unwrap();
-        let output = r.allocate::<u32>(num_blocks * N).unwrap();
+        let mut a = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
+        let mut b = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
+        let output = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
 
         a.as_mut_slice()
             .iter_mut()

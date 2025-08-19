@@ -3,126 +3,22 @@ use core::f64;
 use num::{Complex, Zero};
 use num_complex::ComplexFloat;
 use rand::{RngCore, rng};
-use sunscreen_gpu_runtime::launch_kernel;
+use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
 
 use crate::{
-    FrequencyTransform,
+    FrequencyTransform, PolynomialDegree,
+    entities::{DstArray, Polynomial, PolynomialFft},
     fft::negacyclic,
     gpu::{
         get_runtimes,
-        test_utils::{SUPPORTED_POLY_DEGREES},
+        test_utils::SUPPORTED_POLY_DEGREES,
         tests::{get_inv_twisty, get_twisty},
     },
 };
 
-#[test]
-fn can_negacyclic_forward() {
-    let runtimes = get_runtimes();
-
-    for r in runtimes.iter() {
-        for n in [2048u32] {
-            let num_ffts = 9;
-            let num_points = num_ffts as usize * n as usize;
-
-            let baseline_fft = negacyclic::get_fft(n.ilog2() as usize);
-
-            let mut input = r.allocate::<f64>(num_points).unwrap();
-            input.copy_from_slice(&(0..num_points).map(|x| x as f64).collect::<Vec<_>>());
-
-            let output = r.allocate::<Complex<f64>>(num_points / 2).unwrap();
-
-            let stream = r.make_stream(0.into()).unwrap();
-
-            let threads_per_block = n / 8;
-            let num_threads = num_ffts as u32 * threads_per_block;
-
-            unsafe {
-                launch_kernel!(
-                    ((num_threads, threads_per_block))
-                    ("can_forward_twisted_fft_f64")
-                    (r, stream)
-                    input,
-                    output,
-                    n
-                )
-            }
-            .unwrap();
-
-            stream.wait().unwrap();
-
-            for (input, actual) in input
-                .as_slice()
-                .chunks(n as usize)
-                .zip(output.as_slice().chunks((n / 2) as usize))
-            {
-                let mut expected = vec![Complex::<f64>::zero(); n as usize];
-
-                baseline_fft.forward(input, &mut expected);
-
-                for (actual, expected) in actual.iter().zip(expected.iter()) {
-                    assert_complex_equalish(actual, expected, 1e-9);
-                }
-            }
-        }
-    }
-}
-
-#[test]
-fn can_negacyclic_inverse() {
-    let runtimes = get_runtimes();
-
-    for r in runtimes.iter() {
-        for n in [2048u32] {
-            let num_ffts = 1;
-            let num_points = num_ffts as usize * n as usize;
-
-            let baseline_fft = negacyclic::get_fft(n.ilog2() as usize);
-
-            let mut input = r.allocate::<Complex<f64>>(num_points / 2).unwrap();
-            input.copy_from_slice(
-                &(0..num_points / 2)
-                    .map(|x| Complex::new(x as f64, -(x as f64)))
-                    .collect::<Vec<_>>(),
-            );
-
-            let output = r.allocate::<f64>(num_points).unwrap();
-
-            let stream = r.make_stream(0.into()).unwrap();
-
-            let threads_per_block = n / 8;
-            let num_threads = num_ffts as u32 * threads_per_block;
-
-            unsafe {
-                launch_kernel!(
-                    ((num_threads, threads_per_block))
-                    ("can_inverse_twisted_fft_f64")
-                    (r, stream)
-                    input,
-                    output,
-                    n
-                )
-            }
-            .unwrap();
-
-            stream.wait().unwrap();
-
-            for (input, actual) in input
-                .as_slice()
-                .chunks((n / 2) as usize)
-                .zip(output.as_slice().chunks(n as usize))
-            {
-                let mut expected = vec![f64::zero(); n as usize];
-
-                baseline_fft.reverse(input, &mut expected);
-
-                for (actual, expected) in actual.iter().zip(expected.iter()) {
-                    // Integral values may be off by up to 1 due to rounding...
-                    assert!((actual - expected).abs() <= 1.0);
-                }
-            }
-        }
-    }
-}
+// We don't have any forward or reverse tests because we have different re-ordering semantics
+// between CPU and GPU. This functionality is covered by negacyclic polynomial multiplication
+// tests.
 
 #[test]
 fn can_apply_twist() {
@@ -132,18 +28,18 @@ fn can_apply_twist() {
         for n in SUPPORTED_POLY_DEGREES.iter().copied() {
             let num_blocks = 19;
 
-            let mut x = r.allocate::<f64>((num_blocks * *n) as usize).unwrap();
-            let result = r
-                .allocate::<Complex<f64>>((num_blocks * *n / 2) as usize)
-                .unwrap();
+            let mut x = DstArray::<Polynomial<f64>>::new(num_blocks, n);
+            let result = DstArray::<PolynomialFft<Complex<f64>>>::new(num_blocks, n);
 
-            x.as_mut_slice()
-                .iter_mut()
-                .for_each(|x| *x = rng().next_u64() as f64);
+            for x in x.iter_mut(n) {
+                for c in x.coeffs_mut().iter_mut() {
+                    *c = rng().next_u64() as f64;
+                }
+            }
 
             let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = n.threads_per_block();
-            let num_threads = num_blocks * threads_per_block;
+            let num_threads = num_blocks as u32 * threads_per_block;
 
             unsafe {
                 launch_kernel!(
@@ -152,28 +48,29 @@ fn can_apply_twist() {
                     (r, stream)
                     x,
                     result,
-                    *n
+                    n.0 as u32
                 )
             }
             .unwrap();
 
             stream.wait().unwrap();
 
-            let n_div_2 = *n as usize / 2;
+            let n_div_2 = n.0 as usize / 2;
 
-            let mut expected = vec![Complex::<f64>::zero(); n_div_2];
+            for (x, result) in x.iter(n).zip(result.iter(n)) {
+                let mut expected = vec![Complex::<f64>::zero(); n_div_2];
 
-            for i in 0..n_div_2 {
-                let x = x.as_slice();
-                let e = Complex::new(x[i], x[i + n_div_2]);
+                for i in 0..n_div_2 {
+                    let x = x.coeffs();
+                    let e = Complex::new(x[i], x[i + n_div_2]);
 
-                expected[i] = e * get_twisty(i as u32, *n);
-            }
+                    expected[i] = e * get_twisty(i as u32, n.0 as u32);
+                }
 
-            for (a, e) in result.as_slice().iter().zip(expected.iter()) {
-                dbg!((a, e));
-                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-10);
-                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-10);
+                for (e, a) in expected.iter().zip(result.coeffs().iter()) {
+                    approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-10);
+                    approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-10);
+                }
             }
         }
     }
@@ -187,18 +84,18 @@ fn can_remove_twist() {
         for n in SUPPORTED_POLY_DEGREES.iter().copied() {
             let num_blocks = 19;
 
-            let mut x = r
-                .allocate::<Complex<f64>>((num_blocks * *n / 2) as usize)
-                .unwrap();
-            let result = r.allocate::<f64>((num_blocks * *n) as usize).unwrap();
+            let mut x = DstArray::<PolynomialFft<Complex<f64>>>::new(num_blocks, n);
+            let result = DstArray::<Polynomial<f64>>::new(num_blocks, n);
 
-            x.as_mut_slice()
-                .iter_mut()
-                .for_each(|x| *x = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64));
+            for x in x.iter_mut(n) {
+                for c in x.coeffs_mut().iter_mut() {
+                    *c = Complex::new(rng().next_u64() as f64, rng().next_u64() as f64);
+                }
+            }
 
             let stream = r.make_stream(0.into()).unwrap();
             let threads_per_block = n.threads_per_block();
-            let num_threads = num_blocks * threads_per_block;
+            let num_threads = num_blocks as u32 * threads_per_block;
 
             unsafe {
                 launch_kernel!(
@@ -207,28 +104,29 @@ fn can_remove_twist() {
                     (r, stream)
                     x,
                     result,
-                    *n
+                    n.0 as u32
                 )
             }
             .unwrap();
 
             stream.wait().unwrap();
 
-            let n_div_2 = *n as usize / 2;
+            for (x, result) in x.iter(n).zip(result.iter(n)) {
+                let mut expected = vec![f64::zero(); n.0];
 
-            let mut expected = vec![f64::zero(); *n as usize];
+                let n_div_2 = n.0 / 2;
 
-            for i in 0..n_div_2 {
-                let x = x.as_slice();
-                let e = x[i] * get_inv_twisty(i as u32, *n) / n_div_2 as f64;
+                for i in 0..n_div_2 {
+                    let x = x.coeffs();
+                    let e = x[i] * get_inv_twisty(i as u32, n.0 as u32) / n_div_2 as f64;
 
-                expected[i] = e.re();
-                expected[i + n_div_2] = e.im();
-            }
+                    expected[i] = e.re();
+                    expected[i + n_div_2] = e.im();
+                }
 
-            for (a, e) in result.as_slice().iter().zip(expected.iter()) {
-                dbg!((a, e));
-                approx::assert_relative_eq!(a, e, max_relative = 1e-10);
+                for (e, a) in expected.iter().zip(result.coeffs().iter()) {
+                    approx::assert_relative_eq!(a, e, max_relative = 1e-10);
+                }
             }
         }
     }
