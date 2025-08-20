@@ -1,3 +1,4 @@
+use num::Complex;
 use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
 
@@ -92,6 +93,75 @@ fn can_use_scratch() {
             .zip(output.as_slice().iter())
         {
             assert_eq!(a.wrapping_add(*b), *c);
+        }
+    }
+}
+
+#[test]
+fn can_load_store_ints_to_punbuf() {
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        // We can pack 32 values into 16 complex numbers
+        let n = 8;
+
+        let mut a = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
+        let b = a.clone();
+
+        // We're going to store these integers into a complex array. On the
+        // GPU, we'll round-trip these integers out of a PunBuf, which internally
+        // stores a std::complex<double>*/.
+        let vals = vec![
+            0x7FF0000000000000u64, // Infinity
+            0xFFF0000000000000,    // -Infinity,
+            0x7FF0000000001234,    // NaN
+            0x7FF9876000001234,    // also NaN
+            0xFFF0000000001234,    // also NaN
+            0xFFF9876000001234,    // also NaN
+            0x8000000000000000,    // -0.0f64 or u64::MIN
+            0x0000000000000000,    // 0.0f64 of 0u64
+            0x0000000000000001,    // Some shitty denorms
+            0x0000000000000002,    // ...
+            0x0000000000000003,    // ...
+            0x7000000000000004,    // A large positive u64 and f64 normalized value
+            0xFFFFFFFFFFFFFFFF,    // -1u64, also NaN
+            0x7FFFFFFFFFFFFFFF,    // u64::MAX, also NaN
+            0x8000000000000001,    // Some negative shitty denorm
+            0xF000000000000004,    // A large negative u64 and f64 normalized value
+        ];
+
+        for (c, a) in bytemuck::cast_slice_mut::<_, u64>(a.as_mut_slice())
+            .iter_mut()
+            .zip(vals.iter())
+        {
+            *c = *a;
+        }
+
+        let stream = r.make_stream(0.into()).unwrap();
+        let block_size = vals.len() as u32;
+        let threads = block_size;
+
+        unsafe {
+            launch_kernel!(
+                ((threads, block_size))
+                ("can_load_store_ints_to_punbuf")
+                (r, stream)
+                a,
+                b,
+                vals.len() as u32
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        // Assert the kernel copied our values as u64s with *no* interpretation
+        // as f64s.
+        for (e, a) in vals
+            .iter()
+            .zip(bytemuck::cast_slice::<_, u64>(b.as_slice()))
+        {
+            assert_eq!(e, a);
         }
     }
 }

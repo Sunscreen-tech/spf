@@ -1,6 +1,8 @@
 #pragma once
 #include <cstdint>
 
+#include "../../src/math/primitives.cuh"
+#include "../../src/entities/punbuf.cuh"
 #include "../../src/entities/scratch.cuh"
 #include "../../src/iter_tools.cuh"
 
@@ -36,5 +38,18 @@ extern "C" __global__ void can_use_scratch(
 
     for (uint32_t i = threadIdx.x; i < N; i += blockDim.x) {
         output[N * blockIdx.x + i] = (a_clone_ptr)[i] + (b_clone_ptr)[i];
+    }
+}
+
+extern "C" __global__ void can_load_store_ints_to_punbuf(
+    const std::complex<f64>* a,
+    std::complex<f64>* b,
+    const u32 len
+) {
+    const auto a_punbuf = PunBuf::from_ptr(a);
+    auto b_punbuf = PunBuf::from_ptr(b);
+
+    BLOCK_FOR_EACH(i, len) {
+        b_punbuf.set_u64(i, a_punbuf.get_u64(i));
     }
 }

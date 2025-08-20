@@ -56,6 +56,14 @@ public:
         // Const-ness immediately comes back 
         return PunBuf(const_cast<std::complex<f64> *>(&as_complex()[i]));
     }
+
+    __device__ static constexpr inline PunBuf from_ptr(std::complex<f64>* data) {
+        return PunBuf(data);
+    }
+
+    __device__ static constexpr inline const PunBuf from_ptr(const std::complex<f64>* data) {
+        return PunBuf(const_cast<std::complex<f64>*>(data));
+    }
 private:
     std::complex<f64> *m_data;
 };

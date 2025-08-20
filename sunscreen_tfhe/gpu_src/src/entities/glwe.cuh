@@ -13,7 +13,6 @@ class GlweCiphertext
 {
 public:
     GlweCiphertext() = delete;
-    __device__ explicit constexpr inline GlweCiphertext(std::complex<f64>* data): m_data(PunBuf(data)) { }
     __device__ explicit constexpr inline GlweCiphertext(PunBuf data): m_data(data) { }    
 
     __device__ static constexpr inline uint32_t size(const GlweDef &params)
@@ -32,6 +31,14 @@ public:
     }
 
     __device__ inline void fft(GlweCiphertextFft out, const GlweDef &params) const;
+
+    __device__ static constexpr inline GlweCiphertext from_ptr(std::complex<double> *ptr) {
+        return GlweCiphertext(PunBuf::from_ptr(ptr));
+    }
+
+    __device__ static constexpr inline const GlweCiphertext from_ptr(const std::complex<double> *ptr) {
+        return GlweCiphertext(PunBuf::from_ptr(ptr));
+    }
 
     // __device__ inline void clone_into(GlweCiphertext *other, const GlweDef &params) const
     // {
@@ -57,8 +64,7 @@ class GlweCiphertextFft
 {
 public:
     GlweCiphertextFft() = delete;
-    __device__ explicit constexpr inline GlweCiphertextFft(std::complex<f64>* data): m_data(PunBuf(data)) { }
-    __device__ explicit constexpr inline GlweCiphertextFft(PunBuf data): m_data(data) { }    
+    __device__ explicit constexpr inline GlweCiphertextFft(PunBuf data): m_data(data) { }
 
     __device__ static constexpr inline uint32_t size(const GlweDef &params)
     {

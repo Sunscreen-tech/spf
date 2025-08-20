@@ -14,13 +14,12 @@ class Polynomial
 {
 public:
     Polynomial() = delete;
-    __device__ explicit constexpr inline Polynomial(std::complex<f64>* data): m_data(PunBuf(data)) { }
     __device__ explicit constexpr inline Polynomial(PunBuf data): m_data(data) { }
 
     __device__ static constexpr inline uint32_t size(const PolynomialDegree &size_info)
     {
         // Assumption that polynomial degree is a power of 2.
-        return size_info.val * sizeof(std::complex<f64>) / 2;
+        return size_info.val / 2;
     }
 
     __device__ constexpr inline PunBuf coeffs()
@@ -37,6 +36,14 @@ public:
 
     __device__ inline PolynomialFft fft_inplace(const PolynomialDegree &degree);
 
+    __device__ static constexpr inline Polynomial from_ptr(std::complex<f64> *ptr) {
+        return Polynomial(PunBuf::from_ptr(ptr));
+    }
+
+    __device__ static constexpr inline const Polynomial from_ptr(const std::complex<f64> *ptr) {
+        return Polynomial(PunBuf::from_ptr(ptr));
+    }
+
     /*
     __device__ inline void clone_into(Polynomial<T> *other, const PolynomialDegree &degree) const
     {
@@ -51,13 +58,12 @@ class PolynomialFft
 {
 public:
     PolynomialFft() = delete;
-    __device__ explicit constexpr inline PolynomialFft(std::complex<f64>* data): m_data(PunBuf(data)) { }
     __device__ explicit constexpr inline PolynomialFft(PunBuf data): m_data(data) { }
 
     __device__ static inline uint32_t size(const PolynomialDegree &size_info)
     {
         // Assumption that polynomial degree is a power of 2.
-        return size_info.val * sizeof(std::complex<f64>) / 2;
+        return size_info.val / 2;
     }
 
     __device__ constexpr inline PunBuf coeffs()
@@ -68,6 +74,14 @@ public:
     __device__ constexpr inline const PunBuf coeffs() const
     {
         return m_data;
+    }
+
+    __device__ static constexpr inline PolynomialFft from_ptr(std::complex<f64> *ptr) {
+        return PolynomialFft(PunBuf::from_ptr(ptr));
+    }
+
+    __device__ static constexpr inline const PolynomialFft from_ptr(const std::complex<f64> *ptr) {
+        return PolynomialFft(PunBuf::from_ptr(ptr));
     }
 
     __device__ inline void ifft(Polynomial res, const PolynomialDegree &degree) const;

@@ -4,7 +4,7 @@ use num::Complex;
 //mod entities;
 //mod fft;
 //mod homomorphisms;
-//mod memory;
+mod memory;
 //mod negacyclic;
 //mod polynomial;
 //mod signed_decomposition;
