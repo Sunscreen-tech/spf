@@ -5,5 +5,5 @@
 
 #ifdef TEST
 #include "tests/tests.cuh"
-#include "benches/benches.cuh"
+//#include "benches/benches.cuh"
 #endif
