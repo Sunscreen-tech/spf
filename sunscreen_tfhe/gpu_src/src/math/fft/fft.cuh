@@ -3,8 +3,6 @@
 #include <cstdint>
 
 #include "fft_noreorder.cuh"
-#include "fft_f32_impl.cuh"
-#include "fft_f64_impl.cuh"
 #include "fft_params.cuh"
 #include "../math.cuh"
 #include "../primitives.cuh"
