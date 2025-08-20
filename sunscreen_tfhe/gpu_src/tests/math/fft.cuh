@@ -1,108 +1,32 @@
 #pragma once
+#include <complex>
 
 #include "../../src/math/math.cuh"
 #include "fft_constants_f64.cuh"
 #include "../../src/math/fft/fft.cuh"
 #include "../../src/entities/polynomial.cuh"
 
-template <typename T>
-__device__ void can_fft(
-    const Complex<T> *__restrict__ x,
-    Complex<T> *__restrict__ result,
-    bool reorder,
-    uint32_t fft_len)
-{
-    uint32_t block_id = blockIdx.x;
-
-    auto x_local = get_fft_scratch<Complex<T>>();
-
-    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
-
-    if (reorder) {
-        fft(x_local, fft_len);
-    } else {
-        fft_noreorder(x_local, fft_len);
-    }
-
-    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
-}
-
-template <typename T>
-__device__ void can_ifft(
-    const Complex<T> *__restrict__ x,
-    Complex<T> *__restrict__ result,
-    bool reorder,
-    uint32_t fft_len)
-{
-    uint32_t block_id = blockIdx.x;
-
-    auto x_local = get_fft_scratch<Complex<T>>();
-
-    BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
-
-    if (reorder) {
-        ifft(x_local, fft_len);
-    } else {
-        ifft_noreorder(x_local, fft_len);
-    }
-
-    BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
-}
-
-extern "C" __global__ void can_fft_f64(
-    const Complex<double> *__restrict__ x,
-    Complex<double> *__restrict__ result,
-    uint32_t fft_len)
-{
-    can_fft(x, result, true, fft_len);
-}
-
-extern "C" __global__ void can_fft_f32(
-    const Complex<float> *__restrict__ x,
-    Complex<float> *__restrict__ result,
-    uint32_t fft_len)
-{
-    can_fft(x, result, true, fft_len);
-}
-
-extern "C" __global__ void can_ifft_f64(
-    const Complex<double> *__restrict__ x,
-    Complex<double> *__restrict__ result,
-    uint32_t fft_len)
-{
-    can_ifft(x, result, true, fft_len);
-}
-
-extern "C" __global__ void can_ifft_f32(
-    const Complex<float> *__restrict__ x,
-    Complex<float> *__restrict__ result,
-    uint32_t fft_len)
-{
-    can_ifft(x, result, true, fft_len);
-}
-
 extern "C" __global__ void can_roundtrip_fft_f64(
-    const Complex<double> *__restrict__ x,
-    Complex<double> *__restrict__ result,
+    const std::complex<f64> *__restrict__ x,
+    std::complex<f64> *__restrict__ result,
     uint32_t fft_len)
 {
-    auto s_in = get_fft_scratch<Complex<double>>();
+    auto s_in = get_fft_scratch();
 
-    BLOCK_COPY(s_in, &x[fft_len * blockIdx.x], fft_len);
+    BLOCK_COPY(s_in.as_complex(), &x[fft_len * blockIdx.x], fft_len);
 
     double n_inv = 1 / (double)fft_len;
 
-#ifdef FFT_NO_REORDER
-    fft_noreorder(s_in, fft_len);
-    ifft_noreorder(s_in, fft_len);
-#else
-    fft(s_in, fft_len);
-    ifft(s_in, fft_len);
-#endif
+    fft_noreorder(s_in.as_complex(), fft_len);
+    ifft_noreorder(s_in.as_complex(), fft_len);
 
     BLOCK_FOR_EACH(i, fft_len)
     {
-        result[fft_len * blockIdx.x + i] = s_in[i] * n_inv;
+        auto val = s_in.as_complex()[i];
+        val.real(val.real() * n_inv);
+        val.imag(val.imag() * n_inv);
+
+        result[fft_len * blockIdx.x + i] = val;
     }
 
     __syncthreads();
