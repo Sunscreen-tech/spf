@@ -21,13 +21,14 @@ __device__ constexpr PunBuf get_fft_scratch() {
     return PunBuf::from_ptr(FFT_BUFFER);
 }
 
-__device__ void fft_noreorder(cuda::std::complex<f64> *s_input, u32 n)
+template <typename T>
+__device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 {
     switch (n)
     {
     case 1024:
 #ifdef COMPLEX_FFT
-        CT_DIF_FFT_4way<FFT_1024_forward_noreorder, f64>(s_input);
+        CT_DIF_FFT_4way<FFT_1024_forward_noreorder, T>(s_input);
 #else
         // TODO: Remove this UB
         CT_DIF_FFT_4way<FFT_1024_forward_noreorder>(reinterpret_cast<double2 *>(s_input));
@@ -41,13 +42,14 @@ __device__ void fft_noreorder(cuda::std::complex<f64> *s_input, u32 n)
     __syncthreads();
 }
 
-__device__ void ifft_noreorder(cuda::std::complex<f64> *s_input, u32 n)
+template <typename T>
+__device__ void ifft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 {
     switch (n)
     {
     case 1024:
 #ifdef COMPLEX_FFT
-        CT_DIT_FFT_4way< FFT_1024_inverse_noreorder, f64 >(s_input);
+        CT_DIT_FFT_4way< FFT_1024_inverse_noreorder, T>(s_input);
 #else
         // TODO: Remove this UB
         CT_DIT_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<double2 *>(s_input));

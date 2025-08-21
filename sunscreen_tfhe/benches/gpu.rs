@@ -36,86 +36,80 @@ mod gpu_benches {
         let g = RefCell::new(c.benchmark_group("FFT"));
 
         for_each_device_type(|dev_name, r| {
-            for reorder in [false, true] {
-                for n in [1024] {
-                    let bench_name = format!(
-                        "Complex<f64> FFT latency N={n} Device={dev_name} reorder={reorder}"
+            for n in [1024] {
+                let bench_name =
+                    format!("Complex<f64> FFT latency N={n} Device={dev_name} noreorder");
+                let stream = r.make_stream(0.into()).unwrap();
+                let num_ffts_sequence = 2 * 2 * 637u32;
+
+                g.borrow_mut()
+                    .throughput(criterion::Throughput::Elements(num_ffts_sequence as u64));
+                g.borrow_mut().bench_function(&bench_name, |b| {
+                    let mut buffer = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
+                    buffer.copy_from_slice(
+                        &(0..n)
+                            .map(|x| Complex::new(x as f64, x as f64))
+                            .collect::<Vec<_>>(),
                     );
-                    let stream = r.make_stream(0.into()).unwrap();
+
+                    let output = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
+
                     let num_ffts_sequence = 2 * 2 * 637u32;
 
-                    g.borrow_mut()
-                        .throughput(criterion::Throughput::Elements(num_ffts_sequence as u64));
-                    g.borrow_mut().bench_function(&bench_name, |b| {
-                        let mut buffer = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
-                        buffer.copy_from_slice(
-                            &(0..n)
-                                .map(|x| Complex::new(x as f64, x as f64))
-                                .collect::<Vec<_>>(),
-                        );
+                    b.iter(|| {
+                        let num_threads = n as u32 / 4;
 
-                        let output = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
+                        unsafe {
+                            launch_kernel!(
+                                ((num_threads, num_threads))
+                                ("benchmark_fft_f64")
+                                (r, stream)
+                                buffer,
+                                output,
+                                n as u32,
+                                num_ffts_sequence
+                            )
+                            .unwrap();
 
-                        let num_ffts_sequence = 2 * 2 * 637u32;
-
-                        b.iter(|| {
-                            let num_threads = n as u32 / 4;
-
-                            unsafe {
-                                launch_kernel!(
-                                    ((num_threads, num_threads))
-                                    ("benchmark_fft_f64")
-                                    (r, stream)
-                                    buffer,
-                                    output,
-                                    n as u32,
-                                    num_ffts_sequence,
-                                    reorder as u32
-                                )
-                                .unwrap();
-
-                                stream.wait().unwrap();
-                            }
-                        });
+                            stream.wait().unwrap();
+                        }
                     });
+                });
 
-                    let bench_name = format!(
-                        "Complex<f32> FFT latency N={n} Device={dev_name} reorder={reorder}"
+                let bench_name =
+                    format!("Complex<f32> FFT latency N={n} Device={dev_name} noreorder");
+
+                g.borrow_mut()
+                    .throughput(criterion::Throughput::Elements(num_ffts_sequence as u64));
+                g.borrow_mut().bench_function(&bench_name, |b| {
+                    let mut buffer = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
+                    buffer.copy_from_slice(
+                        &(0..n)
+                            .map(|x| Complex::new(x as f32, x as f32))
+                            .collect::<Vec<_>>(),
                     );
 
-                    g.borrow_mut()
-                        .throughput(criterion::Throughput::Elements(num_ffts_sequence as u64));
-                    g.borrow_mut().bench_function(&bench_name, |b| {
-                        let mut buffer = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
-                        buffer.copy_from_slice(
-                            &(0..n)
-                                .map(|x| Complex::new(x as f32, x as f32))
-                                .collect::<Vec<_>>(),
-                        );
+                    let output = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
 
-                        let output = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
+                    b.iter(|| {
+                        let num_threads = n as u32 / 4;
 
-                        b.iter(|| {
-                            let num_threads = n as u32 / 4;
+                        unsafe {
+                            launch_kernel!(
+                                ((num_threads, num_threads))
+                                ("benchmark_fft_f32")
+                                (r, stream)
+                                buffer,
+                                output,
+                                n as u32,
+                                num_ffts_sequence
+                            )
+                            .unwrap();
 
-                            unsafe {
-                                launch_kernel!(
-                                    ((num_threads, num_threads))
-                                    ("benchmark_fft_f32")
-                                    (r, stream)
-                                    buffer,
-                                    output,
-                                    n as u32,
-                                    num_ffts_sequence,
-                                    reorder as u32
-                                )
-                                .unwrap();
-
-                                stream.wait().unwrap();
-                            }
-                        });
+                            stream.wait().unwrap();
+                        }
                     });
-                }
+                });
             }
         });
     }
