@@ -5,7 +5,7 @@ use num::Complex;
 mod fft;
 //mod homomorphisms;
 mod memory;
-//mod negacyclic;
+mod negacyclic;
 mod polynomial;
 //mod signed_decomposition;
 mod simd;

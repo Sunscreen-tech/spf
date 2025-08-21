@@ -93,11 +93,11 @@ public:
     }
 
     __device__ constexpr inline const T get() {
-        return T::from_ptr(m_ptr)
+        return T::from_ptr(m_ptr);
     }
 
     __device__ constexpr inline const T get() const {
-        return T::from_ptr(m_ptr)
+        return T::from_ptr(m_ptr);
     }
 
     __device__ ~PerBlockStackAllocation()
