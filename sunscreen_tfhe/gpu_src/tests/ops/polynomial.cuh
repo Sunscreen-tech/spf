@@ -10,6 +10,7 @@
 extern "C" __global__ void can_polynomial_rountrip_fft(
     const cuda::std::complex<f64> *__restrict__ x_buf,
     cuda::std::complex<f64> *__restrict__ y_buf,
+    cuda::std::complex<f64> *__restrict__ scratch_buf,
     const u32 n)
 {
     auto x = DstArray<Polynomial>::from_ptr(x_buf);
@@ -27,6 +28,7 @@ extern "C" __global__ void can_polynomial_rountrip_fft(
 extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
     const cuda::std::complex<f64> *__restrict__ x_buf,
     cuda::std::complex<f64> *__restrict__ y_buf,
+    cuda::std::complex<f64> *__restrict__ scratch_buf, // unused
     const u32 n)
 {
     auto x = DstArray<Polynomial>::from_ptr(x_buf);

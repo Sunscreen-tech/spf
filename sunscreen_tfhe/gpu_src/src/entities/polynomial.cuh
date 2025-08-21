@@ -47,7 +47,7 @@ public:
 
     __device__ inline void clone_into(Polynomial other, const PolynomialDegree &degree) const
     {
-        BLOCK_COPY(other.coeffs().as_complex(), this->coeffs().as_complex(), degree.val);
+        BLOCK_COPY(other.coeffs().as_f64(), this->coeffs().as_f64(), degree.val);
     }
 
 private:
