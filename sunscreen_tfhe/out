@@ -1,0 +1,27 @@
+warning: /home/ec2-user/spf/sunscreen_gpu_runtime/Cargo.toml: unused manifest key: bin.0.required_features
+warning: unused import: `cudaFree`
+  --> sunscreen_gpu_runtime/src/cuda_runtime.rs:17:16
+   |
+17 |     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
+   |                ^^^^^^^^
+   |
+   = note: `#[warn(unused_imports)]` on by default
+
+warning: associated function `new` is never used
+   --> sunscreen_gpu_runtime/src/cuda_runtime.rs:314:8
+    |
+313 | impl<'a> Function {
+    | ----------------- associated function in this implementation
+314 |     fn new(inner: CUfunction, _module: &'a Module) -> Self {
+    |        ^^^
+    |
+    = note: `#[warn(dead_code)]` on by default
+
+warning: constant `KERNELS` is never used
+   --> sunscreen_gpu_runtime/src/cuda_runtime.rs:352:18
+    |
+352 | pub(crate) const KERNELS: &[u8] = include_bytes!(concat!(
+    |                  ^^^^^^^
+
+warning: `sunscreen_gpu_runtime` (lib) generated 3 warnings (run `cargo fix --lib -p sunscreen_gpu_runtime` to apply 1 suggestion)
+   Compiling sunscreen_tfhe v0.9.0 (/home/ec2-user/spf/sunscreen_tfhe)

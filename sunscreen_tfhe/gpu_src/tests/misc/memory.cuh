@@ -32,8 +32,6 @@ extern "C" __global__ void can_use_scratch(
     f64* a_clone_ptr = (*a_clone).ptr();
     f64* b_clone_ptr = (*b_clone).ptr();
 
-    printf("a_clone %p b_clone %p\n", a_clone_ptr, b_clone_ptr);
-
     assert(reinterpret_cast<uintptr_t>(b_clone_ptr) - reinterpret_cast<uintptr_t>(a_clone_ptr) == N * sizeof(cuda::std::complex<f64>) / 2);
 
     BLOCK_COPY(a_clone_ptr, &a[N * blockIdx.x], N);

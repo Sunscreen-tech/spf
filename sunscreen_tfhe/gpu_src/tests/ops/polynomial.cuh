@@ -144,9 +144,11 @@ extern "C" __global__ void can_mad_polynomials(
     cuda::std::complex<f64> *__restrict__ c_buf,
     const cuda::std::complex<f64> *__restrict__ a_buf,
     const cuda::std::complex<f64> *__restrict__ b_buf,
+    cuda::std::complex<f64> *__restrict__ scratch_buf,
     u32 d)
 {
     auto degree = PolynomialDegree(d);
+    auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());
 
     auto c = DstArray<Polynomial>::from_ptr(c_buf);
     auto a = DstArray<Polynomial>::from_ptr(a_buf);
@@ -155,25 +157,24 @@ extern "C" __global__ void can_mad_polynomials(
     auto a_i = a.nth(blockIdx.x, degree);
     auto b_i = b.nth(blockIdx.x, degree);
 
-    auto p_shared = DstArray<PolynomialFft>(get_fft_scratch());
-    auto c_i_fft = p_shared.nth(0, d);
-    auto a_i_fft = p_shared.nth(1, d);
-    auto b_i_fft = p_shared.nth(2, d);
+    auto c_i_fft = scratch.alloc<PolynomialFft>(degree);
+    auto a_i_fft = scratch.alloc<PolynomialFft>(degree);
+    auto b_i_fft = scratch.alloc<PolynomialFft>(degree);
 
-    c_i.fft(c_i_fft, degree);
-    a_i.fft(a_i_fft, degree);
-    b_i.fft(b_i_fft, degree);
+    c_i.fft(*c_i_fft, degree);
+    a_i.fft(*a_i_fft, degree);
+    b_i.fft(*b_i_fft, degree);
 
-    polynomial_mad(c_i_fft, a_i_fft, b_i_fft, degree);
+    polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, degree);
 
     // Set the modulo-reduced result
-    c_i_fft.ifft(c_i, degree);
+    (*c_i_fft).ifft(c_i, degree);
     PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
 
     // Compute the non modulo-reduced result so we can check it as well in our test.
-    // twisted_ifft_noreorder(c_i_fft.coeffs(), degree.val);
+    twisted_ifft_noreorder((*c_i_fft).coeffs(), degree.val);
 
-    // auto result = DstArray<Polynomial>::from_ptr(result_buf);
-    // auto result_i = result.nth(blockIdx.x, degree);
-    // BLOCK_COPY(result_i.coeffs().as_f64(), c_i_fft.coeffs().as_f64(), degree.val);
+    auto result = DstArray<Polynomial>::from_ptr(result_buf);
+    auto result_i = result.nth(blockIdx.x, degree);
+    BLOCK_COPY(result_i.coeffs().as_f64(), (*c_i_fft).coeffs().as_f64(), degree.val);
 }

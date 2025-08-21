@@ -71,7 +71,7 @@ where
 
 impl PolynomialFftRef<Complex<f64>> {
     /// Compute the inverse FFT of the polynomial.
-    pub fn ifft<T>(&self, poly: &mut PolynomialRef<T>)
+    pub fn ifft<T>(&self, poly: &mut PolynomialRef<T>) -> Vec<f64>
     where
         T: Clone + FromF64 + NumBits + VectorOps,
     {
@@ -88,6 +88,8 @@ impl PolynomialFftRef<Complex<f64>> {
         fft.reverse(&self.data, ifft);
 
         T::vector_mod_pow2_q_f64(poly.coeffs_mut(), ifft, T::BITS as u64);
+
+        ifft.to_owned()
     }
 
     /// Computes the multiplication of two polynomials as `c += a * b`. This is

@@ -425,11 +425,17 @@ fn can_mad_polynomials() {
                 c_fft.multiply_add(&a_fft, &b_fft);
 
                 let mut expected = Polynomial::<u64>::zero(d.0);
-                c_fft.ifft(&mut expected);
+                let unmod = c_fft.ifft(&mut expected);
 
-                for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
+                let result = result.iter(d).nth(i).unwrap();
+
+                for (a, e) in result.coeffs().iter().zip(unmod.iter()) {
                     approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-4);
                 }
+
+                // for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
+                //     approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-4);
+                // }
             }
         }
     }

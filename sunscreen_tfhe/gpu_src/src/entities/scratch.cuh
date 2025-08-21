@@ -58,8 +58,6 @@ public:
         auto alloc_ptr = m_next;
         m_next = &m_next[size];
 
-        printf("alloc %p, next %p\n", alloc_ptr, m_next);
-
         return PerBlockStackAllocation<T>(this, alloc_ptr, size);
     }
 
@@ -92,6 +90,14 @@ public:
     __device__ constexpr inline const T operator*() const
     {
         return T::from_ptr(m_ptr);
+    }
+
+    __device__ constexpr inline const T get() {
+        return T::from_ptr(m_ptr)
+    }
+
+    __device__ constexpr inline const T get() const {
+        return T::from_ptr(m_ptr)
     }
 
     __device__ ~PerBlockStackAllocation()

@@ -13,7 +13,7 @@ __device__ inline void apply_twist(
     PunBuf punbuf,
     u32 n
 ) {   
-    //u32 n_times_2 = n * 2;
+    u32 n_times_2 = n * 2;
     u32 n_div_2 = n / 2;
     u32 tid = threadIdx.x;
     u32 dim = blockDim.x;
@@ -35,13 +35,11 @@ __device__ inline void apply_twist(
 
     auto as_complex = punbuf.as_complex();
 
-    printf("%p %p\n", as_f64, as_complex);
-
     // Now write our complex registers back to shared memory.
-    //as_complex[tid + 0 * dim] = c0 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 0 * dim);
-    //as_complex[tid + 1 * dim] = c1 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 1 * dim);
-    //as_complex[tid + 2 * dim] = c2 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 2 * dim);
-    //as_complex[tid + 3 * dim] = c3 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 3 * dim);
+    as_complex[tid + 0 * dim] = c0 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 0 * dim);
+    as_complex[tid + 1 * dim] = c1 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 1 * dim);
+    as_complex[tid + 2 * dim] = c2 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 2 * dim);
+    as_complex[tid + 3 * dim] = c3 * FftTwiddles<f64>::Get_W_value_inverse(n_times_2, tid + 3 * dim);
 
     __syncthreads();
 }
