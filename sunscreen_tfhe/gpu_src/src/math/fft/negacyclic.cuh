@@ -99,7 +99,6 @@ __device__ inline void twisted_fft_noreorder(
 /// This result is still in floating point and needs to be modulo reduced.
 ///
 /// Upon completion, the punbuf will contain f64 values containing the ifft.
-template <typename T>
 __device__ inline void twisted_ifft_noreorder(
     PunBuf punbuf,
     u32 n)

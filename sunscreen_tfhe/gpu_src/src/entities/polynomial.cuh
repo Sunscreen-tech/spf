@@ -45,11 +45,10 @@ public:
         return Polynomial(PunBuf::from_ptr(ptr));
     }
 
-    /*
-    __device__ inline void clone_into(Polynomial<T> *other, const PolynomialDegree &degree) const
+    __device__ inline void clone_into(Polynomial other, const PolynomialDegree &degree) const
     {
-        BLOCK_COPY(other->coeffs(), this->coeffs(), degree.val);
-    }*/
+        BLOCK_COPY(other.coeffs().as_complex(), this->coeffs().as_complex(), degree.val);
+    }
 
 private:
     PunBuf m_data;
@@ -97,49 +96,39 @@ __device__ inline void Polynomial::fft(
     PolynomialFft res,
     const PolynomialDegree &degree) const
 {
-    /*
-    auto s_in = get_fft_scratch<double>();
+    auto scratch = get_fft_scratch();
 
     // Reinterpret our [0, q) torus as [-q/2, q/2) to minimize errors. In particular,
     // this ensures that small negative torus elements don't blow up into large FFTs
     // that fail to modulo reduce.
     BLOCK_FOR_EACH(i, degree.val)
     {
-        s_in[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);
+        scratch.as_f64()[i] = static_cast<f64>(this->coeffs().get_i64(i));
     }
 
     // twisted_fft operated in-place and returns s_in reinterpreted
     // as Complex<double>*
-#ifdef FFT_NO_REORDER
-    auto s_out = twisted_fft_noreorder(s_in, degree.val);
-#else
-    auto s_out = twisted_fft(s_in, degree.val);
-#endif
+    twisted_fft_noreorder(scratch, degree.val);
 
-    BLOCK_COPY(res->coeffs(), s_out, degree.val / 2);*/
+    BLOCK_COPY(res.coeffs().as_complex(), scratch.as_complex(), degree.val / 2);
 }
 
 __device__ inline void PolynomialFft::ifft(
     Polynomial res,
     const PolynomialDegree &degree) const
 {
-    /*
     PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
 
-    auto s_in = get_fft_scratch<Complex<double>>();
+    auto scratch = get_fft_scratch();
 
-    BLOCK_COPY(s_in, this->coeffs(), n_div_2.val);
+    BLOCK_COPY(scratch.as_complex(), this->coeffs().as_complex(), n_div_2.val);
 
     // twisted_ifft operates in-place and returns s_in reinterpreted
     // as double*.
-#ifdef FFT_NO_REORDER
-    auto s_out = twisted_ifft_noreorder(s_in, degree.val);
-#else
-    auto s_out = twisted_ifft(s_in, degree.val);
-#endif
+    twisted_ifft_noreorder(scratch, degree.val);
 
     inplace_reduce_mod_q_pow_2<double, 64>(
-        s_out,
+        scratch.as_f64(),
         degree.val);
 
     // Finally, we cast each value from double to uint64_t
@@ -147,10 +136,10 @@ __device__ inline void PolynomialFft::ifft(
     {
         // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
         // then bitcast back to unsigned to get back to [0, q).
-        res->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
+        res.coeffs().set_i64(i, static_cast<i64>(scratch.as_f64()[i]));
     }
 
-    __syncthreads();*/
+    __syncthreads();
 }
 
 /*

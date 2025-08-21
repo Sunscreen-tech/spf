@@ -140,14 +140,13 @@ extern "C" __global__ void can_multiply_non_negacyclic_polynomials(
 }
 
 extern "C" __global__ void can_mad_polynomials(
-    cuda::std::complex<f64> *__restrict__ result,
+    cuda::std::complex<f64> *__restrict__ result_buf,
     cuda::std::complex<f64> *__restrict__ c_buf,
     const cuda::std::complex<f64> *__restrict__ a_buf,
     const cuda::std::complex<f64> *__restrict__ b_buf,
     u32 d)
 {
     auto degree = PolynomialDegree(d);
-    auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());
 
     auto c = DstArray<Polynomial>::from_ptr(c_buf);
     auto a = DstArray<Polynomial>::from_ptr(a_buf);
@@ -171,12 +170,12 @@ extern "C" __global__ void can_mad_polynomials(
     c_i_fft.ifft(c_i, degree);
     PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
 
-    auto s_in = get_fft_scratch<Complex<double>>();
-    BLOCK_COPY(s_in, c_i_fft->coeffs(), n_div_2.val);
+    auto s_in = get_fft_scratch();
 
     // Compute the non modulo-reduced result so we can check it as well in our test.
-    twisted_ifft_noreorder(s_in, degree.val);
+    twisted_ifft_noreorder(c_i_fft.coeffs(), degree.val);
 
-    auto result_i = result->nth(blockIdx.x, degree);
-    BLOCK_COPY(result_i->coeffs(), s_out, degree.val);
+    auto result = DstArray<Polynomial>::from_ptr(result_buf);
+    auto result_i = result.nth(blockIdx.x, degree);
+    BLOCK_COPY(result_i.coeffs().as_f64(), c_i_fft.coeffs().as_f64(), degree.val);
 }
