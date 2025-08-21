@@ -47,7 +47,7 @@ __device__ void ifft_noreorder(cuda::std::complex<f64> *s_input, u32 n)
     {
     case 1024:
 #ifdef COMPLEX_FFT
-        CT_DIT_FFT_4way<FFT_1024_inverse_noreorder, f64>(s_input);
+        CT_DIT_FFT_4way< FFT_1024_inverse_noreorder, f64 >(s_input);
 #else
         // TODO: Remove this UB
         CT_DIT_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<double2 *>(s_input));

@@ -1,6 +1,7 @@
 #pragma once
 #include <cstdint>
 
+typedef float f32;
 typedef double f64;
 typedef uint64_t u64;
 typedef int64_t i64;

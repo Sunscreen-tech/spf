@@ -29,30 +29,30 @@ SOFTWARE.
 #define WARP 32
 
 template <typename T>
-__device__ __inline__ T shfl(T *value, int par)
+__device__ __inline__ T shfl(T value, int par)
 {
-	return __shfl_sync(0xffffffff, (*value), par);
+	return __shfl_sync(0xffffffff, value, par);
 }
 
 template <typename T>
-__device__ __inline__ T shfl_xor(T *value, int par)
+__device__ __inline__ T shfl_xor(T value, int par)
 {
-	return __shfl_xor_sync(0xffffffff, (*value), par);
+	return __shfl_xor_sync(0xffffffff, value, par);
 }
 
 template <typename T>
-__device__ __inline__ T shfl_down(T *value, int par)
+__device__ __inline__ T shfl_down(T value, int par)
 {
-	return __shfl_down_sync(0xffffffff, (*value), par);
+	return __shfl_down_sync(0xffffffff, value, par);
 }
 
 /// Forward decimation in time FFT.
 template <class const_params, typename T>
-__inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
+__inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
 {
-	cuda::complex<T> x A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
-	cuda::complex<T> W;
-	cuda::complex<T> Aftemp, Bftemp, Cftemp, Dftemp;
+	cuda::std::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
+	cuda::std::complex<T> W;
+	cuda::std::complex<T> Aftemp, Bftemp, Cftemp, Dftemp;
 
 	int local_id, warp_id;
 	int j, m_param;
@@ -60,8 +60,8 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
 	int A_read_index, B_read_index, C_read_index, D_read_index;
 	int PoT, PoTp1, q;
 
-	local_id = threadIdx.real() & (const_params::warp - 1);
-	warp_id = threadIdx.real() / const_params::warp;
+	local_id = threadIdx.x & (const_params::warp - 1);
+	warp_id = threadIdx.x / const_params::warp;
 
 	//-----> FFT
 	//-->
@@ -78,14 +78,14 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
 
 	__syncthreads();
 
-	A_DFT_value.real(parity * A_DFT_value.real() + shfl_xor(&A_DFT_value.real(), 1));
-	A_DFT_value.imag(parity * A_DFT_value.imag() + shfl_xor(&A_DFT_value.imag(), 1));
-	B_DFT_value.real(parity * B_DFT_value.real() + shfl_xor(&B_DFT_value.real(), 1));
-	B_DFT_value.imag(parity * B_DFT_value.imag() + shfl_xor(&B_DFT_value.imag(), 1));
-	C_DFT_value.real(parity * C_DFT_value.real() + shfl_xor(&C_DFT_value.real(), 1));
-	C_DFT_value.imag(parity * C_DFT_value.imag() + shfl_xor(&C_DFT_value.imag(), 1));
-	D_DFT_value.real(parity * D_DFT_value.real() + shfl_xor(&D_DFT_value.real(), 1));
-	D_DFT_value.imag(parity * D_DFT_value.imag() + shfl_xor(&D_DFT_value.imag(), 1));
+	A_DFT_value.real(parity * A_DFT_value.real() + shfl_xor(A_DFT_value.real(), 1));
+	A_DFT_value.imag(parity * A_DFT_value.imag() + shfl_xor(A_DFT_value.imag(), 1));
+	B_DFT_value.real(parity * B_DFT_value.real() + shfl_xor(B_DFT_value.real(), 1));
+	B_DFT_value.imag(parity * B_DFT_value.imag() + shfl_xor(B_DFT_value.imag(), 1));
+	C_DFT_value.real(parity * C_DFT_value.real() + shfl_xor(C_DFT_value.real(), 1));
+	C_DFT_value.imag(parity * C_DFT_value.imag() + shfl_xor(C_DFT_value.imag(), 1));
+	D_DFT_value.real(parity * D_DFT_value.real() + shfl_xor(D_DFT_value.real(), 1));
+	D_DFT_value.imag(parity * D_DFT_value.imag() + shfl_xor(D_DFT_value.imag(), 1));
 
 	//--> Second through Fifth iteration (no synchronization)
 	PoT = 2;
@@ -107,14 +107,14 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
 		Dftemp.real(W.real() * D_DFT_value.real() - W.imag() * D_DFT_value.imag());
 		Dftemp.imag(W.real() * D_DFT_value.imag() + W.imag() * D_DFT_value.real());
 
-		A_DFT_value.real(Aftemp.real() + parity * shfl_xor(&Aftemp.real(), PoT));
-		A_DFT_value.imag(Aftemp.imag() + parity * shfl_xor(&Aftemp.imag(), PoT));
-		B_DFT_value.real(Bftemp.real() + parity * shfl_xor(&Bftemp.real(), PoT));
-		B_DFT_value.imag(Bftemp.imag() + parity * shfl_xor(&Bftemp.imag(), PoT));
-		C_DFT_value.real(Cftemp.real() + parity * shfl_xor(&Cftemp.real(), PoT));
-		C_DFT_value.imag(Cftemp.imag() + parity * shfl_xor(&Cftemp.imag(), PoT));
-		D_DFT_value.real(Dftemp.real() + parity * shfl_xor(&Dftemp.real(), PoT));
-		D_DFT_value.imag(Dftemp.imag() + parity * shfl_xor(&Dftemp.imag(), PoT));
+		A_DFT_value.real(Aftemp.real() + parity * shfl_xor(Aftemp.real(), PoT));
+		A_DFT_value.imag(Aftemp.imag() + parity * shfl_xor(Aftemp.imag(), PoT));
+		B_DFT_value.real(Bftemp.real() + parity * shfl_xor(Bftemp.real(), PoT));
+		B_DFT_value.imag(Bftemp.imag() + parity * shfl_xor(Bftemp.imag(), PoT));
+		C_DFT_value.real(Cftemp.real() + parity * shfl_xor(Cftemp.real(), PoT));
+		C_DFT_value.imag(Cftemp.imag() + parity * shfl_xor(Cftemp.imag(), PoT));
+		D_DFT_value.real(Dftemp.real() + parity * shfl_xor(Dftemp.real(), PoT));
+		D_DFT_value.imag(Dftemp.imag() + parity * shfl_xor(Dftemp.imag(), PoT));
 
 		PoT = PoT << 1;
 		PoTp1 = PoTp1 << 1;
@@ -129,8 +129,8 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
 	for (q = 5; q < (const_params::fft_exp - 1); q++)
 	{
 		__syncthreads();
-		m_param = threadIdx.real() & (PoT - 1);
-		j = threadIdx.real() >> q;
+		m_param = threadIdx.x & (PoT - 1);
+		j = threadIdx.x >> q;
 
 		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param);
 
@@ -164,7 +164,7 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
 
 	// last iteration
 	__syncthreads();
-	m_param = threadIdx.real();
+	m_param = threadIdx.x;
 
 	W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param);
 
@@ -196,21 +196,19 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::complex<T> *s_input)
 }
 
 template <class const_params, typename T>
-__device__ inline void CT_DIF_FFT_4way(cuda::complex<T> *s_input)
+__device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input)
 {
-	using T = typename ScalarOf<cuda::complex>::Ty;
-
-	cuda::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
-	cuda::complex<T> W;
-	cuda::complex<T> Aftemp, Bftemp, Cftemp, Dftemp;
+	cuda::std::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
+	cuda::std::complex<T> W;
+	cuda::std::complex<T> Aftemp, Bftemp, Cftemp, Dftemp;
 
 	int local_id, warp_id;
 	int j, m_param, parity;
 	int A_read_index, B_read_index, C_read_index, D_read_index;
 	int PoT, PoTm1, q;
 
-	local_id = threadIdx.real() & (WARP - 1);
-	warp_id = threadIdx.real() / WARP;
+	local_id = threadIdx.x & (WARP - 1);
+	warp_id = threadIdx.x / WARP;
 
 	//-----> FFT
 	//-->
@@ -218,7 +216,7 @@ __device__ inline void CT_DIF_FFT_4way(cuda::complex<T> *s_input)
 	PoT = const_params::fft_length;
 
 	// Highest iteration
-	m_param = threadIdx.real();
+	m_param = threadIdx.x;
 	j = 0;
 	A_read_index = m_param;
 	B_read_index = m_param + PoTm1;
@@ -253,8 +251,8 @@ __device__ inline void CT_DIF_FFT_4way(cuda::complex<T> *s_input)
 	for (q = (const_params::fft_exp - 2); q > 4; q--)
 	{
 		__syncthreads();
-		m_param = threadIdx.real() & (PoTm1 - 1);
-		j = threadIdx.real() >> q;
+		m_param = threadIdx.x & (PoTm1 - 1);
+		j = threadIdx.x >> q;
 
 		W = FftTwiddles<T>::Get_W_value(PoT, m_param);
 
@@ -301,14 +299,14 @@ __device__ inline void CT_DIF_FFT_4way(cuda::complex<T> *s_input)
 		parity = (1 - j * 2);
 		W = FftTwiddles<T>::Get_W_value(PoT, j * (m_param - PoTm1));
 
-		Aftemp.real(parity * A_DFT_value.real() + shfl_xor(&A_DFT_value.real(), PoTm1));
-		Aftemp.imag(parity * A_DFT_value.imag() + shfl_xor(&A_DFT_value.imag(), PoTm1));
-		Bftemp.real(parity * B_DFT_value.real() + shfl_xor(&B_DFT_value.real(), PoTm1));
-		Bftemp.imag(parity * B_DFT_value.imag() + shfl_xor(&B_DFT_value.imag(), PoTm1));
-		Cftemp.real(parity * C_DFT_value.real() + shfl_xor(&C_DFT_value.real(), PoTm1));
-		Cftemp.imag(parity * C_DFT_value.imag() + shfl_xor(&C_DFT_value.imag(), PoTm1));
-		Dftemp.real(parity * D_DFT_value.real() + shfl_xor(&D_DFT_value.real(), PoTm1));
-		Dftemp.imag(parity * D_DFT_value.imag() + shfl_xor(&D_DFT_value.imag(), PoTm1));
+		Aftemp.real(parity * A_DFT_value.real() + shfl_xor(A_DFT_value.real(), PoTm1));
+		Aftemp.imag(parity * A_DFT_value.imag() + shfl_xor(A_DFT_value.imag(), PoTm1));
+		Bftemp.real(parity * B_DFT_value.real() + shfl_xor(B_DFT_value.real(), PoTm1));
+		Bftemp.imag(parity * B_DFT_value.imag() + shfl_xor(B_DFT_value.imag(), PoTm1));
+		Cftemp.real(parity * C_DFT_value.real() + shfl_xor(C_DFT_value.real(), PoTm1));
+		Cftemp.imag(parity * C_DFT_value.imag() + shfl_xor(C_DFT_value.imag(), PoTm1));
+		Dftemp.real(parity * D_DFT_value.real() + shfl_xor(D_DFT_value.real(), PoTm1));
+		Dftemp.imag(parity * D_DFT_value.imag() + shfl_xor(D_DFT_value.imag(), PoTm1));
 
 		A_DFT_value.real(W.real() * Aftemp.real() - W.imag() * Aftemp.imag());
 		A_DFT_value.imag(W.real() * Aftemp.imag() + W.imag() * Aftemp.real());
@@ -334,10 +332,10 @@ __device__ inline void CT_DIF_FFT_4way(cuda::complex<T> *s_input)
 #ifdef TESTING
 	__syncthreads();
 	int A_load_id, B_load_id, i, A_n, B_n;
-	A_load_id = threadIdx.real();
-	B_load_id = threadIdx.real() + const_params::fft_length_quarter;
-	A_n = threadIdx.real();
-	B_n = threadIdx.real() + const_params::fft_length_quarter;
+	A_load_id = threadIdx.x;
+	B_load_id = threadIdx.x + const_params::fft_length_quarter;
+	A_n = threadIdx.x;
+	B_n = threadIdx.x + const_params::fft_length_quarter;
 	for (i = 1; i < const_params::fft_exp; i++)
 	{
 		A_n >>= 1;
@@ -356,10 +354,10 @@ __device__ inline void CT_DIF_FFT_4way(cuda::complex<T> *s_input)
 	C_DFT_value = s_input[B_load_id];
 	D_DFT_value = s_input[B_load_id + 1];
 	__syncthreads();
-	s_input[threadIdx.real()] = A_DFT_value;
-	s_input[threadIdx.real() + const_params::fft_length_half] = B_DFT_value;
-	s_input[threadIdx.real() + const_params::fft_length_quarter] = C_DFT_value;
-	s_input[threadIdx.real() + const_params::fft_length_three_quarters] = D_DFT_value;
+	s_input[threadIdx.x] = A_DFT_value;
+	s_input[threadIdx.x + const_params::fft_length_half] = B_DFT_value;
+	s_input[threadIdx.x + const_params::fft_length_quarter] = C_DFT_value;
+	s_input[threadIdx.x + const_params::fft_length_three_quarters] = D_DFT_value;
 	__syncthreads();
 #endif
 }

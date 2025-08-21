@@ -1,5 +1,8 @@
 #pragma once
+#include <cuda/std/complex>
+
 #include "../math.cuh"
+#include "../primitives.cuh"
 #include "fft_constants_f32.cuh"
 #include "fft_constants_f64.cuh"
 
@@ -41,14 +44,16 @@ public:
         return (ctemp);
     }
 #else
-    static __device__ __inline__ constexpr float2 Get_W_value(int N, int m)
+    static __device__ __inline__ constexpr cuda::std::complex<f32> Get_W_value(int N, int m)
     {
-        return TWIDDLES_F32[N - 2 + m];
+        auto twiddle = TWIDDLES_F32[N - 2 + m];
+        return cuda::std::complex(twiddle.x, twiddle.y);
     }
 
-    static __device__ __inline__ constexpr float2 Get_W_value_inverse(int N, int m)
+    static __device__ __inline__ constexpr cuda::std::complex<f32> Get_W_value_inverse(int N, int m)
     {
-        return TWIDDLES_INV_F32[N - 2 + m];
+        auto twiddle = TWIDDLES_INV_F32[N - 2 + m];
+        return cuda::std::complex(twiddle.x, twiddle.y);
     }
 #endif
 };
@@ -86,14 +91,16 @@ public:
         return ctemp;
     }
 #else
-    static __device__ __inline__ constexpr double2 Get_W_value(int N, int m)
+    static __device__ __inline__ constexpr cuda::std::complex<f64> Get_W_value(int N, int m)
     {
-        return TWIDDLES_F64[N - 2 + m];
+        auto twiddle = TWIDDLES_F64[N - 2 + m];
+        return cuda::std::complex(twiddle.x, twiddle.y);
     }
 
-    static __device__ __inline__ constexpr double2 Get_W_value_inverse(int N, int m)
+    static __device__ __inline__ constexpr cuda::std::complex<f64> Get_W_value_inverse(int N, int m)
     {    
-        return TWIDDLES_INV_F64[N - 2 + m];
+        auto twiddle = TWIDDLES_INV_F64[N - 2 + m];
+        return cuda::std::complex(twiddle.x, twiddle.y);
     }
 #endif
 };
