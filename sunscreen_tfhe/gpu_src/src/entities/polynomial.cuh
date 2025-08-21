@@ -35,7 +35,7 @@ public:
 
     __device__ inline void fft(PolynomialFft res, const PolynomialDegree &degree) const;
 
-    __device__ inline PolynomialFft fft_inplace(const PolynomialDegree &degree);
+    __device__ inline PolynomialFft fft_inplace(const PolynomialDegree &degree) &&;
 
     __device__ static constexpr inline Polynomial from_ptr(cuda::std::complex<f64> *ptr) {
         return Polynomial(PunBuf::from_ptr(ptr));
@@ -86,7 +86,10 @@ public:
 
     __device__ inline void ifft(Polynomial res, const PolynomialDegree &degree) const;
 
-    __device__ inline Polynomial ifft_inplace(const PolynomialDegree &degree);
+    /// @brief Consume the the current Polynomial and return its FFT.
+    /// @param degree 
+    /// @return The FFT'd polynomial
+    __device__ inline Polynomial ifft_inplace(const PolynomialDegree &degree) &&;
 
 private:
     PunBuf m_data;
@@ -142,83 +145,37 @@ __device__ inline void PolynomialFft::ifft(
     __syncthreads();
 }
 
-/*
-template <>
-template <>
-__device__ inline PolynomialFft<Complex<double>> *Polynomial<uint64_t>::fft_inplace(const PolynomialDegree &degree)
+__device__ inline PolynomialFft Polynomial::fft_inplace(const PolynomialDegree &degree) &&
 {
-    auto s_cast = reinterpret_cast<double *>(this->coeffs());
-
     // Reinterpret our [0, q) torus as [-q/2, q/2) to minimize errors. In particular,
     // this ensures that small negative torus elements don't blow up into large FFTs
     // that fail to modulo reduce.
     BLOCK_FOR_EACH(i, degree.val)
     {
-        s_cast[i] = unsigned_to_signed_torus<double, uint64_t>(this->coeffs()[i]);
+        this->coeffs().as_f64()[i] = static_cast<f64>(this->coeffs().get_i64(i));
     }
 
     __syncthreads();
 
-    auto s_out = twisted_fft(s_cast, degree.val);
+    twisted_fft_noreorder(this->coeffs(), degree.val);
 
-    return reinterpret_cast<PolynomialFft<Complex<double>> *>(s_out);
+    return PolynomialFft(this->coeffs());
 }
 
-template <>
-template <>
-__device__ inline void PolynomialFft<Complex<double>>::ifft<uint64_t>(
-    Polynomial<uint64_t> *__restrict__ res,
-    const PolynomialDegree &degree) const
+__device__ inline Polynomial PolynomialFft::ifft_inplace(const PolynomialDegree &degree) &&
 {
-    PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
-
-    auto s_in = get_fft_scratch<Complex<double>>();
-
-    BLOCK_COPY(s_in, this->coeffs(), n_div_2.val);
-
-    // twisted_ifft operates in-place and returns s_in reinterpreted
-    // as double*.
-#ifdef FFT_NO_REORDER
-    auto s_out = twisted_ifft_noreorder(s_in, degree.val);
-#else
-    auto s_out = twisted_ifft(s_in, degree.val);
-#endif
+    twisted_ifft_noreorder(this->coeffs(), degree.val);
 
     inplace_reduce_mod_q_pow_2<double, 64>(
-        s_out,
+        this->coeffs().as_f64(),
         degree.val);
-
-    // Finally, we cast each value from double to uint64_t
-    BLOCK_FOR_EACH(i, degree.val)
-    {
-        // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
-        // then bitcast back to unsigned to get back to [0, q).
-        res->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
-    }
-
-    __syncthreads();
-}
-
-template <>
-template <>
-__device__ inline Polynomial<uint64_t> *PolynomialFft<Complex<double>>::ifft_inplace(const PolynomialDegree &degree)
-{
-    auto s_in = reinterpret_cast<Complex<double> *>(this);
-    auto s_out = twisted_ifft(s_in, degree.val);
-
-    inplace_reduce_mod_q_pow_2<double, 64>(
-        s_out,
-        degree.val);
-
-    auto s_out_uint = reinterpret_cast<Polynomial<uint64_t> *>(s_out);
 
     BLOCK_FOR_EACH(i, degree.val)
     {
         // The result is on the signed torus [-q/2, q/2). Cast to a signed integer
         // then bitcast back to unsigned to get back to [0, q).
-        s_out_uint->coeffs()[i] = (uint64_t)signed_to_unsigned_torus<double, uint64_t>(s_out[i]);
+        this->coeffs().set_i64(i, static_cast<i64>(this->coeffs().as_f64()[i]));
     }
 
-    return s_out_uint;
+    return Polynomial(this->coeffs());
 }
-*/

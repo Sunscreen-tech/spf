@@ -40,8 +40,8 @@ extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
 
     x_i.clone_into(s_in, degree);
 
-    auto s_fft = s_in.fft_inplace(degree);
-    auto s_out = s_fft.ifft_inplace(degree);
+    auto s_fft = std::move(s_in).fft_inplace(degree);
+    auto s_out = std::move(s_fft).ifft_inplace(degree);
 
     s_out.clone_into(y_i, degree);
 }
