@@ -249,6 +249,6 @@ where
     <T as InnermostType>::Ty: PartialEq,
 {
     fn as_kernel_arg(&self) -> *const std::ffi::c_void {
-        (&self.data).as_ptr() as *const std::ffi::c_void
+        self.data.as_ptr() as *const std::ffi::c_void
     }
 }
