@@ -167,25 +167,7 @@ extern "C" __global__ void can_mad_polynomials(
     a_i.fft(*a_i_fft, degree);
     b_i.fft(*b_i_fft, degree);
 
-    printf("before (%le %le) (%le %le) (%le %le)\n",
-        c_i_fft.get().coeffs().as_complex()[threadIdx.x].real(),
-        c_i_fft.get().coeffs().as_complex()[threadIdx.x].imag(),
-        a_i_fft.get().coeffs().as_complex()[threadIdx.x].real(),
-        a_i_fft.get().coeffs().as_complex()[threadIdx.x].imag(),
-        b_i_fft.get().coeffs().as_complex()[threadIdx.x].real(),
-        b_i_fft.get().coeffs().as_complex()[threadIdx.x].imag()
-    );
-
     polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, degree);
-
-    printf("after (%le %le) (%le %le) (%le %le)\n",
-        c_i_fft.get().coeffs().as_complex()[threadIdx.x].real(),
-        c_i_fft.get().coeffs().as_complex()[threadIdx.x].imag(),
-        a_i_fft.get().coeffs().as_complex()[threadIdx.x].real(),
-        a_i_fft.get().coeffs().as_complex()[threadIdx.x].imag(),
-        b_i_fft.get().coeffs().as_complex()[threadIdx.x].real(),
-        b_i_fft.get().coeffs().as_complex()[threadIdx.x].imag()
-    );
 
     // Set the modulo-reduced result
     (*c_i_fft).ifft(c_i, degree);

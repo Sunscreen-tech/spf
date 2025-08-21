@@ -68,6 +68,18 @@ pub(crate) fn one_poly(polys: &mut DstArrayRef<PolynomialRef<u64>>, degree: &Pol
     }
 }
 
+pub(crate) fn constant_poly(
+    polys: &mut DstArrayRef<PolynomialRef<u64>>,
+    degree: &PolynomialDegree,
+    val: u64,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for (i, c) in poly.coeffs_mut().iter_mut().enumerate() {
+            *c = val;
+        }
+    }
+}
+
 pub(crate) fn random_msg(_i: usize, degree: PolynomialDegree) -> Polynomial<Torus<u64>> {
     Polynomial::new(
         &(0..degree.0)

@@ -37,7 +37,7 @@ public:
     __device__ constexpr inline u64 get_u64(const u32 i) const { return cuda::std::bit_cast<u64>(as_f64()[i]); }
     __device__ constexpr inline void set_u64(const u32 i, u64 val) { as_f64()[i] = cuda::std::bit_cast<f64>(val); }
     
-    __device__ constexpr inline u64 get_i64(const u32 i) const { return cuda::std::bit_cast<u64>(as_f64()[i]); }
+    __device__ constexpr inline i64 get_i64(const u32 i) const { return cuda::std::bit_cast<u64>(as_f64()[i]); }
     __device__ constexpr inline void set_i64(const u32 i, i64 val) { as_f64()[i] = cuda::std::bit_cast<f64>(val); }
 
     /// Creates a new PunBuf at &as_complex()[i].

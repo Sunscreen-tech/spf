@@ -14,8 +14,8 @@ use crate::{
         test_utils::SUPPORTED_POLY_DEGREES,
         tests::{
             test_utils::{
-                fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod, random_poly_mod,
-                random_poly_mod_2_pow_64,
+                constant_poly, fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod,
+                random_poly_mod, random_poly_mod_2_pow_64,
             },
             ulps_difference,
         },
@@ -384,6 +384,9 @@ fn can_mad_polynomials() {
             random_poly_mod(&mut c, &d, 0x1 << 18);
             random_poly_mod_2_pow_64(&mut a, &d);
             random_poly_mod(&mut b, &d, 0x1 << 16);
+            // constant_poly(&mut c, &d, 0xFFFFFFFFFFFFFFFF);
+            // constant_poly(&mut a, &d, 69);
+            // constant_poly(&mut b, &d, 38);
 
             let c_orig = c.clone();
 
@@ -425,17 +428,11 @@ fn can_mad_polynomials() {
                 c_fft.multiply_add(&a_fft, &b_fft);
 
                 let mut expected = Polynomial::<u64>::zero(d.0);
-                let unmod = c_fft.ifft(&mut expected);
+                c_fft.ifft(&mut expected);
 
-                let result = result.iter(d).nth(i).unwrap();
-
-                for (a, e) in result.coeffs().iter().zip(unmod.iter()) {
+                for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
                     approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-4);
                 }
-
-                // for (a, e) in actual.coeffs().iter().zip(expected.coeffs().iter()) {
-                //     approx::assert_relative_eq!(*a as f64, *e as f64, max_relative = 1e-4);
-                // }
             }
         }
     }
