@@ -13,11 +13,11 @@ class Unsigned
 };
 
 template <>
-class Unsigned<uint32_t>
+class Unsigned<u32>
 {
 public:
     using SignedTy = int32_t;
-    static const uint32_t BITS = 32;
+    static const u32 BITS = 32;
 };
 
 template <>
@@ -25,7 +25,7 @@ class Unsigned<uint64_t>
 {
 public:
     using SignedTy = int64_t;
-    static const uint32_t BITS = 64;
+    static const u32 BITS = 64;
 };
 
 /// @brief Wraps built-in float types to generalize constants and functions.

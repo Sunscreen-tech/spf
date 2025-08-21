@@ -8,7 +8,7 @@
 extern "C" __global__ void can_apply_twist(
     const double* __restrict__ input,
     Complex<double>* __restrict__ output,
-    uint32_t n
+    u32 n
 ) {
     auto s_in = get_fft_scratch<double>();
 
@@ -22,7 +22,7 @@ extern "C" __global__ void can_apply_twist(
 extern "C" __global__ void can_remove_twist(
     const Complex<double>* __restrict__ input,
     double* __restrict__ output,
-    uint32_t n
+    u32 n
 ) {
     auto s_in = get_fft_scratch<Complex<double>>();
 

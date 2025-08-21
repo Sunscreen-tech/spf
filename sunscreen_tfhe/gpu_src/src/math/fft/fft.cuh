@@ -1,26 +1,37 @@
 #pragma once
-#include <complex>
+#include <cuda/std/complex>
 #include <cstdint>
 
+#include "../../features.cuh"
+
+#ifdef COMPLEX_FFT
+#include "fft_noreorder2.cuh"
+#else
 #include "fft_noreorder.cuh"
+#endif
+
 #include "fft_params.cuh"
 #include "../math.cuh"
 #include "../primitives.cuh"
 
 const size_t FFT_BUFFER_SIZE = 3 * 1024;
-__shared__ std::complex<double> FFT_BUFFER[FFT_BUFFER_SIZE];
+__shared__ cuda::std::complex<double> FFT_BUFFER[FFT_BUFFER_SIZE];
 
 __device__ constexpr PunBuf get_fft_scratch() {
     return PunBuf::from_ptr(FFT_BUFFER);
 }
 
-__device__ void fft_noreorder(std::complex<f64> *s_input, uint32_t n)
+__device__ void fft_noreorder(cuda::std::complex<f64> *s_input, u32 n)
 {
     switch (n)
     {
     case 1024:
+#ifdef COMPLEX_FFT
+        CT_DIF_FFT_4way<FFT_1024_forward_noreorder, f64>(s_input);
+#else
         // TODO: Remove this UB
         CT_DIF_FFT_4way<FFT_1024_forward_noreorder>(reinterpret_cast<double2 *>(s_input));
+#endif
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -30,13 +41,17 @@ __device__ void fft_noreorder(std::complex<f64> *s_input, uint32_t n)
     __syncthreads();
 }
 
-__device__ void ifft_noreorder(std::complex<f64> *s_input, uint32_t n)
+__device__ void ifft_noreorder(cuda::std::complex<f64> *s_input, u32 n)
 {
     switch (n)
     {
     case 1024:
+#ifdef COMPLEX_FFT
+        CT_DIT_FFT_4way<FFT_1024_inverse_noreorder, f64>(s_input);
+#else
         // TODO: Remove this UB
         CT_DIT_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<double2 *>(s_input));
+#endif
         break;
     default:
         printf("Illegal FFT size %d", n);

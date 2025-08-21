@@ -1,5 +1,5 @@
 #pragma once
-#include <complex>
+#include <cuda/std/complex>
 
 #include "../../src/math/math.cuh"
 #include "fft_constants_f64.cuh"
@@ -7,9 +7,9 @@
 #include "../../src/entities/polynomial.cuh"
 
 extern "C" __global__ void can_roundtrip_fft_f64(
-    const std::complex<f64> *__restrict__ x,
-    std::complex<f64> *__restrict__ result,
-    uint32_t fft_len)
+    const cuda::std::complex<f64> *__restrict__ x,
+    cuda::std::complex<f64> *__restrict__ result,
+    u32 fft_len)
 {
     auto s_in = get_fft_scratch();
 
@@ -22,11 +22,7 @@ extern "C" __global__ void can_roundtrip_fft_f64(
 
     BLOCK_FOR_EACH(i, fft_len)
     {
-        auto val = s_in.as_complex()[i];
-        val.real(val.real() * n_inv);
-        val.imag(val.imag() * n_inv);
-
-        result[fft_len * blockIdx.x + i] = val;
+        result[fft_len * blockIdx.x + i] = s_in.as_complex()[i] * n_inv;
     }
 
     __syncthreads();
@@ -40,10 +36,10 @@ extern "C" __global__ void get_twiddles_f64(
     double2 *__restrict__ method_lut,
     double2 *__restrict__ method_sincos,
     double2 *__restrict__ method_sincospi,
-    uint32_t n,
-    uint32_t inverse
+    u32 n,
+    u32 inverse
 ) {
-    for (uint32_t i = threadIdx.x; i < n; i += blockDim.x) {
+    for (u32 i = threadIdx.x; i < n; i += blockDim.x) {
         if (!inverse) {
             method_lut[i] = TWIDDLES_F64[n - 2 + i];
             double2 val;

@@ -1,4 +1,5 @@
 #pragma once
+#include <cuda/std/complex>
 #include <cstdint>
 
 #include "../math/math.cuh"
@@ -16,7 +17,7 @@ public:
     Polynomial() = delete;
     __device__ explicit constexpr inline Polynomial(PunBuf data): m_data(data) { }
 
-    __device__ static constexpr inline uint32_t size(const PolynomialDegree &size_info)
+    __device__ static constexpr inline u32 size(const PolynomialDegree &size_info)
     {
         // Assumption that polynomial degree is a power of 2.
         return size_info.val / 2;
@@ -36,11 +37,11 @@ public:
 
     __device__ inline PolynomialFft fft_inplace(const PolynomialDegree &degree);
 
-    __device__ static constexpr inline Polynomial from_ptr(std::complex<f64> *ptr) {
+    __device__ static constexpr inline Polynomial from_ptr(cuda::std::complex<f64> *ptr) {
         return Polynomial(PunBuf::from_ptr(ptr));
     }
 
-    __device__ static constexpr inline const Polynomial from_ptr(const std::complex<f64> *ptr) {
+    __device__ static constexpr inline const Polynomial from_ptr(const cuda::std::complex<f64> *ptr) {
         return Polynomial(PunBuf::from_ptr(ptr));
     }
 
@@ -60,7 +61,7 @@ public:
     PolynomialFft() = delete;
     __device__ explicit constexpr inline PolynomialFft(PunBuf data): m_data(data) { }
 
-    __device__ static inline uint32_t size(const PolynomialDegree &size_info)
+    __device__ static inline u32 size(const PolynomialDegree &size_info)
     {
         // Assumption that polynomial degree is a power of 2.
         return size_info.val / 2;
@@ -76,11 +77,11 @@ public:
         return m_data;
     }
 
-    __device__ static constexpr inline PolynomialFft from_ptr(std::complex<f64> *ptr) {
+    __device__ static constexpr inline PolynomialFft from_ptr(cuda::std::complex<f64> *ptr) {
         return PolynomialFft(PunBuf::from_ptr(ptr));
     }
 
-    __device__ static constexpr inline const PolynomialFft from_ptr(const std::complex<f64> *ptr) {
+    __device__ static constexpr inline const PolynomialFft from_ptr(const cuda::std::complex<f64> *ptr) {
         return PolynomialFft(PunBuf::from_ptr(ptr));
     }
 

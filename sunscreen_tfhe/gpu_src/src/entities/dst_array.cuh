@@ -11,12 +11,12 @@ public:
     __device__ explicit constexpr inline DstArray(PunBuf data): m_data(data) { }
 
     template <typename V>
-    __device__ constexpr inline T nth(uint32_t i, const V& size_info) {
+    __device__ constexpr inline T nth(u32 i, const V& size_info) {
         return T(m_data.split(T::size(size_info) * i));
     }
 
     template <typename V>
-    __device__ constexpr inline const T nth(uint32_t i, const V& size_info) const {
+    __device__ constexpr inline const T nth(u32 i, const V& size_info) const {
         return T(m_data.split(T::size(size_info) * i));
     }
 

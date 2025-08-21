@@ -22,7 +22,7 @@ extern "C" __global__ void synthetic_pbs(
     auto rotated = scratch.alloc<GlweCiphertext<uint64_t>>(glwe);
     auto result_i = result->nth(blockIdx.x, glwe);
 
-    for (uint32_t i = 0; i < lwe.size.val; i++) {
+    for (u32 i = 0; i < lwe.size.val; i++) {
         result_i->clone_into(*tmp, glwe);
         result_i->clone_into(*rotated, glwe);
 

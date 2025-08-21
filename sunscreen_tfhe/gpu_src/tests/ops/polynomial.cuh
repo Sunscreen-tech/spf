@@ -9,7 +9,7 @@ extern "C" __global__ void can_polynomial_rountrip_fft(
     const DstArray<Polynomial<uint64_t>> *__restrict__ x,
     DstArray<Polynomial<uint64_t>> *__restrict__ y,
     uint8_t *scratch_buf,
-    const uint32_t n)
+    const u32 n)
 {
     auto degree = PolynomialDegree(n);
     auto allocator = PerBlockStackAllocator(scratch_buf, get_scratch_size());
@@ -25,7 +25,7 @@ extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
     const DstArray<Polynomial<uint64_t>> *__restrict__ x,
     DstArray<Polynomial<uint64_t>> *__restrict__ y,
     uint8_t *scratch_buf, // Unused, but want to match interface of can_polynomial_rountrip_fft
-    const uint32_t n)
+    const u32 n)
 {
     auto degree = PolynomialDegree(n);
     auto x_i = x->nth(blockIdx.x, degree);
@@ -45,7 +45,7 @@ extern "C" __global__ void can_sub_polynomials(
     DstArray<Polynomial<uint64_t>> *c,
     const DstArray<Polynomial<uint64_t>> *a,
     const DstArray<Polynomial<uint64_t>> *b,
-    uint32_t d)
+    u32 d)
 {
     auto degree = PolynomialDegree(d);
 
@@ -60,7 +60,7 @@ extern "C" __global__ void can_add_polynomials(
     DstArray<Polynomial<uint64_t>> *c,
     const DstArray<Polynomial<uint64_t>> *a,
     const DstArray<Polynomial<uint64_t>> *b,
-    uint32_t d)
+    u32 d)
 {
     auto degree = PolynomialDegree(d);
 
@@ -75,7 +75,7 @@ extern "C" __global__ void can_mad_polynomials_pre_fftd(
     DstArray<PolynomialFft<Complex<double>>> *__restrict__ c_fft,
     const DstArray<PolynomialFft<Complex<double>>> *__restrict__ a_fft,
     const DstArray<PolynomialFft<Complex<double>>> *__restrict__ b_fft,
-    uint32_t d)
+    u32 d)
 {
     auto degree = PolynomialDegree(d);
 
@@ -90,7 +90,7 @@ extern "C" __global__ void can_multiply_non_negacyclic_polynomials(
     DstArray<Polynomial<Complex<double>>> *__restrict__ c,
     const DstArray<Polynomial<Complex<double>>> *__restrict__ a,
     const DstArray<Polynomial<Complex<double>>> *__restrict__ b,
-    const uint32_t d)
+    const u32 d)
 {
     auto degree = PolynomialDegree(d);
 
@@ -126,7 +126,7 @@ extern "C" __global__ void can_mad_polynomials(
     const DstArray<Polynomial<uint64_t>> *__restrict__ a,
     const DstArray<Polynomial<uint64_t>> *__restrict__ b,
     uint8_t *scratch_buf,
-    uint32_t d)
+    u32 d)
 {
     auto degree = PolynomialDegree(d);
     auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());

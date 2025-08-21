@@ -1,5 +1,5 @@
 #pragma once
-
+#include <cuda/std/complex>
 #include <cstdint>
 #include <tuple>
 
@@ -16,20 +16,20 @@ class GlevCiphertext
 {
 public:
     GlevCiphertext() = delete;
-    __device__ explicit constexpr inline GlevCiphertext(std::complex<f64>* data): m_data(PunBuf(data)) {}
+    __device__ explicit constexpr inline GlevCiphertext(cuda::std::complex<f64>* data): m_data(PunBuf(data)) {}
     __device__ explicit constexpr inline GlevCiphertext(PunBuf data): m_data(data) {}
 
-    __device__ static inline uint32_t size(const GlevSizeInfo &size_info)
+    __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
         return GlweCiphertext::size(std::get<0>(size_info)) * std::get<1>(size_info).count.val;
     }
 
-    __device__ constexpr inline GlweCiphertext decomps(uint32_t i, const GlevSizeInfo &size_info)
+    __device__ constexpr inline GlweCiphertext decomps(u32 i, const GlevSizeInfo &size_info)
     {
         return DstArray<GlweCiphertext>(m_data).nth(i, std::get<0>(size_info));
     }
 
-    __device__ constexpr inline const GlweCiphertext decomps(uint32_t i, const GlevSizeInfo &size_info) const
+    __device__ constexpr inline const GlweCiphertext decomps(u32 i, const GlevSizeInfo &size_info) const
     {
         return DstArray<GlweCiphertext>(m_data).nth(i, std::get<0>(size_info));
     }
@@ -44,26 +44,26 @@ class GlevCiphertextFft
 {
 public:
     GlevCiphertextFft() = delete;
-    __device__ explicit constexpr inline GlevCiphertextFft(std::complex<f64>* data): m_data(PunBuf(data)) {}
+    __device__ explicit constexpr inline GlevCiphertextFft(cuda::std::complex<f64>* data): m_data(PunBuf(data)) {}
     __device__ explicit constexpr inline GlevCiphertextFft(PunBuf data): m_data(data) {}
 
-    __device__ static inline uint32_t size(const GlevSizeInfo &size_info)
+    __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
         return GlweCiphertextFft::size(std::get<0>(size_info)) * std::get<1>(size_info).count.val;
     }
 
-    __device__ constexpr inline GlweCiphertextFft decomps(uint32_t i, const GlevSizeInfo &size_info)
+    __device__ constexpr inline GlweCiphertextFft decomps(u32 i, const GlevSizeInfo &size_info)
     {
         return DstArray<GlweCiphertextFft>(m_data).nth(i, std::get<0>(size_info));
     }
 
-    __device__ constexpr inline const GlweCiphertextFft decomps(uint32_t i, const GlevSizeInfo &size_info) const
+    __device__ constexpr inline const GlweCiphertextFft decomps(u32 i, const GlevSizeInfo &size_info) const
     {
         return DstArray<GlweCiphertextFft>(m_data).nth(i, std::get<0>(size_info));
     }
 
     __device__ inline void ifft(GlevCiphertext out, const GlevSizeInfo &size_info) const {
-        for (uint32_t i = 0; i < std::get<1>(size_info).count.val; i++)
+        for (u32 i = 0; i < std::get<1>(size_info).count.val; i++)
         {
             auto d_fft_i = this->decomps(i, size_info);
             auto d_i = out.decomps(i, size_info);
@@ -77,7 +77,7 @@ private:
 };
 
 __device__ inline void GlevCiphertext::fft(GlevCiphertextFft out, const GlevSizeInfo &size_info) const {
-    for (uint32_t i = 0; i < std::get<1>(size_info).count.val; i++)
+    for (u32 i = 0; i < std::get<1>(size_info).count.val; i++)
     {
         auto d_i = this->decomps(i, size_info);
         auto d_fft_i = out.decomps(i, size_info);

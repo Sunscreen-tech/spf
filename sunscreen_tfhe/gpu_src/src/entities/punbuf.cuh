@@ -1,6 +1,6 @@
 #pragma once
-#include <complex>
-#include <bit>
+#include <cuda/std/complex>
+#include <cuda/std/bit>
 
 #include "../math/primitives.cuh"
 
@@ -23,7 +23,7 @@
 class PunBuf {
 public:
     PunBuf() = delete;
-    __device__ explicit constexpr inline PunBuf(std::complex<f64>* data): m_data(data) { }
+    __device__ explicit constexpr inline PunBuf(cuda::std::complex<f64> *data): m_data(data) { }
 
     __device__ constexpr inline f64 *as_f64() {
         // Explicitly 
@@ -31,14 +31,14 @@ public:
     }
     __device__ constexpr inline const f64 *as_f64() const { return reinterpret_cast<const f64 *>(m_data); }
 
-    __device__ constexpr inline std::complex<f64> *as_complex() { return m_data; }
-    __device__ constexpr inline const std::complex<f64> *as_complex() const { return m_data; }
+    __device__ constexpr inline cuda::std::complex<f64> *as_complex() { return m_data; }
+    __device__ constexpr inline const cuda::std::complex<f64> *as_complex() const { return m_data; }
 
-    __device__ constexpr inline u64 get_u64(const u32 i) const { return std::bit_cast<u64>(as_f64()[i]); }
-    __device__ constexpr inline void set_u64(const u32 i, u64 val) { as_f64()[i] = std::bit_cast<f64>(val); }
+    __device__ constexpr inline u64 get_u64(const u32 i) const { return cuda::std::bit_cast<u64>(as_f64()[i]); }
+    __device__ constexpr inline void set_u64(const u32 i, u64 val) { as_f64()[i] = cuda::std::bit_cast<f64>(val); }
     
-    __device__ constexpr inline u64 get_i64(const u32 i) const { return std::bit_cast<u64>(as_f64()[i]); }
-    __device__ constexpr inline void set_i64(const u32 i, i64 val) { as_f64()[i] = std::bit_cast<f64>(val); }
+    __device__ constexpr inline u64 get_i64(const u32 i) const { return cuda::std::bit_cast<u64>(as_f64()[i]); }
+    __device__ constexpr inline void set_i64(const u32 i, i64 val) { as_f64()[i] = cuda::std::bit_cast<f64>(val); }
 
     /// Creates a new PunBuf at &as_complex()[i].
     ///
@@ -54,16 +54,16 @@ public:
     /// a multiple of 2 in length.
     __device__ constexpr inline const PunBuf split(u32 i) const {
         // Const-ness immediately comes back 
-        return PunBuf(const_cast<std::complex<f64> *>(&as_complex()[i]));
+        return PunBuf(const_cast<cuda::std::complex<f64> *>(&as_complex()[i]));
     }
 
-    __device__ static constexpr inline PunBuf from_ptr(std::complex<f64>* data) {
+    __device__ static constexpr inline PunBuf from_ptr(cuda::std::complex<f64>* data) {
         return PunBuf(data);
     }
 
-    __device__ static constexpr inline const PunBuf from_ptr(const std::complex<f64>* data) {
-        return PunBuf(const_cast<std::complex<f64>*>(data));
+    __device__ static constexpr inline const PunBuf from_ptr(const cuda::std::complex<f64>* data) {
+        return PunBuf(const_cast<cuda::std::complex<f64>*>(data));
     }
 private:
-    std::complex<f64> *m_data;
+    cuda::std::complex<f64> *m_data;
 };

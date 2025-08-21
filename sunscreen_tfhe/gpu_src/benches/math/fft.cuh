@@ -7,17 +7,17 @@ template <typename T>
 __device__ void benchmark_fft(
     const Complex<T> *__restrict__ x,
     Complex<T> *__restrict__ result,
-    uint32_t fft_len,
-    uint32_t fft_count,
-    uint32_t reorder
+    u32 fft_len,
+    u32 fft_count,
+    u32 reorder
 ) {
-    uint32_t block_id = blockIdx.x;
+    u32 block_id = blockIdx.x;
 
     auto x_local = get_fft_scratch<Complex<T>>();
 
     BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 
-    for (uint32_t i = 0; i < fft_count; i++) {
+    for (u32 i = 0; i < fft_count; i++) {
         if (reorder) {
             fft(x_local, fft_len);
         } else {
@@ -31,9 +31,9 @@ __device__ void benchmark_fft(
 extern "C" __global__ void benchmark_fft_f64(
     const Complex<double>* __restrict__ in,
     Complex<double>* __restrict__ out,
-    uint32_t fft_len,
-    uint32_t fft_count,
-    uint32_t reorder
+    u32 fft_len,
+    u32 fft_count,
+    u32 reorder
 ) {
     benchmark_fft(in, out, fft_len, fft_count, reorder);
 }
@@ -41,9 +41,9 @@ extern "C" __global__ void benchmark_fft_f64(
 extern "C" __global__ void benchmark_fft_f32(
     const Complex<float>* __restrict__ in,
     Complex<float>* __restrict__ out,
-    uint32_t fft_len,
-    uint32_t fft_count,
-    uint32_t reorder
+    u32 fft_len,
+    u32 fft_count,
+    u32 reorder
 ) {
     benchmark_fft(in, out, fft_len, fft_count, reorder);
 }
@@ -51,14 +51,14 @@ extern "C" __global__ void benchmark_fft_f32(
 extern "C" __global__ void benchmark_fft_polynomial(
     const Polynomial<uint64_t> *__restrict__ in,
     Polynomial<Complex<double>> *__restrict__ out,
-    uint32_t fft_count
+    u32 fft_count
 ) {
     const auto len = PolynomialDegree(2048);
     auto s_in = get_fft_scratch<Polynomial<uint64_t>>();
 
     BLOCK_COPY(s_in, in, len.val);
 
-    for (uint32_t i = 0; i < fft_count; i++) {
+    for (u32 i = 0; i < fft_count; i++) {
         s_in->fft_inplace<Complex<double>>(len);
     }
 }

@@ -9,16 +9,16 @@
 template <typename T>
 __device__ inline Complex<T>* apply_twist(
     T* s_input,
-    uint32_t n
+    u32 n
 ) {
     static_assert(2 * sizeof(T) == sizeof(Complex<T>));
     
-    uint32_t n_times_2 = n * 2;
-    uint32_t n_div_2 = n / 2;
+    u32 n_times_2 = n * 2;
+    u32 n_div_2 = n / 2;
     auto s_output = reinterpret_cast<Complex<T>*>(s_input);
 
-    uint32_t tid = threadIdx.x;
-    uint32_t dim = blockDim.x;
+    u32 tid = threadIdx.x;
+    u32 dim = blockDim.x;
 
     // Since negacyclic FFT requires n / 8 threads in a block, we have each thread load their values 
     // into registers so we can write them back to shared memory in a coordinated manner.
@@ -47,18 +47,18 @@ __device__ inline Complex<T>* apply_twist(
 template <typename T>
 __device__ inline T* remove_twist(
     Complex<T>* s_input,
-    uint32_t n
+    u32 n
 ) {
     static_assert(2 * sizeof(T) == sizeof(Complex<T>));
 
-    uint32_t n_times_2 = n * 2;
-    uint32_t n_div_2 = n / 2;
+    u32 n_times_2 = n * 2;
+    u32 n_div_2 = n / 2;
     T n_inv = 1.0 / (T)n_div_2;
 
     auto s_output = reinterpret_cast<T*>(s_input);
 
-    uint32_t tid = threadIdx.x;
-    uint32_t dim = blockDim.x;
+    u32 tid = threadIdx.x;
+    u32 dim = blockDim.x;
 
     // As with twisting, we load 4 Complex values into registers and then synchronize so we can overwrite our input buffer.
     auto c0 = s_input[tid + 0 * dim] * FftTwiddles<T>::Get_W_value(n_times_2, tid + 0 * dim) * n_inv;
@@ -86,9 +86,9 @@ __device__ inline T* remove_twist(
 template <typename T>
 __device__ Complex<T>* twisted_fft(
     T *s_input,
-    uint32_t n)
+    u32 n)
 {
-    uint32_t n_div_2 = n / 2;
+    u32 n_div_2 = n / 2;
     T n_inv = 1.0 / (T)n_div_2;
 
     auto s_output = apply_twist(s_input, n);
@@ -104,9 +104,9 @@ __device__ Complex<T>* twisted_fft(
 template <typename T>
 __device__ T* twisted_ifft(
     Complex<T> *s_input,
-    uint32_t n)
+    u32 n)
 {
-    uint32_t n_div_2 = n / 2;
+    u32 n_div_2 = n / 2;
 
     // Perform an n/2 IFFT.
     ifft(s_input, n_div_2);
@@ -121,9 +121,9 @@ __device__ T* twisted_ifft(
 template <typename T>
 __device__ Complex<T>* twisted_fft_noreorder(
     T *s_input,
-    uint32_t n)
+    u32 n)
 {
-    uint32_t n_div_2 = n / Float<T>::TWO;
+    u32 n_div_2 = n / Float<T>::TWO;
 
     auto s_output = apply_twist(s_input, n);
 
@@ -138,9 +138,9 @@ __device__ Complex<T>* twisted_fft_noreorder(
 template <typename T>
 __device__ T* twisted_ifft_noreorder(
     Complex<T> *s_input,
-    uint32_t n)
+    u32 n)
 {
-    uint32_t n_div_2 = n / 2;
+    u32 n_div_2 = n / 2;
 
     // Perform an n/2 IFFT.
     ifft_noreorder(s_input, n_div_2);

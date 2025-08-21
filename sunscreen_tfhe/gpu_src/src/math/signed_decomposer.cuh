@@ -23,8 +23,8 @@ public:
         BLOCK_FOR_EACH(i, d.val)
         {
             T coeff = poly->coeffs()[i];
-            uint32_t shift = Unsigned<T>::BITS - radix.radix_log.val * radix.count.val;
-            uint32_t round_bit = (coeff >> (shift - 1)) & 0x1;
+            u32 shift = Unsigned<T>::BITS - radix.radix_log.val * radix.count.val;
+            u32 round_bit = (coeff >> (shift - 1)) & 0x1;
 
             scratch->coeffs()[i] = (coeff >> shift) + round_bit;
         }
@@ -53,5 +53,5 @@ private:
     RadixDecomposition m_radix;
     PolynomialDegree m_degree;
     Polynomial<T> *m_scratch;
-    uint32_t m_cur_level;
+    u32 m_cur_level;
 };

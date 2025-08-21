@@ -18,7 +18,7 @@ __device__ inline void glwe_sub(
     const GlweDef &params)
 {
     // Add the `a` terms
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
         auto c_a_i = c->a_b(i, params);
         auto a_a_i = a->a_b(i, params);
@@ -43,7 +43,7 @@ __device__ inline void glwe_add(
     const GlweDef &params)
 {
     // Add the `a` terms
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
         auto c_a_i = c->a_b(i, params);
         auto a_a_i = a->a_b(i, params);
@@ -68,7 +68,7 @@ __device__ inline void glwe_polynomial_mad(
     const GlweDef &params)
 {
     // Multiply-add the
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
         auto a_i = a->a_b(i, params);
         auto c_i = c->a_b(i, params);
@@ -96,9 +96,9 @@ __device__ inline void decomposed_polynomial_glev_mad(
 
     auto decomp_poly = get_fft_scratch<Polynomial<uint64_t>>();
 
-    for (uint32_t i = 0; i < radix.count.val; i++)
+    for (u32 i = 0; i < radix.count.val; i++)
     {
-        uint32_t l = radix.count.val - i - 1;
+        u32 l = radix.count.val - i - 1;
 
         auto b_l = b->decomps(l, std::tuple(glwe, radix));
         decomp.next(decomp_poly);
@@ -118,7 +118,7 @@ __device__ inline void glwe_ggsw_mad(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
-    for (uint32_t i = 0; i < glwe.size.val; i++)
+    for (u32 i = 0; i < glwe.size.val; i++)
     {
         auto a_i = a->a_b(i, glwe);
         auto glev_i = b->rows(i, std::tuple(glwe, radix));

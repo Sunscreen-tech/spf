@@ -1,5 +1,6 @@
 #pragma once
 
+#include <cuda/std/complex>
 #include <cstdint>
 
 #include "dst_array.cuh"
@@ -15,34 +16,34 @@ public:
     GlweCiphertext() = delete;
     __device__ explicit constexpr inline GlweCiphertext(PunBuf data): m_data(data) { }    
 
-    __device__ static constexpr inline uint32_t size(const GlweDef &params)
+    __device__ static constexpr inline u32 size(const GlweDef &params)
     {
         return Polynomial::size(params.polynomial_degree()) * (params.size.val + 1);
     }
 
-    __device__ constexpr inline Polynomial a_b(uint32_t i, const GlweDef &glwe)
+    __device__ constexpr inline Polynomial a_b(u32 i, const GlweDef &glwe)
     {
         return DstArray<Polynomial>(m_data).nth(i, glwe.polynomial_degree());
     }
 
-    __device__ constexpr inline const Polynomial a_b(uint32_t i, const GlweDef &glwe) const
+    __device__ constexpr inline const Polynomial a_b(u32 i, const GlweDef &glwe) const
     {
         return DstArray<Polynomial>(m_data).nth(i, glwe.polynomial_degree());
     }
 
     __device__ inline void fft(GlweCiphertextFft out, const GlweDef &params) const;
 
-    __device__ static constexpr inline GlweCiphertext from_ptr(std::complex<double> *ptr) {
+    __device__ static constexpr inline GlweCiphertext from_ptr(cuda::std::complex<double> *ptr) {
         return GlweCiphertext(PunBuf::from_ptr(ptr));
     }
 
-    __device__ static constexpr inline const GlweCiphertext from_ptr(const std::complex<double> *ptr) {
+    __device__ static constexpr inline const GlweCiphertext from_ptr(const cuda::std::complex<double> *ptr) {
         return GlweCiphertext(PunBuf::from_ptr(ptr));
     }
 
     // __device__ inline void clone_into(GlweCiphertext *other, const GlweDef &params) const
     // {
-    //     for (uint32_t i = 0; i < params.size.val; i++)
+    //     for (u32 i = 0; i < params.size.val; i++)
     //     {
     //         auto this_a_i = this->a_b(i, params);
     //         auto other_a_i = other->a_b(i, params);
@@ -66,23 +67,23 @@ public:
     GlweCiphertextFft() = delete;
     __device__ explicit constexpr inline GlweCiphertextFft(PunBuf data): m_data(data) { }
 
-    __device__ static constexpr inline uint32_t size(const GlweDef &params)
+    __device__ static constexpr inline u32 size(const GlweDef &params)
     {
         return PolynomialFft::size(params.polynomial_degree()) * (params.size.val + 1);
     }
 
-    __device__ constexpr inline PolynomialFft a_b(uint32_t i, const GlweDef &glwe)
+    __device__ constexpr inline PolynomialFft a_b(u32 i, const GlweDef &glwe)
     {
         return DstArray<PolynomialFft>(m_data).nth(i, glwe.polynomial_degree());
     }
 
-    __device__ constexpr inline const PolynomialFft a_b(uint32_t i, const GlweDef &glwe) const
+    __device__ constexpr inline const PolynomialFft a_b(u32 i, const GlweDef &glwe) const
     {
         return DstArray<PolynomialFft>(m_data).nth(i, glwe.polynomial_degree());
     }
 
     __device__ inline void ifft(GlweCiphertext out, const GlweDef &params) const {
-        for (uint32_t i = 0; i < params.size.val; i++)
+        for (u32 i = 0; i < params.size.val; i++)
         {
             auto a_fft_i = this->a_b(i, params);
             auto a_i = out.a_b(i, params);
@@ -101,7 +102,7 @@ private:
 };
 
 __device__ inline void GlweCiphertext::fft(GlweCiphertextFft out, const GlweDef &params) const {
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
         auto a_i = this->a_b(i, params);
         auto a_fft_i = out.a_b(i, params);

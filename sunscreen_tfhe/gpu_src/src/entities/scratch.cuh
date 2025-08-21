@@ -24,7 +24,7 @@ class PerBlockStackAllocator
 
 public:
     __device__ PerBlockStackAllocator() = delete;
-    __device__ inline PerBlockStackAllocator(uint8_t *scratch, uint32_t length)
+    __device__ inline PerBlockStackAllocator(uint8_t *scratch, u32 length)
     {
         this->m_per_block_size = length / gridDim.x;
 
@@ -43,8 +43,8 @@ public:
     template <typename T, typename U>
     __device__ PerBlockStackAllocation<T> inline alloc(const U &params)
     {
-        uint32_t size = T::size(params);
-        uint32_t align = T::align();
+        u32 size = T::size(params);
+        u32 align = T::align();
 
         // Align our allocation.
         auto padding = (align - reinterpret_cast<size_t>(m_next) % align) % align;
@@ -65,7 +65,7 @@ private:
     uint8_t *m_scratch;
 
     /// @brief number of bytes available per block.
-    uint32_t m_per_block_size;
+    u32 m_per_block_size;
 };
 
 template <typename T>
@@ -106,31 +106,31 @@ public:
     }
 
     __device__ inline void clear() {
-        for (uint32_t i = threadIdx.x; i < m_size / 4; i += blockDim.x) {
-            reinterpret_cast<uint32_t *>(m_ptr)[i] = 0;
+        for (u32 i = threadIdx.x; i < m_size / 4; i += blockDim.x) {
+            reinterpret_cast<u32 *>(m_ptr)[i] = 0;
         }
     }
 private:
-    __device__ PerBlockStackAllocation(PerBlockStackAllocator *base, T *ptr, uint32_t size) : m_allocator(base), m_ptr(ptr), m_size(size) {}
+    __device__ PerBlockStackAllocation(PerBlockStackAllocator *base, T *ptr, u32 size) : m_allocator(base), m_ptr(ptr), m_size(size) {}
 
     PerBlockStackAllocator *m_allocator;
     T *m_ptr;
-    uint32_t m_size;
+    u32 m_size;
 };
 
-__device__ inline uint32_t get_scratch_size(uint32_t num_blocks)
+__device__ inline u32 get_scratch_size(u32 num_blocks)
 {
     // 512kB per block is good enough?
     return num_blocks * 512 * 1024;
 }
 
-__device__ inline uint32_t get_scratch_size()
+__device__ inline u32 get_scratch_size()
 {
     return get_scratch_size(gridDim.x);
 }
 
 extern "C" __global__ void query_scratch_size_per_block(
-    uint32_t *size)
+    u32 *size)
 {
     *size = get_scratch_size(1);
 }
@@ -139,7 +139,7 @@ extern "C" __global__ void query_scratch_size_per_block(
 template <typename T>
 class DstBuffer {
 public:
-    __device__ static inline uint32_t size(uint32_t count) {
+    __device__ static inline u32 size(u32 count) {
         return count * sizeof(T);
     }
 
@@ -155,11 +155,11 @@ public:
         return data;
     }
 
-    __device__ inline T& operator[](uint32_t i) {
+    __device__ inline T& operator[](u32 i) {
         return data[i];
     }
 
-    __device__ inline const T& operator[](uint32_t i) const {
+    __device__ inline const T& operator[](u32 i) const {
         return data[i];
     }
 
