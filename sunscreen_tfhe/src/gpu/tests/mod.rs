@@ -6,10 +6,10 @@ mod fft;
 //mod homomorphisms;
 mod memory;
 //mod negacyclic;
-//mod polynomial;
+mod polynomial;
 //mod signed_decomposition;
 //mod simd;
-//mod test_utils;
+mod test_utils;
 
 pub fn ulps_difference(x: f64, y: f64) -> u64 {
     // -0.0 == 0.0
