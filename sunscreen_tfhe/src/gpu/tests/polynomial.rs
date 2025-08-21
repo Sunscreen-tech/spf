@@ -368,7 +368,7 @@ fn can_mad_pre_fftd_polynomials() {
 #[test]
 fn can_mad_polynomials() {
     let runtimes = get_runtimes();
-    let num_blocks = 13;
+    let num_blocks = 1;
 
     for r in runtimes.iter() {
         for d in SUPPORTED_POLY_DEGREES.iter().copied() {

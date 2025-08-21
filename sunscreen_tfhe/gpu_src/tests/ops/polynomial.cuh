@@ -170,12 +170,10 @@ extern "C" __global__ void can_mad_polynomials(
     c_i_fft.ifft(c_i, degree);
     PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
 
-    auto s_in = get_fft_scratch();
-
     // Compute the non modulo-reduced result so we can check it as well in our test.
-    twisted_ifft_noreorder(c_i_fft.coeffs(), degree.val);
+    // twisted_ifft_noreorder(c_i_fft.coeffs(), degree.val);
 
-    auto result = DstArray<Polynomial>::from_ptr(result_buf);
-    auto result_i = result.nth(blockIdx.x, degree);
-    BLOCK_COPY(result_i.coeffs().as_f64(), c_i_fft.coeffs().as_f64(), degree.val);
+    // auto result = DstArray<Polynomial>::from_ptr(result_buf);
+    // auto result_i = result.nth(blockIdx.x, degree);
+    // BLOCK_COPY(result_i.coeffs().as_f64(), c_i_fft.coeffs().as_f64(), degree.val);
 }

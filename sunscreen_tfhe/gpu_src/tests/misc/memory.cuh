@@ -19,20 +19,22 @@ extern "C" __global__ void can_copy_to_and_from_shared_memory(
 }
 
 extern "C" __global__ void can_use_scratch(
-    const u32 *__restrict__ a,
-    const u32 *__restrict__ b,
-    u32 *__restrict__ output,
-    uint8_t *__restrict__ scratch_buffer
+    const f64 *__restrict__ a,
+    const f64 *__restrict__ b,
+    f64 *__restrict__ output,
+    cuda::std::complex<f64> *__restrict__ scratch_buffer
 ) {
-    const u32 N = 2345;
+    const u32 N = 2344;
 
     auto allocator = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
-    auto a_clone = allocator.alloc<DstBuffer<u32>>(N);
-    auto b_clone = allocator.alloc<DstBuffer<u32>>(N);
-    u32* a_clone_ptr = a_clone->ptr();
-    u32* b_clone_ptr = b_clone->ptr();
+    auto a_clone = allocator.alloc<DstBuffer>(N);
+    auto b_clone = allocator.alloc<DstBuffer>(N);
+    f64* a_clone_ptr = (*a_clone).ptr();
+    f64* b_clone_ptr = (*b_clone).ptr();
 
-    assert(reinterpret_cast<size_t>(b_clone_ptr) - reinterpret_cast<size_t>(a_clone_ptr) == N * sizeof(u32));
+    printf("a_clone %p b_clone %p\n", a_clone_ptr, b_clone_ptr);
+
+    assert(reinterpret_cast<uintptr_t>(b_clone_ptr) - reinterpret_cast<uintptr_t>(a_clone_ptr) == N * sizeof(cuda::std::complex<f64>) / 2);
 
     BLOCK_COPY(a_clone_ptr, &a[N * blockIdx.x], N);
     BLOCK_COPY(b_clone_ptr, &b[N * blockIdx.x], N);

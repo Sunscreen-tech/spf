@@ -48,21 +48,21 @@ fn can_use_scratch() {
     let runtimes = get_runtimes();
 
     for r in runtimes.iter() {
-        let num_blocks = 13;
+        let num_blocks = 31;
 
         // Must match what's in kernel.
-        const N: usize = 2345;
+        const N: usize = 2344;
 
-        let mut a = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
-        let mut b = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
-        let output = GpuRuntime::allocate::<u32>(r, num_blocks * N).unwrap();
+        let mut a = GpuRuntime::allocate::<f64>(r, num_blocks * N).unwrap();
+        let mut b = GpuRuntime::allocate::<f64>(r, num_blocks * N).unwrap();
+        let output = GpuRuntime::allocate::<f64>(r, num_blocks * N).unwrap();
 
         a.as_mut_slice()
             .iter_mut()
-            .for_each(|x| *x = rng().next_u32());
+            .for_each(|x| *x = rng().next_u64() as f64);
         b.as_mut_slice()
             .iter_mut()
-            .for_each(|x| *x = rng().next_u32());
+            .for_each(|x| *x = rng().next_u64() as f64);
 
         let stream = r.make_stream(0.into()).unwrap();
         let block_size = 128u32;
@@ -92,7 +92,9 @@ fn can_use_scratch() {
             .zip(b.as_slice().iter())
             .zip(output.as_slice().iter())
         {
-            assert_eq!(a.wrapping_add(*b), *c);
+            // Assuming your CPU and GPU both implement IEEE-754 double precision
+            // and default to round-nearest even, this is an exact result.
+            assert_eq!(a + b, *c);
         }
     }
 }
