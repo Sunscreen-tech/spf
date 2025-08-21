@@ -24,7 +24,7 @@ __device__ inline void polynomial_add(
 {
     BLOCK_FOR_EACH(i, params.val)
     {
-        auto val = a.coeffs().get_u64(i) - b.coeffs().get_u64(i);
+        auto val = a.coeffs().get_u64(i) + b.coeffs().get_u64(i);
         c.coeffs().set_u64(i, val);
     }
 }

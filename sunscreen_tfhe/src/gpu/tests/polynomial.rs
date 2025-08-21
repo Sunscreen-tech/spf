@@ -139,7 +139,7 @@ where
     F: Fn(&mut PolynomialRef<u64>, &PolynomialRef<u64>, &PolynomialRef<u64>),
 {
     let runtimes = get_runtimes();
-    let num_blocks = 13;
+    let num_blocks = 1;
 
     for r in runtimes.iter() {
         for d in SUPPORTED_POLY_DEGREES.iter().copied() {
