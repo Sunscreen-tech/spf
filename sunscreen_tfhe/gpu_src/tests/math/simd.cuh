@@ -1,4 +1,5 @@
 #pragma once
+#include <cuda/std/complex>
 #include <cstdint>
 
 #include "../../src/iter_tools.cuh"
@@ -19,12 +20,17 @@ extern "C" __global__ void can_reduce_mod_2_pow_64(
 }
 
 extern "C" __global__ void can_complex_mad(
-    PolynomialFft<Complex<double>> *__restrict__ c,
-    const PolynomialFft<Complex<double>> *__restrict__ a,
-    const PolynomialFft<Complex<double>> *__restrict__ b,
+    cuda::std::complex<f64> *__restrict__ c_buf,
+    const cuda::std::complex<f64> *__restrict__ a_buf,
+    const cuda::std::complex<f64> *__restrict__ b_buf,
     const u32 n)
 {
     auto degree = PolynomialDegree(2 * n);
+
+    // Just make a big old buffer out of a polynomial
+    auto c = PolynomialFft::from_ptr(c_buf);
+    auto a = PolynomialFft::from_ptr(a_buf);
+    auto b = PolynomialFft::from_ptr(b_buf);
 
     polynomial_mad(c, a, b, degree);
 }
