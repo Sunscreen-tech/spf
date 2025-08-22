@@ -1,7 +1,9 @@
 #pragma once
+#include <cuda/std/complex>
 #include <cstdint>
 
 #include "../math/math.cuh"
+#include "../math/primitives.cuh"
 
 #define STACK_ALLOCATOR
 
@@ -24,7 +26,11 @@ class PerBlockStackAllocator
 
 public:
     __device__ PerBlockStackAllocator() = delete;
-    __device__ inline PerBlockStackAllocator(uint8_t *scratch, uint32_t length)
+    __device__ PerBlockStackAllocator(const PerBlockStackAllocator& rhs) = delete;
+    __device__ PerBlockStackAllocator(const PerBlockStackAllocator&& rhs) = delete;
+    __device__ PerBlockStackAllocator operator=(const PerBlockStackAllocator& rhs) = delete;
+
+    __device__ inline PerBlockStackAllocator(cuda::std::complex<f64> *scratch, u32 length)
     {
         this->m_per_block_size = length / gridDim.x;
 
@@ -43,29 +49,26 @@ public:
     template <typename T, typename U>
     __device__ PerBlockStackAllocation<T> inline alloc(const U &params)
     {
-        uint32_t size = T::size(params);
-        uint32_t align = T::align();
-
-        // Align our allocation.
-        auto padding = (align - reinterpret_cast<size_t>(m_next) % align) % align;
+        // Size is in complex<f64> (16-byte) values
+        u32 size = T::size(params);
 
         // Check we don't overflow our stack.
-        assert(&m_next[size + padding] <= &m_scratch[m_per_block_size]);
+        assert(&m_next[size] <= &m_scratch[m_per_block_size]);
 
-        auto alloc_ptr = &m_next[padding];
-        m_next = &m_next[padding + size];
+        auto alloc_ptr = m_next;
+        m_next = &m_next[size];
 
-        return PerBlockStackAllocation<T>(this, reinterpret_cast<T *>(alloc_ptr), size);
+        return PerBlockStackAllocation<T>(this, alloc_ptr, size);
     }
 
 private:
-    uint8_t *m_next;
+    cuda::std::complex<f64> *m_next;
 
     /// A pointer to the base of this block's scratch.
-    uint8_t *m_scratch;
+    cuda::std::complex<f64> *m_scratch;
 
     /// @brief number of bytes available per block.
-    uint32_t m_per_block_size;
+    u32 m_per_block_size;
 };
 
 template <typename T>
@@ -79,97 +82,108 @@ public:
     __device__ PerBlockStackAllocation<T>& operator=(const PerBlockStackAllocation<T>&) = delete;
     __device__ PerBlockStackAllocation<T>& operator=(const PerBlockStackAllocation<T>&&) = delete;
 
-    __device__ inline T *operator*()
+    __device__ constexpr inline T operator*()
     {
-        return m_ptr;
+        return T::from_ptr(m_ptr);
     }
 
-    __device__ inline const T *operator*() const
+    __device__ constexpr inline const T operator*() const
     {
-        return m_ptr;
+        return T::from_ptr(m_ptr);
     }
 
-    __device__ inline T *operator->()
-    {
-        return m_ptr;
+    __device__ constexpr inline const T get() {
+        return T::from_ptr(m_ptr);
     }
 
-    __device__ inline const T *operator->() const
-    {
-        return m_ptr;
+    __device__ constexpr inline const T get() const {
+        return T::from_ptr(m_ptr);
     }
 
     __device__ ~PerBlockStackAllocation()
     {
-        auto next = min(reinterpret_cast<size_t>(m_allocator->m_next), reinterpret_cast<size_t>(m_ptr));
-        m_allocator->m_next = reinterpret_cast<uint8_t *>(next);
+        auto next = min(reinterpret_cast<uintptr_t>(m_allocator->m_next), reinterpret_cast<uintptr_t>(m_ptr));
+        m_allocator->m_next = reinterpret_cast<cuda::std::complex<f64> *>(next);
     }
 
     __device__ inline void clear() {
-        for (uint32_t i = threadIdx.x; i < m_size / 4; i += blockDim.x) {
-            reinterpret_cast<uint32_t *>(m_ptr)[i] = 0;
+        for (u32 i = threadIdx.x; i < m_size; i += blockDim.x) {
+            m_ptr[i] = cuda::std::complex<f64>(0.0, 0.0);
         }
     }
 private:
-    __device__ PerBlockStackAllocation(PerBlockStackAllocator *base, T *ptr, uint32_t size) : m_allocator(base), m_ptr(ptr), m_size(size) {}
+    __device__ constexpr inline explicit PerBlockStackAllocation(PerBlockStackAllocator *base, cuda::std::complex<f64> *ptr, u32 size) : m_allocator(base), m_ptr(ptr), m_size(size) {}
 
     PerBlockStackAllocator *m_allocator;
-    T *m_ptr;
-    uint32_t m_size;
+    cuda::std::complex<f64> *m_ptr;
+    u32 m_size;
 };
 
-__device__ inline uint32_t get_scratch_size(uint32_t num_blocks)
+/// @brief Returns the size in cuda::std::complex<f64> items.
+/// @param num_blocks 
+/// @return
+__device__ inline u32 get_scratch_size(u32 num_blocks)
 {
     // 512kB per block is good enough?
-    return num_blocks * 512 * 1024;
+    return num_blocks * 512 * 1024 / sizeof(cuda::std::complex<f64>);
 }
 
-__device__ inline uint32_t get_scratch_size()
+__device__ inline u32 get_scratch_size()
 {
     return get_scratch_size(gridDim.x);
 }
 
 extern "C" __global__ void query_scratch_size_per_block(
-    uint32_t *size)
+    u32 *size)
 {
     *size = get_scratch_size(1);
 }
 
-/// @brief A dynamically sized type buffer.
-template <typename T>
+#ifdef TEST
+
+/// @brief A dynamically sized type buffer. Stores f64 values. Used for testing
 class DstBuffer {
 public:
-    __device__ static inline uint32_t size(uint32_t count) {
-        return count * sizeof(T);
+    DstBuffer() = delete;
+    __device__ explicit constexpr inline DstBuffer(PunBuf data): m_data(data) { }
+
+    __device__ constexpr static inline u32 size(u32 count) {
+        return count / 2;
     }
 
-    __device__ static inline constexpr size_t align() {
-        return alignof(T);
+    __device__ constexpr inline f64 *operator*() {
+        return m_data.as_f64();
     }
 
-    __device__ inline T *operator*() {
-        return data;
+    __device__ constexpr inline const f64 *operator*() const {
+        return m_data.as_f64();
     }
 
-    __device__ inline const T *operator*() const {
-        return data;
+    __device__ constexpr inline f64& operator[](u32 i) {
+        return m_data.as_f64()[i];
     }
 
-    __device__ inline T& operator[](uint32_t i) {
-        return data[i];
+    __device__ constexpr inline const f64& operator[](u32 i) const {
+        return m_data.as_f64()[i];
     }
 
-    __device__ inline const T& operator[](uint32_t i) const {
-        return data[i];
+    __device__ constexpr inline f64 *ptr() {
+        return m_data.as_f64();
     }
 
-    __device__ inline T* ptr() {
-        return data;
+    __device__ constexpr inline const f64 *ptr() const {
+        return m_data.as_f64();
+    }
+   
+    __device__ static constexpr inline DstBuffer from_ptr(cuda::std::complex<f64> *ptr) {
+        return DstBuffer(PunBuf::from_ptr(ptr));
     }
 
-    __device__ inline const T* ptr() const {
-        return data;
+    __device__ static constexpr inline const DstBuffer from_ptr(const cuda::std::complex<f64> *ptr) {
+        return DstBuffer(PunBuf::from_ptr(ptr));
     }
 private:
-    T data[0];
+    PunBuf m_data;
 };
+
+#endif

@@ -10,150 +10,145 @@
 #include "../math/signed_decomposer.cuh"
 #include "../params.cuh"
 
-template <typename T>
 __device__ inline void glwe_sub(
-    GlweCiphertext<T> *__restrict__ c,
-    const GlweCiphertext<T> *a,
-    const GlweCiphertext<T> *b,
+    GlweCiphertext c,
+    const GlweCiphertext a,
+    const GlweCiphertext b,
     const GlweDef &params)
 {
     // Add the `a` terms
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
-        auto c_a_i = c->a_b(i, params);
-        auto a_a_i = a->a_b(i, params);
-        auto b_a_i = b->a_b(i, params);
+        auto c_a_i = c.a_b(i, params);
+        auto a_a_i = a.a_b(i, params);
+        auto b_a_i = b.a_b(i, params);
 
         polynomial_sub(c_a_i, a_a_i, b_a_i, params.polynomial_degree());
     }
 
     // Add `b`
-    auto c_b = c->a_b(params.size.val, params);
-    auto a_b = a->a_b(params.size.val, params);
-    auto b_b = b->a_b(params.size.val, params);
+    auto c_b = c.a_b(params.size.val, params);
+    auto a_b = a.a_b(params.size.val, params);
+    auto b_b = b.a_b(params.size.val, params);
 
     polynomial_sub(c_b, a_b, b_b, params.polynomial_degree());
 }
 
-template <typename T>
 __device__ inline void glwe_add(
-    GlweCiphertext<T> *__restrict__ c,
-    const GlweCiphertext<T> *a,
-    const GlweCiphertext<T> *b,
+    GlweCiphertext c,
+    const GlweCiphertext a,
+    const GlweCiphertext b,
     const GlweDef &params)
 {
     // Add the `a` terms
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
-        auto c_a_i = c->a_b(i, params);
-        auto a_a_i = a->a_b(i, params);
-        auto b_a_i = b->a_b(i, params);
+        auto c_a_i = c.a_b(i, params);
+        auto a_a_i = a.a_b(i, params);
+        auto b_a_i = b.a_b(i, params);
 
         polynomial_add(c_a_i, a_a_i, b_a_i, params.polynomial_degree());
     }
 
     // Add `b`
-    auto c_b = c->a_b(params.size.val, params);
-    auto a_b = a->a_b(params.size.val, params);
-    auto b_b = b->a_b(params.size.val, params);
+    auto c_b = c.a_b(params.size.val, params);
+    auto a_b = a.a_b(params.size.val, params);
+    auto b_b = b.a_b(params.size.val, params);
 
     polynomial_add(c_b, a_b, b_b, params.polynomial_degree());
 }
 
-template <typename T>
 __device__ inline void glwe_polynomial_mad(
-    GlweCiphertextFft<T> *__restrict__ c,
-    const GlweCiphertextFft<T> *__restrict__ a,
-    const PolynomialFft<T> *__restrict__ b,
+    GlweCiphertextFft c,
+    const GlweCiphertextFft a,
+    const PolynomialFft b,
     const GlweDef &params)
 {
     // Multiply-add the
-    for (uint32_t i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i < params.size.val; i++)
     {
-        auto a_i = a->a_b(i, params);
-        auto c_i = c->a_b(i, params);
+        auto a_i = a.a_b(i, params);
+        auto c_i = c.a_b(i, params);
 
-        polynomial_mad<T>(c_i, a_i, b, params.polynomial_degree());
+        polynomial_mad(c_i, a_i, b, params.polynomial_degree());
     }
 
-    auto a_b = a->a_b(params.size.val, params);
-    auto c_b = c->a_b(params.size.val, params);
+    auto a_b = a.a_b(params.size.val, params);
+    auto c_b = c.a_b(params.size.val, params);
 
-    polynomial_mad<T>(c_b, a_b, b, params.polynomial_degree());
+    polynomial_mad(c_b, a_b, b, params.polynomial_degree());
 }
 
-template <typename T, typename U>
 __device__ inline void decomposed_polynomial_glev_mad(
-    GlweCiphertextFft<U> *__restrict__ c,
-    const Polynomial<T> *__restrict__ a,
-    const GlevCiphertextFft<U> *__restrict__ b,
+    GlweCiphertextFft c,
+    const Polynomial a,
+    const GlevCiphertextFft b,
     const GlweDef &glwe,
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
-    auto decomp_scratch = scratch.alloc<Polynomial<T>>(glwe.polynomial_degree());
-    auto decomp = PolynomialSignedRadixDecomposer<T>(a, *decomp_scratch, radix, glwe.polynomial_degree());
+    auto decomp_scratch = scratch.alloc<Polynomial>(glwe.polynomial_degree());
+    auto decomp = PolynomialSignedRadixDecomposer(a, *decomp_scratch, radix, glwe.polynomial_degree());
 
-    auto decomp_poly = get_fft_scratch<Polynomial<uint64_t>>();
-
-    for (uint32_t i = 0; i < radix.count.val; i++)
+    for (u32 i = 0; i < radix.count.val; i++)
     {
-        uint32_t l = radix.count.val - i - 1;
+        auto decomp_poly_buf = get_fft_scratch();
+        auto decomp_poly = Polynomial(decomp_poly_buf);
 
-        auto b_l = b->decomps(l, std::tuple(glwe, radix));
+        u32 l = radix.count.val - i - 1;
+
+        auto b_l = b.decomps(l, std::tuple(glwe, radix));
         decomp.next(decomp_poly);
 
-        auto decomp_poly_fft = decomp_poly->fft_inplace<Complex<double>>(glwe.polynomial_degree());
+        auto decomp_poly_fft = std::move(decomp_poly).fft_inplace(glwe.polynomial_degree());
 
         glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
     }
 }
 
-template <typename T, typename U>
 __device__ inline void glwe_ggsw_mad(
-    GlweCiphertextFft<U> *__restrict__ c_fft,
-    const GlweCiphertext<T> *__restrict__ a,
-    const GgswCiphertextFft<U> *__restrict__ b,
+    GlweCiphertextFft c_fft,
+    const GlweCiphertext a,
+    const GgswCiphertextFft b,
     const GlweDef &glwe,
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
-    for (uint32_t i = 0; i < glwe.size.val; i++)
+    for (u32 i = 0; i < glwe.size.val; i++)
     {
-        auto a_i = a->a_b(i, glwe);
-        auto glev_i = b->rows(i, std::tuple(glwe, radix));
+        auto a_i = a.a_b(i, glwe);
+        auto glev_i = b.rows(i, std::tuple(glwe, radix));
 
         decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
     }
 
-    auto a_i = a->a_b(glwe.size.val, glwe);
-    auto glev_i = b->rows(glwe.size.val, std::tuple(glwe, radix));
+    auto a_i = a.a_b(glwe.size.val, glwe);
+    auto glev_i = b.rows(glwe.size.val, std::tuple(glwe, radix));
 
     decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
 }
 
-template <typename T, typename U>
 __device__ inline void cmux(
-    GlweCiphertext<T> *__restrict__ c,
-    const GlweCiphertext<T> *__restrict__ a,
-    const GlweCiphertext<T> *__restrict__ b,
-    const GgswCiphertextFft<U> *__restrict__ sel,
+    GlweCiphertext c,
+    const GlweCiphertext a,
+    const GlweCiphertext b,
+    const GgswCiphertextFft sel,
     const GlweDef &glwe,
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
-    auto diff = scratch.alloc<GlweCiphertext<T>>(glwe);
+    auto diff = scratch.alloc<GlweCiphertext>(glwe);
 
     glwe_sub(*diff, b, a, glwe);
 
-    auto prod_fft = scratch.alloc<GlweCiphertextFft<U>>(glwe);
+    auto prod_fft = scratch.alloc<GlweCiphertextFft>(glwe);
     prod_fft.clear();
 
     glwe_ggsw_mad(*prod_fft, *diff, sel, glwe, radix, scratch);
 
-    auto prod = scratch.alloc<GlweCiphertext<T>>(glwe);
+    auto prod = scratch.alloc<GlweCiphertext>(glwe);
 
-    prod_fft->ifft(*prod, glwe);
+    (*prod_fft).ifft(*prod, glwe);
 
     glwe_add(c, *prod, a, glwe);
 }

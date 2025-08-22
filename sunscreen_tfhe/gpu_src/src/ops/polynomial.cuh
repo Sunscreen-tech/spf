@@ -3,42 +3,51 @@
 #include "../iter_tools.cuh"
 #include "../entities/polynomial.cuh"
 
-template <typename T>
 __device__ inline void polynomial_sub(
-    Polynomial<T> *__restrict__ c,
-    const Polynomial<T> *a,
-    const Polynomial<T> *b,
+    Polynomial c,
+    const Polynomial a,
+    const Polynomial b,
     const PolynomialDegree params)
 {
     BLOCK_FOR_EACH(i, params.val)
     {
-        c->coeffs()[i] = a->coeffs()[i] - b->coeffs()[i];
+        auto val = a.coeffs().get_u64(i) - b.coeffs().get_u64(i);
+        c.coeffs().set_u64(i, val);
     }
 }
 
-template <typename T>
 __device__ inline void polynomial_add(
-    Polynomial<T> *__restrict__ c,
-    const Polynomial<T> *a,
-    const Polynomial<T> *b,
+    Polynomial c,
+    const Polynomial a,
+    const Polynomial b,
     const PolynomialDegree params)
 {
     BLOCK_FOR_EACH(i, params.val)
     {
-        c->coeffs()[i] = a->coeffs()[i] + b->coeffs()[i];
+        auto val = a.coeffs().get_u64(i) + b.coeffs().get_u64(i);
+        c.coeffs().set_u64(i, val);
     }
 }
 
-template <typename T>
 __device__ inline void polynomial_mad(
-    PolynomialFft<T> *__restrict__ c,
-    const PolynomialFft<T> *a,
-    const PolynomialFft<T> *b,
-    const PolynomialDegree params
-) {
+    PolynomialFft c,
+    const PolynomialFft a,
+    const PolynomialFft b,
+    const PolynomialDegree params)
+{
     // FFT'd polynomials are half length.
     BLOCK_FOR_EACH(i, params.val / 2)
     {
-        c->coeffs()[i].mad_inplace(a->coeffs()[i], b->coeffs()[i]);
+        auto c_i = c.coeffs().as_complex()[i];
+        auto a_i = a.coeffs().as_complex()[i];
+        auto b_i = b.coeffs().as_complex()[i];
+        double2 result;
+
+        result.x = fma(a_i.real(), b_i.real(), c_i.real());
+        result.y = fma(a_i.real(), b_i.imag(), c_i.imag());
+        result.x = fma(-a_i.imag(), b_i.imag(), result.x);
+        result.y = fma(a_i.imag(), b_i.real(), result.y);
+        
+        c.coeffs().as_complex()[i] = cuda::std::complex(result.x, result.y);
     }
 }

@@ -6,29 +6,29 @@
 #include "../../src/math/fft/fft.cuh"
 
 extern "C" __global__ void can_apply_twist(
-    const double* __restrict__ input,
-    Complex<double>* __restrict__ output,
-    uint32_t n
+    const f64 *__restrict__ input,
+    cuda::std::complex<f64> *__restrict__ output,
+    u32 n
 ) {
-    auto s_in = get_fft_scratch<double>();
+    auto punbuf = get_fft_scratch();
 
-    BLOCK_COPY(s_in, &input[blockIdx.x * n], n);
+    BLOCK_COPY(punbuf.as_f64(), &input[blockIdx.x * n], n);
 
-    auto s_out = apply_twist(s_in, n);
+    apply_twist(punbuf, n);
 
-    BLOCK_COPY(&output[blockIdx.x * n / 2], s_out, n / 2);
+    BLOCK_COPY(&output[blockIdx.x * n / 2], punbuf.as_complex(), n / 2);
 }
 
 extern "C" __global__ void can_remove_twist(
-    const Complex<double>* __restrict__ input,
-    double* __restrict__ output,
-    uint32_t n
+    const cuda::std::complex<f64> *__restrict__ input,
+    f64 *__restrict__ output,
+    u32 n
 ) {
-    auto s_in = get_fft_scratch<Complex<double>>();
+    auto punbuf = get_fft_scratch();
 
-    BLOCK_COPY(s_in, &input[blockIdx.x * n / 2], n / 2);
+    BLOCK_COPY(punbuf.as_complex(), &input[blockIdx.x * n / 2], n / 2);
 
-    auto s_out = remove_twist(s_in, n);
+    remove_twist(punbuf, n);
 
-    BLOCK_COPY(&output[blockIdx.x * n], s_out, n);
+    BLOCK_COPY(&output[blockIdx.x * n], punbuf.as_f64(), n);
 }

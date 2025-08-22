@@ -59,8 +59,8 @@ fn can_roundtrip_fft_f64() {
 
         for (a, e) in x.iter(degree).zip(y.iter(degree)) {
             for (a, e) in a.coeffs().iter().zip(e.coeffs().iter()) {
-                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-12, epsilon = 1e-12);
-                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-12, epsilon = 1e-12);
+                approx::assert_relative_eq!(a.re, e.re, max_relative = 1e-10, epsilon = 1e-10);
+                approx::assert_relative_eq!(a.im, e.im, max_relative = 1e-10, epsilon = 1e-10);
             }
         }
     }

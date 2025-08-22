@@ -13,11 +13,11 @@ class Unsigned
 };
 
 template <>
-class Unsigned<uint32_t>
+class Unsigned<u32>
 {
 public:
     using SignedTy = int32_t;
-    static const uint32_t BITS = 32;
+    static const u32 BITS = 32;
 };
 
 template <>
@@ -25,7 +25,7 @@ class Unsigned<uint64_t>
 {
 public:
     using SignedTy = int64_t;
-    static const uint32_t BITS = 64;
+    static const u32 BITS = 64;
 };
 
 /// @brief Wraps built-in float types to generalize constants and functions.
@@ -90,154 +90,4 @@ class ScalarOf<float2>
 public:
     using FloatOps = Float<float>;
     using Ty = float;
-};
-
-template <typename S>
-class Complex
-{
-public:
-};
-
-template <>
-class Complex<double>
-{
-public:
-    using T = double;
-    using VecT = double2;
-
-    /// @brief Constructs an un-initialized Complex value.
-    __device__ Complex() {}
-    __device__ Complex(T re, T im) : val({re, im}) {}
-    __device__ Complex(VecT val) : val(val) {}
-
-    __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
-    {
-        return Complex(this->val.x + rhs.val.x, this->val.y + rhs.val.y);
-    }
-
-    __device__ inline Complex<T> operator-(const Complex<T> &rhs) const
-    {
-        return Complex(this->val.x - rhs.val.x, this->val.y - rhs.val.y);
-    }
-
-    __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
-    {
-        return Complex(this->re() * rhs.re() - this->im() * rhs.im(),
-                       this->re() * rhs.im() + this->im() * rhs.re());
-    }
-
-    __device__ inline Complex<T> operator*(const T &rhs) const
-    {
-        return Complex(this->val.x * rhs,
-                       this->val.y * rhs);
-    }
-
-    __device__ inline Complex<T> &operator+=(const Complex<T> &rhs) {
-        this->re() += rhs.re();
-        this->im() += rhs.im();
-
-        return *this;
-    }
-
-    __device__ inline T &re()
-    {
-        return this->val.x;
-    }
-
-    __device__ inline T &im()
-    {
-        return this->val.y;
-    }
-
-    __device__ inline const T &re() const
-    {
-        return this->val.x;
-    }
-
-    __device__ inline const T &im() const
-    {
-        return this->val.y;
-    }
-
-    __device__ inline VecT &inner()
-    {
-        return this->val;
-    }
-
-    /// @brief computes this += a * b;
-    /// @return 
-    __device__ inline void mad_inplace(const Complex<T> &a, const Complex<T> &b) {
-        this->re() = fma(a.re(), b.re(), this->re());
-        this->im() = fma(a.re(), b.im(), this->im());
-        this->re() = fma(-a.im(), b.im(), this->re());
-        this->im() = fma(a.im(), b.re(), this->im());
-    }
-private:
-    VecT val;
-};
-
-template <>
-class Complex<float>
-{
-public:
-    using T = float;
-    using VecT = float2;
-
-    /// @brief Constructs an un-initialized Complex value.
-    __device__ Complex() {}
-    __device__ constexpr Complex(T re, T im) : val({re, im}) {}
-    __device__ constexpr Complex(VecT val) : val(val) {}
-
-    __device__ inline Complex<T> operator+(const Complex<T> &rhs) const
-    {
-        return Complex(this->val.x + rhs.val.x, this->val.y + rhs.val.y);
-    }
-
-    __device__ inline Complex<T> operator-(const Complex<T> &rhs) const
-    {
-        return Complex(this->val.x - rhs.val.x, this->val.y - rhs.val.y);
-    }
-
-    __device__ inline Complex<T> operator*(const Complex<T> &rhs) const
-    {
-        return Complex(this->val.x * rhs.val.x - this->val.y * rhs.val.y,
-                       this->val.x * rhs.val.y + this->val.y * rhs.val.x);
-    }
-
-    __device__ inline Complex<T> operator*(const T &rhs) const
-    {
-        return Complex(this->val.x * rhs,
-                       this->val.y * rhs);
-    }
-
-    __device__ inline T &re()
-    {
-        return this->val.x;
-    }
-
-    __device__ inline T &im()
-    {
-        return this->val.y;
-    }
-
-    __device__ inline const T &re() const
-    {
-        return this->val.x;
-    }
-
-    __device__ inline const T &im() const
-    {
-        return this->val.y;
-    }
-
-    /// @brief computes this += a * b;
-    /// @return 
-    __device__ inline void mad_inplace(const Complex<T> &a, const Complex<T> &b) {
-        this->re() = fma(a.re(), b.re(), this->re());
-        this->im() = fma(a.re(), b.im(), this->im());
-        this->re() = fma(-a.im(), b.im(), this->re());
-        this->im() = fma(a.im(), b.re(), this->im());
-    }
-private:
-    VecT val;
 };

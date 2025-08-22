@@ -1,32 +1,40 @@
 #pragma once
+#include <cuda/std/complex>
 #include <cstdint>
 
+#include "../../features.cuh"
+
+#ifdef COMPLEX_FFT
+#include "fft_noreorder2.cuh"
+#else
 #include "fft_noreorder.cuh"
-#include "fft_f32_impl.cuh"
-#include "fft_f64_impl.cuh"
+#endif
+
 #include "fft_params.cuh"
 #include "../math.cuh"
+#include "../primitives.cuh"
 
-// 20kB is Large enough for 1024 point FFT, but small enough to schedule 2 thread blocks 
-// per SM.
-const size_t FFT_BUFFER_SIZE = 20 * 1024;
-__shared__ uint8_t FFT_BUFFER[FFT_BUFFER_SIZE];
+const size_t FFT_BUFFER_SIZE = 3 * 1024;
+__shared__ cuda::std::complex<double> FFT_BUFFER[FFT_BUFFER_SIZE];
 
-template<typename T>
-__device__ constexpr T* get_fft_scratch() {
-    return reinterpret_cast<T *>(FFT_BUFFER);
+__device__ constexpr PunBuf get_fft_scratch() {
+    return PunBuf::from_ptr(FFT_BUFFER);
 }
 
 template <typename T>
-__device__ void fft(Complex<T> *s_input, uint32_t n)
+__device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 {
-    using VecT = typename Complex<T>::VecT;
-
     __syncthreads();
+    
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_forward>(reinterpret_cast<VecT*>(s_input));
+#ifdef COMPLEX_FFT
+        CT_DIF_FFT_4way<FFT_1024_forward_noreorder, T>(s_input);
+#else
+        // TODO: Remove this UB
+        CT_DIF_FFT_4way<FFT_1024_forward_noreorder>(reinterpret_cast<double2 *>(s_input));
+#endif
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -37,52 +45,19 @@ __device__ void fft(Complex<T> *s_input, uint32_t n)
 }
 
 template <typename T>
-__device__ void ifft(Complex<T> *s_input, uint32_t n)
+__device__ void ifft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 {
     __syncthreads();
-    using VecT = typename Complex<T>::VecT;
 
     switch (n)
     {
     case 1024:
-        do_SMFFT_CT_DIT<FFT_1024_inverse>(reinterpret_cast<VecT*>(s_input));
-        break;
-    default:
-        printf("Illegal FFT size %d", n);
-        assert(false);
-    }
-
-    __syncthreads();
-}
-
-
-template <typename T>
-__device__ void fft_noreorder(Complex<T> *s_input, uint32_t n)
-{
-    using VecT = typename Complex<T>::VecT;
-
-    switch (n)
-    {
-    case 1024:
-        CT_DIF_FFT_4way<FFT_1024_forward_noreorder>(reinterpret_cast<VecT*>(s_input));
-        break;
-    default:
-        printf("Illegal FFT size %d", n);
-        assert(false);
-    }
-
-    __syncthreads();
-}
-
-template <typename T>
-__device__ void ifft_noreorder(Complex<T> *s_input, uint32_t n)
-{
-    using VecT = typename Complex<T>::VecT;
-
-    switch (n)
-    {
-    case 1024:
-        CT_DIT_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<VecT*>(s_input));
+#ifdef COMPLEX_FFT
+        CT_DIT_FFT_4way< FFT_1024_inverse_noreorder, T>(s_input);
+#else
+        // TODO: Remove this UB
+        CT_DIT_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<double2 *>(s_input));
+#endif
         break;
     default:
         printf("Illegal FFT size %d", n);

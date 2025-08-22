@@ -5,7 +5,9 @@ use rand::{Rng, RngCore, rng};
 
 use crate::{
     GlweDef, PlaintextBits, PolynomialDegree, Torus,
-    entities::{DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialRef},
+    entities::{
+        DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialFftRef, PolynomialRef,
+    },
     ops::encryption::encrypt_glwe_ciphertext_secret,
 };
 
@@ -60,10 +62,35 @@ pub(crate) fn random_complex_poly_mod(
     }
 }
 
+pub(crate) fn random_complex_polyfft_mod(
+    polys: &mut DstArrayRef<PolynomialFftRef<Complex<f64>>>,
+    degree: &PolynomialDegree,
+    modulus: f64,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for (i, c) in poly.coeffs_mut().iter_mut().enumerate() {
+            c.re = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+            c.im = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+        }
+    }
+}
+
 pub(crate) fn one_poly(polys: &mut DstArrayRef<PolynomialRef<u64>>, degree: &PolynomialDegree) {
     for poly in polys.iter_mut(*degree) {
         for (i, c) in poly.coeffs_mut().iter_mut().enumerate() {
             *c = if i == 0 { 1 } else { 0 };
+        }
+    }
+}
+
+pub(crate) fn constant_poly(
+    polys: &mut DstArrayRef<PolynomialRef<u64>>,
+    degree: &PolynomialDegree,
+    val: u64,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for (i, c) in poly.coeffs_mut().iter_mut().enumerate() {
+            *c = val;
         }
     }
 }

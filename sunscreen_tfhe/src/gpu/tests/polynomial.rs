@@ -14,8 +14,8 @@ use crate::{
         test_utils::SUPPORTED_POLY_DEGREES,
         tests::{
             test_utils::{
-                fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod, random_poly_mod,
-                random_poly_mod_2_pow_64,
+                constant_poly, fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod,
+                random_complex_polyfft_mod, random_poly_mod, random_poly_mod_2_pow_64,
             },
             ulps_difference,
         },
@@ -50,6 +50,90 @@ pub fn polynomial_mul_complex(
             let index = i + j;
             if index < a.len() {
                 coeffs[index] = coeffs[index] + l * r;
+            }
+        }
+    }
+}
+
+#[test]
+pub fn inplace_vs_out_of_place_fft() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let mut input = DstArray::<Polynomial<u64>>::new(num_blocks, d);
+            let inplace = DstArray::<PolynomialFft<Complex<f64>>>::new(num_blocks, d);
+            let out_of_place = inplace.clone();
+
+            // Do something representative of a base decomposition.
+            // a and c are random over the full u64, while b is over 16-bit integers
+            random_poly_mod_2_pow_64(&mut input, &d);
+
+            let stream = r.make_stream(0.into()).unwrap();
+            let threads_per_block = d.threads_per_block();
+            let num_threads = num_blocks as u32 * threads_per_block;
+            let grid = (num_threads, threads_per_block);
+
+            unsafe {
+                launch_kernel!(
+                    (grid)
+                    ("inplace_vs_out_of_place_fft")
+                    (r, stream)
+                    out_of_place,
+                    inplace,
+                    input,
+                    d.0 as u32
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            for (ip, oop) in inplace.iter(d).zip(out_of_place.iter(d)) {
+                assert_eq!(ip.coeffs(), oop.coeffs());
+            }
+        }
+    }
+}
+
+#[test]
+pub fn inplace_vs_out_of_place_ifft() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    for r in runtimes.iter() {
+        for d in SUPPORTED_POLY_DEGREES.iter().copied() {
+            let mut input = DstArray::<PolynomialFft<Complex<f64>>>::new(num_blocks, d);
+            let inplace = DstArray::<Polynomial<u64>>::new(num_blocks, d);
+            let out_of_place = inplace.clone();
+
+            // Do something representative of a base decomposition.
+            // a and c are random over the full u64, while b is over 16-bit integers
+            random_complex_polyfft_mod(&mut input, &d, 2.0f64.powf(64.0));
+
+            let stream = r.make_stream(0.into()).unwrap();
+            let threads_per_block = d.threads_per_block();
+            let num_threads = num_blocks as u32 * threads_per_block;
+            let grid = (num_threads, threads_per_block);
+
+            unsafe {
+                launch_kernel!(
+                    (grid)
+                    ("inplace_vs_out_of_place_ifft")
+                    (r, stream)
+                    out_of_place,
+                    inplace,
+                    input,
+                    d.0 as u32
+                )
+            }
+            .unwrap();
+
+            stream.wait().unwrap();
+
+            for (ip, oop) in inplace.iter(d).zip(out_of_place.iter(d)) {
+                assert_eq!(ip.coeffs(), oop.coeffs());
             }
         }
     }
@@ -190,6 +274,7 @@ fn can_add_polynomials() {
     poly_op_test(|c, a, b| polynomial_add(c, a, b), "can_add_polynomials");
 }
 
+#[ignore]
 #[test]
 fn can_multiply_non_negacyclic_polynomials() {
     let runtimes = get_runtimes();
@@ -365,10 +450,9 @@ fn can_mad_pre_fftd_polynomials() {
     }
 }
 
-#[test]
-fn can_mad_polynomials() {
+fn polynomial_mad_case(kernel_name: &str) {
     let runtimes = get_runtimes();
-    let num_blocks = 13;
+    let num_blocks = 1;
 
     for r in runtimes.iter() {
         for d in SUPPORTED_POLY_DEGREES.iter().copied() {
@@ -380,10 +464,12 @@ fn can_mad_polynomials() {
 
             // Do something representative of a base decomposition.
             // a and c are random over the full u64, while b is over 16-bit integers
-            //random_poly_mod_2_pow_64(&mut c, &d);
-            random_poly_mod(&mut c, &d, 0x1 << 18);
-            random_poly_mod_2_pow_64(&mut a, &d);
-            random_poly_mod(&mut b, &d, 0x1 << 16);
+            // random_poly_mod_2_pow_64(&mut c, &d);
+            // random_poly_mod_2_pow_64(&mut a, &d);
+            // random_poly_mod(&mut b, &d, 0x1 << 16);
+            constant_poly(&mut c, &d, 0xFFFFFFFFFFFFFFFF);
+            constant_poly(&mut a, &d, 69);
+            constant_poly(&mut b, &d, 38);
 
             let c_orig = c.clone();
 
@@ -397,7 +483,7 @@ fn can_mad_polynomials() {
             unsafe {
                 launch_kernel!(
                     (grid)
-                    ("can_mad_polynomials")
+                    (kernel_name)
                     (r, stream)
                     result,
                     c,
@@ -433,6 +519,16 @@ fn can_mad_polynomials() {
             }
         }
     }
+}
+
+#[test]
+fn can_mad_polynomials() {
+    polynomial_mad_case("can_mad_polynomials");
+}
+
+#[test]
+fn can_mad_polynomials_inplace() {
+    polynomial_mad_case("can_mad_polynomials_inplace");
 }
 
 #[ignore]

@@ -5,32 +5,32 @@ struct LogPolyDegree
 {
 public:
     __device__ LogPolyDegree() = delete;
-    __device__ constexpr inline LogPolyDegree(uint32_t log_poly_degree) : val(log_poly_degree) {}
+    __device__ constexpr inline LogPolyDegree(u32 log_poly_degree) : val(log_poly_degree) {}
 
-    uint32_t val;
+    u32 val;
 };
 
 struct GlweSize
 {
 public:
     __device__ GlweSize() = delete;
-    __device__ constexpr inline GlweSize(uint32_t glwe_size) : val(glwe_size) {}
+    __device__ constexpr inline GlweSize(u32 glwe_size) : val(glwe_size) {}
 
-    uint32_t val;
+    u32 val;
 };
 
 struct PolynomialDegree
 {
-    uint32_t val;
+    u32 val;
 
-    __device__ constexpr inline PolynomialDegree(uint32_t degree) : val(degree) {}
+    __device__ constexpr inline PolynomialDegree(u32 degree) : val(degree) {}
 };
 
 struct LweSize
 {
-    uint32_t val;
+    u32 val;
 
-    __device__ constexpr inline LweSize(uint32_t size) : val(size) {}
+    __device__ constexpr inline LweSize(u32 size) : val(size) {}
 };
 
 class LweDef
@@ -61,18 +61,18 @@ struct RadixCount
 {
 public:
     __device__ RadixCount() = delete;
-    __device__ constexpr inline RadixCount(uint32_t count) : val(count) {}
+    __device__ constexpr inline RadixCount(u32 count) : val(count) {}
 
-    uint32_t val;
+    u32 val;
 };
 
 struct RadixLog
 {
 public:
     __device__ RadixLog() = delete;
-    __device__ constexpr inline RadixLog(uint32_t log) : val(log) {}
+    __device__ constexpr inline RadixLog(u32 log) : val(log) {}
 
-    uint32_t val;
+    u32 val;
 };
 
 struct RadixDecomposition

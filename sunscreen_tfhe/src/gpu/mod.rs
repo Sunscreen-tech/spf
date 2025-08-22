@@ -33,7 +33,8 @@ pub mod test_utils {
 
 /// Scratch space used during GPU computation.
 pub struct Scratch {
-    alloc: Allocation<u8>,
+    /// Allocations are in 16-byte increments.
+    alloc: Allocation<[u8; 16]>,
 }
 
 impl Scratch {
@@ -41,6 +42,7 @@ impl Scratch {
     pub fn new<G: Grid>(r: &Arc<GpuRuntime>, grid: G) -> Result<Self> {
         static SIZE: OnceLock<u32> = OnceLock::new();
 
+        // Size is in 16-byte Complex<f64> values...
         let size_per_block = *SIZE.get_or_init(|| {
             let size = GpuRuntime::allocate::<u32>(r, 1).unwrap();
 
@@ -67,7 +69,7 @@ impl Scratch {
         let num_blocks = threads.next_multiple_of(block) / block;
 
         Ok(Self {
-            alloc: GpuRuntime::allocate::<u8>(r, (size_per_block * num_blocks) as usize)?,
+            alloc: GpuRuntime::allocate::<[u8; 16]>(r, (size_per_block * num_blocks) as usize)?,
         })
     }
 }

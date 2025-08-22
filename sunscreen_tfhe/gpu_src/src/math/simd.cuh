@@ -41,7 +41,7 @@ constexpr __device__ double q_as_float()
 template <typename T, uint64_t LOG2_Q>
 __device__ void inplace_reduce_mod_q_pow_2(
     T* __restrict__ s_inout,
-    const uint32_t n)
+    const u32 n)
 {
     T q = q_as_float<LOG2_Q>();
     T q_div2 = q_as_float<LOG2_Q - 1>();
