@@ -43,8 +43,9 @@ mod gpu_benches {
                 let ffts_in_parallel = 2;
                 let num_ffts_sequence = 2 * 2 * 637u32 / ffts_in_parallel;
 
-                g.borrow_mut()
-                    .throughput(criterion::Throughput::Elements((ffts_in_parallel * num_ffts_sequence) as u64));
+                g.borrow_mut().throughput(criterion::Throughput::Elements(
+                    (ffts_in_parallel * num_ffts_sequence) as u64,
+                ));
                 g.borrow_mut().bench_function(&bench_name, |b| {
                     let mut buffer = GpuRuntime::allocate::<Complex<f64>>(r, n).unwrap();
                     buffer.copy_from_slice(
@@ -78,8 +79,9 @@ mod gpu_benches {
                 let bench_name =
                     format!("Complex<f32> FFT latency N={n} Device={dev_name} noreorder");
 
-                g.borrow_mut()
-                    .throughput(criterion::Throughput::Elements((ffts_in_parallel * num_ffts_sequence) as u64));
+                g.borrow_mut().throughput(criterion::Throughput::Elements(
+                    (ffts_in_parallel * num_ffts_sequence) as u64,
+                ));
                 g.borrow_mut().bench_function(&bench_name, |b| {
                     let mut buffer = GpuRuntime::allocate::<Complex<f32>>(r, n).unwrap();
                     buffer.copy_from_slice(
