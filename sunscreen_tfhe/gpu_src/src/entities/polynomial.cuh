@@ -91,6 +91,10 @@ public:
     /// @return The FFT'd polynomial
     __device__ inline Polynomial ifft_inplace(const PolynomialDegree &degree) &&;
 
+    __device__ inline void clone_into(PolynomialFft other, const PolynomialDegree &degree) const
+    {
+        BLOCK_COPY(other.coeffs().as_complex(), this->coeffs().as_complex(), degree.val / 2);
+    }
 private:
     PunBuf m_data;
 };

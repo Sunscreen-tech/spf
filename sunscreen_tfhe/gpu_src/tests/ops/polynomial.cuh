@@ -180,3 +180,95 @@ extern "C" __global__ void can_mad_polynomials(
     auto result_i = result.nth(blockIdx.x, degree);
     BLOCK_COPY(result_i.coeffs().as_f64(), (*c_i_fft).coeffs().as_f64(), degree.val);
 }
+
+extern "C" __global__ void can_mad_polynomials_inplace(
+    cuda::std::complex<f64> *__restrict__ result_buf, // unused
+    cuda::std::complex<f64> *__restrict__ c_buf,
+    const cuda::std::complex<f64> *__restrict__ a_buf,
+    const cuda::std::complex<f64> *__restrict__ b_buf,
+    cuda::std::complex<f64> *__restrict__ scratch_buf, // unused
+    u32 d)
+{
+    auto degree = PolynomialDegree(d);
+    auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());
+
+    auto c = DstArray<Polynomial>::from_ptr(c_buf);
+    auto a = DstArray<Polynomial>::from_ptr(a_buf);
+    auto b = DstArray<Polynomial>::from_ptr(b_buf);
+    auto c_i = c.nth(blockIdx.x, degree);
+    auto a_i = a.nth(blockIdx.x, degree);
+    auto b_i = b.nth(blockIdx.x, degree);
+
+    __shared__ cuda::std::complex<f64> s_0[1024];
+    __shared__ cuda::std::complex<f64> s_1[1024];
+    __shared__ cuda::std::complex<f64> s_2[1024];
+
+    auto a_s = Polynomial::from_ptr(s_0);
+    auto b_s = Polynomial::from_ptr(s_1);
+    auto c_s = Polynomial::from_ptr(s_2);
+
+    a_i.clone_into(a_s, degree);
+    b_i.clone_into(b_s, degree);
+    c_i.clone_into(c_s, degree);
+
+    auto a_s_fft = std::move(a_s).fft_inplace(degree);
+    auto b_s_fft = std::move(b_s).fft_inplace(degree);
+    auto c_s_fft = std::move(c_s).fft_inplace(degree);
+    
+    polynomial_mad(c_s_fft, a_s_fft, b_s_fft, degree);
+
+    // Set the modulo-reduced result
+    c_s = std::move(c_s_fft).ifft_inplace(degree);
+    
+    c_s.clone_into(c_i, degree);
+}
+
+extern "C" __global__ void inplace_vs_out_of_place_fft(
+    cuda::std::complex<f64> *__restrict__ out_of_place_buf,
+    cuda::std::complex<f64> *__restrict__ inplace_buf,
+    const cuda::std::complex<f64> *__restrict__ input_buf,
+    u32 d)
+{
+    auto degree = PolynomialDegree(d);
+
+    auto p_s = Polynomial(get_fft_scratch());
+    
+    auto input = DstArray<Polynomial>::from_ptr(input_buf);
+    auto out_of_place = DstArray<PolynomialFft>::from_ptr(input_buf);
+    auto inplace = DstArray<PolynomialFft>::from_ptr(input_buf);
+
+    auto input_i = input.nth(blockIdx.x, degree);
+    auto out_of_place_i = out_of_place.nth(blockIdx.x, degree);
+    auto inplace_i = inplace.nth(blockIdx.x, degree);
+
+    input_i.clone_into(p_s, degree);
+    auto a_s_fft = std::move(p_s).fft_inplace(degree);
+
+    a_s_fft.clone_into(inplace_i, degree);
+    input_i.fft(out_of_place_i, degree);
+}
+
+extern "C" __global__ void inplace_vs_out_of_place_ifft(
+    cuda::std::complex<f64> *__restrict__ out_of_place_buf,
+    cuda::std::complex<f64> *__restrict__ inplace_buf,
+    const cuda::std::complex<f64> *__restrict__ input_buf,
+    u32 d)
+{
+    auto degree = PolynomialDegree(d);
+
+    auto p_s = PolynomialFft(get_fft_scratch());
+    
+    auto input = DstArray<PolynomialFft>::from_ptr(input_buf);
+    auto out_of_place = DstArray<Polynomial>::from_ptr(input_buf);
+    auto inplace = DstArray<Polynomial>::from_ptr(input_buf);
+
+    auto input_i = input.nth(blockIdx.x, degree);
+    auto out_of_place_i = out_of_place.nth(blockIdx.x, degree);
+    auto inplace_i = inplace.nth(blockIdx.x, degree);
+
+    input_i.clone_into(p_s, degree);
+    auto a_s_fft = std::move(p_s).ifft_inplace(degree);
+
+    a_s_fft.clone_into(inplace_i, degree);
+    input_i.ifft(out_of_place_i, degree);
+}

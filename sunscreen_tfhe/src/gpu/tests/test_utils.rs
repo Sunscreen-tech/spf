@@ -4,9 +4,7 @@ use num::Complex;
 use rand::{Rng, RngCore, rng};
 
 use crate::{
-    GlweDef, PlaintextBits, PolynomialDegree, Torus,
-    entities::{DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialRef},
-    ops::encryption::encrypt_glwe_ciphertext_secret,
+    entities::{DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialFftRef, PolynomialRef}, ops::encryption::encrypt_glwe_ciphertext_secret, GlweDef, PlaintextBits, PolynomialDegree, Torus
 };
 
 pub(crate) fn glwe_encrypt<F>(
@@ -49,6 +47,19 @@ pub(crate) fn random_poly_mod_2_pow_64(
 
 pub(crate) fn random_complex_poly_mod(
     polys: &mut DstArrayRef<PolynomialRef<Complex<f64>>>,
+    degree: &PolynomialDegree,
+    modulus: f64,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for (i, c) in poly.coeffs_mut().iter_mut().enumerate() {
+            c.re = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+            c.im = 2.0 * modulus * (rng().random::<f64>() - 0.5);
+        }
+    }
+}
+
+pub(crate) fn random_complex_polyfft_mod(
+    polys: &mut DstArrayRef<PolynomialFftRef<Complex<f64>>>,
     degree: &PolynomialDegree,
     modulus: f64,
 ) {
