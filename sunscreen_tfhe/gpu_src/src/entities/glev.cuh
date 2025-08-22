@@ -36,6 +36,13 @@ public:
 
     __device__ inline void fft(GlevCiphertextFft out, const GlevSizeInfo &size_info) const;
 
+    __device__ static constexpr inline GlevCiphertext from_ptr(cuda::std::complex<f64> *ptr) {
+        return GlevCiphertext(PunBuf::from_ptr(ptr));
+    }
+
+    __device__ static constexpr inline const GlevCiphertext from_ptr(const cuda::std::complex<f64> *ptr) {
+        return GlevCiphertext(PunBuf::from_ptr(ptr));
+    }
 private:
     PunBuf m_data;
 };
@@ -70,6 +77,14 @@ public:
 
             d_fft_i.ifft(d_i, std::get<0>(size_info));
         }
+    }
+
+    __device__ static constexpr inline GlevCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
+        return GlevCiphertextFft(PunBuf::from_ptr(ptr));
+    }
+
+    __device__ static constexpr inline const GlevCiphertextFft from_ptr(const cuda::std::complex<f64> *ptr) {
+        return GlevCiphertextFft(PunBuf::from_ptr(ptr));
     }
 
 private:
