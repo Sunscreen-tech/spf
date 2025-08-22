@@ -14,7 +14,7 @@ class GlweCiphertext
 {
 public:
     GlweCiphertext() = delete;
-    __device__ explicit constexpr inline GlweCiphertext(PunBuf data): m_data(data) { }    
+    __device__ explicit constexpr inline GlweCiphertext(PunBuf data): m_data(data) { }
 
     __device__ static constexpr inline u32 size(const GlweDef &params)
     {
@@ -95,6 +95,10 @@ public:
         auto a_i = out.a_b(params.size.val, params);
 
         a_fft_i.ifft(a_i, params.polynomial_degree());
+    }
+
+    __device__ static constexpr inline const GlweCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
+        return GlweCiphertextFft(PunBuf::from_ptr(ptr));
     }
 
 private:
