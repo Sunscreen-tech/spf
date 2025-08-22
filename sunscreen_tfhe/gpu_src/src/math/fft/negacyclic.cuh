@@ -105,8 +105,6 @@ __device__ inline void twisted_ifft_noreorder(
 {
     u32 n_div_2 = n / 2;
 
-    __syncthreads();
-
     // Perform an n/2 IFFT.
     ifft_noreorder(punbuf.as_complex(), n_div_2);
     remove_twist(punbuf, n);

@@ -24,8 +24,6 @@ extern "C" __global__ void can_roundtrip_fft_f64(
     {
         result[fft_len * blockIdx.x + i] = s_in.as_complex()[i] * n_inv;
     }
-
-    __syncthreads();
 }
 
 /// Computes the FFT twiddles using 3 methods:

@@ -134,8 +134,6 @@ extern "C" __global__ void can_multiply_non_negacyclic_polynomials(
         c_s.coeffs().as_complex()[i] = a_s.coeffs().as_complex()[i] * b_s.coeffs().as_complex()[i];
     }
 
-    __syncthreads();
-
     ifft_noreorder(c_s.coeffs().as_complex(), d);
 
     c_s.clone_into(c_i, d);

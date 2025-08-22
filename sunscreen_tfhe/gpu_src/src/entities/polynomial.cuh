@@ -145,8 +145,6 @@ __device__ inline void PolynomialFft::ifft(
         // then bitcast back to unsigned to get back to [0, q).
         res.coeffs().set_i64(i, static_cast<i64>(scratch.as_f64()[i]));
     }
-
-    __syncthreads();
 }
 
 __device__ inline PolynomialFft Polynomial::fft_inplace(const PolynomialDegree &degree) &&
@@ -158,8 +156,6 @@ __device__ inline PolynomialFft Polynomial::fft_inplace(const PolynomialDegree &
     {
         this->coeffs().as_f64()[i] = static_cast<f64>(this->coeffs().get_i64(i));
     }
-
-    __syncthreads();
 
     twisted_fft_noreorder(this->coeffs(), degree.val);
 
