@@ -58,24 +58,22 @@ fn bench_binary_function<const N: usize, F1, F2>(
 
     let ctx = FheCircuitCtx::new();
 
-    let a = UInt::<N, L1GlevCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
-    let b = UInt::<N, L1GlevCiphertext>::encrypt_secret(35, &enc, &sk).graph_inputs(&ctx);
+    let a = UInt::<N, L1GlevCiphertext>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk)
+        .graph_inputs(&ctx);
+    let b = UInt::<N, L1GlevCiphertext>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk)
+        .graph_inputs(&ctx);
 
     let a = a.convert::<L1GgswCiphertext>(&ctx).into();
     let b = b.convert::<L1GgswCiphertext>(&ctx).into();
 
     op_glev(&ctx, &a, &b);
 
-    // crit.bench_function(&format!("{name} SS+GLEVCmux"), |bench| {
-    //     bench.iter(|| {
-    //         uproc.run_graph_blocking(&ctx.circuit.borrow(), &fc);
-    //     });
-    // });
-
     let ctx = FheCircuitCtx::new();
 
-    let a = UInt::<N, L0LweCiphertext>::encrypt_secret(42, &enc, &sk).graph_inputs(&ctx);
-    let b = UInt::<N, L0LweCiphertext>::encrypt_secret(35, &enc, &sk).graph_inputs(&ctx);
+    let a = UInt::<N, L0LweCiphertext>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk)
+        .graph_inputs(&ctx);
+    let b = UInt::<N, L0LweCiphertext>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk)
+        .graph_inputs(&ctx);
 
     let a = a.convert::<L1GgswCiphertext>(&ctx).into();
     let b = b.convert::<L1GgswCiphertext>(&ctx).into();
@@ -127,6 +125,8 @@ fn ops(c: &mut Criterion) {
         );
     }
 
+    run_benchmarks::<2>(c);
+    run_benchmarks::<4>(c);
     run_benchmarks::<8>(c);
     run_benchmarks::<16>(c);
     run_benchmarks::<32>(c);
