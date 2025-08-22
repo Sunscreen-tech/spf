@@ -24,6 +24,8 @@ __device__ constexpr PunBuf get_fft_scratch() {
 template <typename T>
 __device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 {
+    __syncthreads();
+    
     switch (n)
     {
     case 1024:
@@ -45,6 +47,8 @@ __device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 template <typename T>
 __device__ void ifft_noreorder(cuda::std::complex<T> *s_input, u32 n)
 {
+    __syncthreads();
+
     switch (n)
     {
     case 1024:

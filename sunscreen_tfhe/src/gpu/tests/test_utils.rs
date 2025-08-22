@@ -4,7 +4,11 @@ use num::Complex;
 use rand::{Rng, RngCore, rng};
 
 use crate::{
-    entities::{DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialFftRef, PolynomialRef}, ops::encryption::encrypt_glwe_ciphertext_secret, GlweDef, PlaintextBits, PolynomialDegree, Torus
+    GlweDef, PlaintextBits, PolynomialDegree, Torus,
+    entities::{
+        DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialFftRef, PolynomialRef,
+    },
+    ops::encryption::encrypt_glwe_ciphertext_secret,
 };
 
 pub(crate) fn glwe_encrypt<F>(

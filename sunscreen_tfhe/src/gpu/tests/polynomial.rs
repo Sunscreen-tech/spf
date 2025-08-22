@@ -6,14 +6,22 @@ use rand::{Rng, rng};
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    dst::{AsMutSlice, AsSlice}, entities::{DstArray, DstArrayRef, Polynomial, PolynomialFft, PolynomialRef}, gpu::{
-        get_runtimes, test_utils::SUPPORTED_POLY_DEGREES, tests::{
+    PolynomialDegree,
+    dst::{AsMutSlice, AsSlice},
+    entities::{DstArray, DstArrayRef, Polynomial, PolynomialFft, PolynomialRef},
+    gpu::{
+        Scratch, get_runtimes,
+        test_utils::SUPPORTED_POLY_DEGREES,
+        tests::{
             test_utils::{
-                constant_poly, fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod, random_complex_polyfft_mod, random_poly_mod, random_poly_mod_2_pow_64
+                constant_poly, fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod,
+                random_complex_polyfft_mod, random_poly_mod, random_poly_mod_2_pow_64,
             },
             ulps_difference,
-        }, Scratch
-    }, high_level, polynomial::{polynomial_add, polynomial_mad, polynomial_sub}, PolynomialDegree
+        },
+    },
+    high_level,
+    polynomial::{polynomial_add, polynomial_mad, polynomial_sub},
 };
 
 /// Naively compute the product of two polynomials in C[X].
@@ -88,7 +96,6 @@ pub fn inplace_vs_out_of_place_fft() {
         }
     }
 }
-
 
 #[test]
 pub fn inplace_vs_out_of_place_ifft() {
@@ -518,7 +525,6 @@ fn polynomial_mad_case(kernel_name: &str) {
 fn can_mad_polynomials() {
     polynomial_mad_case("can_mad_polynomials");
 }
-
 
 #[test]
 fn can_mad_polynomials_inplace() {

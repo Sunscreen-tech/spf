@@ -1,13 +1,13 @@
 use num::Complex;
 
 //mod basics;
-//mod entities;
+mod entities;
 mod fft;
 //mod homomorphisms;
 mod memory;
 mod negacyclic;
 mod polynomial;
-//mod signed_decomposition;
+mod signed_decomposition;
 mod simd;
 mod test_utils;
 
