@@ -14,12 +14,13 @@ __device__ void benchmark_fft(
 ) {
     u32 block_id = blockIdx.x;
 
-    __shared__ cuda::std::complex<T> x_local[1024];
+    __shared__ cuda::std::complex<T> x_local[2048];
+    auto s_p = &x_local[1024 * threadIdx.y];
 
     BLOCK_COPY(x_local, &x[block_id * fft_len], fft_len);
 
     for (u32 i = 0; i < fft_count; i++) {
-        fft_noreorder(x_local, fft_len);
+        fft_noreorder(s_p, fft_len);
     }
 
     BLOCK_COPY(&result[block_id * fft_len], x_local, fft_len);
