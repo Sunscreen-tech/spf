@@ -258,6 +258,67 @@ where
     result
 }
 
+/// Performs a CMUX operation, which enables one of two GLWE ciphertexts
+/// to be selected from an encrypted boolean GGSW ciphertext. The result
+/// is stored in `c`.
+///
+/// Conceptually, this can be seen as the following operation in Rust:
+///
+/// ```text
+/// let c = if b_fft { d_1 } else { d_0 }
+/// ```
+///
+/// where the output `c` is a different encryption than either of the initial
+/// inputs.  Note that this will result in higher noise than in the original
+/// ciphertexts.
+///
+/// # Remarks
+/// To make some internal computations, this function actually homomorphically computes
+///
+/// ```text
+/// c += cmux(d_0, d_1, b_fft);
+/// ```
+///
+/// Unless you want this behavior, you should first call `c.clear()`, use a freshly
+/// allocated `c`, or use [crate::high_level::evaluation::cmux].
+///
+/// # Remarks
+/// This method uses naive polynomial multiplication, which is too slow for production
+/// use, but is useful for testing and evaluating noise difference vs. the FFT version.
+///
+/// You should probably use [crate::ops::fft_ops::cmux] in production code.
+pub fn cmux<S>(
+    c: &mut GlweCiphertextRef<S>,
+    d_0: &GlweCiphertextRef<S>,
+    d_1: &GlweCiphertextRef<S>,
+    b: &GgswCiphertextRef<S>,
+    params: &GlweDef,
+    radix: &RadixDecomposition,
+) where
+    S: TorusOps,
+{
+    params.assert_valid();
+    radix.assert_valid::<S>();
+    c.assert_is_valid(params.dim);
+    d_0.assert_is_valid(params.dim);
+    d_1.assert_is_valid(params.dim);
+    b.assert_is_valid((params.dim, radix.count));
+
+    allocate_scratch_ref!(diff, GlweCiphertextRef<S>, (params.dim));
+
+    sub_glwe_ciphertexts(diff, d_1, d_0, params);
+
+    allocate_scratch_ref!(prod, GlweCiphertextRef<S>, (params.dim));
+
+    prod.clear();
+
+    glwe_ggsw_mad(prod, diff, b, params, radix);
+
+    allocate_scratch_ref!(prod, GlweCiphertextRef<S>, (params.dim));
+
+    add_glwe_ciphertexts(c, prod, d_0, params);
+}
+
 /// Given a standard power-of-two `q` modulus, switch to `q' < q`, where `q' | q`, then
 /// switch back to `q`.
 ///
