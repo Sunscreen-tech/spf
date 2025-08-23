@@ -2,7 +2,7 @@ use rand::rng;
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    GLWE_1_2048_128, GlweDef, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
+    GLWE_1_2048_128, GlweDef, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus,
     dst::AsSlice,
     entities::{
         DstArray, GlevCiphertext, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, Polynomial,
@@ -11,14 +11,16 @@ use crate::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
         tests::test_utils::{
-            glev_encrypt, glwe_encrypt, random_msg, random_poly_mod, random_poly_mod_2_pow_64,
+            glev_encrypt, glwe_encrypt, random_msg, random_poly_mod, random_torus_poly,
         },
     },
-    high_level,
+    high_level, normalized_torus_distance,
     ops::{
-        ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts},
+        ciphertext::{add_glwe_ciphertexts, decomposed_polynomial_glev_mad, sub_glwe_ciphertexts},
+        encryption::decrypt_glwe_ciphertext,
         fft_ops::glwe_polynomial_mad,
     },
+    radix::PolynomialRadixIterator,
 };
 
 fn glwe_op_test<F>(baseline_op: F, kernel_name: &str)
@@ -183,12 +185,15 @@ fn can_polynomial_glev_mad() {
         let sk = GlweSecretKey::generate_binary(&glwe);
 
         let mut c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
-        let mut a_poly = DstArray::<Polynomial<u64>>::new(num_blocks, glwe.dim.polynomial_degree);
+        let mut a_poly =
+            DstArray::<Polynomial<Torus<u64>>>::new(num_blocks, glwe.dim.polynomial_degree);
         let mut b_glev = DstArray::<GlevCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
 
         glwe_encrypt(&mut c_glwe, random_msg, &sk, &glwe);
-        random_poly_mod_2_pow_64(&mut a_poly, &glwe.dim.polynomial_degree);
+        random_torus_poly(&mut a_poly, &glwe.dim.polynomial_degree);
         glev_encrypt(&mut b_glev, random_msg, &sk, &glwe, &radix);
+
+        let c_orig = c_glwe.clone();
 
         let stream = r.make_stream(0.into()).unwrap();
 
@@ -213,7 +218,39 @@ fn can_polynomial_glev_mad() {
 
         stream.wait().unwrap();
 
-        for i in 0..num_blocks {}
+        for i in 0..num_blocks {
+            // Compute the baseline on the CPU.
+            let c_orig = c_orig.iter(glwe.dim).nth(i).unwrap();
+            let a_poly = a_poly.iter(glwe.dim.polynomial_degree).nth(i).unwrap();
+            let b_glev = b_glev.iter((glwe.dim, radix.count)).nth(i).unwrap();
+
+            let mut expected = c_orig.to_owned();
+            let mut scratch = Polynomial::zero(glwe.dim.polynomial_degree.0);
+            let decomp = PolynomialRadixIterator::new(&a_poly, &mut scratch, &radix);
+
+            // Use the slow, but exact external product.
+            decomposed_polynomial_glev_mad(&mut expected, decomp, b_glev, &glwe);
+
+            //Check the baseline and our GPU version encrypt the same messages.
+            let mut expected_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
+            decrypt_glwe_ciphertext(&mut expected_msg, &expected, &sk, &glwe);
+
+            let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
+            let mut actual_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
+            decrypt_glwe_ciphertext(&mut actual_msg, &actual, &sk, &glwe);
+
+            for (a, e) in actual_msg.coeffs().iter().zip(expected_msg.coeffs().iter()) {
+                let distance = normalized_torus_distance(a, e);
+                let tolerance = 1e-6;
+                assert!(
+                    distance < tolerance,
+                    "Torus distance between {} and {} is {}, which is greater than {tolerance}",
+                    a.inner(),
+                    e.inner(),
+                    distance
+                );
+            }
+        }
     }
 }
 

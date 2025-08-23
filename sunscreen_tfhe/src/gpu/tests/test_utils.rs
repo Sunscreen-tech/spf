@@ -66,6 +66,18 @@ pub(crate) fn random_poly_mod_2_pow_64(
     }
 }
 
+/// Creates a polynomial of random Torus T[X] for T in [0, q).
+pub(crate) fn random_torus_poly(
+    polys: &mut DstArrayRef<PolynomialRef<Torus<u64>>>,
+    degree: &PolynomialDegree,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for c in poly.coeffs_mut().iter_mut() {
+            *c = Torus::from(rng().next_u64());
+        }
+    }
+}
+
 pub(crate) fn random_complex_poly_mod(
     polys: &mut DstArrayRef<PolynomialRef<Complex<f64>>>,
     degree: &PolynomialDegree,
