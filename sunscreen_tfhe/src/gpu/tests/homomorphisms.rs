@@ -2,17 +2,30 @@ use rand::rng;
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    dst::AsSlice, entities::{
-        DstArray, GgswCiphertext, GlevCiphertext, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, Polynomial
-    }, gpu::{
-        get_runtimes, test_utils::SUPPORTED_POLY_DEGREES, tests::test_utils::{
-            ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod, random_torus_poly
-        }, Scratch
-    }, high_level, normalized_torus_distance, ops::{
-        ciphertext::{add_glwe_ciphertexts, decomposed_polynomial_glev_mad, sub_glwe_ciphertexts},
+    GLWE_1_2048_128, GlweDef, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus,
+    dst::AsSlice,
+    entities::{
+        DstArray, GgswCiphertext, GlevCiphertext, GlweCiphertext, GlweCiphertextRef, GlweSecretKey,
+        Polynomial,
+    },
+    gpu::{
+        Scratch, get_runtimes,
+        test_utils::SUPPORTED_POLY_DEGREES,
+        tests::test_utils::{
+            ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod,
+            random_torus_poly,
+        },
+    },
+    high_level, normalized_torus_distance,
+    ops::{
+        ciphertext::{
+            add_glwe_ciphertexts, decomposed_polynomial_glev_mad, glwe_ggsw_mad,
+            sub_glwe_ciphertexts,
+        },
         encryption::decrypt_glwe_ciphertext,
         fft_ops::glwe_polynomial_mad,
-    }, radix::PolynomialRadixIterator, GlweDef, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_2048_128
+    },
+    radix::PolynomialRadixIterator,
 };
 
 fn glwe_op_test<F>(baseline_op: F, kernel_name: &str)
@@ -269,6 +282,8 @@ fn can_glwe_ggsw_mad() {
         glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
         ggsw_encrypt(&mut b_ggsw, &sk, &glwe, &radix);
 
+        let c_orig = c_glwe.clone();
+
         let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
@@ -292,7 +307,34 @@ fn can_glwe_ggsw_mad() {
         stream.wait().unwrap();
 
         for i in 0..num_blocks {
-            
+            let c_orig = c_orig.iter(glwe.dim).nth(i).unwrap();
+            let a_glwe = a_glwe.iter(glwe.dim).nth(i).unwrap();
+            let b_ggsw = b_ggsw.iter((glwe.dim, radix.count)).nth(i).unwrap();
+
+            let mut expected = c_orig.to_owned();
+
+            // Do the slow, but exact external product.
+            glwe_ggsw_mad(&mut expected, &a_glwe, b_ggsw, &glwe, &radix);
+
+            //Check the baseline and our GPU version encrypt the same messages.
+            let mut expected_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
+            decrypt_glwe_ciphertext(&mut expected_msg, &expected, &sk, &glwe);
+
+            let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
+            let mut actual_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
+            decrypt_glwe_ciphertext(&mut actual_msg, &actual, &sk, &glwe);
+
+            for (a, e) in actual_msg.coeffs().iter().zip(expected_msg.coeffs().iter()) {
+                let distance = normalized_torus_distance(a, e);
+                let tolerance = 1e-6;
+                assert!(
+                    distance < tolerance,
+                    "Torus distance between {} and {} is {}, which is greater than {tolerance}",
+                    a.inner(),
+                    e.inner(),
+                    distance
+                );
+            }
         }
     }
 }
