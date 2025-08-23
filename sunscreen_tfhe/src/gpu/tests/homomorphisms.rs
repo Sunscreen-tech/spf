@@ -109,7 +109,7 @@ fn can_glwe_polynomial_mad() {
 
         let mut b_poly = DstArray::<Polynomial<u64>>::new(num_blocks, glwe.dim.polynomial_degree);
 
-        random_poly_mod(&mut b_poly, &glwe.dim.polynomial_degree, 16);
+        random_poly_mod(&mut b_poly, &glwe.dim.polynomial_degree, 0x1 << 16);
         //one_poly(&mut b_poly, &glwe.dim.polynomial_degree);
 
         let stream = r.make_stream(0.into()).unwrap();
