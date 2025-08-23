@@ -4,11 +4,12 @@ use num::Complex;
 use rand::{Rng, RngCore, rng};
 
 use crate::{
-    GlweDef, PlaintextBits, PolynomialDegree, Torus,
+    GlweDef, PlaintextBits, PolynomialDegree, RadixDecomposition, Torus,
     entities::{
-        DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialFftRef, PolynomialRef,
+        DstArrayRef, GlevCiphertextRef, GlweCiphertextRef, GlweSecretKey, Polynomial,
+        PolynomialFftRef, PolynomialRef,
     },
-    ops::encryption::encrypt_glwe_ciphertext_secret,
+    ops::encryption::{encrypt_glwe_ciphertext_secret, encrypt_secret_glev_ciphertext},
 };
 
 pub(crate) fn glwe_encrypt<F>(
@@ -23,6 +24,22 @@ pub(crate) fn glwe_encrypt<F>(
         let pt = msg_gen(i, glwe.dim.polynomial_degree);
 
         encrypt_glwe_ciphertext_secret(ct, &pt, &sk, &glwe);
+    }
+}
+
+pub(crate) fn glev_encrypt<F>(
+    cts: &mut DstArrayRef<GlevCiphertextRef<u64>>,
+    msg_gen: F,
+    sk: &GlweSecretKey<u64>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) where
+    F: Fn(usize, PolynomialDegree) -> Polynomial<Torus<u64>>,
+{
+    for (i, ct) in cts.iter_mut((glwe.dim, radix.count)).enumerate() {
+        let pt = msg_gen(i, glwe.dim.polynomial_degree);
+
+        encrypt_secret_glev_ciphertext(ct, &pt, sk, glwe, radix);
     }
 }
 
