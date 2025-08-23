@@ -6,10 +6,13 @@ use rand::{Rng, RngCore, rng};
 use crate::{
     GlweDef, PlaintextBits, PolynomialDegree, RadixDecomposition, Torus,
     entities::{
-        DstArrayRef, GlevCiphertextRef, GlweCiphertextRef, GlweSecretKey, Polynomial,
-        PolynomialFftRef, PolynomialRef,
+        DstArrayRef, GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef, GlweSecretKey,
+        Polynomial, PolynomialFftRef, PolynomialRef,
     },
-    ops::encryption::{encrypt_glwe_ciphertext_secret, encrypt_secret_glev_ciphertext},
+    ops::encryption::{
+        encrypt_ggsw_ciphertext, encrypt_ggsw_ciphertext_scalar, encrypt_glwe_ciphertext_secret,
+        encrypt_secret_glev_ciphertext,
+    },
 };
 
 pub(crate) fn glwe_encrypt<F>(
@@ -40,6 +43,17 @@ pub(crate) fn glev_encrypt<F>(
         let pt = msg_gen(i, glwe.dim.polynomial_degree);
 
         encrypt_secret_glev_ciphertext(ct, &pt, sk, glwe, radix);
+    }
+}
+
+pub(crate) fn ggsw_encrypt(
+    cts: &mut DstArrayRef<GgswCiphertextRef<u64>>,
+    sk: &GlweSecretKey<u64>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    for (i, ct) in cts.iter_mut((glwe.dim, radix.count)).enumerate() {
+        encrypt_ggsw_ciphertext_scalar(ct, rng().next_u64() % 2, sk, glwe, radix, PlaintextBits(1));
     }
 }
 
