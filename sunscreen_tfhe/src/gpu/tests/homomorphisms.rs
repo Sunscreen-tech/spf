@@ -398,7 +398,7 @@ fn can_cmux() {
             cmux(&mut expected, a, b, sel, &glwe, &radix);
 
             let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
-            
+
             compare_glwe_contents(&actual, &expected, glwe, &sk);
         }
     }
