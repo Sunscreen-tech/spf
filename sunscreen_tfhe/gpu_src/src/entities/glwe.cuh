@@ -41,21 +41,21 @@ public:
         return GlweCiphertext(PunBuf::from_ptr(ptr));
     }
 
-    // __device__ inline void clone_into(GlweCiphertext *other, const GlweDef &params) const
-    // {
-    //     for (u32 i = 0; i < params.size.val; i++)
-    //     {
-    //         auto this_a_i = this->a_b(i, params);
-    //         auto other_a_i = other->a_b(i, params);
+    __device__ inline void clone_into(GlweCiphertext other, const GlweDef &params) const
+    {
+        for (u32 i = 0; i < params.size.val; i++)
+        {
+            auto this_a_i = this->a_b(i, params);
+            auto other_a_i = other.a_b(i, params);
 
-    //         this_a_i->clone_into(other_a_i, params.polynomial_degree());
-    //     }
+            this_a_i.clone_into(other_a_i, params.polynomial_degree());
+        }
 
-    //     auto this_b = this->a_b(params.size.val, params);
-    //     auto other_b = other->a_b(params.size.val, params);
+        auto this_b = this->a_b(params.size.val, params);
+        auto other_b = other.a_b(params.size.val, params);
 
-    //     this_b->clone_into(other_b, params.polynomial_degree());
-    // }
+        this_b.clone_into(other_b, params.polynomial_degree());
+    }
 
 private:
     PunBuf m_data;
@@ -91,16 +91,30 @@ public:
             a_fft_i.ifft(a_i, params.polynomial_degree());
         }
 
-        auto a_fft_i = this->a_b(params.size.val, params);
-        auto a_i = out.a_b(params.size.val, params);
+        auto b_fft = this->a_b(params.size.val, params);
+        auto b = out.a_b(params.size.val, params);
 
-        a_fft_i.ifft(a_i, params.polynomial_degree());
+        b_fft.ifft(b, params.polynomial_degree());
     }
 
     __device__ static constexpr inline const GlweCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
         return GlweCiphertextFft(PunBuf::from_ptr(ptr));
     }
 
+    __device__ inline void clone_into(GlweCiphertextFft out, const GlweDef &params) const {
+        for (u32 i = 0; i < params.size.val; i++)
+        {
+            auto a_fft_i = this->a_b(i, params);
+            auto a_i = out.a_b(i, params);
+
+            a_fft_i.clone_into(a_i, params.polynomial_degree());
+        }
+
+        auto b_fft = this->a_b(params.size.val, params);
+        auto b = out.a_b(params.size.val, params);
+
+        b_fft.clone_into(b, params.polynomial_degree());
+    }
 private:
     PunBuf m_data;
 };
