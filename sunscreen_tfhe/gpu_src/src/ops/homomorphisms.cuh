@@ -152,3 +152,46 @@ __device__ inline void cmux(
 
     glwe_add(c, *prod, a, glwe);
 }
+
+/// @brief Computes c -= a
+__device__ inline void glwe_sub_assign(
+    GlweCiphertext c,
+    GlweCiphertext a,
+    const GlweDef &params
+ ) {
+    // Sub the `a` terms
+    for (u32 i = 0; i < params.size.val; i++)
+    {
+        auto c_a_i = c.a_b(i, params);
+        auto a_a_i = a.a_b(i, params);
+
+        polynomial_sub_assign(c_a_i, a_a_i, params.polynomial_degree());
+    }
+
+    // Sub `b`
+    auto c_b = c.a_b(params.size.val, params);
+    auto a_b = a.a_b(params.size.val, params);
+
+    polynomial_sub_assign(c_b, a_b, params.polynomial_degree());
+}
+
+/// @brief Same a cmux, but more memory efficient. inputs a and b are overwritten
+/// and the result is returned in a.
+__device__ inline void destructive_cmux(
+    GlweCiphertext a,
+    GlweCiphertext b,
+    const GgswCiphertextFft sel,
+    const GlweDef &glwe,
+    const RadixDecomposition &radix,
+    PerBlockStackAllocator &scratch)
+{
+    // b -= a
+    glwe_sub_assign(b, a, glwe);
+
+    auto a_fft = std::move(a).fft_inplace(glwe);
+
+    // a += (b - a) * sel
+    glwe_ggsw_mad(a_fft, b, sel, glwe, radix, scratch);
+
+    std::move(a_fft).ifft_inplace(glwe);
+}

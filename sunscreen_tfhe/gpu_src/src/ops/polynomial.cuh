@@ -16,6 +16,18 @@ __device__ inline void polynomial_sub(
     }
 }
 
+__device__ inline void polynomial_sub_assign(
+    Polynomial c,
+    const Polynomial a,
+    const PolynomialDegree params
+) {
+    BLOCK_FOR_EACH(i, params.val)
+    {
+        auto val = c.coeffs().get_u64(i) - a.coeffs().get_u64(i);
+        c.coeffs().set_u64(i, val);
+    }
+}
+
 __device__ inline void polynomial_add(
     Polynomial c,
     const Polynomial a,

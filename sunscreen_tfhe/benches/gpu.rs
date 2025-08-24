@@ -118,7 +118,7 @@ mod gpu_benches {
     }
 
     pub fn synthetic_pbs(c: &mut Criterion) {
-        let shared_memory = 48 * 1024;
+        let shared_memory = 96 * 1024;
 
         let g = RefCell::new(c.benchmark_group("Synthetic PBS"));
 

@@ -32,6 +32,7 @@ public:
     }
 
     __device__ inline void fft(GlweCiphertextFft out, const GlweDef &params) const;
+    __device__ inline GlweCiphertextFft fft_inplace(const GlweDef &params) &&;
 
     __device__ static constexpr inline GlweCiphertext from_ptr(cuda::std::complex<double> *ptr) {
         return GlweCiphertext(PunBuf::from_ptr(ptr));
@@ -97,6 +98,22 @@ public:
         b_fft.ifft(b, params.polynomial_degree());
     }
 
+    __device__ inline GlweCiphertext ifft_inplace(const GlweDef &params) && {
+        for (u32 i = 0; i < params.size.val; i++)
+        {
+            auto a_fft_i = this->a_b(i, params);
+
+            std::move(a_fft_i).ifft_inplace(params.polynomial_degree());
+        }
+
+        auto b_fft = this->a_b(params.size.val, params);
+
+        std::move(b_fft).ifft_inplace(params.polynomial_degree());
+
+        return GlweCiphertext(m_data);
+    }
+
+
     __device__ static constexpr inline const GlweCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
         return GlweCiphertextFft(PunBuf::from_ptr(ptr));
     }
@@ -132,4 +149,20 @@ __device__ inline void GlweCiphertext::fft(GlweCiphertextFft out, const GlweDef 
     auto a_fft_i = out.a_b(params.size.val, params);
 
     a_i.fft(a_fft_i, params.polynomial_degree());
+}
+
+
+__device__ inline GlweCiphertextFft GlweCiphertext::fft_inplace(const GlweDef &params) && {
+    for (u32 i = 0; i < params.size.val; i++)
+    {
+        auto a_i = this->a_b(i, params);
+
+        std::move(a_i).fft_inplace(params.polynomial_degree());
+    }
+
+    auto b = this->a_b(params.size.val, params);
+
+    std::move(b).fft_inplace(params.polynomial_degree());
+
+    return GlweCiphertextFft(m_data);
 }
