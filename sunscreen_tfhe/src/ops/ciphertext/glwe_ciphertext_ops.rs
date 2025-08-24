@@ -314,8 +314,6 @@ pub fn cmux<S>(
 
     glwe_ggsw_mad(prod, diff, b, params, radix);
 
-    allocate_scratch_ref!(prod, GlweCiphertextRef<S>, (params.dim));
-
     add_glwe_ciphertexts(c, prod, d_0, params);
 }
 

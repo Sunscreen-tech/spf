@@ -16,7 +16,7 @@ __device__ inline void glwe_sub(
     const GlweCiphertext b,
     const GlweDef &params)
 {
-    // Add the `a` terms
+    // Sub the `a` terms
     for (u32 i = 0; i < params.size.val; i++)
     {
         auto c_a_i = c.a_b(i, params);
@@ -26,7 +26,7 @@ __device__ inline void glwe_sub(
         polynomial_sub(c_a_i, a_a_i, b_a_i, params.polynomial_degree());
     }
 
-    // Add `b`
+    // Sub `b`
     auto c_b = c.a_b(params.size.val, params);
     auto a_b = a.a_b(params.size.val, params);
     auto b_b = b.a_b(params.size.val, params);

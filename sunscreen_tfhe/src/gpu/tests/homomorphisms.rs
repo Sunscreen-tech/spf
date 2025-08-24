@@ -49,9 +49,10 @@ fn compare_glwe_contents(
     {
         let distance = normalized_torus_distance(a, e);
         let tolerance = 1e-6;
+
         assert!(
             distance < tolerance,
-            "Torus element {i}: distance between {} and {} is {}, which is greater than {tolerance}",
+            "Torus element {i}: distance between {} and {} is {:e}, which is greater than {tolerance:e}",
             a.inner(),
             e.inner(),
             distance
@@ -343,7 +344,7 @@ fn can_glwe_ggsw_mad() {
 #[test]
 fn can_cmux() {
     let runtimes = get_runtimes();
-    let num_blocks = 1;
+    let num_blocks = 100;
 
     let radix = RadixDecomposition {
         count: RadixCount(2),
@@ -355,21 +356,21 @@ fn can_cmux() {
     for r in runtimes.iter() {
         let sk = GlweSecretKey::generate_binary(&glwe);
 
+        let c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut a_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut b_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut sel = DstArray::<GgswCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
+
+        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
+        glwe_encrypt(&mut b_glwe, random_msg, &sk, &glwe);
+        ggsw_encrypt(&mut sel, &sk, &glwe, &radix);
+
         let stream = r.make_stream(0.into()).unwrap();
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
         let threads = tpb * num_blocks as u32;
         let grid = (threads, tpb);
         let scratch = Scratch::new(r, grid).unwrap();
-
-        let c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
-        let mut a_glwe = c_glwe.clone();
-        let mut b_glwe = c_glwe.clone();
-        let mut sel = DstArray::<GgswCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
-
-        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
-        glwe_encrypt(&mut b_glwe, random_msg, &sk, &glwe);
-        ggsw_encrypt(&mut sel, &sk, &glwe, &radix);
 
         unsafe {
             launch_kernel!(
@@ -388,17 +389,16 @@ fn can_cmux() {
         stream.wait().unwrap();
 
         for i in 0..num_blocks {
-            let mut actual = GlweCiphertext::new(&glwe);
+            let mut expected = GlweCiphertext::new(&glwe);
             let a = a_glwe.iter(glwe.dim).nth(i).unwrap();
             let b = b_glwe.iter(glwe.dim).nth(i).unwrap();
             let sel = sel.iter((glwe.dim, radix.count)).nth(i).unwrap();
 
             // Slow, but exact computation.
-            cmux(&mut actual, a, b, sel, &glwe, &radix);
+            cmux(&mut expected, a, b, sel, &glwe, &radix);
 
-            dbg!(i);
-
-            let expected = c_glwe.iter(glwe.dim).nth(i).unwrap();
+            let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
+            
             compare_glwe_contents(&actual, &expected, glwe, &sk);
         }
     }
