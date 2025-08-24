@@ -235,7 +235,13 @@ mod alloc {
 
         use crate::gpu::get_runtimes;
 
-        GpuRuntime::allocate(&get_runtimes()[0], len).unwrap()
+        let mut allocation = GpuRuntime::allocate(&get_runtimes()[0], len).unwrap();
+
+        // Zero the allocation because most of our code assumes owned allocations
+        // are such.
+        allocation.as_mut_slice().fill(T::default());
+
+        allocation
     }
 
     pub fn dst_from_iter<T, I: ExactSizeIterator<Item = T>>(iter: I) -> Allocation<T>
