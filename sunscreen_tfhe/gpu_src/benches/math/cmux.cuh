@@ -17,7 +17,7 @@ extern "C" __global__ void synthetic_pbs(
     auto lwe = LWE_637_128;
     auto glwe = GLWE_1_2048_128;
     auto pbs_radix = PBS_RADIX_2_16_128;
-    auto scratch = PerBlockStackAllocator(FFT_BUFFER, 96 * 1024);
+    auto scratch = PerBlockStackAllocator(FFT_BUFFER, 96 * 1024, true);
 
     auto tmp = scratch.alloc<GlweCiphertext>(glwe);
     auto rotated = scratch.alloc<GlweCiphertext>(glwe);

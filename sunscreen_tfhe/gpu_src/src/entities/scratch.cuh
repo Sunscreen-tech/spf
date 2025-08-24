@@ -30,13 +30,15 @@ public:
     __device__ PerBlockStackAllocator(const PerBlockStackAllocator&& rhs) = delete;
     __device__ PerBlockStackAllocator operator=(const PerBlockStackAllocator& rhs) = delete;
 
-    __device__ inline PerBlockStackAllocator(cuda::std::complex<f64> *scratch, u32 length)
+    __device__ inline PerBlockStackAllocator(cuda::std::complex<f64> *scratch, u32 length, bool is_local = false)
     {
         this->m_per_block_size = length / gridDim.x;
 
         assert(this->m_per_block_size * gridDim.x == length);
 
-        this->m_scratch = &scratch[blockIdx.x * this->m_per_block_size];
+        this->m_scratch = is_local
+            ? scratch
+            : &scratch[blockIdx.x * this->m_per_block_size];
         this->m_next = this->m_scratch;
     }
 
