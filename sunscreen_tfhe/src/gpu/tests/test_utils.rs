@@ -4,11 +4,15 @@ use num::Complex;
 use rand::{Rng, RngCore, rng};
 
 use crate::{
-    GlweDef, PlaintextBits, PolynomialDegree, Torus,
+    GlweDef, PlaintextBits, PolynomialDegree, RadixDecomposition, Torus,
     entities::{
-        DstArrayRef, GlweCiphertextRef, GlweSecretKey, Polynomial, PolynomialFftRef, PolynomialRef,
+        DstArrayRef, GgswCiphertextRef, GlevCiphertextRef, GlweCiphertextRef, GlweSecretKey,
+        Polynomial, PolynomialFftRef, PolynomialRef,
     },
-    ops::encryption::encrypt_glwe_ciphertext_secret,
+    ops::encryption::{
+        encrypt_ggsw_ciphertext, encrypt_ggsw_ciphertext_scalar, encrypt_glwe_ciphertext_secret,
+        encrypt_secret_glev_ciphertext,
+    },
 };
 
 pub(crate) fn glwe_encrypt<F>(
@@ -23,6 +27,33 @@ pub(crate) fn glwe_encrypt<F>(
         let pt = msg_gen(i, glwe.dim.polynomial_degree);
 
         encrypt_glwe_ciphertext_secret(ct, &pt, &sk, &glwe);
+    }
+}
+
+pub(crate) fn glev_encrypt<F>(
+    cts: &mut DstArrayRef<GlevCiphertextRef<u64>>,
+    msg_gen: F,
+    sk: &GlweSecretKey<u64>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) where
+    F: Fn(usize, PolynomialDegree) -> Polynomial<Torus<u64>>,
+{
+    for (i, ct) in cts.iter_mut((glwe.dim, radix.count)).enumerate() {
+        let pt = msg_gen(i, glwe.dim.polynomial_degree);
+
+        encrypt_secret_glev_ciphertext(ct, &pt, sk, glwe, radix);
+    }
+}
+
+pub(crate) fn ggsw_encrypt(
+    cts: &mut DstArrayRef<GgswCiphertextRef<u64>>,
+    sk: &GlweSecretKey<u64>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    for (i, ct) in cts.iter_mut((glwe.dim, radix.count)).enumerate() {
+        encrypt_ggsw_ciphertext_scalar(ct, rng().next_u64() % 2, sk, glwe, radix, PlaintextBits(1));
     }
 }
 
@@ -45,6 +76,18 @@ pub(crate) fn random_poly_mod_2_pow_64(
     for poly in polys.iter_mut(*degree) {
         for c in poly.coeffs_mut().iter_mut() {
             *c = rng().next_u64();
+        }
+    }
+}
+
+/// Creates a polynomial of random Torus T[X] for T in [0, q).
+pub(crate) fn random_torus_poly(
+    polys: &mut DstArrayRef<PolynomialRef<Torus<u64>>>,
+    degree: &PolynomialDegree,
+) {
+    for poly in polys.iter_mut(*degree) {
+        for c in poly.coeffs_mut().iter_mut() {
+            *c = Torus::from(rng().next_u64());
         }
     }
 }

@@ -1,20 +1,64 @@
+use rand::rng;
 use sunscreen_gpu_runtime::launch_kernel;
 
 use crate::{
-    GLWE_1_2048_128, GlweDef, PlaintextBits,
+    GLWE_1_2048_128, GlweDef, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus,
     dst::AsSlice,
-    entities::{DstArray, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, Polynomial},
+    entities::{
+        DstArray, GgswCiphertext, GlevCiphertext, GlweCiphertext, GlweCiphertextRef, GlweSecretKey,
+        Polynomial,
+    },
     gpu::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
-        tests::test_utils::{glwe_encrypt, random_msg, random_poly_mod},
+        tests::test_utils::{
+            ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod,
+            random_torus_poly,
+        },
     },
-    high_level,
+    high_level, normalized_torus_distance,
     ops::{
-        ciphertext::{add_glwe_ciphertexts, sub_glwe_ciphertexts},
+        ciphertext::{
+            add_glwe_ciphertexts, cmux, decomposed_polynomial_glev_mad, glwe_ggsw_mad,
+            sub_glwe_ciphertexts,
+        },
+        encryption::decrypt_glwe_ciphertext,
         fft_ops::glwe_polynomial_mad,
     },
+    radix::PolynomialRadixIterator,
 };
+
+fn compare_glwe_contents(
+    actual: &GlweCiphertextRef<u64>,
+    expected: &GlweCiphertextRef<u64>,
+    glwe: GlweDef,
+    sk: &GlweSecretKey<u64>,
+) {
+    //Check the baseline and our GPU version encrypt the same messages.
+    let mut expected_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
+    decrypt_glwe_ciphertext(&mut expected_msg, &expected, &sk, &glwe);
+
+    let mut actual_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
+    decrypt_glwe_ciphertext(&mut actual_msg, &actual, &sk, &glwe);
+
+    for (i, (a, e)) in actual_msg
+        .coeffs()
+        .iter()
+        .zip(expected_msg.coeffs().iter())
+        .enumerate()
+    {
+        let distance = normalized_torus_distance(a, e);
+        let tolerance = 1e-6;
+
+        assert!(
+            distance < tolerance,
+            "Torus element {i}: distance between {} and {} is {:e}, which is greater than {tolerance:e}",
+            a.inner(),
+            e.inner(),
+            distance
+        );
+    }
+}
 
 fn glwe_op_test<F>(baseline_op: F, kernel_name: &str)
 where
@@ -109,7 +153,7 @@ fn can_glwe_polynomial_mad() {
 
         let mut b_poly = DstArray::<Polynomial<u64>>::new(num_blocks, glwe.dim.polynomial_degree);
 
-        random_poly_mod(&mut b_poly, &glwe.dim.polynomial_degree, 16);
+        random_poly_mod(&mut b_poly, &glwe.dim.polynomial_degree, 0x1 << 16);
         //one_poly(&mut b_poly, &glwe.dim.polynomial_degree);
 
         let stream = r.make_stream(0.into()).unwrap();
@@ -163,437 +207,199 @@ fn can_glwe_polynomial_mad() {
     }
 }
 
-// #[test]
-// fn can_polynomial_glev_mad() {
-//     let runtimes = get_runtimes();
-//     let num_blocks = 13;
-
-//     for r in runtimes.iter() {
-//         let radix = RadixDecomposition {
-//             count: RadixCount(2),
-//             radix_log: RadixLog(16),
-//         };
-
-//         let glwe = GLWE_1_2048_128;
-//         let sk = GlweSecretKey::generate_binary(&glwe);
-
-//         let c_glwe = (0..num_blocks)
-//             .map(|_| {
-//                 let msg = (0..glwe.dim.polynomial_degree.0)
-//                     .map(|_| rng().next_u64() % 2)
-//                     .collect::<Vec<_>>();
-//                 let msg = Polynomial::new(&msg);
-
-//                 let ct = sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1));
-
-//                 high_level::fft::fft_glwe(&ct, &glwe)
-//             })
-//             .collect::<Vec<_>>();
-
-//         let a_poly = (0..num_blocks)
-//             .map(|_| {
-//                 let poly = (0..glwe.dim.polynomial_degree.0)
-//                     .map(|_| Torus::from(rng().next_u64()))
-//                     .collect::<Vec<_>>();
-//                 Polynomial::new(&poly)
-//             })
-//             .collect::<Vec<_>>();
-
-//         let b_glev = (0..num_blocks)
-//             .map(|_| {
-//                 let msg = (0..glwe.dim.polynomial_degree.0)
-//                     .map(|_| Torus::encode(rng().next_u64() % 2, PlaintextBits(1)))
-//                     .collect::<Vec<_>>();
-//                 let msg = Polynomial::new(&msg);
-
-//                 let mut ct = GlevCiphertext::<u64>::new(&glwe, &radix);
-
-//                 encrypt_secret_glev_ciphertext(&mut ct, &msg, &sk, &glwe, &radix);
-
-//                 high_level::fft::fft_glev(&ct, &glwe, &radix)
-//             })
-//             .collect::<Vec<_>>();
-
-//         let mut c = r
-//             .allocate::<Complex<f64>>(
-//                 num_blocks * GlweCiphertextFftRef::<Complex<f64>>::size(glwe.dim),
-//             )
-//             .unwrap();
-//         let mut a = r
-//             .allocate::<Torus<u64>>(
-//                 num_blocks * PolynomialRef::<Torus<u64>>::size(glwe.dim.polynomial_degree),
-//             )
-//             .unwrap();
-//         let mut b = r
-//             .allocate::<Complex<f64>>(
-//                 num_blocks * GlevCiphertextFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
-//             )
-//             .unwrap();
-
-//         c.as_mut_slice().clone_from_slice(
-//             c_glwe
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-//         a.as_mut_slice().clone_from_slice(
-//             a_poly
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-//         b.as_mut_slice().clone_from_slice(
-//             b_glev
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-
-//         let stream = r.make_stream(0.into()).unwrap();
-
-//         let tpb = glwe.dim.polynomial_degree.threads_per_block();
-//         let threads = tpb * num_blocks as u32;
-
-//         let grid = (threads, tpb);
-//         let scratch = Scratch::new(r, grid).unwrap();
-
-//         unsafe {
-//             launch_kernel!(
-//                 (grid)
-//                 ("can_polynomial_glev_mad")
-//                 (r, stream)
-//                 c,
-//                 a,
-//                 b,
-//                 scratch
-//             )
-//         }
-//         .unwrap();
-
-//         stream.wait().unwrap();
-
-//         for i in 0..num_blocks {
-//             let mut expected_fft = c_glwe[i].clone();
-//             let mut scratch = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//             let decomp = PolynomialRadixIterator::new(&a_poly[i], &mut scratch, &radix);
-
-//             decomposed_polynomial_glev_mad(&mut expected_fft, decomp, &b_glev[i], &glwe);
-//             let mut expected = GlweCiphertext::new(&glwe);
-//             expected_fft.ifft(&mut expected, &glwe);
-
-//             let expected = sk.decrypt_decode_glwe(&expected, &glwe, PlaintextBits(1));
-
-//             dbg!("actual");
-
-//             let actual_fft = c
-//                 .as_slice()
-//                 .chunks(GlweCiphertextFftRef::size(glwe.dim))
-//                 .nth(i)
-//                 .unwrap();
-
-//             let actual_fft = GlweCiphertextFftRef::from_slice(actual_fft);
-
-//             let mut actual = GlweCiphertext::new(&glwe);
-//             actual_fft.ifft(&mut actual, &glwe);
-
-//             let actual = sk.decrypt_decode_glwe(&actual, &glwe, PlaintextBits(1));
-
-//             assert_eq!(actual, expected);
-//         }
-//     }
-// }
-
-// #[test]
-// fn can_glwe_ggsw_mad() {
-//     let runtimes = get_runtimes();
-//     let num_blocks = 13;
-
-//     let radix = RadixDecomposition {
-//         count: RadixCount(2),
-//         radix_log: RadixLog(16),
-//     };
-
-//     let glwe = GLWE_1_2048_128;
-
-//     for r in runtimes.iter() {
-//         let sk = GlweSecretKey::generate_binary(&glwe);
-
-//         let c_msg = (0..num_blocks)
-//             .map(|_| rng().next_u64() % 2)
-//             .collect::<Vec<_>>();
-//         let c_glwe_fft = c_msg
-//             .iter()
-//             .map(|x| {
-//                 let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//                 msg.coeffs_mut()[0] = *x;
-
-//                 let ct = sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1));
-//                 high_level::fft::fft_glwe(&ct, &glwe)
-//             })
-//             .collect::<Vec<_>>();
-
-//         let a_msg = (0..num_blocks)
-//             .map(|_| rng().next_u64() % 2)
-//             .collect::<Vec<_>>();
-//         let a_glwe = a_msg
-//             .iter()
-//             .map(|x| {
-//                 let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//                 msg.coeffs_mut()[0] = *x;
-
-//                 sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1))
-//             })
-//             .collect::<Vec<_>>();
-
-//         let b_msg = (0..num_blocks)
-//             .map(|_| rng().next_u64() % 2)
-//             .collect::<Vec<_>>();
-
-//         let b_ggsw_fft = b_msg
-//             .iter()
-//             .map(|x| {
-//                 let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//                 msg.coeffs_mut()[0] = *x;
-
-//                 let ct = sk.encode_encrypt_ggsw(&msg, &glwe, &radix, PlaintextBits(1));
-//                 high_level::fft::fft_ggsw(&ct, &glwe, &radix)
-//             })
-//             .collect::<Vec<_>>();
-
-//         let mut c = r
-//             .allocate::<Complex<f64>>(
-//                 num_blocks * GlweCiphertextFftRef::<Complex<f64>>::size(glwe.dim),
-//             )
-//             .unwrap();
-//         let mut a = r
-//             .allocate::<Torus<u64>>(num_blocks * GlweCiphertextRef::<u64>::size(glwe.dim))
-//             .unwrap();
-//         let mut b = r
-//             .allocate::<Complex<f64>>(
-//                 num_blocks * GgswCiphertextFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
-//             )
-//             .unwrap();
-
-//         c.as_mut_slice().clone_from_slice(
-//             c_glwe_fft
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-//         a.as_mut_slice().clone_from_slice(
-//             a_glwe
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-//         b.as_mut_slice().clone_from_slice(
-//             b_ggsw_fft
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-
-//         let stream = r.make_stream(0.into()).unwrap();
-
-//         let tpb = glwe.dim.polynomial_degree.threads_per_block();
-//         let threads = tpb * num_blocks as u32;
-//         let grid = (threads, tpb);
-//         let scratch = Scratch::new(r, grid).unwrap();
-
-//         unsafe {
-//             launch_kernel!(
-//                 (grid)
-//                 ("can_glwe_ggsw_mad")
-//                 (r, stream)
-//                 c,
-//                 a,
-//                 b,
-//                 scratch
-//             )
-//         }
-//         .unwrap();
-
-//         stream.wait().unwrap();
-
-//         for i in 0..num_blocks {
-//             let actual_fft = c
-//                 .as_slice()
-//                 .chunks(GlweCiphertextFftRef::size(glwe.dim))
-//                 .nth(i)
-//                 .unwrap();
-//             let actual_fft = GlweCiphertextFftRef::from_slice(actual_fft);
-//             let mut actual = GlweCiphertext::<u64>::new(&glwe);
-//             actual_fft.ifft(&mut actual, &glwe);
-
-//             let actual = sk.decrypt_decode_glwe(&actual, &glwe, PlaintextBits(1));
-
-//             assert_eq!(actual.coeffs()[0], (c_msg[i] + a_msg[i] * b_msg[i]) % 2);
-
-//             for i in 1..glwe.dim.polynomial_degree.0 {
-//                 assert_eq!(actual.coeffs()[i], 0);
-//             }
-//         }
-//     }
-// }
-
-// #[test]
-// fn can_cmux() {
-//     let runtimes = get_runtimes();
-//     let num_blocks = 100;
-
-//     let radix = RadixDecomposition {
-//         count: RadixCount(2),
-//         radix_log: RadixLog(16),
-//     };
-
-//     let glwe = GLWE_1_2048_128;
-
-//     for r in runtimes.iter() {
-//         let sk = GlweSecretKey::generate_binary(&glwe);
-
-//         let a_msg = (0..num_blocks)
-//             .map(|_| rng().next_u64() % 2)
-//             .collect::<Vec<_>>();
-//         let a_glwe = a_msg
-//             .iter()
-//             .map(|x| {
-//                 let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//                 msg.coeffs_mut()[0] = *x;
-
-//                 sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1))
-//             })
-//             .collect::<Vec<_>>();
-
-//         let b_msg = (0..num_blocks)
-//             .map(|_| rng().next_u64() % 2)
-//             .collect::<Vec<_>>();
-//         let b_glwe = b_msg
-//             .iter()
-//             .map(|x| {
-//                 let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//                 msg.coeffs_mut()[0] = *x;
-
-//                 sk.encode_encrypt_glwe(&msg, &glwe, PlaintextBits(1))
-//             })
-//             .collect::<Vec<_>>();
-
-//         let sel_msg = (0..num_blocks)
-//             .map(|_| rng().next_u64() % 2)
-//             .collect::<Vec<_>>();
-
-//         let sel_ggsw_fft = sel_msg
-//             .iter()
-//             .map(|x| {
-//                 let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
-//                 msg.coeffs_mut()[0] = *x;
-
-//                 let ct = sk.encode_encrypt_ggsw(&msg, &glwe, &radix, PlaintextBits(1));
-//                 high_level::fft::fft_ggsw(&ct, &glwe, &radix)
-//             })
-//             .collect::<Vec<_>>();
-
-//         let mut c = r
-//             .allocate::<Torus<u64>>(num_blocks * GlweCiphertextRef::<u64>::size(glwe.dim))
-//             .unwrap();
-//         let mut a = r
-//             .allocate::<Torus<u64>>(num_blocks * GlweCiphertextRef::<u64>::size(glwe.dim))
-//             .unwrap();
-//         let mut b = r
-//             .allocate::<Torus<u64>>(num_blocks * GlweCiphertextRef::<u64>::size(glwe.dim))
-//             .unwrap();
-//         let mut sel = r
-//             .allocate::<Complex<f64>>(
-//                 num_blocks * GgswCiphertextFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
-//             )
-//             .unwrap();
-
-//         c.as_mut_slice().clone_from_slice(&vec![
-//             Torus::from(0);
-//             num_blocks
-//                 * GlweCiphertextRef::<u64>::size(glwe.dim)
-//         ]);
-//         a.as_mut_slice().clone_from_slice(
-//             a_glwe
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-//         b.as_mut_slice().clone_from_slice(
-//             b_glwe
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-//         sel.as_mut_slice().clone_from_slice(
-//             sel_ggsw_fft
-//                 .iter()
-//                 .flat_map(|x| x.as_slice().to_vec())
-//                 .collect::<Vec<_>>()
-//                 .as_slice(),
-//         );
-
-//         let stream = r.make_stream(0.into()).unwrap();
-
-//         let tpb = glwe.dim.polynomial_degree.threads_per_block();
-//         let threads = tpb * num_blocks as u32;
-//         let grid = (threads, tpb);
-//         let scratch = Scratch::new(r, grid).unwrap();
-
-//         unsafe {
-//             launch_kernel!(
-//                 (grid)
-//                 ("can_cmux")
-//                 (r, stream)
-//                 c,
-//                 a,
-//                 b,
-//                 sel,
-//                 scratch
-//             )
-//         }
-//         .unwrap();
-
-//         stream.wait().unwrap();
-
-//         for i in 0..num_blocks {
-//             let actual = c
-//                 .as_slice()
-//                 .chunks(GlweCiphertextRef::<u64>::size(glwe.dim))
-//                 .nth(i)
-//                 .unwrap();
-//             let actual = GlweCiphertextRef::from_slice(actual);
-
-//             let mut debug = Polynomial::<Torus<u64>>::zero(glwe.dim.polynomial_degree.0);
-//             decrypt_glwe_ciphertext(&mut debug, actual, &sk, &glwe);
-
-//             let actual = sk.decrypt_decode_glwe(&actual, &glwe, PlaintextBits(1));
-
-//             let c = actual.coeffs()[0];
-//             let sel = sel_msg[i];
-//             let a = a_msg[i];
-//             let b = b_msg[i];
-
-//             assert_eq!(
-//                 c,
-//                 if sel == 1 { b } else { a },
-//                 "i={i} c={c} sel={sel} a={a} b={b}"
-//             );
-
-//             for i in 1..glwe.dim.polynomial_degree.0 {
-//                 if actual.coeffs()[i] != 0 {
-//                     dbg!(i, debug.coeffs()[i]);
-//                 }
-
-//                 assert_eq!(actual.coeffs()[i], 0);
-//             }
-//         }
-//     }
-// }
+#[test]
+fn can_polynomial_glev_mad() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    for r in runtimes.iter() {
+        let radix = RadixDecomposition {
+            count: RadixCount(2),
+            radix_log: RadixLog(16),
+        };
+
+        let glwe = GLWE_1_2048_128;
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let mut c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut a_poly =
+            DstArray::<Polynomial<Torus<u64>>>::new(num_blocks, glwe.dim.polynomial_degree);
+        let mut b_glev = DstArray::<GlevCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
+
+        glwe_encrypt(&mut c_glwe, random_msg, &sk, &glwe);
+        random_torus_poly(&mut a_poly, &glwe.dim.polynomial_degree);
+        glev_encrypt(&mut b_glev, random_msg, &sk, &glwe, &radix);
+
+        let c_orig = c_glwe.clone();
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+        let threads = tpb * num_blocks as u32;
+
+        let grid = (threads, tpb);
+        let scratch = Scratch::new(r, grid).unwrap();
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_polynomial_glev_mad")
+                (r, stream)
+                c_glwe,
+                a_poly,
+                b_glev,
+                scratch
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for i in 0..num_blocks {
+            // Compute the baseline on the CPU.
+            let c_orig = c_orig.iter(glwe.dim).nth(i).unwrap();
+            let a_poly = a_poly.iter(glwe.dim.polynomial_degree).nth(i).unwrap();
+            let b_glev = b_glev.iter((glwe.dim, radix.count)).nth(i).unwrap();
+
+            let mut expected = c_orig.to_owned();
+            let mut scratch = Polynomial::zero(glwe.dim.polynomial_degree.0);
+            let decomp = PolynomialRadixIterator::new(&a_poly, &mut scratch, &radix);
+
+            // Use the slow, but exact external product.
+            decomposed_polynomial_glev_mad(&mut expected, decomp, b_glev, &glwe);
+
+            //Check the baseline and our GPU version encrypt the same messages.
+            let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
+
+            compare_glwe_contents(actual, &expected, glwe, &sk);
+        }
+    }
+}
+
+#[test]
+fn can_glwe_ggsw_mad() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    let radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(16),
+    };
+
+    let glwe = GLWE_1_2048_128;
+
+    for r in runtimes.iter() {
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let mut c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut a_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut b_ggsw = DstArray::<GgswCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
+
+        glwe_encrypt(&mut c_glwe, random_msg, &sk, &glwe);
+        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
+        ggsw_encrypt(&mut b_ggsw, &sk, &glwe, &radix);
+
+        let c_orig = c_glwe.clone();
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+        let threads = tpb * num_blocks as u32;
+        let grid = (threads, tpb);
+        let scratch = Scratch::new(r, grid).unwrap();
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_glwe_ggsw_mad")
+                (r, stream)
+                c_glwe,
+                a_glwe,
+                b_ggsw,
+                scratch
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for i in 0..num_blocks {
+            let c_orig = c_orig.iter(glwe.dim).nth(i).unwrap();
+            let a_glwe = a_glwe.iter(glwe.dim).nth(i).unwrap();
+            let b_ggsw = b_ggsw.iter((glwe.dim, radix.count)).nth(i).unwrap();
+
+            let mut expected = c_orig.to_owned();
+
+            // Do the slow, but exact external product.
+            glwe_ggsw_mad(&mut expected, &a_glwe, b_ggsw, &glwe, &radix);
+
+            //Check the baseline and our GPU version encrypt the same messages.
+            let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
+
+            compare_glwe_contents(actual, &expected, glwe, &sk);
+        }
+    }
+}
+
+#[test]
+fn can_cmux() {
+    let runtimes = get_runtimes();
+    let num_blocks = 100;
+
+    let radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(16),
+    };
+
+    let glwe = GLWE_1_2048_128;
+
+    for r in runtimes.iter() {
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut a_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut b_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut sel = DstArray::<GgswCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
+
+        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
+        glwe_encrypt(&mut b_glwe, random_msg, &sk, &glwe);
+        ggsw_encrypt(&mut sel, &sk, &glwe, &radix);
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+        let threads = tpb * num_blocks as u32;
+        let grid = (threads, tpb);
+        let scratch = Scratch::new(r, grid).unwrap();
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_cmux")
+                (r, stream)
+                c_glwe,
+                a_glwe,
+                b_glwe,
+                sel,
+                scratch
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for i in 0..num_blocks {
+            let mut expected = GlweCiphertext::new(&glwe);
+            let a = a_glwe.iter(glwe.dim).nth(i).unwrap();
+            let b = b_glwe.iter(glwe.dim).nth(i).unwrap();
+            let sel = sel.iter((glwe.dim, radix.count)).nth(i).unwrap();
+
+            // Slow, but exact computation.
+            cmux(&mut expected, a, b, sel, &glwe, &radix);
+
+            let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
+
+            compare_glwe_contents(&actual, &expected, glwe, &sk);
+        }
+    }
+}

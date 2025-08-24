@@ -1,9 +1,9 @@
 use num::Complex;
 
-//mod basics;
+mod basics;
 mod entities;
 mod fft;
-//mod homomorphisms;
+mod homomorphisms;
 mod memory;
 mod negacyclic;
 mod polynomial;
