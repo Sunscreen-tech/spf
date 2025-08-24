@@ -13,6 +13,7 @@ use crate::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
         tests::{
+            get_shared_memory_bytes,
             test_utils::{
                 constant_poly, fill_complex_rand_mod, glwe_encrypt, random_complex_poly_mod,
                 random_complex_polyfft_mod, random_poly_mod, random_poly_mod_2_pow_64,
@@ -79,7 +80,7 @@ pub fn inplace_vs_out_of_place_fft() {
                 launch_kernel!(
                     (grid)
                     ("inplace_vs_out_of_place_fft")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     out_of_place,
                     inplace,
                     input,
@@ -121,7 +122,7 @@ pub fn inplace_vs_out_of_place_ifft() {
                 launch_kernel!(
                     (grid)
                     ("inplace_vs_out_of_place_ifft")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     out_of_place,
                     inplace,
                     input,
@@ -190,7 +191,7 @@ fn polynomial_roundtrip_test(kernel: &str) {
                 launch_kernel!(
                     (grid)
                     (kernel)
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     x,
                     y,
                     scratch,
@@ -242,7 +243,7 @@ where
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     (kernel_name)
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     c,
                     a,
                     b,
@@ -317,7 +318,7 @@ fn can_multiply_non_negacyclic_polynomials() {
             launch_kernel!(
                 (grid)
                 ("can_multiply_non_negacyclic_polynomials")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c,
                 a,
                 b,
@@ -417,7 +418,7 @@ fn can_mad_pre_fftd_polynomials() {
                 launch_kernel!(
                     (grid)
                     ("can_mad_polynomials_pre_fftd")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     c_fft,
                     a_fft,
                     b_fft,
@@ -484,7 +485,7 @@ fn polynomial_mad_case(kernel_name: &str) {
                 launch_kernel!(
                     (grid)
                     (kernel_name)
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     result,
                     c,
                     a,
@@ -567,7 +568,7 @@ fn analyze_polynomial_mad() {
                 launch_kernel!(
                     (grid)
                     ("can_mad_polynomials")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     result,
                     c,
                     a,

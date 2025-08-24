@@ -11,9 +11,12 @@ use crate::{
     gpu::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
-        tests::test_utils::{
-            ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod,
-            random_torus_poly,
+        tests::{
+            get_shared_memory_bytes,
+            test_utils::{
+                ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod,
+                random_torus_poly,
+            },
         },
     },
     high_level, normalized_torus_distance,
@@ -90,7 +93,7 @@ where
                 launch_kernel!(
                     ((t, tpb))
                     (kernel_name)
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     c,
                     a_ct,
                     b_ct
@@ -168,7 +171,7 @@ fn can_glwe_polynomial_mad() {
             launch_kernel!(
                 (grid)
                 ("can_glwe_polynomial_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_glwe,
                 b_poly,
@@ -244,7 +247,7 @@ fn can_polynomial_glev_mad() {
             launch_kernel!(
                 (grid)
                 ("can_polynomial_glev_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_poly,
                 b_glev,
@@ -312,7 +315,7 @@ fn can_glwe_ggsw_mad() {
             launch_kernel!(
                 (grid)
                 ("can_glwe_ggsw_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_glwe,
                 b_ggsw,
@@ -376,7 +379,7 @@ fn can_cmux() {
             launch_kernel!(
                 (grid)
                 ("can_cmux")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_glwe,
                 b_glwe,

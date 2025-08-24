@@ -2,7 +2,7 @@ use num::Complex;
 use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
 
-use crate::gpu::{Scratch, get_runtimes};
+use crate::gpu::{Scratch, get_runtimes, tests::get_shared_memory_bytes};
 
 #[test]
 fn can_copy_to_and_from_shared_memory() {
@@ -30,7 +30,7 @@ fn can_copy_to_and_from_shared_memory() {
             launch_kernel!(
                 ((threads, block_size))
                 ("can_copy_to_and_from_shared_memory")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 input,
                 output
             )
@@ -75,7 +75,7 @@ fn can_use_scratch() {
             launch_kernel!(
                 (grid)
                 ("can_use_scratch")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 a,
                 b,
                 output,
@@ -147,7 +147,7 @@ fn can_load_store_ints_to_punbuf() {
             launch_kernel!(
                 ((threads, block_size))
                 ("can_load_store_ints_to_punbuf")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 a,
                 b,
                 vals.len() as u32

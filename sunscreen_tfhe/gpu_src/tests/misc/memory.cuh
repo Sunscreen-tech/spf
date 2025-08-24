@@ -12,10 +12,12 @@ extern "C" __global__ void can_copy_to_and_from_shared_memory(
     u32 *__restrict__ output
 ) {
     const u32 N = 2345;
-    __shared__ u32 s_input[N];
     
-    BLOCK_COPY(s_input, &input[N * blockIdx.x], N);
-    BLOCK_COPY(&output[N * blockIdx.x], s_input, N);
+    auto s_input = get_fft_scratch();
+    auto sptr = reinterpret_cast<u32*>(s_input.as_f64());
+
+    BLOCK_COPY(sptr, &input[N * blockIdx.x], N);
+    BLOCK_COPY(&output[N * blockIdx.x], sptr, N);
 }
 
 extern "C" __global__ void can_use_scratch(

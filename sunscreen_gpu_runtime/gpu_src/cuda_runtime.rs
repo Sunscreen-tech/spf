@@ -188,12 +188,13 @@ impl GpuRuntimeBackend for CudaRuntime {
         stream: &'a dyn StreamBackend,
         name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
         args: &[*const c_void],
         device_id: DeviceId,
     ) -> Result<()> {
         wrap_cuda_runtime! {cudaSetDevice(device_id.0 as i32)};
 
-        unsafe { stream.launch_kernel(name, grid, args)? };
+        unsafe { stream.launch_kernel(name, grid, shared_memory, args)? };
 
         Ok(())
     }
@@ -220,6 +221,7 @@ impl<'a> StreamBackend for CudaStream<'a> {
         &self,
         name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()> {
         let kernel_fn = self.runtime.module.get_function(name)?;

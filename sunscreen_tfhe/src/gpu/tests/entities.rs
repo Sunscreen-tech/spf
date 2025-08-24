@@ -8,7 +8,7 @@ use crate::{
     entities::{
         DstArray, GlweCiphertext, GlweCiphertextFft, GlweCiphertextRef, GlweSecretKey, Polynomial,
     },
-    gpu::get_runtimes,
+    gpu::{get_runtimes, tests::get_shared_memory_bytes},
     ops::encryption::decrypt_glwe_ciphertext,
 };
 
@@ -52,7 +52,7 @@ fn check_glwe_fft_noise() {
             launch_kernel!(
                 ((threads, tpb))
                 ("compare_glwe_fft")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 results,
                 results_fft,
                 cts

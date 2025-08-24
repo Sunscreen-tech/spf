@@ -12,7 +12,7 @@ use crate::{
     gpu::{
         get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
-        tests::{get_inv_twisty, get_twisty},
+        tests::{get_inv_twisty, get_shared_memory_bytes, get_twisty},
     },
 };
 
@@ -45,7 +45,7 @@ fn can_apply_twist() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_apply_twist")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     x,
                     result,
                     n.0 as u32
@@ -101,7 +101,7 @@ fn can_remove_twist() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_remove_twist")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     x,
                     result,
                     n.0 as u32
