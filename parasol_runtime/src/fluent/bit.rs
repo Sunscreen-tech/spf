@@ -3,10 +3,10 @@ use std::{marker::PhantomData, sync::Arc};
 use parasol_concurrency::AtomicRefCell;
 use serde::{Deserialize, Serialize};
 
-use super::{CiphertextOps, FheCircuitCtx, Sign};
+use super::{CiphertextOps, FheCircuitCtx, Muxable, Sign};
 use crate::{
-    Encryption, Evaluation, FheEdge, FheOp, L1GgswCiphertext, L1GlweCiphertext, SecretKey,
-    fluent::GenericIntGraphNodes, insert_ciphertext_conversion, safe_bincode::GetSize,
+    Encryption, Evaluation, FheEdge, L1GgswCiphertext, SecretKey, fluent::GenericIntGraphNodes,
+    insert_ciphertext_conversion, safe_bincode::GetSize,
 };
 
 use petgraph::stable_graph::NodeIndex;
@@ -88,36 +88,6 @@ impl<T: CiphertextOps> Clone for BitNode<T> {
 impl<T: CiphertextOps> Copy for BitNode<T> {}
 
 impl BitNode<L1GgswCiphertext> {
-    /// Given two integers `if_true` and `if_false`, adds a computation that returns
-    /// `if_true` when this bit encrypts true and `if_false` when this bit encrypts false.
-    ///
-    /// # Remarks
-    /// This operations requires this bit be an [`L1GgswCiphertext`]. You can use [`Self::convert`]
-    /// to convert other ciphertext types to this.
-    pub fn select<'a, const N: usize, U: Sign>(
-        &self,
-        if_true: &GenericIntGraphNodes<'a, N, L1GlweCiphertext, U>,
-        if_false: &GenericIntGraphNodes<'a, N, L1GlweCiphertext, U>,
-        ctx: &'a FheCircuitCtx,
-    ) -> GenericIntGraphNodes<'a, N, L1GlweCiphertext, U> {
-        let iter = if_true
-            .bits
-            .iter()
-            .zip(if_false.bits.iter())
-            .map(|(if_true, if_false)| {
-                let mut circuit = ctx.circuit.borrow_mut();
-                let mux = circuit.add_node(FheOp::CMux);
-
-                circuit.add_edge(if_false.node, mux, FheEdge::Low);
-                circuit.add_edge(if_true.node, mux, FheEdge::High);
-                circuit.add_edge(self.node, mux, FheEdge::Sel);
-
-                mux
-            });
-
-        GenericIntGraphNodes::from_nodes(iter, &ctx.allocator)
-    }
-
     /// Generic select that can output either L1GlweCiphertext or L1GlevCiphertext.
     /// Given two integers `if_true` and `if_false`, adds a computation that returns
     /// `if_true` when this bit encrypts true and `if_false` when this bit encrypts false.
@@ -126,14 +96,14 @@ impl BitNode<L1GgswCiphertext> {
     /// This operations requires this bit be an [`L1GgswCiphertext`]. You can use [`Self::convert`]
     /// to convert other ciphertext types to this.
     /// The output type is determined by the `OutCt` type parameter, which must implement `Muxable`.
-    pub fn select_generic<'a, const N: usize, U: Sign, OutCt: super::Muxable>(
+    pub fn select<'a, const N: usize, U: Sign, OutCt: Muxable>(
         &self,
         if_true: &GenericIntGraphNodes<'a, N, OutCt, U>,
         if_false: &GenericIntGraphNodes<'a, N, OutCt, U>,
         ctx: &'a FheCircuitCtx,
     ) -> GenericIntGraphNodes<'a, N, OutCt, U> {
         let mux_op = OutCt::MUX_MODE.mux();
-        
+
         let iter = if_true
             .bits
             .iter()
@@ -252,7 +222,7 @@ mod tests {
     use serde::{Deserialize, Serialize};
 
     use crate::{
-        DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1LweCiphertext,
+        DEFAULT_128, L0LweCiphertext, L1GlevCiphertext, L1GlweCiphertext, L1LweCiphertext,
         fluent::CiphertextOps,
         test_utils::{get_encryption_128, get_secret_keys_128},
     };

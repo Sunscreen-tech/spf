@@ -893,8 +893,12 @@ mod tests {
                     .graph_inputs(&ctx)
                     .into();
 
-            let sel_false = sel_false.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
-            let sel_true = sel_true.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
+            let sel_false = sel_false
+                .select::<16, U, L1GlweCiphertext>(&a, &b, &ctx)
+                .collect_outputs(&ctx, enc);
+            let sel_true = sel_true
+                .select::<16, U, L1GlweCiphertext>(&a, &b, &ctx)
+                .collect_outputs(&ctx, enc);
 
             uproc
                 .lock()
@@ -933,8 +937,12 @@ mod tests {
                     .graph_inputs(&ctx)
                     .into();
 
-            let sel_false = sel_false.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
-            let sel_true = sel_true.select(&a, &b, &ctx).collect_outputs(&ctx, enc);
+            let sel_false = sel_false
+                .select::<16, U, L1GlweCiphertext>(&a, &b, &ctx)
+                .collect_outputs(&ctx, enc);
+            let sel_true = sel_true
+                .select::<16, U, L1GlweCiphertext>(&a, &b, &ctx)
+                .collect_outputs(&ctx, enc);
 
             uproc
                 .lock()
