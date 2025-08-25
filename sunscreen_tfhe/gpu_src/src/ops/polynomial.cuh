@@ -63,3 +63,43 @@ __device__ inline void polynomial_mad(
         c.coeffs().as_complex()[i] = cuda::std::complex(result.x, result.y);
     }
 }
+
+__device__ inline void polynomial_times_negative_monomial_negacyclic(
+    Polynomial out,
+    const Polynomial in,
+    const u32 rotation,
+    const PolynomialDegree degree
+) {
+    BLOCK_FOR_EACH(i, degree.val) {
+        auto val = in.get_i64(i);
+        auto out_loc = i + rotation;
+
+        if (out_loc > degree.val) {
+            val = -val;
+            out_loc -= degree.val;
+        }
+
+        out.set_i64(out_loc, val);
+    }
+}
+
+__device__ inline void polynomial_times_positive_monomial_negacyclic(
+    Polynomial out,
+    const Polynomial in,
+    const u32 rotation,
+    const PolynomialDegree degree
+) {
+    BLOCK_FOR_EACH(i, degree.val) {
+        auto val = in.get_i64(i);
+        u32 out_loc
+
+        if (i < rotation) {
+            val = -val;
+            out_loc = degree.val - rotation + i;
+        } else {
+            out_loc = i - rotation;
+        }
+
+        out.set_i64(out_loc, val);
+    }
+}

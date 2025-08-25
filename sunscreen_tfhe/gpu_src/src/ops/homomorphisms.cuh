@@ -195,3 +195,34 @@ __device__ inline void destructive_cmux(
 
     std::move(a_fft).ifft_inplace(glwe);
 }
+
+
+__device__ inline void glwe_times_negative_monomial_negacyclic(
+    GlweCiphertext out,
+    const GlweCiphertext in,
+    const u32 rotation,
+    const GlweDef &params
+) {
+    // Do all a's and b. Hence <=
+    for (u32 i = 0; i <= params.size; i++) {
+        auto out_i = out.get(i, params);
+        auto in_i = out.get(i, params);
+
+        polynomial_times_positive_monomial_negacyclic(out_i, in_i, rotation, params.polynomial_degree());
+    }
+}
+
+__device__ inline void polynomial_times_positive_monomial_negacyclic(
+    GlweCiphertext out,
+    const GlweCiphertext in,
+    const u32 rotation,
+    const GlweDef &params
+) {
+    // Do all a's and b. Hence <=
+    for (u32 i = 0; i <= params.size; i++) {
+        auto out_i = out.get(i, params);
+        auto in_i = out.get(i, params);
+
+        polynomial_times_negative_monomial_negacyclic(out_i, in_i, rotation, params.polynomial_degree());
+    }
+}
