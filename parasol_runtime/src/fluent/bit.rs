@@ -117,6 +117,40 @@ impl BitNode<L1GgswCiphertext> {
 
         GenericIntGraphNodes::from_nodes(iter, &ctx.allocator)
     }
+
+    /// Generic select that can output either L1GlweCiphertext or L1GlevCiphertext.
+    /// Given two integers `if_true` and `if_false`, adds a computation that returns
+    /// `if_true` when this bit encrypts true and `if_false` when this bit encrypts false.
+    ///
+    /// # Remarks
+    /// This operations requires this bit be an [`L1GgswCiphertext`]. You can use [`Self::convert`]
+    /// to convert other ciphertext types to this.
+    /// The output type is determined by the `OutCt` type parameter, which must implement `Muxable`.
+    pub fn select_generic<'a, const N: usize, U: Sign, OutCt: super::Muxable>(
+        &self,
+        if_true: &GenericIntGraphNodes<'a, N, OutCt, U>,
+        if_false: &GenericIntGraphNodes<'a, N, OutCt, U>,
+        ctx: &'a FheCircuitCtx,
+    ) -> GenericIntGraphNodes<'a, N, OutCt, U> {
+        let mux_op = OutCt::MUX_MODE.mux();
+        
+        let iter = if_true
+            .bits
+            .iter()
+            .zip(if_false.bits.iter())
+            .map(|(if_true, if_false)| {
+                let mut circuit = ctx.circuit.borrow_mut();
+                let mux = circuit.add_node(mux_op.clone());
+
+                circuit.add_edge(if_false.node, mux, FheEdge::Low);
+                circuit.add_edge(if_true.node, mux, FheEdge::High);
+                circuit.add_edge(self.node, mux, FheEdge::Sel);
+
+                mux
+            });
+
+        GenericIntGraphNodes::from_nodes(iter, &ctx.allocator)
+    }
 }
 
 impl<T: CiphertextOps> BitNode<T> {
