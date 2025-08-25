@@ -159,3 +159,43 @@ extern "C" __global__ void can_cmux(
 
     cmux(c_i, a_i, b_i, *sel_i_fft, glwe, radix, scratch);
 }
+
+extern "C" __global__ void can_glwe_multiply_negative_monomial(
+    cuda::std::complex<f64> *__restrict__ c_buf,
+    const cuda::std::complex<f64> *__restrict__ a_buf
+) {
+    const auto &glwe = GLWE_1_2048_128;
+
+    auto c = DstArray<GlweCiphertext>::from_ptr(c_buf);
+    auto a = DstArray<GlweCiphertext>::from_ptr(a_buf);
+    auto c_i = c.nth(blockIdx.x, glwe);
+    auto a_i = a.nth(blockIdx.x, glwe);
+
+
+    glwe_times_negative_monomial_negacyclic(
+        c_i,
+        a_i,
+        42,
+        glwe
+    );
+}
+
+extern "C" __global__ void can_glwe_multiply_positive_monomial(
+    cuda::std::complex<f64> *__restrict__ c_buf,
+    const cuda::std::complex<f64> *__restrict__ a_buf
+) {
+    const auto &glwe = GLWE_1_2048_128;
+
+    auto c = DstArray<GlweCiphertext>::from_ptr(c_buf);
+    auto a = DstArray<GlweCiphertext>::from_ptr(a_buf);
+    auto c_i = c.nth(blockIdx.x, glwe);
+    auto a_i = a.nth(blockIdx.x, glwe);
+
+
+    glwe_times_positive_monomial_negacyclic(
+        c_i,
+        a_i,
+        42,
+        glwe
+    );
+}
