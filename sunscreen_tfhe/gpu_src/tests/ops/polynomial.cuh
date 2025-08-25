@@ -197,13 +197,11 @@ extern "C" __global__ void can_mad_polynomials_inplace(
     auto a_i = a.nth(blockIdx.x, degree);
     auto b_i = b.nth(blockIdx.x, degree);
 
-    __shared__ cuda::std::complex<f64> s_0[1024];
-    __shared__ cuda::std::complex<f64> s_1[1024];
-    __shared__ cuda::std::complex<f64> s_2[1024];
+    auto poly_s = DstArray<Polynomial>(get_fft_scratch());
 
-    auto a_s = Polynomial::from_ptr(s_0);
-    auto b_s = Polynomial::from_ptr(s_1);
-    auto c_s = Polynomial::from_ptr(s_2);
+    auto a_s = poly_s.nth(0, degree);
+    auto b_s = poly_s.nth(1, degree);
+    auto c_s = poly_s.nth(2, degree);
 
     a_i.clone_into(a_s, degree);
     b_i.clone_into(b_s, degree);

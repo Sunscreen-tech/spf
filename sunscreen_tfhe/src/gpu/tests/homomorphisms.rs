@@ -11,13 +11,19 @@ use crate::{
     gpu::{
         Scratch, get_runtimes,
         test_utils::SUPPORTED_POLY_DEGREES,
-        tests::test_utils::{
-            ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod,
-            random_torus_poly,
+        tests::{
+            get_shared_memory_bytes,
+            test_utils::{
+                ggsw_encrypt, glev_encrypt, glwe_encrypt, random_msg, random_poly_mod,
+                random_torus_poly,
+            },
         },
     },
     high_level, normalized_torus_distance,
     ops::{
+        bootstrapping::{
+            rotate_glwe_negative_monomial_negacyclic, rotate_glwe_positive_monomial_negacyclic,
+        },
         ciphertext::{
             add_glwe_ciphertexts, cmux, decomposed_polynomial_glev_mad, glwe_ggsw_mad,
             sub_glwe_ciphertexts,
@@ -90,7 +96,7 @@ where
                 launch_kernel!(
                     ((t, tpb))
                     (kernel_name)
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     c,
                     a_ct,
                     b_ct
@@ -168,7 +174,7 @@ fn can_glwe_polynomial_mad() {
             launch_kernel!(
                 (grid)
                 ("can_glwe_polynomial_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_glwe,
                 b_poly,
@@ -244,7 +250,7 @@ fn can_polynomial_glev_mad() {
             launch_kernel!(
                 (grid)
                 ("can_polynomial_glev_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_poly,
                 b_glev,
@@ -312,7 +318,7 @@ fn can_glwe_ggsw_mad() {
             launch_kernel!(
                 (grid)
                 ("can_glwe_ggsw_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_glwe,
                 b_ggsw,
@@ -376,7 +382,7 @@ fn can_cmux() {
             launch_kernel!(
                 (grid)
                 ("can_cmux")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c_glwe,
                 a_glwe,
                 b_glwe,
@@ -400,6 +406,92 @@ fn can_cmux() {
             let actual = c_glwe.iter(glwe.dim).nth(i).unwrap();
 
             compare_glwe_contents(&actual, &expected, glwe, &sk);
+        }
+    }
+}
+
+#[test]
+fn can_glwe_multiply_negative_monomial() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    let glwe = GLWE_1_2048_128;
+
+    for r in runtimes.iter() {
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut a_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+
+        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+        let threads = tpb * num_blocks as u32;
+        let grid = (threads, tpb);
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_glwe_multiply_negative_monomial")
+                (r, stream, get_shared_memory_bytes())
+                c_glwe,
+                a_glwe
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for (actual, input) in c_glwe.iter(glwe.dim).zip(a_glwe.iter(glwe.dim)) {
+            let mut expected = GlweCiphertext::new(&glwe);
+            rotate_glwe_negative_monomial_negacyclic(&mut expected, input, 42, &glwe);
+
+            assert_eq!(actual.as_slice(), expected.as_slice());
+        }
+    }
+}
+
+#[test]
+fn can_glwe_multiply_positive_monomial() {
+    let runtimes = get_runtimes();
+    let num_blocks = 13;
+
+    let glwe = GLWE_1_2048_128;
+
+    for r in runtimes.iter() {
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let c_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut a_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+
+        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+        let threads = tpb * num_blocks as u32;
+        let grid = (threads, tpb);
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_glwe_multiply_positive_monomial")
+                (r, stream, get_shared_memory_bytes())
+                c_glwe,
+                a_glwe
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for (actual, input) in c_glwe.iter(glwe.dim).zip(a_glwe.iter(glwe.dim)) {
+            let mut expected = GlweCiphertext::new(&glwe);
+            rotate_glwe_positive_monomial_negacyclic(&mut expected, input, 42, &glwe);
+
+            assert_eq!(&actual.as_slice(), &expected.as_slice());
         }
     }
 }

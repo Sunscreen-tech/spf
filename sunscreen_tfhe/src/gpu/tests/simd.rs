@@ -7,7 +7,7 @@ use crate::{
     entities::{DstArray, Polynomial},
     gpu::{
         get_runtimes,
-        tests::{test_utils::fill_complex_rand_mod, ulps_difference},
+        tests::{get_shared_memory_bytes, test_utils::fill_complex_rand_mod, ulps_difference},
     },
     simd::VectorOps,
 };
@@ -43,7 +43,7 @@ fn can_mod_2_pow_64() {
             launch_kernel!(
                 ((threads_per_block, threads_per_block))
                 ("can_reduce_mod_2_pow_64")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 data,
                 actual,
                 n
@@ -105,7 +105,7 @@ fn analyze_complex_mad() {
             launch_kernel!(
                 ((threads_per_block, threads_per_block))
                 ("can_complex_mad")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 c,
                 a,
                 b,

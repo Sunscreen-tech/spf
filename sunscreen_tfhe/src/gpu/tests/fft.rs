@@ -6,7 +6,10 @@ use sunscreen_gpu_runtime::launch_kernel;
 use crate::{
     PolynomialDegree,
     entities::{DstArray, Polynomial},
-    gpu::{get_runtimes, tests::ulps_difference},
+    gpu::{
+        get_runtimes,
+        tests::{get_shared_memory_bytes, ulps_difference},
+    },
 };
 
 #[derive(PartialEq)]
@@ -47,7 +50,7 @@ fn can_roundtrip_fft_f64() {
             launch_kernel! {
                 ((threads, threads_per_block))
                 ("can_roundtrip_fft_f64")
-                (r, stream)
+                (r, stream, get_shared_memory_bytes())
                 x,
                 y,
                 n as u32
@@ -98,7 +101,7 @@ fn check_twiddles() {
                     launch_kernel!(
                         ((num_threads, threads_per_block))
                         ("get_twiddles_f64")
-                        (r, stream)
+                        (r, stream, get_shared_memory_bytes())
                         lut,
                         sincos,
                         sincospi,

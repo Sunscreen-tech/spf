@@ -39,11 +39,24 @@ where
     }
 }
 
+#[derive(Debug)]
+pub struct DeviceAttributes {
+    /// The maximum amount of statically allocated shared memory per block.
+    pub max_shared_memory_per_block: u32,
+
+    /// The maximum amount of opt-in shared memory
+    pub max_optin_shared_memory_per_block: u32,
+}
+
 pub struct GpuRuntime(pub(crate) Box<dyn GpuRuntimeBackend>);
 
 impl GpuRuntime {
     pub fn new<T: GpuRuntimeBackend + 'static>(backend: T) -> Self {
         Self(Box::new(backend))
+    }
+
+    pub fn get_device_attributes(&self, device_id: DeviceId) -> &DeviceAttributes {
+        self.0.get_device_attributes(device_id)
     }
 
     /// Returns the name of this runtime.
@@ -103,10 +116,12 @@ impl GpuRuntime {
         stream: &Stream<'a>,
         name: &str,
         grid: G,
+        shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()> {
         unsafe {
-            self.0.launch_kernel(stream.0.as_ref(), name, &grid, args)?;
+            self.0
+                .launch_kernel(stream.0.as_ref(), name, &grid, shared_memory, args)?;
         }
 
         Ok(())
@@ -123,14 +138,14 @@ impl GpuRuntime {
 /// this kernel writes to during kernel execution.
 #[macro_export]
 macro_rules! launch_kernel {
-    (($grid:expr) ($name:expr) ($rt:ident,$stream:ident) $($args:expr),*) => {{
+    (($grid:expr) ($name:expr) ($rt:ident,$stream:ident,$sm:expr) $($args:expr),*) => {{
         let kernel_args = vec![
             $(
                 $crate::AsKernelArg::as_kernel_arg(&$args),
             )*
         ];
 
-        let result = $rt.launch_kernel(&$stream, $name, $grid, kernel_args.as_slice());
+        let result = $rt.launch_kernel(&$stream, $name, $grid, $sm, kernel_args.as_slice());
 
         result
     }};
@@ -147,6 +162,9 @@ impl<'a> Stream<'a> {
 
 pub trait GpuRuntimeBackend: Sync + Send {
     fn runtime_name(&self) -> &str;
+
+    /// Get the attributes of the given device
+    fn get_device_attributes(&self, device_id: DeviceId) -> &DeviceAttributes;
 
     /// Print information about the given device.
     fn print_device_info(&self, device_id: DeviceId) -> Result<()>;
@@ -188,6 +206,7 @@ pub trait GpuRuntimeBackend: Sync + Send {
         stream: &'a dyn StreamBackend,
         name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()>;
 
@@ -209,6 +228,7 @@ pub trait StreamBackend {
         &self,
         kernel_name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()>;
 
@@ -661,7 +681,7 @@ mod tests {
                 launch_kernel!
                     (((threads, block_size))
                     ("vector_add")
-                    (runtime, stream)
+                    (runtime, stream, 0)
                     x_gpu,
                     y_gpu,
                     z_gpu,

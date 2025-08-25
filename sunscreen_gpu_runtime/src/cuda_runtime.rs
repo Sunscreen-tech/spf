@@ -1,6 +1,6 @@
 use core::slice;
 use std::{
-    ffi::{CStr, CString, c_char},
+    ffi::{CStr, CString, c_char, c_int},
     os::raw::c_void,
     ptr::{self},
     str::FromStr,
@@ -8,17 +8,19 @@ use std::{
 };
 
 use cuda_driver_sys::{
-    CUcontext, CUdevice, CUfunction, CUmodule, CUstream, cuCtxSetCurrent,
-    cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetName, cuDevicePrimaryCtxRelease,
-    cuDevicePrimaryCtxRetain, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData,
-    cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum,
+    CUcontext, CUdevice, CUdevice_attribute, CUfunction, CUfunction_attribute, CUmodule, CUstream,
+    cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetAttribute, cuDeviceGetName,
+    cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuFuncSetAttribute, cuLaunchKernel,
+    cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize,
+    cudaError_enum,
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
 };
 
 use crate::{
-    AllocationBackend, DeviceId, Dim, Error, GpuRuntimeBackend, Grid, Result, StreamBackend,
+    AllocationBackend, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend, Grid, Result,
+    StreamBackend,
 };
 
 macro_rules! wrap_cuda_runtime {
@@ -90,6 +92,7 @@ pub struct Context {
     device: CUdevice,
     ctx: CUcontext,
     module: Module,
+    attributes: DeviceAttributes,
 }
 
 impl Context {
@@ -103,10 +106,33 @@ impl Context {
 
         let module = Module::new(fatbin)?;
 
+        let attributes = Self::get_device_attributes(device)?;
+
         Ok(Self {
             ctx,
             device,
             module,
+            attributes,
+        })
+    }
+
+    fn get_device_attributes(device: CUdevice) -> Result<DeviceAttributes> {
+        fn get_attr(attr: CUdevice_attribute, device: CUdevice) -> Result<u32> {
+            let mut val = c_int::default();
+            wrap_cuda_driver! {cuDeviceGetAttribute(&raw mut val, attr, device)}
+
+            Ok(val as u32)
+        }
+
+        Ok(DeviceAttributes {
+            max_shared_memory_per_block: get_attr(
+                CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,
+                device,
+            )?,
+            max_optin_shared_memory_per_block: get_attr(
+                CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN,
+                device,
+            )?,
         })
     }
 }
@@ -151,6 +177,10 @@ impl CudaRuntime {
 impl GpuRuntimeBackend for CudaRuntime {
     fn runtime_name(&self) -> &str {
         "CUDA"
+    }
+
+    fn get_device_attributes(&self, device_id: DeviceId) -> &DeviceAttributes {
+        &self.ctxs[device_id.0].attributes
     }
 
     fn print_device_info(&self, device_id: DeviceId) -> Result<()> {
@@ -220,9 +250,10 @@ impl GpuRuntimeBackend for CudaRuntime {
         stream: &'a dyn StreamBackend,
         name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()> {
-        unsafe { stream.launch_kernel(name, grid, args)? };
+        unsafe { stream.launch_kernel(name, grid, shared_memory, args)? };
 
         Ok(())
     }
@@ -250,6 +281,7 @@ impl<'a> StreamBackend for CudaStream<'a> {
         &self,
         name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()> {
         let ctx = self
@@ -274,6 +306,13 @@ impl<'a> StreamBackend for CudaStream<'a> {
             .map(|x| x as *const _ as *const c_void)
             .collect::<Vec<_>>();
 
+        // TODO: Don't use a hard-coded value that will cause crashes...
+        wrap_cuda_driver! { cuFuncSetAttribute(
+            kernel_fn.inner,
+            CUfunction_attribute::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+            shared_memory as i32
+        ) };
+
         wrap_cuda_driver! {
             cuLaunchKernel(
                 kernel_fn.inner,
@@ -283,7 +322,7 @@ impl<'a> StreamBackend for CudaStream<'a> {
                 dim_x.threads_per_block,
                 dim_y.threads_per_block,
                 dim_z.threads_per_block,
-                0,
+                shared_memory,
                 self.handle,
                 args.as_ptr() as *mut _,
                 ptr::null_mut()

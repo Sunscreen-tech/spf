@@ -5,7 +5,7 @@ use crate::{
     RadixCount, RadixDecomposition, RadixLog, Torus,
     dst::{AsSlice, FromSlice},
     entities::{Polynomial, PolynomialRef},
-    gpu::{get_runtimes, test_utils::SUPPORTED_POLY_DEGREES},
+    gpu::{get_runtimes, test_utils::SUPPORTED_POLY_DEGREES, tests::get_shared_memory_bytes},
     radix::PolynomialRadixIterator,
 };
 
@@ -42,7 +42,7 @@ fn can_signed_decompose_polynomial() {
                 launch_kernel!(
                     ((num_threads, threads_per_block))
                     ("can_decompose_polynomial")
-                    (r, stream)
+                    (r, stream, get_shared_memory_bytes())
                     poly,
                     scratch,
                     o1,

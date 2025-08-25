@@ -11,6 +11,12 @@ mod signed_decomposition;
 mod simd;
 mod test_utils;
 
+pub fn get_shared_memory_bytes() -> u32 {
+    const SHARED_MEMORY_BYTES: u32 = 64 * 1024;
+
+    SHARED_MEMORY_BYTES
+}
+
 pub fn ulps_difference(x: f64, y: f64) -> u64 {
     // -0.0 == 0.0
     if x == y {

@@ -14,8 +14,7 @@
 #include "../math.cuh"
 #include "../primitives.cuh"
 
-const size_t FFT_BUFFER_SIZE = 3 * 1024;
-__shared__ cuda::std::complex<double> FFT_BUFFER[FFT_BUFFER_SIZE];
+extern __shared__ cuda::std::complex<double> FFT_BUFFER[];
 
 __device__ constexpr PunBuf get_fft_scratch() {
     return PunBuf::from_ptr(FFT_BUFFER);

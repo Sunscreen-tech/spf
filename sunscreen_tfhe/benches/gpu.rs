@@ -33,6 +33,8 @@ mod gpu_benches {
     }
 
     pub fn fft(c: &mut Criterion) {
+        let shared_memory = 48 * 1024;
+
         let g = RefCell::new(c.benchmark_group("FFT"));
 
         for_each_device_type(|dev_name, r| {
@@ -63,7 +65,7 @@ mod gpu_benches {
                             launch_kernel!(
                                 (((num_threads, num_threads), (ffts_in_parallel, ffts_in_parallel)))
                                 ("benchmark_fft_f64")
-                                (r, stream)
+                                (r, stream, shared_memory)
                                 buffer,
                                 output,
                                 n as u32,
@@ -99,7 +101,7 @@ mod gpu_benches {
                             launch_kernel!(
                                 (((num_threads, num_threads), (ffts_in_parallel, ffts_in_parallel)))
                                 ("benchmark_fft_f32")
-                                (r, stream)
+                                (r, stream, shared_memory)
                                 buffer,
                                 output,
                                 n as u32,
@@ -116,6 +118,8 @@ mod gpu_benches {
     }
 
     pub fn synthetic_pbs(c: &mut Criterion) {
+        let shared_memory = 96 * 1024;
+
         let g = RefCell::new(c.benchmark_group("Synthetic PBS"));
 
         for_each_device_type(|dev_name, r| {
@@ -162,7 +166,7 @@ mod gpu_benches {
                                 launch_kernel!(
                                     (grid)
                                     ("synthetic_pbs")
-                                    (r, stream)
+                                    (r, stream, shared_memory)
                                     res,
                                     bsk_dev,
                                     scratch

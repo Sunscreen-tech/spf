@@ -52,7 +52,7 @@ impl Scratch {
                 launch_kernel!(
                     ((1, 1))
                     ("query_scratch_size_per_block")
-                    (r, stream)
+                    (r, stream, 0)
                     size
                 )
             }
