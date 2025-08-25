@@ -3,8 +3,8 @@ use std::sync::{Arc, OnceLock, mpsc::Receiver};
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
     CircuitProcessor, ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation,
-    L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey,
-    fluent::{Bit, FheCircuitCtx, UInt, UIntGraphNodes},
+    L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey,
+    fluent::{Bit, CiphertextOps, FheCircuitCtx, Muxable, UInt, UIntGraphNodes},
 };
 
 fn make_computer() -> (
@@ -37,18 +37,10 @@ fn make_computer() -> (
     (enc, sk, uproc, fc, eval)
 }
 
-fn bench_binary_function<const N: usize, F1, F2>(
-    crit: &mut Criterion,
-    name: &str,
-    op_glev: F1,
-    op_glwe: F2,
-) where
-    F1: Fn(
-        &FheCircuitCtx,
-        &UIntGraphNodes<N, L1GgswCiphertext>,
-        &UIntGraphNodes<N, L1GgswCiphertext>,
-    ),
-    F2: Fn(
+fn bench_binary_function<const N: usize, InCt, F>(crit: &mut Criterion, name: &str, op: F)
+where
+    InCt: CiphertextOps,
+    F: Fn(
         &FheCircuitCtx,
         &UIntGraphNodes<N, L1GgswCiphertext>,
         &UIntGraphNodes<N, L1GgswCiphertext>,
@@ -58,29 +50,18 @@ fn bench_binary_function<const N: usize, F1, F2>(
 
     let ctx = FheCircuitCtx::new();
 
-    let a = UInt::<N, L1GlevCiphertext>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk)
-        .graph_inputs(&ctx);
-    let b = UInt::<N, L1GlevCiphertext>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk)
-        .graph_inputs(&ctx);
+    // Encrypt inputs with the specified ciphertext type
+    let a = UInt::<N, InCt>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
+    let b = UInt::<N, InCt>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
 
+    // Convert to GGSW for computation
     let a = a.convert::<L1GgswCiphertext>(&ctx).into();
     let b = b.convert::<L1GgswCiphertext>(&ctx).into();
 
-    op_glev(&ctx, &a, &b);
+    // Apply the operation once
+    op(&ctx, &a, &b);
 
-    let ctx = FheCircuitCtx::new();
-
-    let a = UInt::<N, L0LweCiphertext>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk)
-        .graph_inputs(&ctx);
-    let b = UInt::<N, L0LweCiphertext>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk)
-        .graph_inputs(&ctx);
-
-    let a = a.convert::<L1GgswCiphertext>(&ctx).into();
-    let b = b.convert::<L1GgswCiphertext>(&ctx).into();
-
-    op_glwe(&ctx, &a, &b);
-
-    crit.bench_function(&format!("{name} CBS+GLWECMux"), |bench| {
+    crit.bench_function(name, |bench| {
         bench.iter(|| {
             uproc
                 .run_graph_blocking(&ctx.circuit.borrow(), &fc)
@@ -89,27 +70,30 @@ fn bench_binary_function<const N: usize, F1, F2>(
     });
 }
 
-fn bench_select_function<const N: usize>(crit: &mut Criterion, name: &str) {
+fn bench_select_function<const N: usize, InCt>(crit: &mut Criterion, name: &str)
+where
+    InCt: CiphertextOps + Muxable,
+{
     let (enc, sk, mut uproc, fc, _) = make_computer();
 
     let ctx = FheCircuitCtx::new();
 
-    // Test with L1GlweCiphertext selector and L1GlweCiphertext inputs
-    let selector = Bit::<L1GlweCiphertext>::encrypt_secret(true, &enc, &sk)
+    // Selector starts with the same type as inputs, then converts to GGSW
+    let selector = Bit::<InCt>::encrypt_secret(true, &enc, &sk)
         .graph_input(&ctx)
         .convert::<L1GgswCiphertext>(&ctx);
 
-    let a = UInt::<N, L1GlweCiphertext>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk)
-        .graph_inputs(&ctx);
-    let b = UInt::<N, L1GlweCiphertext>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk)
-        .graph_inputs(&ctx);
+    // Encrypt inputs with the specified ciphertext type
+    let a = UInt::<N, InCt>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
+    let b = UInt::<N, InCt>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
 
-    let a: UIntGraphNodes<N, L1GlweCiphertext> = a.convert::<L1GlweCiphertext>(&ctx).into();
-    let b: UIntGraphNodes<N, L1GlweCiphertext> = b.convert::<L1GlweCiphertext>(&ctx).into();
+    // Convert to the same type for select (no conversion needed, already InCt)
+    let a: UIntGraphNodes<N, InCt> = a.into();
+    let b: UIntGraphNodes<N, InCt> = b.into();
 
     selector.select(&a, &b, &ctx);
 
-    crit.bench_function(&format!("{name} CBS+GLWECMux"), |bench| {
+    crit.bench_function(name, |bench| {
         bench.iter(|| {
             uproc
                 .run_graph_blocking(&ctx.circuit.borrow(), &fc)
@@ -120,40 +104,57 @@ fn bench_select_function<const N: usize>(crit: &mut Criterion, name: &str) {
 
 fn ops(c: &mut Criterion) {
     fn run_benchmarks<const N: usize>(c: &mut Criterion) {
-        bench_binary_function::<N, _, _>(
+        // Add benchmarks - GLWE input/output
+        bench_binary_function::<N, L1GlweCiphertext, _>(
             c,
-            &format!("add-{N}"),
-            |ctx, x, y| {
-                x.add::<L1GlevCiphertext>(y, ctx);
-            },
+            &format!("add-{N}-glwe"),
             |ctx, x, y| {
                 x.add::<L1GlweCiphertext>(y, ctx);
             },
         );
 
-        bench_binary_function::<N, _, _>(
+        // Add benchmarks - GLEV input/output
+        bench_binary_function::<N, L1GlevCiphertext, _>(
             c,
-            &format!("gt-{N}"),
+            &format!("add-{N}-glev"),
             |ctx, x, y| {
-                x.gt::<L1GlevCiphertext>(y, ctx);
-            },
-            |ctx, x, y| {
-                x.gt::<L1GlweCiphertext>(y, ctx);
+                x.add::<L1GlevCiphertext>(y, ctx);
             },
         );
 
-        bench_binary_function::<N, _, _>(
+        // GT benchmarks - GLWE input/output
+        bench_binary_function::<N, L1GlweCiphertext, _>(c, &format!("gt-{N}-glwe"), |ctx, x, y| {
+            x.gt::<L1GlweCiphertext>(y, ctx);
+        });
+
+        // GT benchmarks - GLEV input/output
+        bench_binary_function::<N, L1GlevCiphertext, _>(c, &format!("gt-{N}-glev"), |ctx, x, y| {
+            x.gt::<L1GlevCiphertext>(y, ctx);
+        });
+
+        // Mul benchmarks - GLWE input/output
+        bench_binary_function::<N, L1GlweCiphertext, _>(
             c,
-            &format!("mul-{N}"),
-            |ctx, x, y| {
-                x.mul::<L1GlevCiphertext>(y, ctx);
-            },
+            &format!("mul-{N}-glwe"),
             |ctx, x, y| {
                 x.mul::<L1GlweCiphertext>(y, ctx);
             },
         );
 
-        bench_select_function::<N>(c, &format!("select-{N}"));
+        // Mul benchmarks - GLEV input/output
+        bench_binary_function::<N, L1GlevCiphertext, _>(
+            c,
+            &format!("mul-{N}-glev"),
+            |ctx, x, y| {
+                x.mul::<L1GlevCiphertext>(y, ctx);
+            },
+        );
+
+        // Select benchmarks - GLWE input/output
+        bench_select_function::<N, L1GlweCiphertext>(c, &format!("select-{N}-glwe"));
+
+        // Select benchmarks - GLEV input/output
+        bench_select_function::<N, L1GlevCiphertext>(c, &format!("select-{N}-glev"));
     }
 
     run_benchmarks::<2>(c);
@@ -162,7 +163,6 @@ fn ops(c: &mut Criterion) {
     run_benchmarks::<16>(c);
     run_benchmarks::<32>(c);
     run_benchmarks::<64>(c);
-    //run_benchmarks::<256>(c);
 }
 
 criterion_group!(benches, ops);
