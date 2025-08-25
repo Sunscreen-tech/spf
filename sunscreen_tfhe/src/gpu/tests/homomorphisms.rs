@@ -448,7 +448,7 @@ fn can_glwe_multiply_negative_monomial() {
             let mut expected = GlweCiphertext::new(&glwe);
             rotate_glwe_negative_monomial_negacyclic(&mut expected, input, 42, &glwe);
 
-            assert_eq!(actual.as_slice()[0..10], expected.as_slice()[0..10]);
+            assert_eq!(actual.as_slice(), expected.as_slice());
         }
     }
 }
