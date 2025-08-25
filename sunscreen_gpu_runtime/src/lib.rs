@@ -45,7 +45,7 @@ pub struct DeviceAttributes {
     pub max_shared_memory_per_block: u32,
 
     /// The maximum amount of opt-in shared memory
-    pub max_optin_shared_memory_per_block: u32
+    pub max_optin_shared_memory_per_block: u32,
 }
 
 pub struct GpuRuntime(pub(crate) Box<dyn GpuRuntimeBackend>);
@@ -56,7 +56,7 @@ impl GpuRuntime {
     }
 
     pub fn get_device_attributes(&self, device_id: DeviceId) -> &DeviceAttributes {
-        self.0.get_device_attributes(device_id)  
+        self.0.get_device_attributes(device_id)
     }
 
     /// Returns the name of this runtime.
@@ -120,7 +120,8 @@ impl GpuRuntime {
         args: &[*const c_void],
     ) -> Result<()> {
         unsafe {
-            self.0.launch_kernel(stream.0.as_ref(), name, &grid, shared_memory, args)?;
+            self.0
+                .launch_kernel(stream.0.as_ref(), name, &grid, shared_memory, args)?;
         }
 
         Ok(())
@@ -161,7 +162,6 @@ impl<'a> Stream<'a> {
 
 pub trait GpuRuntimeBackend: Sync + Send {
     fn runtime_name(&self) -> &str;
-
 
     /// Get the attributes of the given device
     fn get_device_attributes(&self, device_id: DeviceId) -> &DeviceAttributes;
