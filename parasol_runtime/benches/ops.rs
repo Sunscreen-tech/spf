@@ -2,8 +2,15 @@ use std::sync::{Arc, OnceLock, mpsc::Receiver};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
-    CircuitProcessor, ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation,
-    L1GgswCiphertext, L1GlweCiphertext, SecretKey,
+    CircuitProcessor,
+    ComputeKey,
+    ComputeKeyNonFft,
+    DEFAULT_128,
+    Encryption,
+    Evaluation,
+    L1GgswCiphertext,
+    L1GlweCiphertext,
+    SecretKey,
     fluent::{Bit, CiphertextOps, FheCircuitCtx, Muxable, UInt, UIntGraphNodes},
     // L1GlevCiphertext, // Uncomment when re-enabling GLEV benchmarks
 };
@@ -118,7 +125,7 @@ fn ops(c: &mut Criterion) {
         // The multiplication circuit uses 16-bit base multipliers and combines them for larger widths,
         // which causes issues with GLEV ciphertext conversions (attempts to use SampleExtract on GLEV).
         // To re-enable GLEV benchmarks, uncomment the sections below.
-        
+
         // Add benchmarks - GLEV input/output
         // bench_binary_function::<N, L1GlevCiphertext, _>(
         //     c,
