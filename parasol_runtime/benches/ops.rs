@@ -4,7 +4,7 @@ use criterion::{Criterion, criterion_group, criterion_main};
 use parasol_runtime::{
     CircuitProcessor, ComputeKey, ComputeKeyNonFft, DEFAULT_128, Encryption, Evaluation,
     L0LweCiphertext, L1GgswCiphertext, L1GlevCiphertext, L1GlweCiphertext, SecretKey,
-    fluent::{FheCircuitCtx, UInt, UIntGraphNodes},
+    fluent::{Bit, FheCircuitCtx, UInt, UIntGraphNodes},
 };
 
 fn make_computer() -> (
@@ -89,6 +89,35 @@ fn bench_binary_function<const N: usize, F1, F2>(
     });
 }
 
+fn bench_select_function<const N: usize>(crit: &mut Criterion, name: &str) {
+    let (enc, sk, mut uproc, fc, _) = make_computer();
+
+    let ctx = FheCircuitCtx::new();
+
+    // Test with L1GlweCiphertext selector and L1GlweCiphertext inputs
+    let selector = Bit::<L1GlweCiphertext>::encrypt_secret(true, &enc, &sk)
+        .graph_input(&ctx)
+        .convert::<L1GgswCiphertext>(&ctx);
+
+    let a = UInt::<N, L1GlweCiphertext>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk)
+        .graph_inputs(&ctx);
+    let b = UInt::<N, L1GlweCiphertext>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk)
+        .graph_inputs(&ctx);
+
+    let a: UIntGraphNodes<N, L1GlweCiphertext> = a.convert::<L1GlweCiphertext>(&ctx).into();
+    let b: UIntGraphNodes<N, L1GlweCiphertext> = b.convert::<L1GlweCiphertext>(&ctx).into();
+
+    selector.select(&a, &b, &ctx);
+
+    crit.bench_function(&format!("{name} CBS+GLWECMux"), |bench| {
+        bench.iter(|| {
+            uproc
+                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                .unwrap();
+        });
+    });
+}
+
 fn ops(c: &mut Criterion) {
     fn run_benchmarks<const N: usize>(c: &mut Criterion) {
         bench_binary_function::<N, _, _>(
@@ -123,6 +152,8 @@ fn ops(c: &mut Criterion) {
                 x.mul::<L1GlweCiphertext>(y, ctx);
             },
         );
+
+        bench_select_function::<N>(c, &format!("select-{N}"));
     }
 
     run_benchmarks::<2>(c);
