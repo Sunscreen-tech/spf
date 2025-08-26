@@ -21,8 +21,8 @@ public:
 
         // Round up when len(a) + 1 is odd. Note that the imaginary part of the
         // complex value is actually out of bounds. So long as we only ever use
-        // get_{i/u}64 on the PunBuf, this should never happen, as we never
-        // go through the complex pointer.
+        // {get,set}_{i,u}64 on the PunBuf, we'll never actual load/store at this
+        // location, as these methods go through a double pointer, not complex.
         if (params.size.val % 2 == 0) {
             complex_count = params.size.val / 2 + 1;
         }
