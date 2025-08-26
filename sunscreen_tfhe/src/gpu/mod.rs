@@ -6,6 +6,9 @@ use sunscreen_gpu_runtime::{Allocation, AsKernelArg, GpuRuntime, Grid, launch_ke
 pub(crate) const GPU_KERNELS: &[u8] =
     include_bytes!(concat!(env!("OUT_DIR"), "/sunscreen_tfhe_gpu.test.fatbin"));
 
+/// GPU-accelerated FHE operations.
+pub mod ops;
+
 #[cfg(test)]
 mod tests;
 
