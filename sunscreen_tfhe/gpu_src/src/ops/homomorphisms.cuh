@@ -176,7 +176,8 @@ __device__ inline void glwe_sub_assign(
 }
 
 /// @brief Same a cmux, but more memory efficient. inputs a and b are overwritten
-/// and the result is returned in a.
+/// and the result is returned in a. b contains b - a, as a side effect, not that 
+/// this is usually useful.
 __device__ inline void destructive_cmux(
     GlweCiphertext a,
     GlweCiphertext b,
