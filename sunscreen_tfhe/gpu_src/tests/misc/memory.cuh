@@ -6,6 +6,7 @@
 #include "../../src/entities/punbuf.cuh"
 #include "../../src/entities/scratch.cuh"
 #include "../../src/iter_tools.cuh"
+#include "../../src/params.cuh"
 
 extern "C" __global__ void can_copy_to_and_from_shared_memory(
     const u32 *__restrict__ input,
@@ -54,5 +55,20 @@ extern "C" __global__ void can_load_store_ints_to_punbuf(
 
     BLOCK_FOR_EACH(i, len) {
         b_punbuf.set_u64(i, a_punbuf.get_u64(i));
+    }
+}
+
+extern "C" __global__ void can_marshal_params(
+    LweDef lwe,
+    GlweDef glwe,
+    RadixDecomposition radix,
+    u32 *__restrict__ results
+) {
+    if (threadIdx.x == 0) {
+        results[0] = lwe.size.val;
+        results[1] = glwe.log_poly_degree.val;
+        results[2] = glwe.size.val;
+        results[3] = radix.count.val;
+        results[4] = radix.radix_log.val;
     }
 }

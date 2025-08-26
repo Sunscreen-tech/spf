@@ -29,8 +29,9 @@ __device__ inline void generalized_programmable_bootstrap(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch
 ) {
+    // Under standard parameters, this requires
+    // sizeof(double) * 2048 * 2 * 2 = 64kB.
     auto output_s = scratch.alloc<GlweCiphertext>(glwe_params);
-    output_s.clear();
     auto rotated_s = scratch.alloc<GlweCiphertext>(glwe_params);
     
     u64 b = input.a_b(lwe_params.size.val, lwe_params);
@@ -43,5 +44,9 @@ __device__ inline void generalized_programmable_bootstrap(
         a = modulus_switch(a, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
 
         glwe_times_positive_monomial_negacyclic(*rotated_s, *output_s, static_cast<u32>(a), glwe_params);
+
+        auto s = bsk.s(i, std::tuple(lwe_params, glwe_params, radix));
+
+        destructive_cmux(*output_s, *rotated_s, s, glwe_params, radix, scratch);
     }
 }

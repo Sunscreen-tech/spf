@@ -1,8 +1,14 @@
 use num::Complex;
 use rand::{RngCore, rng};
-use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
+use sunscreen_gpu_runtime::{DeviceId, GpuRuntime, launch_kernel};
 
-use crate::gpu::{Scratch, get_runtimes, tests::get_shared_memory_bytes};
+use crate::gpu::{
+    Scratch, get_runtimes,
+    gpu_params::{
+        GlweDef, GlweSize, LogPolyDegree, LweDef, LweDim, RadixCount, RadixDecomposition, RadixLog,
+    },
+    tests::get_shared_memory_bytes,
+};
 
 #[test]
 fn can_copy_to_and_from_shared_memory() {
@@ -165,5 +171,49 @@ fn can_load_store_ints_to_punbuf() {
         {
             assert_eq!(e, a);
         }
+    }
+}
+
+#[test]
+fn can_marshal_params() {
+    let lwe = LweDef(LweDim(42));
+
+    let glwe = GlweDef {
+        log_poly_degree: LogPolyDegree(43),
+        size: GlweSize(44),
+    };
+
+    let radix = RadixDecomposition {
+        count: RadixCount(45),
+        radix_log: RadixLog(46),
+    };
+
+    let runtimes = get_runtimes();
+
+    for r in runtimes.iter() {
+        let result = GpuRuntime::allocate::<u32>(r, 5).unwrap();
+
+        let stream = r.make_stream(DeviceId(0)).unwrap();
+
+        unsafe {
+            launch_kernel!(
+                ((1, 1))
+                ("can_marshal_params")
+                (r, stream, 0)
+                lwe,
+                glwe,
+                radix,
+                result
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        assert_eq!(result.as_slice()[0], 42);
+        assert_eq!(result.as_slice()[1], 43);
+        assert_eq!(result.as_slice()[2], 44);
+        assert_eq!(result.as_slice()[3], 45);
+        assert_eq!(result.as_slice()[4], 46);
     }
 }

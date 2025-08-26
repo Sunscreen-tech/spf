@@ -6,7 +6,7 @@
 #include "../entities/bootstrap_key.cuh"
 #include "../params.cuh"
 
-__global__ void fft_bootstrap_key(
+__global__ void kernel_fft_bootstrap_key(
     cuda::std::complex<f64> *__restrict__ bsk_fft_buf,
     const cuda::std::complex<f64> *__restrict__ bsk_buf
 ) {

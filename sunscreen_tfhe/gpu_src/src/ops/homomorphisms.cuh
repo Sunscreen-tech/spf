@@ -87,20 +87,19 @@ __device__ inline void decomposed_polynomial_glev_mad(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
+    // Under standard parameters, we allocate another 32kB of memory.
     auto decomp_scratch = scratch.alloc<Polynomial>(glwe.polynomial_degree());
     auto decomp = PolynomialSignedRadixDecomposer(a, *decomp_scratch, radix, glwe.polynomial_degree());
+    auto decomp_poly = scratch.alloc<Polynomial>(glwe.polynomial_degree());
 
     for (u32 i = 0; i < radix.count.val; i++)
     {
-        auto decomp_poly_buf = get_fft_scratch();
-        auto decomp_poly = Polynomial(decomp_poly_buf);
-
         u32 l = radix.count.val - i - 1;
 
         auto b_l = b.decomps(l, std::tuple(glwe, radix));
-        decomp.next(decomp_poly);
+        decomp.next(*decomp_poly);
 
-        auto decomp_poly_fft = std::move(decomp_poly).fft_inplace(glwe.polynomial_degree());
+        auto decomp_poly_fft = std::move(*decomp_poly).fft_inplace(glwe.polynomial_degree());
 
         glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
     }
@@ -176,8 +175,8 @@ __device__ inline void glwe_sub_assign(
 }
 
 /// @brief Same a cmux, but more memory efficient. inputs a and b are overwritten
-/// and the result is returned in a. b contains b - a, as a side effect, not that 
-/// this is usually useful.
+/// and the result is returned in a. Upon return, b contains b - a, as a side 
+/// effect, not that this is usually useful.
 __device__ inline void destructive_cmux(
     GlweCiphertext a,
     GlweCiphertext b,
