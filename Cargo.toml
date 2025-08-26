@@ -65,6 +65,7 @@ rustfft = "6"
 seq-macro = "0.3"
 serde = { version = "1", features = ["rc", "derive"] }
 serde_json = "1"
+static_assertions = "1"
 statrs = "0.18"
 subtle = "2"
 syn = { version = "2", features = ["full"] }
