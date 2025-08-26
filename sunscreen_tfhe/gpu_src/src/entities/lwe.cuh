@@ -27,7 +27,7 @@ public:
         return complex_count;
     }
 
-    __device__ constexpr inline const u64 a_b(u32 i, const LweDef &glwe) const
+    __device__ constexpr inline u64 a_b(u32 i, const LweDef &glwe) const
     {
         return m_data.get_u64(i);
     }

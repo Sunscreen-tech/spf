@@ -7,7 +7,7 @@
 
 __device__ inline u64 modulus_switch(u64 x, u32 log_chi, u32 log_v, u32 log_modulus) {
     u64 mask = (0x1 << log_modulus) - 1;
-    u64 x = x << log_chi;
+    x = x << log_chi;
     u32 shift_amount = 64 - (log_modulus - log_v);
 
     u64 round = (x >> (shift_amount - 1)) & 0x1;

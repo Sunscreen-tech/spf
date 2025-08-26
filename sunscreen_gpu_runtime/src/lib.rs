@@ -139,9 +139,11 @@ impl GpuRuntime {
 #[macro_export]
 macro_rules! launch_kernel {
     (($grid:expr) ($name:expr) ($rt:ident,$stream:ident,$sm:expr) $($args:expr),*) => {{
+        use sunscreen_gpu_runtime::AsKernelArg;
+
         let kernel_args = vec![
             $(
-                $crate::AsKernelArg::as_kernel_arg(&$args),
+                $args.as_kernel_arg(),
             )*
         ];
 
