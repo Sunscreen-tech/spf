@@ -19,8 +19,8 @@ use cuda_runtime_sys::{
 };
 
 use crate::{
-    AllocationBackend, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend, Grid, Result,
-    StreamBackend,
+    AllocationBackend, ComputeVersion, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend,
+    Grid, Result, StreamBackend,
 };
 
 macro_rules! wrap_cuda_runtime {
@@ -47,9 +47,9 @@ struct Module {
 }
 
 impl Module {
-    fn new(fatbin: &[u8]) -> Result<Self> {
+    fn new(module_data: &'static [u8]) -> Result<Self> {
         let mut module = CUmodule::default();
-        wrap_cuda_driver! {cuModuleLoadData(&raw mut module, fatbin.as_ptr() as *const c_void)};
+        wrap_cuda_driver! {cuModuleLoadData(&raw mut module, module_data.as_ptr() as *const c_void)};
 
         Ok(Self { module })
     }
@@ -96,7 +96,11 @@ pub struct Context {
 }
 
 impl Context {
-    fn new(device_id: i32, fatbin: &[u8]) -> Result<Self> {
+    /// Create a new context with the given device_id and code selector.
+    fn new<F>(device_id: i32, get_module_contents: F) -> Result<Self>
+    where
+        F: Fn(ComputeVersion) -> &'static [u8],
+    {
         let mut device = CUdevice::default();
         wrap_cuda_driver! {cuDeviceGet(&raw mut device, device_id)}
 
@@ -104,9 +108,11 @@ impl Context {
         wrap_cuda_driver! {cuDevicePrimaryCtxRetain(&raw mut ctx, device_id)};
         wrap_cuda_driver!(cuCtxSetCurrent(ctx));
 
-        let module = Module::new(fatbin)?;
-
         let attributes = Self::get_device_attributes(device)?;
+
+        let module_contents = get_module_contents(attributes.compute_version);
+
+        let module = Module::new(&module_contents)?;
 
         Ok(Self {
             ctx,
@@ -133,6 +139,16 @@ impl Context {
                 CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN,
                 device,
             )?,
+            compute_version: ComputeVersion {
+                major: get_attr(
+                    CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
+                    device,
+                )?,
+                minor: get_attr(
+                    CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR,
+                    device,
+                )?,
+            },
         })
     }
 }
@@ -151,14 +167,17 @@ unsafe impl Sync for CudaRuntime {}
 unsafe impl Send for CudaRuntime {}
 
 impl CudaRuntime {
-    pub fn new(fatbin: &[u8]) -> Result<Self> {
+    pub fn new<F>(get_module_data: F) -> Result<Self>
+    where
+        F: Fn(ComputeVersion) -> &'static [u8],
+    {
         ensure_init()?;
 
         let num_devices = num_devices().unwrap();
         let mut ctxs = vec![];
 
         for i in 0..num_devices {
-            ctxs.push(Context::new(i as i32, fatbin)?);
+            ctxs.push(Context::new(i as i32, &get_module_data)?);
         }
 
         Ok(Self { ctxs })

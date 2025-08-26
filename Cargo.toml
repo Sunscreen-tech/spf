@@ -70,6 +70,7 @@ subtle = "2"
 syn = { version = "2", features = ["full"] }
 sysinfo = "0.35.1"
 thiserror = "2"
+zip = { version = "4", default-features = false, features = ["deflate"] }
 
 # Crates in this repo
 benchmark_system_info = { version = "0.9", path = "./benchmark_system_info" }

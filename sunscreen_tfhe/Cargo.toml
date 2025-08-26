@@ -29,7 +29,7 @@ serde = { workspace = true }
 sunscreen_gpu_runtime = { workspace = true, optional = true }
 sunscreen_math = { workspace = true }
 thiserror = { workspace = true }
-
+zip = { workspace = true, optional = true }
 
 [dev-dependencies]
 approx = { workspace = true }
@@ -40,12 +40,13 @@ rug = { workspace = true }
 [build-dependencies]
 find_cuda_helper = { workspace = true, optional = true }
 rug = { workspace = true, optional = true }
+zip = { workspace = true, optional = true }
 
 [features]
 
 default = [] #["cuda", "test_kernels"]
 cuda = ["gpu", "sunscreen_gpu_runtime/cuda", "dep:find_cuda_helper", "test_kernels"]
-gpu = ["dep:sunscreen_gpu_runtime"]
+gpu = ["dep:sunscreen_gpu_runtime", "dep:zip"]
 test_kernels = ["gpu", "dep:rug"]
 
 [[bench]]
