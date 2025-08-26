@@ -199,3 +199,27 @@ extern "C" __global__ void can_glwe_multiply_positive_monomial(
         glwe
     );
 }
+
+extern "C" __global__ void can_destructive_cmux(
+    cuda::std::complex<f64> *__restrict__ a_buf,
+    cuda::std::complex<f64> *__restrict__ b_buf,
+    const cuda::std::complex<f64> *__restrict__ sel_buf,
+    cuda::std::complex<f64> *__restrict__ scratch_buffer)
+{
+    const auto &radix = PBS_RADIX_2_16_128;
+    const auto &glwe = GLWE_1_2048_128;
+    auto scratch = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
+
+    auto a = DstArray<GlweCiphertext>::from_ptr(a_buf);
+    auto b = DstArray<GlweCiphertext>::from_ptr(b_buf);
+    auto sel = DstArray<GgswCiphertext>::from_ptr(sel_buf);
+
+    auto a_i = a.nth(blockIdx.x, glwe);
+    auto b_i = b.nth(blockIdx.x, glwe);
+    auto sel_i = sel.nth(blockIdx.x, std::tuple(glwe, radix));
+    
+    auto sel_i_fft = scratch.alloc<GgswCiphertextFft>(std::tuple(glwe, radix));
+    sel_i.fft(*sel_i_fft, std::tuple(glwe, radix));
+
+    destructive_cmux(a_i, b_i, *sel_i_fft, glwe, radix, scratch);
+}
