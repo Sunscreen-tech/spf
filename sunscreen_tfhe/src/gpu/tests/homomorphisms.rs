@@ -411,6 +411,70 @@ fn can_cmux() {
 }
 
 #[test]
+fn can_destructive_cmux() {
+    let runtimes = get_runtimes();
+    let num_blocks = 100;
+
+    let radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(16),
+    };
+
+    let glwe = GLWE_1_2048_128;
+
+    for r in runtimes.iter() {
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let mut a_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut b_glwe = DstArray::<GlweCiphertext<u64>>::new(num_blocks, glwe.dim);
+        let mut sel = DstArray::<GgswCiphertext<u64>>::new(num_blocks, (glwe.dim, radix.count));
+
+        glwe_encrypt(&mut a_glwe, random_msg, &sk, &glwe);
+        glwe_encrypt(&mut b_glwe, random_msg, &sk, &glwe);
+        ggsw_encrypt(&mut sel, &sk, &glwe, &radix);
+
+        let a_orig = a_glwe.clone();
+        let b_orig = b_glwe.clone();
+
+        let stream = r.make_stream(0.into()).unwrap();
+
+        let tpb = glwe.dim.polynomial_degree.threads_per_block();
+        let threads = tpb * num_blocks as u32;
+        let grid = (threads, tpb);
+        let scratch = Scratch::new(r, grid).unwrap();
+
+        unsafe {
+            launch_kernel!(
+                (grid)
+                ("can_destructive_cmux")
+                (r, stream, get_shared_memory_bytes())
+                a_glwe,
+                b_glwe,
+                sel,
+                scratch
+            )
+        }
+        .unwrap();
+
+        stream.wait().unwrap();
+
+        for i in 0..num_blocks {
+            let mut expected = GlweCiphertext::new(&glwe);
+            let a = a_orig.iter(glwe.dim).nth(i).unwrap();
+            let b = b_orig.iter(glwe.dim).nth(i).unwrap();
+            let sel = sel.iter((glwe.dim, radix.count)).nth(i).unwrap();
+
+            // Slow, but exact computation.
+            cmux(&mut expected, a, b, sel, &glwe, &radix);
+
+            let actual = a_glwe.iter(glwe.dim).nth(i).unwrap();
+
+            compare_glwe_contents(&actual, &expected, glwe, &sk);
+        }
+    }
+}
+
+#[test]
 fn can_glwe_multiply_negative_monomial() {
     let runtimes = get_runtimes();
     let num_blocks = 13;

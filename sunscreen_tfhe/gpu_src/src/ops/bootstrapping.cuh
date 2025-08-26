@@ -4,6 +4,7 @@
 #include "../entities/lwe.cuh"
 #include "../entities/glwe.cuh"
 #include "../entities/bootstrap_key.cuh"
+#include "../ops/homomorphisms.cuh"
 
 __device__ inline u64 modulus_switch(u64 x, u32 log_chi, u32 log_v, u32 log_modulus) {
     u64 mask = (0x1 << log_modulus) - 1;
@@ -25,7 +26,22 @@ __device__ inline void generalized_programmable_bootstrap(
     u32 log_v,
     const LweDef &lwe_params,
     const GlweDef &glwe_params,
-    const RadixDecomposition &radix
+    const RadixDecomposition &radix,
+    PerBlockStackAllocator &scratch
 ) {
+    auto output_s = scratch.alloc<GlweCiphertext>(glwe_params);
+    output_s.clear();
+    auto rotated_s = scratch.alloc<GlweCiphertext>(glwe_params);
+    
+    u64 b = input.a_b(lwe_params.size.val, lwe_params);
+    b = modulus_switch(b, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
 
+    glwe_times_negative_monomial_negacyclic(*output_s, lut, static_cast<u32>(b), glwe_params);
+
+    for (u32 i = 0; i < lwe_params.size.val; i++) {
+        u64 a = input.a_b(lwe_params.size.val, lwe_params);
+        a = modulus_switch(a, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
+
+        glwe_times_positive_monomial_negacyclic(*rotated_s, *output_s, static_cast<u32>(a), glwe_params);
+    }
 }

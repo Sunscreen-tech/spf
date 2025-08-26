@@ -19,7 +19,10 @@ public:
         // LWEs use u64 values, which are half as wide as a complex.
         u32 complex_count = params.size.val / 2;
 
-        // Round up when len(a) + 1 is odd
+        // Round up when len(a) + 1 is odd. Note that the imaginary part of the
+        // complex value is actually out of bounds. So long as we only ever use
+        // {get,set}_{i,u}64 on the PunBuf, we'll never actual load/store at this
+        // location, as these methods go through a double pointer, not complex.
         if (params.size.val % 2 == 0) {
             complex_count = params.size.val / 2 + 1;
         }
