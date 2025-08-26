@@ -40,6 +40,9 @@ impl AsKernelArg for LweDef {
 }
 
 /// An GPU ABI-compatible representation of [`crate::GlweDef`].
+///
+/// # Remarks
+/// Only works on 64-bit architectures where pointers are 8 bytes.
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct GlweDef {
@@ -68,14 +71,17 @@ impl AsKernelArg for GlweDef {
 /// An GPU ABI-compatible representation of [`crate::RadixCount`].
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct RadixCount(u32);
+pub struct RadixCount(pub u32);
 
 /// An GPU ABI-compatible representation of [`crate::RadixLog`].
 #[derive(Clone, Copy)]
 #[repr(transparent)]
-pub struct RadixLog(u32);
+pub struct RadixLog(pub u32);
 
 /// An GPU ABI-compatible representation of [`crate::RadixDecomposition`].
+///
+/// # Remarks
+/// Only works on 64-bit architectures where pointers are 8 bytes.
 #[derive(Clone, Copy)]
 #[repr(C)]
 pub struct RadixDecomposition {
