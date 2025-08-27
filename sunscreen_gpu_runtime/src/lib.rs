@@ -39,13 +39,33 @@ where
     }
 }
 
-#[derive(Debug)]
+/// Maps to NVIDIA's Compute Capability or the AMD equivalent
+#[derive(Debug, Copy, Clone, PartialEq, Eq, Ord)]
+pub struct ComputeVersion {
+    pub major: u32,
+    pub minor: u32,
+}
+
+impl PartialOrd for ComputeVersion {
+    fn partial_cmp(&self, other: &Self) -> Option<std::cmp::Ordering> {
+        if self.major == other.major {
+            self.minor.partial_cmp(&other.minor)
+        } else {
+            self.major.partial_cmp(&other.major)
+        }
+    }
+}
+
+#[derive(Debug, Clone)]
 pub struct DeviceAttributes {
     /// The maximum amount of statically allocated shared memory per block.
     pub max_shared_memory_per_block: u32,
 
     /// The maximum amount of opt-in shared memory
     pub max_optin_shared_memory_per_block: u32,
+
+    /// Maps to NVIDIA's Compute Capability or the AMD equivalent
+    pub compute_version: ComputeVersion,
 }
 
 pub struct GpuRuntime(pub(crate) Box<dyn GpuRuntimeBackend>);
@@ -601,10 +621,12 @@ impl Grid for ((u32, u32), (u32, u32), (u32, u32)) {
 
 static RUNTIMES: OnceLock<Arc<Vec<Arc<GpuRuntime>>>> = OnceLock::new();
 
-pub fn init_runtimes(
+pub fn init_runtimes<F>(
     // Don't know why the rust compiler complains about this...
-    #[allow(unused)] cubin: &[u8],
-) {
+    #[allow(unused)] get_module_data: F,
+) where
+    F: Fn(ComputeVersion) -> &'static [u8],
+{
     static INITIALIZED: AtomicBool = AtomicBool::new(false);
 
     INITIALIZED
@@ -615,7 +637,7 @@ pub fn init_runtimes(
         let runtimes = vec![
             #[cfg(feature = "cuda")]
             Arc::new(GpuRuntime(Box::new(
-                cuda_runtime::CudaRuntime::new(cubin).unwrap(),
+                cuda_runtime::CudaRuntime::new(get_module_data).unwrap(),
             ))),
         ];
 

@@ -106,23 +106,15 @@ use gpu::*;
 
 #[cfg(feature = "cuda")]
 mod cuda {
-    use std::path::Path;
+    use std::{io::Write, path::Path};
+
+    use zip::{
+        ZipWriter,
+        write::{FileOptions, SimpleFileOptions},
+    };
 
     pub fn compile_as_cuda() {
-        const ARCH: &[&str] = &[
-            "sm_70", "sm_75", "sm_89", "sm_90", "sm_90a", "sm_100", "sm_100a", "sm_101", "sm_101a",
-            "sm_120", "sm_120a",
-        ];
-
-        let gencode_flags = ARCH
-            .iter()
-            .flat_map(|x| {
-                [
-                    "--generate-code".to_owned(),
-                    format!("arch=compute_70,code={x}"),
-                ]
-            })
-            .collect::<Vec<_>>();
+        let compute_versions = ["compute_70", "compute_90"];
 
         use std::{path::PathBuf, process::Command};
 
@@ -135,42 +127,60 @@ mod cuda {
 
         let src_file = Path::new(".").join("gpu_src").join("main.cu");
 
-        for config in ["test", "release"] {
-            let binary = outdir.join(format!("sunscreen_tfhe_gpu.{config}.fatbin"));
-            let dst_dir = outdir.join(src_file.parent().unwrap());
+        for arch in compute_versions {
+            for config in ["test", "release"] {
+                let binary_path = outdir.join(format!("sunscreen_tfhe_gpu.{config}.{arch}.ptx"));
+                let dst_dir = outdir.join(src_file.parent().unwrap());
 
-            match std::fs::create_dir_all(&dst_dir) {
-                Ok(_) => {}
-                Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
-                Err(e) => panic!("{}", e),
+                match std::fs::create_dir_all(&dst_dir) {
+                    Ok(_) => {}
+                    Err(e) if e.kind() == std::io::ErrorKind::AlreadyExists => {}
+                    Err(e) => panic!("{}", e),
+                }
+
+                println!("Compiling {src_file:#?}...");
+
+                let c = Command::new(&nvcc)
+                    .arg("-Werror")
+                    .arg("all-warnings")
+                    .arg("--generate-line-info")
+                    .arg("--std=c++20")
+                    .arg("--expt-relaxed-constexpr")
+                    .arg("-Xptxas")
+                    .arg("-O4")
+                    .arg("--fmad=true")
+                    .arg("--prec-div=true")
+                    .arg("--extra-device-vectorization")
+                    .arg(format!("-arch={arch}"))
+                    .arg("-I")
+                    .arg(outdir.join("codegen"))
+                    .arg("-D")
+                    .arg(config.to_uppercase())
+                    .arg("--ptx")
+                    .arg("-o")
+                    .arg(&binary_path)
+                    .arg(&src_file)
+                    .output()
+                    .unwrap();
+
+                super::validate_command_output(c, "nvcc compilation failed.");
+
+                let mut zip_path = binary_path.clone();
+                zip_path.set_extension("zip");
+
+                let binary = std::fs::read(&binary_path).unwrap();
+
+                let mut zip_file = ZipWriter::new_stream(std::fs::File::create(zip_path).unwrap());
+
+                let options = SimpleFileOptions::default()
+                    .compression_method(zip::CompressionMethod::Deflated);
+
+                zip_file
+                    .start_file(binary_path.to_string_lossy(), options)
+                    .unwrap();
+                zip_file.write_all(&binary).unwrap();
+                zip_file.finish().unwrap();
             }
-
-            println!("Compiling {src_file:#?}...");
-
-            let c = Command::new(&nvcc)
-                .arg("-Werror")
-                .arg("all-warnings")
-                .arg("--generate-line-info")
-                .arg("--std=c++20")
-                .arg("--expt-relaxed-constexpr")
-                .arg("-Xptxas")
-                .arg("-O4")
-                .arg("--fmad=true")
-                .arg("--prec-div=true")
-                .arg("--extra-device-vectorization")
-                .args(&gencode_flags)
-                .arg("-I")
-                .arg(outdir.join("codegen"))
-                .arg("-D")
-                .arg(config.to_uppercase())
-                .arg("--fatbin")
-                .arg("-o")
-                .arg(&binary)
-                .arg(&src_file)
-                .output()
-                .unwrap();
-
-            super::validate_command_output(c, "nvcc compilation failed.");
         }
     }
 }

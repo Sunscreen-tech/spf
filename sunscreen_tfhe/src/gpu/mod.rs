@@ -1,10 +1,9 @@
+use std::io::{Cursor, Read};
 use std::sync::{Arc, OnceLock};
 
-use sunscreen_gpu_runtime::{Allocation, AsKernelArg, GpuRuntime, Grid, launch_kernel};
-
-#[cfg(any(feature = "test_kernels", test))]
-pub(crate) const GPU_KERNELS: &[u8] =
-    include_bytes!(concat!(env!("OUT_DIR"), "/sunscreen_tfhe_gpu.test.fatbin"));
+use sunscreen_gpu_runtime::{
+    Allocation, AsKernelArg, ComputeVersion, GpuRuntime, Grid, launch_kernel,
+};
 
 /// GPU-compatible FHE parameter types
 pub mod gpu_params;
@@ -16,6 +15,73 @@ pub mod ops;
 mod tests;
 
 use sunscreen_gpu_runtime::Result;
+use zip::ZipArchive;
+use zip::read::read_zipfile_from_stream;
+
+#[doc(hidden)]
+pub fn get_kernels(compute_version: ComputeVersion) -> &'static [u8] {
+    #[cfg(not(any(feature = "test_kernels", test)))]
+    const GPU_KERNELS_CC_70_ZIP: &[u8] = include_bytes!(concat!(
+        env!("OUT_DIR"),
+        "/sunscreen_tfhe_gpu.release.compute_70.zip"
+    ));
+
+    #[cfg(not(any(feature = "test_kernels", test)))]
+    const GPU_KERNELS_CC_90_ZIP: &[u8] = include_bytes!(concat!(
+        env!("OUT_DIR"),
+        "/sunscreen_tfhe_gpu.release.compute_90.zip"
+    ));
+
+    #[cfg(any(feature = "test_kernels", test))]
+    const GPU_KERNELS_CC_70_ZIP: &[u8] = include_bytes!(concat!(
+        env!("OUT_DIR"),
+        "/sunscreen_tfhe_gpu.test.compute_70.zip"
+    ));
+
+    #[cfg(any(feature = "test_kernels", test))]
+    const GPU_KERNELS_CC_90_ZIP: &[u8] = include_bytes!(concat!(
+        env!("OUT_DIR"),
+        "/sunscreen_tfhe_gpu.test.compute_90.zip"
+    ));
+
+    static CUDA_70_DATA: OnceLock<Vec<u8>> = OnceLock::new();
+    static CUDA_90_DATA: OnceLock<Vec<u8>> = OnceLock::new();
+
+    let v_7 = ComputeVersion { major: 7, minor: 0 };
+    let v_9 = ComputeVersion { major: 9, minor: 0 };
+
+    fn decompress(zip_data: &[u8]) -> Vec<u8> {
+        let mut cursor = Cursor::new(zip_data);
+
+        let mut zip_file = ZipArchive::new(&mut cursor).unwrap();
+
+        let mut contents = vec![];
+        zip_file
+            .by_index(0)
+            .unwrap()
+            .read_to_end(&mut contents)
+            .unwrap();
+
+        // Append a null terminator to make the data a C string.
+        contents.push(0);
+
+        println!("{}", String::from_utf8(contents.clone()).unwrap());
+
+        contents
+    }
+
+    if compute_version >= v_7 {
+        let data = CUDA_70_DATA.get_or_init(|| decompress(GPU_KERNELS_CC_70_ZIP));
+
+        data.as_ref()
+    } else if compute_version >= v_9 {
+        let data = CUDA_90_DATA.get_or_init(|| decompress(GPU_KERNELS_CC_90_ZIP));
+
+        data.as_ref()
+    } else {
+        panic!("compute capability not supported: {compute_version:#?}");
+    }
+}
 
 #[doc(hidden)]
 pub fn get_runtimes() -> Arc<Vec<Arc<GpuRuntime>>> {
@@ -23,7 +89,7 @@ pub fn get_runtimes() -> Arc<Vec<Arc<GpuRuntime>>> {
 
     RUNTIMES
         .get_or_init(|| {
-            sunscreen_gpu_runtime::init_runtimes(GPU_KERNELS);
+            sunscreen_gpu_runtime::init_runtimes(get_kernels);
             sunscreen_gpu_runtime::get_runtimes()
         })
         .clone()

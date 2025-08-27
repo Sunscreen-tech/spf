@@ -2,7 +2,7 @@ use sunscreen_gpu_runtime::{get_runtimes, init_runtimes};
 
 fn main() {
     // Remove this hack.
-    init_runtimes(include_bytes!("./sunscreen_gpu_runtime.release.fatbin"));
+    init_runtimes(|_| include_bytes!("./sunscreen_gpu_runtime.release.fatbin"));
 
     let runtimes = get_runtimes();
 
