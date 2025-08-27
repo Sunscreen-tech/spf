@@ -22,8 +22,8 @@ __device__ inline void generalized_programmable_bootstrap(
     const LweCiphertext input,
     const GlweCiphertext lut,
     const BootstrapKeyFft bsk,
-    u32 log_chi,
-    u32 log_v,
+    const u32 log_chi,
+    const u32 log_v,
     const LweDef &lwe_params,
     const GlweDef &glwe_params,
     const RadixDecomposition &radix,
@@ -49,4 +49,6 @@ __device__ inline void generalized_programmable_bootstrap(
 
         destructive_cmux(*output_s, *rotated_s, s, glwe_params, radix, scratch);
     }
+
+    (*output_s).clone_into(output, glwe_params);
 }

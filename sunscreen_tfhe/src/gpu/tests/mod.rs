@@ -1,5 +1,8 @@
 use num::Complex;
 
+use crate::{RadixCount, RadixDecomposition, RadixLog};
+
+mod bootstrapping;
 mod basics;
 mod entities;
 mod fft;
@@ -10,6 +13,11 @@ mod polynomial;
 mod signed_decomposition;
 mod simd;
 mod test_utils;
+
+const PBS_RADIX_2_16: RadixDecomposition = RadixDecomposition {
+    radix_log: RadixLog(16),
+    count: RadixCount(2)
+};
 
 pub fn get_shared_memory_bytes() -> u32 {
     const SHARED_MEMORY_BYTES: u32 = 64 * 1024;

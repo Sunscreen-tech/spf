@@ -203,6 +203,11 @@ where
     pub fn iter_mut(&mut self, size_info: <T as OverlaySize>::Inputs) -> DstIteratorMut<'_, T> {
         DstIteratorMut::new(&mut self.data, T::size(size_info))
     }
+
+    /// Returns the array length.
+    pub fn len(&self, size_info: <T as OverlaySize>::Inputs) -> usize {
+        self.data.len() / <T as OverlaySize>::size(size_info)
+    }
 }
 
 impl<T> DstArrayRef<T>

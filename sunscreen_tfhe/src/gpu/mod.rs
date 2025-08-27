@@ -65,8 +65,6 @@ pub fn get_kernels(compute_version: ComputeVersion) -> &'static [u8] {
         // Append a null terminator to make the data a C string.
         contents.push(0);
 
-        println!("{}", String::from_utf8(contents.clone()).unwrap());
-
         contents
     }
 

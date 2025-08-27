@@ -2856,6 +2856,7 @@ dependencies = [
  "cuda-driver-sys",
  "cuda-runtime-sys",
  "find_cuda_helper",
+ "log",
  "num",
  "parasol_concurrency",
  "serde",

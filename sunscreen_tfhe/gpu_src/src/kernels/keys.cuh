@@ -6,15 +6,13 @@
 #include "../entities/bootstrap_key.cuh"
 #include "../params.cuh"
 
-__global__ void kernel_fft_bootstrap_key(
+extern "C" __global__ void kernel_fft_bootstrap_key(
     cuda::std::complex<f64> *__restrict__ bsk_fft_buf,
-    const cuda::std::complex<f64> *__restrict__ bsk_buf
-) {
-    // TODO: Allow configurable params
-    auto lwe = LWE_637_128;
-    auto glwe = GLWE_1_2048_128;
-    auto pbs_radix = PBS_RADIX_2_16_128;
-
+    const cuda::std::complex<f64> *__restrict__ bsk_buf,
+    LweDef lwe,
+    GlweDef glwe,
+    RadixDecomposition pbs_radix)
+{
     auto bsk = BootstrapKey::from_ptr(bsk_buf);
     auto bsk_fft = BootstrapKeyFft::from_ptr(bsk_buf);
 

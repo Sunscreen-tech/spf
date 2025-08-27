@@ -32,9 +32,13 @@ public:
 
     __device__ inline PerBlockStackAllocator(cuda::std::complex<f64> *scratch, u32 length, bool is_local = false)
     {
-        this->m_per_block_size = length / gridDim.x;
+        this->m_per_block_size = is_local
+            ? length
+            : length / gridDim.x;
 
-        assert(this->m_per_block_size * gridDim.x == length);
+        if (!is_local) {
+            assert(this->m_per_block_size * gridDim.x == length);
+        }
 
         this->m_scratch = is_local
             ? scratch

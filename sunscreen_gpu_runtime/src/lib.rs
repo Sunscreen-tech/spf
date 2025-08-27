@@ -1,6 +1,9 @@
 #[cfg(feature = "cuda")]
 pub mod cuda_runtime;
 
+#[cfg(feature = "cuda")]
+mod cuda_ext;
+
 mod error;
 use std::{
     borrow::{Borrow, BorrowMut},
@@ -59,10 +62,10 @@ impl PartialOrd for ComputeVersion {
 #[derive(Debug, Clone)]
 pub struct DeviceAttributes {
     /// The maximum amount of statically allocated shared memory per block.
-    pub max_shared_memory_per_block: u32,
+    pub max_static_shared_memory_per_block: u32,
 
     /// The maximum amount of opt-in shared memory
-    pub max_optin_shared_memory_per_block: u32,
+    pub max_dynamic_shared_memory_per_block: u32,
 
     /// Maps to NVIDIA's Compute Capability or the AMD equivalent
     pub compute_version: ComputeVersion,
@@ -180,6 +183,24 @@ impl<'a> Stream<'a> {
     pub fn wait(&self) -> Result<()> {
         self.0.wait()
     }
+
+    /// Enqueue a task that drops the given Arcs when it runs. This allows a function to
+    /// allocate some data, enqueue a kernel, enqueue this task, and return. The moved
+    /// resource is not immediately dropped, but rather enqueued to drop. This guarantees
+    /// that the data is alive for any previously enqueued kernels on the same stream.
+    pub fn enqueue_release_allocation<T>(&self, resource: Allocation<T>) -> Result<()>
+    where T: Pod
+    {
+        let ptr = resource.inner.ptr_mut() as *mut c_void;
+        self.0.enqueue_free(ptr)?;
+
+        Ok(())
+    }
+
+    /// Returns the device associated with the given stream.
+    pub fn device_id(&self) -> DeviceId {
+        self.0.device_id()
+    }
 }
 
 pub trait GpuRuntimeBackend: Sync + Send {
@@ -255,6 +276,12 @@ pub trait StreamBackend {
     ) -> Result<()>;
 
     fn wait(&self) -> Result<()>;
+
+    fn insert_callback(&self, callback: fn(*mut c_void), data: *mut c_void) -> Result<()>;
+
+    fn enqueue_free(&self, ptr: *mut c_void) -> Result<()>;
+
+    fn device_id(&self) -> DeviceId;
 }
 
 /// An array of type `T` allocated in virtual memory accessible from GPUs and the host.
