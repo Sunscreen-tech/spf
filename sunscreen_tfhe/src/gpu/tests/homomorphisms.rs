@@ -285,7 +285,7 @@ fn can_polynomial_glev_mad() {
 #[test]
 fn can_glwe_ggsw_mad() {
     let runtimes = get_runtimes();
-    let num_blocks = 13;
+    let num_blocks = 69;
 
     let radix = RadixDecomposition {
         count: RadixCount(2),

@@ -69,6 +69,9 @@ pub struct DeviceAttributes {
 
     /// Maps to NVIDIA's Compute Capability or the AMD equivalent
     pub compute_version: ComputeVersion,
+
+    /// The number of multiprocessors (i.e. CUDA SMs).
+    pub multiprocessor_count: u32,
 }
 
 pub struct GpuRuntime(pub(crate) Box<dyn GpuRuntimeBackend>);

@@ -1,6 +1,5 @@
 #pragma once
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "../../src/iter_tools.cuh"
 #include "../../src/math/simd.cuh"

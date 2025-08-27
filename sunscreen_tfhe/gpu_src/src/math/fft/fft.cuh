@@ -1,6 +1,5 @@
 #pragma once
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "../../features.cuh"
 
@@ -13,8 +12,6 @@
 #include "fft_params.cuh"
 #include "../math.cuh"
 #include "../primitives.cuh"
-
-extern __shared__ cuda::std::complex<double> SHARED_BUFFER[];
 
 template <typename T>
 __device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)

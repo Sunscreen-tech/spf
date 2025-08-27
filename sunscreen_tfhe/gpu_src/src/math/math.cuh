@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 const double PI = 3.14159265358979323846264338327950288;
 const double TAU = PI * 2.0;

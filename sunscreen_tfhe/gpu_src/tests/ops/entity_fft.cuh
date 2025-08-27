@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 #include "../../src/entities/bootstrap_key.cuh"
 #include "../../src/entities/dst_array.cuh"
@@ -35,10 +34,22 @@ extern "C" __global__ void can_recover_lwe_sk_from_bsk(
     const cuda::std::complex<f64> *__restrict__ bsk_buf,
     const LweDef lwe,
     const GlweDef glwe,
+<<<<<<< HEAD
     const RadixDecomposition radix
 ) {
     auto scratch = get_shared_allocator(96 * 1024);
     auto glwe_fft_s = scratch.alloc<GlweCiphertextFft>(glwe);
+=======
+    const RadixDecomposition radix,
+    cuda::std::complex<f64> * __restrict__ scratch_buf
+) {
+    auto scratch = get_shared_allocator(96 * 1024);
+    auto scratch_g = PerBlockStackAllocator(scratch_buf, get_scratch_size());
+
+    auto glwe_fft_s = scratch.alloc<GlweCiphertextFft>(glwe);
+    // auto glwe_fft_s = scratch_g.alloc<GlweCiphertextFft>(glwe);
+    (*glwe_fft_s).clear(glwe);
+>>>>>>> 12ba245 (tests pass)
 
     auto glwe_out = DstArray<GlweCiphertext>::from_ptr(glwe_out_buf);
     auto glwe_in = DstArray<GlweCiphertext>::from_ptr(glwe_in_buf);
@@ -46,12 +57,19 @@ extern "C" __global__ void can_recover_lwe_sk_from_bsk(
 
     auto glwe_in_i = glwe_in.nth(blockIdx.x, glwe);
     auto glwe_out_i = glwe_out.nth(blockIdx.x, glwe);
+<<<<<<< HEAD
     auto ggsw_fft_i = bsk.s(blockIdx.x, std::tuple(lwe, glwe, radix));
  
     __syncthreads();
     glwe_ggsw_mad(*glwe_fft_s, glwe_in_i, ggsw_fft_i, glwe, radix, scratch);
 
     __syncthreads();
+=======
+    auto ggsw_fft_i = bsk.s(blockIdx.x, cuda::std::tuple(lwe, glwe, radix));
+ 
+    glwe_ggsw_mad(*glwe_fft_s, glwe_in_i, ggsw_fft_i, glwe, radix, scratch);
+
+>>>>>>> 12ba245 (tests pass)
     (*glwe_fft_s).ifft(glwe_out_i, glwe, scratch);
 }
 
@@ -88,12 +106,21 @@ extern "C" __global__ void can_roundtrip_fft_glev(
     auto glev_out_fft = DstArray<GlevCiphertextFft>::from_ptr(glev_fft_out_buf);
     auto glev_in = DstArray<GlevCiphertext>::from_ptr(glev_in_buf);
 
+<<<<<<< HEAD
     auto glev_out_i = glev_out.nth(blockIdx.x, std::tuple(glwe, radix));
     auto glev_out_fft_i = glev_out_fft.nth(blockIdx.x, std::tuple(glwe, radix));
     auto glev_in_i = glev_in.nth(blockIdx.x, std::tuple(glwe, radix));
 
     glev_in_i.fft(glev_out_fft_i, std::tuple(glwe, radix), scratch);
     glev_out_fft_i.ifft(glev_out_i, std::tuple(glwe, radix), scratch);
+=======
+    auto glev_out_i = glev_out.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+    auto glev_out_fft_i = glev_out_fft.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+    auto glev_in_i = glev_in.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+
+    glev_in_i.fft(glev_out_fft_i, cuda::std::tuple(glwe, radix), scratch);
+    glev_out_fft_i.ifft(glev_out_i, cuda::std::tuple(glwe, radix), scratch);
+>>>>>>> 12ba245 (tests pass)
 }
 
 extern "C" __global__ void can_roundtrip_fft_ggsw(
@@ -110,10 +137,19 @@ extern "C" __global__ void can_roundtrip_fft_ggsw(
     auto ggsw_out_fft = DstArray<GgswCiphertextFft>::from_ptr(ggsw_fft_out_buf);
     auto ggsw_in = DstArray<GgswCiphertext>::from_ptr(ggsw_in_buf);
 
+<<<<<<< HEAD
     auto ggsw_out_i = ggsw_out.nth(blockIdx.x, std::tuple(glwe, radix));
     auto ggsw_out_fft_i = ggsw_out_fft.nth(blockIdx.x, std::tuple(glwe, radix));
     auto ggsw_in_i = ggsw_in.nth(blockIdx.x, std::tuple(glwe, radix));
 
     ggsw_in_i.fft(ggsw_out_fft_i, std::tuple(glwe, radix), scratch);
     ggsw_out_fft_i.ifft(ggsw_out_i, std::tuple(glwe, radix), scratch);
+=======
+    auto ggsw_out_i = ggsw_out.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+    auto ggsw_out_fft_i = ggsw_out_fft.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+    auto ggsw_in_i = ggsw_in.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+
+    ggsw_in_i.fft(ggsw_out_fft_i, cuda::std::tuple(glwe, radix), scratch);
+    ggsw_out_fft_i.ifft(ggsw_out_i, cuda::std::tuple(glwe, radix), scratch);
+>>>>>>> 12ba245 (tests pass)
 }

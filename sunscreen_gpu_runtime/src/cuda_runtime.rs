@@ -149,6 +149,10 @@ impl Context {
                     device,
                 )?,
             },
+            multiprocessor_count: get_attr(
+                CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
+                device,
+            )?,
         })
     }
 }

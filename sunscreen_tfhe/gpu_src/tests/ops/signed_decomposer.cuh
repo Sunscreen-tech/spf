@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 #include "../../src/entities/dst_array.cuh"
 #include "../../src/math/signed_decomposer.cuh"

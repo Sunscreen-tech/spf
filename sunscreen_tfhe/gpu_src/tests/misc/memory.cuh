@@ -1,6 +1,5 @@
 #pragma once
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "../../src/math/primitives.cuh"
 #include "../../src/entities/punbuf.cuh"

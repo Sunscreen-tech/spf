@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 #include "../iter_tools.cuh"
 #include "../entities/polynomial.cuh"

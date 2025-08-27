@@ -10,6 +10,7 @@ template <typename T>
 class DstArray {
 public:
     using BufTy = typename T::BufTy;
+    using BasePtrTy = typename BufTy::BasePtrTy;
 
     DstArray() = delete;
     __device__ explicit constexpr inline DstArray(BufTy data): m_data(data) { }
@@ -24,11 +25,11 @@ public:
         return T(m_data.split(T::size(size_info) * i));
     }
 
-    __device__ static constexpr inline DstArray<T> from_ptr(BufTy::BasePtrTy *ptr) {
+    __device__ static constexpr inline DstArray<T> from_ptr(BasePtrTy *ptr) {
         return DstArray(BufTy::from_ptr(ptr));
     }
 
-    __device__ static constexpr inline const DstArray<T> from_ptr(const BufTy::BasePtrTy *ptr) {
+    __device__ static constexpr inline const DstArray<T> from_ptr(const BasePtrTy *ptr) {
         return DstArray(BufTy::from_ptr(ptr));
     }
 private:

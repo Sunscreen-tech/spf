@@ -11,7 +11,7 @@ use crate::{
         Polynomial,
     },
     gpu::{
-        get_runtimes, gpu_params,
+        Scratch, get_runtimes, gpu_params,
         ops::keys::{gpu_fft_bootstrap_key, gpu_ifft_bootstrap_key},
         tests::{PBS_RADIX_2_16, get_shared_memory_bytes},
     },
@@ -373,13 +373,11 @@ fn can_recover_lwe_sk_from_bsk() {
             let mut msg = Polynomial::<Torus<u64>>::zero(glwe.dim.polynomial_degree.0);
             msg.coeffs_mut()[0] = Torus::encode(1, PlaintextBits(1));
 
-            // encrypt_glwe_ciphertext_secret(g, &msg, &glwe_sk, &glwe);
-            trivially_encrypt_glwe_ciphertext(g, &msg, &glwe);
+            encrypt_glwe_ciphertext_secret(g, &msg, &glwe_sk, &glwe);
         }
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
-        //let threads = tpb * lwe.dim.0 as u32;
-        let threads = tpb;
+        let threads = tpb * lwe.dim.0 as u32;
         let stream = r.make_stream(DeviceId::default()).unwrap();
 
         gpu_fft_bootstrap_key(&mut bsk_fft, &bsk, &lwe, &glwe, &radix, &r, &stream).unwrap();
@@ -389,10 +387,13 @@ fn can_recover_lwe_sk_from_bsk() {
         let lwe_gpu = gpu_params::LweDef::from(&lwe);
         let glwe_gpu: gpu_params::GlweDef = gpu_params::GlweDef::from(&glwe);
         let radix_gpu = gpu_params::RadixDecomposition::from(&radix);
+        let grid = (threads, tpb);
+
+        let scratch = Scratch::new(r, grid).unwrap();
 
         unsafe {
             launch_kernel!(
-                ((threads, tpb))
+                (grid)
                 ("can_recover_lwe_sk_from_bsk")
                 (r, stream, 96 * 1024)
                 glwe_out,
@@ -400,21 +401,21 @@ fn can_recover_lwe_sk_from_bsk() {
                 bsk_fft,
                 lwe_gpu,
                 glwe_gpu,
-                radix_gpu
+                radix_gpu,
+                scratch
             )
         }
         .unwrap();
 
         stream.wait().unwrap();
 
-        for (actual, expected) in glwe_out.iter(glwe.dim).zip(lwe_sk.s()) {
+        for (i, (actual, expected)) in glwe_out.iter(glwe.dim).zip(lwe_sk.s()).enumerate() {
             let mut msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
             decrypt_glwe_ciphertext(&mut msg, actual, &glwe_sk, &glwe);
 
             assert_eq!(msg.coeffs()[0].decode(PlaintextBits(1)), *expected);
 
-            for c in msg.coeffs().iter().skip(1) {
-                println!("{:0>64b}", c.inner());
+            for (j, c) in msg.coeffs().iter().enumerate().skip(1) {
                 assert_eq!(c.decode(PlaintextBits(1)), 0);
             }
         }

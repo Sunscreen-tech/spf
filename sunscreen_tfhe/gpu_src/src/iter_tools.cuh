@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 /// Collectively use each thread in the current thread block to iterate [0, N).
 /// In many cases, this creates optimal memory coalescing/bank conflict outcomes

@@ -1,6 +1,5 @@
 #pragma once
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "scratch.cuh"
 #include "../math/math.cuh"
@@ -53,6 +52,11 @@ public:
         BLOCK_COPY(other.coeffs().as_f64(), this->coeffs().as_f64(), degree.val);
     }
 
+    __device__ inline void clear(const PolynomialDegree &params) {
+        BLOCK_FOR_EACH(i, params.val) {
+            this->coeffs().as_f64()[i] = 0.0;
+        }
+    }
 private:
     BufTy m_data;
 };
@@ -99,6 +103,12 @@ public:
     __device__ inline void clone_into(PolynomialFft other, const PolynomialDegree &degree) const
     {
         BLOCK_COPY(other.coeffs().as_complex(), this->coeffs().as_complex(), degree.val / 2);
+    }
+
+    __device__ inline void clear(const PolynomialDegree &params) {
+        BLOCK_FOR_EACH(i, params.val / 2) {
+            this->coeffs().as_complex()[i] = cuda::std::complex(0.0, 0.0);
+        }
     }
 private:
     BufTy m_data;
