@@ -8,9 +8,9 @@ fn can_programmable_bootstrap() {
     let glwe = GLWE_1_2048_128;
     let lwe = LWE_637_128;
     let radix = PBS_RADIX_2_16;
-    let bits = PlaintextBits(2);
+    let bits = PlaintextBits(1);
 
-    let num_blocks = 4;
+    let num_blocks = 13;
     let runtimes = get_runtimes();
     let lwe_sk = keygen::generate_binary_lwe_sk(&lwe);
     let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
@@ -30,10 +30,14 @@ fn can_programmable_bootstrap() {
         let mut inputs = DstArray::<LweCiphertext<u64>>::new(num_blocks, lwe.dim);
 
         for (i, ct) in inputs.iter_mut(lwe.dim).enumerate() {
-            let msg = Torus::encode(i as u64 % 2, bits);
+            // Taken from the test in
+            // `sunscreen_tfhe/src/ops/bootstrapping/programmable_bootstrapping.rs`,
+            // out LUT maps the T_4 torus to the T_2 torus. So we, encrypt with 2 bits
+            // and decrypt with 1 bit.
+            let msg = Torus::encode(i as u64 % 2, PlaintextBits(2));
 
-            //encrypt_lwe_ciphertext(ct, &lwe_sk, msg, &lwe);
-            trivially_encrypt_lwe_ciphertext(ct, &msg, &lwe);
+            encrypt_lwe_ciphertext(ct, &lwe_sk, msg, &lwe);
+            // trivially_encrypt_lwe_ciphertext(ct, &msg, &lwe);
 
             dbg!(ct.a_b(&lwe).1);
         }
@@ -68,7 +72,7 @@ fn can_programmable_bootstrap() {
 
             dbg!(i);
             for c in dbg_msg.coeffs().iter().take(8) {
-                println!("{:0>64b}", c.inner());
+                println!("pt {:0>64b}", c.inner());
             }
 
             let res = high_level::encryption::decrypt_glwe(&out, &glwe_sk, &glwe, bits);

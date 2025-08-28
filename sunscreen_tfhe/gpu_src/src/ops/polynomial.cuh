@@ -81,6 +81,8 @@ __device__ inline void polynomial_times_positive_monomial_negacyclic(
 
         out.coeffs().set_i64(out_loc, val);
     }
+
+    __syncthreads();
 }
 
 __device__ inline void polynomial_times_negative_monomial_negacyclic(
@@ -102,4 +104,6 @@ __device__ inline void polynomial_times_negative_monomial_negacyclic(
 
         out.coeffs().set_i64(out_loc, val);
     }
+
+    __syncthreads();
 }

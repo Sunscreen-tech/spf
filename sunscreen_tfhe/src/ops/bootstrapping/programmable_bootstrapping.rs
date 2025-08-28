@@ -376,6 +376,8 @@ pub fn generalized_programmable_bootstrap<S>(
 
     let (ct_a, ct_b) = ct.a_b(lwe_params);
 
+    println!("b {:#?}", ct_b.inner());
+
     // 2. Use a cmux tree to blind rotate V using the elements of the bootstrap
     // key (the input LWE secret key bits).
 
@@ -944,7 +946,7 @@ mod tests {
         );
 
         for i in [0, 1] {
-            //let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, bits);
+            // let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, PlaintextBits(2));
             let input = encryption::trivial_lwe(i, lwe, PlaintextBits(2));
             let mut output = GlweCiphertext::new(glwe);
 
