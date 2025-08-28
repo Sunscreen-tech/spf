@@ -305,10 +305,10 @@ fn can_fft_roundtrip_ggsw() {
 
             println!("{:0>64b}", msg.coeffs()[0].inner());
 
-            assert_eq!(msg.coeffs()[0].decode(PlaintextBits(1)), i as u64 % 2);
+            assert_eq!(msg.coeffs()[0].inner(), i as u64 % 2);
 
             for c in msg.coeffs().iter().skip(1) {
-                assert_eq!(c.decode(PlaintextBits(1)), 0);
+                assert_eq!(c.inner(), 0);
             }
         }
     }
@@ -342,10 +342,10 @@ fn can_fft_roundtrip_bsk() {
 
             decrypt_ggsw_ciphertext(&mut msg, actual, &glwe_sk, &glwe, &radix);
 
-            assert_eq!(msg.coeffs()[0].decode(PlaintextBits(1)), *s);
+            assert_eq!(msg.coeffs()[0].inner(), *s);
 
             for c in msg.coeffs().iter().skip(1) {
-                assert_eq!(c.decode(PlaintextBits(1)), 0);
+                assert_eq!(c.inner(), 0);
             }
         }
     }
