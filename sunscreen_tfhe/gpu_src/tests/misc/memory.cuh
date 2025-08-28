@@ -14,8 +14,10 @@ extern "C" __global__ void can_copy_to_and_from_shared_memory(
 ) {
     const u32 N = 2345;
     
-    auto s_input = get_fft_scratch();
-    auto sptr = reinterpret_cast<u32*>(s_input.as_f64());
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(N + 1);
+    
+    auto sptr = reinterpret_cast<u32*>((*punbuf).as_f64());
 
     BLOCK_COPY(sptr, &input[N * blockIdx.x], N);
     BLOCK_COPY(&output[N * blockIdx.x], sptr, N);
@@ -28,8 +30,8 @@ extern "C" __global__ void can_use_scratch(
     cuda::std::complex<f64> *__restrict__ scratch_buffer
 ) {
     const u32 N = 2344;
+    auto allocator = get_shared_allocator(32 * 1024);
 
-    auto allocator = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
     auto a_clone = allocator.alloc<DstBuffer>(N);
     auto b_clone = allocator.alloc<DstBuffer>(N);
     f64* a_clone_ptr = (*a_clone).ptr();

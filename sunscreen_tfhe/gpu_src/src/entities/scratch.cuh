@@ -32,9 +32,13 @@ public:
 
     __device__ inline PerBlockStackAllocator(cuda::std::complex<f64> *scratch, u32 length, bool is_local = false)
     {
-        this->m_per_block_size = length / gridDim.x;
+        this->m_per_block_size = is_local
+            ? length
+            : length / gridDim.x;
 
-        assert(this->m_per_block_size * gridDim.x == length);
+        if (!is_local) {
+            assert(this->m_per_block_size * gridDim.x == length);
+        }
 
         this->m_scratch = is_local
             ? scratch
@@ -72,6 +76,15 @@ private:
     /// @brief number of bytes available per block.
     u32 m_per_block_size;
 };
+
+/// @brief  Returns a shared memory allocator over shared memory
+/// @param shared_mem_size The amount of shared memory this kernel launched with.
+/// @return 
+__device__ inline PerBlockStackAllocator get_shared_allocator(u32 shared_mem_size) {
+    extern __shared__ cuda::std::complex<double> SHARED_BUFFER[];
+
+    return PerBlockStackAllocator(SHARED_BUFFER, shared_mem_size, true);
+}
 
 template <typename T>
 class PerBlockStackAllocation

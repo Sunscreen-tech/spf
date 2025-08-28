@@ -14,11 +14,7 @@
 #include "../math.cuh"
 #include "../primitives.cuh"
 
-extern __shared__ cuda::std::complex<double> FFT_BUFFER[];
-
-__device__ constexpr PunBuf get_fft_scratch() {
-    return PunBuf::from_ptr(FFT_BUFFER);
-}
+extern __shared__ cuda::std::complex<double> SHARED_BUFFER[];
 
 template <typename T>
 __device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)

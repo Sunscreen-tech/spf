@@ -944,7 +944,7 @@ mod tests {
         );
 
         for i in [0, 1] {
-            //let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, bits);
+            // let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, PlaintextBits(2));
             let input = encryption::trivial_lwe(i, lwe, PlaintextBits(2));
             let mut output = GlweCiphertext::new(glwe);
 

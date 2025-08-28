@@ -12,8 +12,10 @@ class GgswCiphertextFft;
 class GgswCiphertext
 {
 public:
+    using BufTy = PunBuf;
+
     GgswCiphertext() = delete;
-    __device__ explicit constexpr inline GgswCiphertext(PunBuf data) : m_data(data) {}
+    __device__ explicit constexpr inline GgswCiphertext(BufTy data) : m_data(data) {}
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
@@ -30,27 +32,29 @@ public:
         return DstArray<GlevCiphertext>(m_data).nth(i, size_info);
     }
 
-    __device__ inline void fft(GgswCiphertextFft res, const GlevSizeInfo &size_info) const;
+    __device__ inline void fft(GgswCiphertextFft res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const;
 
     __device__ static constexpr inline GgswCiphertext from_ptr(cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertext(PunBuf::from_ptr(ptr));
+        return GgswCiphertext(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const GgswCiphertext from_ptr(const cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertext(PunBuf::from_ptr(ptr));
+        return GgswCiphertext(BufTy::from_ptr(ptr));
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 class GgswCiphertextFft
 {
 public:
+    using BufTy = PunBuf;
+
     GgswCiphertextFft() = delete;
-    __device__ explicit constexpr inline GgswCiphertextFft(PunBuf data) : m_data(data) {}
+    __device__ explicit constexpr inline GgswCiphertextFft(BufTy data) : m_data(data) {}
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
@@ -67,35 +71,38 @@ public:
         return DstArray<GlevCiphertextFft>(m_data).nth(i, size_info);
     }
 
-    template <typename U>
-    __device__ inline GgswCiphertext ifft(const GlevSizeInfo &size_info) const;
+    __device__ inline void ifft(GgswCiphertext res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const;
 
     __device__ static constexpr inline GgswCiphertextFft from_ptr(cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertextFft(PunBuf::from_ptr(ptr));
+        return GgswCiphertextFft(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const GgswCiphertextFft from_ptr(const cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertextFft(PunBuf::from_ptr(ptr));
+        return GgswCiphertextFft(BufTy::from_ptr(ptr));
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
-__device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSizeInfo &size_info) const {
-    // Do the rows with the S_i*m term...
-    for (u32 i = 0; i < std::get<0>(size_info).size.val; i++) {
+__device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
+    // FFT the k + 1 rows in the GGSW. Hence `<=`.
+    for (u32 i = 0; i <= std::get<0>(size_info).size.val; i++) {
         auto c_row = this->rows(i, size_info);
         auto fft_row = res.rows(i, size_info);
 
-        c_row.fft(fft_row, size_info);
+        c_row.fft(fft_row, size_info, scratch);
     }
+}
 
-    // ...and then the row with only the message
-    auto c_row = this->rows(std::get<0>(size_info).size.val, size_info);
-    auto fft_row = res.rows(std::get<0>(size_info).size.val, size_info);
+__device__ inline void GgswCiphertextFft::ifft(GgswCiphertext res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
+    // IFFT the k + 1 rows in the GGSW. Hence `<=`.
+    for (u32 i = 0; i <= std::get<0>(size_info).size.val; i++) {
+        auto c_row = this->rows(i, size_info);
+        auto fft_row = res.rows(i, size_info);
 
-    c_row.fft(fft_row, size_info);
+        c_row.ifft(fft_row, size_info, scratch);
+    }
 }

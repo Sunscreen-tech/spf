@@ -13,16 +13,19 @@ extern "C" __global__ void can_polynomial_rountrip_fft(
     cuda::std::complex<f64> *__restrict__ scratch_buf, // unused
     const u32 n)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(n);
+
     auto x = DstArray<Polynomial>::from_ptr(x_buf);
     auto y = DstArray<Polynomial>::from_ptr(y_buf);
     
     auto degree = PolynomialDegree(n);
-    auto tmp = PolynomialFft(get_fft_scratch());
+    auto tmp = PolynomialFft(*punbuf);
     auto x_i = x.nth(blockIdx.x, degree);
     auto y_i = y.nth(blockIdx.x, degree);
 
-    x_i.fft(tmp, degree);
-    tmp.ifft(y_i, degree);
+    x_i.fft(tmp, degree, scratch_s);
+    tmp.ifft(y_i, degree, scratch_s);
 }
 
 extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
@@ -31,6 +34,9 @@ extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
     cuda::std::complex<f64> *__restrict__ scratch_buf, // unused
     const u32 n)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(n);
+
     auto x = DstArray<Polynomial>::from_ptr(x_buf);
     auto y = DstArray<Polynomial>::from_ptr(y_buf);
 
@@ -38,7 +44,7 @@ extern "C" __global__ void can_polynomial_rountrip_fft_inplace(
     auto x_i = x.nth(blockIdx.x, degree);
     auto y_i = y.nth(blockIdx.x, degree);
 
-    auto s_in = Polynomial(get_fft_scratch());
+    auto s_in = Polynomial(*punbuf);
 
     x_i.clone_into(s_in, degree);
 
@@ -108,6 +114,9 @@ extern "C" __global__ void can_multiply_non_negacyclic_polynomials(
     const cuda::std::complex<f64> *__restrict__ b_buf,
     const u32 d)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(d);
+
     auto degree = PolynomialDegree(d);
 
     auto a = DstArray<Polynomial>::from_ptr(a_buf);
@@ -118,7 +127,7 @@ extern "C" __global__ void can_multiply_non_negacyclic_polynomials(
     auto b_i = b.nth(blockIdx.x, degree);
     auto c_i = c.nth(blockIdx.x, degree);
 
-    auto p_shared = DstArray<Polynomial>(get_fft_scratch());
+    auto p_shared = DstArray<Polynomial>(*punbuf);
     auto a_s = p_shared.nth(0, degree);
     auto b_s = p_shared.nth(1, degree);
     auto c_s = p_shared.nth(2, degree);
@@ -147,6 +156,8 @@ extern "C" __global__ void can_mad_polynomials(
     cuda::std::complex<f64> *__restrict__ scratch_buf,
     u32 d)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
+
     auto degree = PolynomialDegree(d);
     auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());
 
@@ -161,14 +172,14 @@ extern "C" __global__ void can_mad_polynomials(
     auto a_i_fft = scratch.alloc<PolynomialFft>(degree);
     auto b_i_fft = scratch.alloc<PolynomialFft>(degree);
 
-    c_i.fft(*c_i_fft, degree);
-    a_i.fft(*a_i_fft, degree);
-    b_i.fft(*b_i_fft, degree);
+    c_i.fft(*c_i_fft, degree, scratch_s);
+    a_i.fft(*a_i_fft, degree, scratch_s);
+    b_i.fft(*b_i_fft, degree, scratch_s);
 
     polynomial_mad(*c_i_fft, *a_i_fft, *b_i_fft, degree);
 
     // Set the modulo-reduced result
-    (*c_i_fft).ifft(c_i, degree);
+    (*c_i_fft).ifft(c_i, degree, scratch_s);
     PolynomialDegree n_div_2 = PolynomialDegree{degree.val / 2};
 
     // Compute the non modulo-reduced result so we can check it as well in our test.
@@ -189,6 +200,8 @@ extern "C" __global__ void can_mad_polynomials_inplace(
 {
     auto degree = PolynomialDegree(d);
     auto scratch = PerBlockStackAllocator(scratch_buf, get_scratch_size());
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(d);
 
     auto c = DstArray<Polynomial>::from_ptr(c_buf);
     auto a = DstArray<Polynomial>::from_ptr(a_buf);
@@ -197,7 +210,7 @@ extern "C" __global__ void can_mad_polynomials_inplace(
     auto a_i = a.nth(blockIdx.x, degree);
     auto b_i = b.nth(blockIdx.x, degree);
 
-    auto poly_s = DstArray<Polynomial>(get_fft_scratch());
+    auto poly_s = DstArray<Polynomial>(*punbuf);
 
     auto a_s = poly_s.nth(0, degree);
     auto b_s = poly_s.nth(1, degree);
@@ -225,9 +238,12 @@ extern "C" __global__ void inplace_vs_out_of_place_fft(
     const cuda::std::complex<f64> *__restrict__ input_buf,
     u32 d)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(d);
+
     auto degree = PolynomialDegree(d);
 
-    auto p_s = Polynomial(get_fft_scratch());
+    auto p_s = Polynomial(*punbuf);
     
     auto input = DstArray<Polynomial>::from_ptr(input_buf);
     auto out_of_place = DstArray<PolynomialFft>::from_ptr(input_buf);
@@ -241,7 +257,7 @@ extern "C" __global__ void inplace_vs_out_of_place_fft(
     auto a_s_fft = std::move(p_s).fft_inplace(degree);
 
     a_s_fft.clone_into(inplace_i, degree);
-    input_i.fft(out_of_place_i, degree);
+    input_i.fft(out_of_place_i, degree, scratch_s);
 }
 
 extern "C" __global__ void inplace_vs_out_of_place_ifft(
@@ -250,9 +266,12 @@ extern "C" __global__ void inplace_vs_out_of_place_ifft(
     const cuda::std::complex<f64> *__restrict__ input_buf,
     u32 d)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
+    auto punbuf = scratch_s.alloc<PunBuf>(d);
+
     auto degree = PolynomialDegree(d);
 
-    auto p_s = PolynomialFft(get_fft_scratch());
+    auto p_s = PolynomialFft(*punbuf);
     
     auto input = DstArray<PolynomialFft>::from_ptr(input_buf);
     auto out_of_place = DstArray<Polynomial>::from_ptr(input_buf);
@@ -266,5 +285,5 @@ extern "C" __global__ void inplace_vs_out_of_place_ifft(
     auto a_s_fft = std::move(p_s).ifft_inplace(degree);
 
     a_s_fft.clone_into(inplace_i, degree);
-    input_i.ifft(out_of_place_i, degree);
+    input_i.ifft(out_of_place_i, degree, scratch_s);
 }

@@ -8,11 +8,11 @@ use std::{
 };
 
 use cuda_driver_sys::{
-    CUcontext, CUdevice, CUdevice_attribute, CUfunction, CUfunction_attribute, CUmodule, CUstream,
-    cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetAttribute, cuDeviceGetName,
-    cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuFuncSetAttribute, cuLaunchKernel,
-    cuModuleGetFunction, cuModuleLoadData, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize,
-    cudaError_enum,
+    CUcontext, CUdevice, CUdevice_attribute, CUdeviceptr, CUfunction, CUfunction_attribute,
+    CUmodule, CUresult, CUstream, cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet,
+    cuDeviceGetAttribute, cuDeviceGetName, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain,
+    cuFuncSetAttribute, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamAddCallback,
+    cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum,
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
@@ -20,7 +20,7 @@ use cuda_runtime_sys::{
 
 use crate::{
     AllocationBackend, ComputeVersion, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend,
-    Grid, Result, StreamBackend,
+    Grid, Result, StreamBackend, cuda_ext::cuMemFreeAsync,
 };
 
 macro_rules! wrap_cuda_runtime {
@@ -131,11 +131,11 @@ impl Context {
         }
 
         Ok(DeviceAttributes {
-            max_shared_memory_per_block: get_attr(
+            max_static_shared_memory_per_block: get_attr(
                 CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK,
                 device,
             )?,
-            max_optin_shared_memory_per_block: get_attr(
+            max_dynamic_shared_memory_per_block: get_attr(
                 CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MAX_SHARED_MEMORY_PER_BLOCK_OPTIN,
                 device,
             )?,
@@ -355,6 +355,39 @@ impl<'a> StreamBackend for CudaStream<'a> {
         wrap_cuda_driver!(cuStreamSynchronize(self.handle));
 
         Ok(())
+    }
+
+    fn insert_callback(&self, callback: fn(*mut c_void), data: *mut c_void) -> Result<()> {
+        let data = Box::into_raw(Box::new((callback, data)));
+
+        unsafe extern "C" fn on_complete(
+            _: CUstream,
+            _: CUresult,
+            user_data: *mut ::std::os::raw::c_void,
+        ) {
+            let data = unsafe { Box::from_raw(user_data as *mut (fn(*mut c_void), *mut c_void)) };
+
+            data.0(data.1);
+        }
+
+        wrap_cuda_driver!(cuStreamAddCallback(
+            self.handle,
+            Some(on_complete),
+            data as *mut c_void,
+            0
+        ));
+
+        Ok(())
+    }
+
+    fn enqueue_free(&self, ptr: *mut std::ffi::c_void) -> Result<()> {
+        wrap_cuda_driver!(cuMemFreeAsync(ptr as CUdeviceptr, self.handle));
+
+        Ok(())
+    }
+
+    fn device_id(&self) -> DeviceId {
+        self.device_id
     }
 }
 

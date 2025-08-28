@@ -72,15 +72,16 @@ __device__ inline void polynomial_times_positive_monomial_negacyclic(
 ) {
     BLOCK_FOR_EACH(i, degree.val) {
         auto val = in.coeffs().get_i64(i);
-        auto out_loc = i + rotation;
+        auto new_degree = (i + rotation) % (2 * degree.val);
 
-        if (out_loc >= degree.val) {
+        if (new_degree >= degree.val) {
             val = -val;
-            out_loc -= degree.val;
         }
 
-        out.coeffs().set_i64(out_loc, val);
+        out.coeffs().set_i64(new_degree % degree.val, val);
     }
+
+    __syncthreads();
 }
 
 __device__ inline void polynomial_times_negative_monomial_negacyclic(
@@ -91,15 +92,14 @@ __device__ inline void polynomial_times_negative_monomial_negacyclic(
 ) {
     BLOCK_FOR_EACH(i, degree.val) {
         auto val = in.coeffs().get_i64(i);
-        u32 out_loc = 0;
+        auto new_degree = (i - rotation) % (2 * degree.val);
 
-        if (i < rotation) {
+        if (new_degree >= degree.val) {
             val = -val;
-            out_loc = degree.val - rotation + i;
-        } else {
-            out_loc = i - rotation;
         }
 
-        out.coeffs().set_i64(out_loc, val);
+        out.coeffs().set_i64(new_degree % degree.val, val);
     }
+
+    __syncthreads();
 }

@@ -27,8 +27,8 @@ pub struct LweDim(pub u32);
 #[repr(transparent)]
 pub struct LweDef(pub LweDim);
 
-impl From<crate::LweDef> for LweDef {
-    fn from(value: crate::LweDef) -> Self {
+impl From<&crate::LweDef> for LweDef {
+    fn from(value: &crate::LweDef) -> Self {
         Self(LweDim(value.dim.0 as u32))
     }
 }
@@ -53,8 +53,8 @@ pub struct GlweDef {
     pub size: GlweSize,
 }
 
-impl From<crate::GlweDef> for GlweDef {
-    fn from(value: crate::GlweDef) -> Self {
+impl From<&crate::GlweDef> for GlweDef {
+    fn from(value: &crate::GlweDef) -> Self {
         Self {
             log_poly_degree: LogPolyDegree(value.dim.polynomial_degree.0.ilog2()),
             size: GlweSize(value.dim.size.0 as u32),
@@ -92,8 +92,8 @@ pub struct RadixDecomposition {
     pub radix_log: RadixLog,
 }
 
-impl From<crate::RadixDecomposition> for RadixDecomposition {
-    fn from(value: crate::RadixDecomposition) -> Self {
+impl From<&crate::RadixDecomposition> for RadixDecomposition {
+    fn from(value: &crate::RadixDecomposition) -> Self {
         Self {
             count: RadixCount(value.count.0 as u32),
             radix_log: RadixLog(value.radix_log.0 as u32),
