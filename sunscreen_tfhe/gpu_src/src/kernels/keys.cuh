@@ -13,6 +13,8 @@ extern "C" __global__ void kernel_fft_bootstrap_key(
     GlweDef glwe,
     RadixDecomposition pbs_radix)
 {
+    auto scratch = get_shared_allocator(32 * 1024);
+
     auto bsk = BootstrapKey::from_ptr(bsk_buf);
     auto bsk_fft = BootstrapKeyFft::from_ptr(bsk_fft_buf);
 
@@ -20,7 +22,7 @@ extern "C" __global__ void kernel_fft_bootstrap_key(
     auto bsk_i = bsk.s(blockIdx.x, size_info);
     auto bsk_fft_i = bsk_fft.s(blockIdx.x, size_info);
 
-    bsk_i.fft(bsk_fft_i, std::tuple(glwe, pbs_radix));
+    bsk_i.fft(bsk_fft_i, std::tuple(glwe, pbs_radix), scratch);
 }
 
 extern "C" __global__ void kernel_ifft_bootstrap_key(
@@ -30,6 +32,8 @@ extern "C" __global__ void kernel_ifft_bootstrap_key(
     GlweDef glwe,
     RadixDecomposition pbs_radix)
 {
+    auto scratch = get_shared_allocator(32 * 1024);
+
     auto bsk = BootstrapKey::from_ptr(bsk_buf);
     auto bsk_fft = BootstrapKeyFft::from_ptr(bsk_fft_buf);
 
@@ -37,5 +41,5 @@ extern "C" __global__ void kernel_ifft_bootstrap_key(
     auto bsk_i = bsk.s(blockIdx.x, size_info);
     auto bsk_fft_i = bsk_fft.s(blockIdx.x, size_info);
 
-    bsk_fft_i.ifft(bsk_i, std::tuple(glwe, pbs_radix));
+    bsk_fft_i.ifft(bsk_i, std::tuple(glwe, pbs_radix), scratch);
 }

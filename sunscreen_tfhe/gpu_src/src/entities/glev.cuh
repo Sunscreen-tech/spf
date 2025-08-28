@@ -36,7 +36,7 @@ public:
         return DstArray<GlweCiphertext>(m_data).nth(i, std::get<0>(size_info));
     }
 
-    __device__ inline void fft(GlevCiphertextFft out, const GlevSizeInfo &size_info) const;
+    __device__ inline void fft(GlevCiphertextFft out, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const;
 
     __device__ static constexpr inline GlevCiphertext from_ptr(cuda::std::complex<f64> *ptr) {
         return GlevCiphertext(BufTy::from_ptr(ptr));
@@ -73,13 +73,13 @@ public:
         return DstArray<GlweCiphertextFft>(m_data).nth(i, std::get<0>(size_info));
     }
 
-    __device__ inline void ifft(GlevCiphertext out, const GlevSizeInfo &size_info) const {
+    __device__ inline void ifft(GlevCiphertext out, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
         for (u32 i = 0; i < std::get<1>(size_info).count.val; i++)
         {
             auto d_fft_i = this->decomps(i, size_info);
             auto d_i = out.decomps(i, size_info);
 
-            d_fft_i.ifft(d_i, std::get<0>(size_info));
+            d_fft_i.ifft(d_i, std::get<0>(size_info), scratch);
         }
     }
 
@@ -95,12 +95,12 @@ private:
     BufTy m_data;
 };
 
-__device__ inline void GlevCiphertext::fft(GlevCiphertextFft out, const GlevSizeInfo &size_info) const {
+__device__ inline void GlevCiphertext::fft(GlevCiphertextFft out, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
     for (u32 i = 0; i < std::get<1>(size_info).count.val; i++)
     {
         auto d_i = this->decomps(i, size_info);
         auto d_fft_i = out.decomps(i, size_info);
 
-        d_i.fft(d_fft_i, std::get<0>(size_info));
+        d_i.fft(d_fft_i, std::get<0>(size_info), scratch);
     }
 }

@@ -16,10 +16,7 @@ extern "C" __global__ void kernel_generalized_functional_bootstrap(
     u32 local_storage_amount)
 {
     // TODO, size-aware with local storage.
-    auto scratch = PerBlockStackAllocator(
-        get_fft_scratch().as_complex(),
-        local_storage_amount,
-        true);
+    auto scratch = get_shared_allocator(local_storage_amount);
 
     auto output = DstArray<GlweCiphertext>::from_ptr(output_buf);
     auto input = DstArray<LweCiphertext>::from_ptr(input_buf);

@@ -136,6 +136,7 @@ __device__ inline void cmux(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
+    auto scratch_s = get_shared_allocator(32 * 1024);
     auto diff = scratch.alloc<GlweCiphertext>(glwe);
 
     glwe_sub(*diff, b, a, glwe);
@@ -147,7 +148,7 @@ __device__ inline void cmux(
 
     auto prod = scratch.alloc<GlweCiphertext>(glwe);
 
-    (*prod_fft).ifft(*prod, glwe);
+    (*prod_fft).ifft(*prod, glwe, scratch_s);
 
     glwe_add(c, *prod, a, glwe);
 }

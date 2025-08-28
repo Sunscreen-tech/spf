@@ -23,9 +23,14 @@
 class PunBuf {
 public:
     using BasePtrTy = cuda::std::complex<f64>;
-    
+
     PunBuf() = delete;
     __device__ explicit constexpr inline PunBuf(BasePtrTy *data): m_data(data) { }
+
+    __device__ static constexpr inline u32 size(u32 len) {
+        // A Punbuf contains len BasePtrTy elements.
+        return len;
+    }
 
     __device__ constexpr inline f64 *as_f64() {
         // Explicitly 

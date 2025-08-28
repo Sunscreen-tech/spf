@@ -77,6 +77,15 @@ private:
     u32 m_per_block_size;
 };
 
+/// @brief  Returns a shared memory allocator over shared memory
+/// @param shared_mem_size The amount of shared memory this kernel launched with.
+/// @return 
+__device__ inline PerBlockStackAllocator get_shared_allocator(u32 shared_mem_size) {
+    extern __shared__ cuda::std::complex<double> SHARED_BUFFER[];
+
+    return PerBlockStackAllocator(SHARED_BUFFER, shared_mem_size, true);
+}
+
 template <typename T>
 class PerBlockStackAllocation
 {

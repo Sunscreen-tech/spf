@@ -11,18 +11,19 @@ extern "C" __global__ void can_roundtrip_fft_f64(
     cuda::std::complex<f64> *__restrict__ result,
     u32 fft_len)
 {
-    auto s_in = get_fft_scratch();
+    auto scratch = get_shared_allocator(32 * 1024);
+    auto s_in = scratch.alloc<PunBuf>(fft_len);
 
-    BLOCK_COPY(s_in.as_complex(), &x[fft_len * blockIdx.x], fft_len);
+    BLOCK_COPY((*s_in).as_complex(), &x[fft_len * blockIdx.x], fft_len);
 
     double n_inv = 1 / (double)fft_len;
 
-    fft_noreorder(s_in.as_complex(), fft_len);
-    ifft_noreorder(s_in.as_complex(), fft_len);
+    fft_noreorder((*s_in).as_complex(), fft_len);
+    ifft_noreorder((*s_in).as_complex(), fft_len);
 
     BLOCK_FOR_EACH(i, fft_len)
     {
-        result[fft_len * blockIdx.x + i] = s_in.as_complex()[i] * n_inv;
+        result[fft_len * blockIdx.x + i] = (*s_in).as_complex()[i] * n_inv;
     }
 }
 

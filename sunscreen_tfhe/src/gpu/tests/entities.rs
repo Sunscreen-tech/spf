@@ -378,7 +378,8 @@ fn can_recover_lwe_sk_from_bsk() {
         }
 
         let tpb = glwe.dim.polynomial_degree.threads_per_block();
-        let threads = tpb * lwe.dim.0 as u32;
+        //let threads = tpb * lwe.dim.0 as u32;
+        let threads = tpb;
         let stream = r.make_stream(DeviceId::default()).unwrap();
 
         gpu_fft_bootstrap_key(&mut bsk_fft, &bsk, &lwe, &glwe, &radix, &r, &stream).unwrap();
@@ -392,7 +393,7 @@ fn can_recover_lwe_sk_from_bsk() {
         unsafe {
             launch_kernel!(
                 ((threads, tpb))
-                ("can_fft_bootstrap_key")
+                ("can_recover_lwe_sk_from_bsk")
                 (r, stream, 96 * 1024)
                 glwe_out,
                 glwe_in,

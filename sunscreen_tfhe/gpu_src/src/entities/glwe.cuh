@@ -5,6 +5,7 @@
 
 #include "dst_array.cuh"
 #include "polynomial.cuh"
+#include "scratch.cuh"
 #include "../math/math.cuh"
 #include "../params.cuh"
 
@@ -33,7 +34,7 @@ public:
         return DstArray<Polynomial>(m_data).nth(i, glwe.polynomial_degree());
     }
 
-    __device__ inline void fft(GlweCiphertextFft out, const GlweDef &params) const;
+    __device__ inline void fft(GlweCiphertextFft out, const GlweDef &params, PerBlockStackAllocator &scratch) const;
     __device__ inline GlweCiphertextFft fft_inplace(const GlweDef &params) &&;
 
     __device__ static constexpr inline GlweCiphertext from_ptr(cuda::std::complex<double> *ptr) {
@@ -87,19 +88,15 @@ public:
         return DstArray<PolynomialFft>(m_data).nth(i, glwe.polynomial_degree());
     }
 
-    __device__ inline void ifft(GlweCiphertext out, const GlweDef &params) const {
-        for (u32 i = 0; i < params.size.val; i++)
+    __device__ inline void ifft(GlweCiphertext out, const GlweDef &params, PerBlockStackAllocator &scratch) const {
+        // k `a` values and 1 `b` value.
+        for (u32 i = 0; i <= params.size.val; i++)
         {
             auto a_fft_i = this->a_b(i, params);
             auto a_i = out.a_b(i, params);
 
-            a_fft_i.ifft(a_i, params.polynomial_degree());
+            a_fft_i.ifft(a_i, params.polynomial_degree(), scratch);
         }
-
-        auto b_fft = this->a_b(params.size.val, params);
-        auto b = out.a_b(params.size.val, params);
-
-        b_fft.ifft(b, params.polynomial_degree());
     }
 
     __device__ inline GlweCiphertext ifft_inplace(const GlweDef &params) && {
@@ -140,33 +137,26 @@ private:
     BufTy m_data;
 };
 
-__device__ inline void GlweCiphertext::fft(GlweCiphertextFft out, const GlweDef &params) const {
-    for (u32 i = 0; i < params.size.val; i++)
+__device__ inline void GlweCiphertext::fft(GlweCiphertextFft out, const GlweDef &params, PerBlockStackAllocator &scratch) const {
+    // k + 1 polynomials in a GLWE ciphertext.
+    for (u32 i = 0; i <= params.size.val; i++)
     {
         auto a_i = this->a_b(i, params);
         auto a_fft_i = out.a_b(i, params);
 
-        a_i.fft(a_fft_i, params.polynomial_degree());
+        a_i.fft(a_fft_i, params.polynomial_degree(), scratch);
     }
-
-    auto a_i = this->a_b(params.size.val, params);
-    auto a_fft_i = out.a_b(params.size.val, params);
-
-    a_i.fft(a_fft_i, params.polynomial_degree());
 }
 
 
 __device__ inline GlweCiphertextFft GlweCiphertext::fft_inplace(const GlweDef &params) && {
-    for (u32 i = 0; i < params.size.val; i++)
+    // k + 1 polynomials in a GLWE ciphertext.
+    for (u32 i = 0; i <= params.size.val; i++)
     {
         auto a_i = this->a_b(i, params);
 
         std::move(a_i).fft_inplace(params.polynomial_degree());
     }
-
-    auto b = this->a_b(params.size.val, params);
-
-    std::move(b).fft_inplace(params.polynomial_degree());
 
     return GlweCiphertextFft(m_data);
 }

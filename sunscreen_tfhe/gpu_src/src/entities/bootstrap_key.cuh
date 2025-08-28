@@ -51,8 +51,6 @@ public:
         return BootstrapKey(BufTy::from_ptr(ptr));
     }
 
-    __device__ inline void fft(BootstrapKeyFft out, const BootstrapKeySizeInfo &size_info) const;
-
 private:
     BufTy m_data;
 };
@@ -101,12 +99,3 @@ public:
 private:
     BufTy m_data;
 };
-
-__device__ inline void BootstrapKey::fft(BootstrapKeyFft out, const BootstrapKeySizeInfo &size_info) const {
-    for (u32 i = 0; i < std::get<0>(size_info).size.val; i++) {
-        auto s_i = this->s(i, size_info);
-        auto s_i_fft = out.s(i, size_info);
-
-        s_i.fft(s_i_fft, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
-    }
-}

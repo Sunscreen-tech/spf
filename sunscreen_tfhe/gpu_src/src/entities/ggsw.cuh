@@ -32,7 +32,7 @@ public:
         return DstArray<GlevCiphertext>(m_data).nth(i, size_info);
     }
 
-    __device__ inline void fft(GgswCiphertextFft res, const GlevSizeInfo &size_info) const;
+    __device__ inline void fft(GgswCiphertextFft res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const;
 
     __device__ static constexpr inline GgswCiphertext from_ptr(cuda::std::complex<f64> *ptr)
     {
@@ -71,7 +71,7 @@ public:
         return DstArray<GlevCiphertextFft>(m_data).nth(i, size_info);
     }
 
-    __device__ inline void ifft(GgswCiphertext res, const GlevSizeInfo &size_info) const;
+    __device__ inline void ifft(GgswCiphertext res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const;
 
     __device__ static constexpr inline GgswCiphertextFft from_ptr(cuda::std::complex<f64> *ptr)
     {
@@ -87,22 +87,22 @@ private:
     BufTy m_data;
 };
 
-__device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSizeInfo &size_info) const {
+__device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
     // FFT the k + 1 rows in the GGSW. Hence `<=`.
     for (u32 i = 0; i <= std::get<0>(size_info).size.val; i++) {
         auto c_row = this->rows(i, size_info);
         auto fft_row = res.rows(i, size_info);
 
-        c_row.fft(fft_row, size_info);
+        c_row.fft(fft_row, size_info, scratch);
     }
 }
 
-__device__ inline void GgswCiphertextFft::ifft(GgswCiphertext res, const GlevSizeInfo &size_info) const {
+__device__ inline void GgswCiphertextFft::ifft(GgswCiphertext res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
     // IFFT the k + 1 rows in the GGSW. Hence `<=`.
     for (u32 i = 0; i <= std::get<0>(size_info).size.val; i++) {
         auto c_row = this->rows(i, size_info);
         auto fft_row = res.rows(i, size_info);
 
-        c_row.ifft(fft_row, size_info);
+        c_row.ifft(fft_row, size_info, scratch);
     }
 }
