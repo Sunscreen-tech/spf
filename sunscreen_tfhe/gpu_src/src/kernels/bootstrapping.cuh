@@ -5,7 +5,7 @@
 
 extern "C" __global__ void kernel_generalized_functional_bootstrap(
     cuda::std::complex<f64> *__restrict__ output_buf,
-    const cuda::std::complex<f64> *__restrict__ input_buf,
+    const u64 *__restrict__ input_buf,
     const cuda::std::complex<f64> *__restrict__ lut_buf,
     const cuda::std::complex<f64> *__restrict__ bsk_buf,
     const u32 log_chi,
@@ -16,8 +16,8 @@ extern "C" __global__ void kernel_generalized_functional_bootstrap(
     u32 local_storage_amount)
 {
     if (blockIdx.x == 0 && threadIdx.x == 0) {
-        for (u32 i = 0; i <= blockDim.x * lwe_params.size.val / 2; i++) {
-            printf("%u, %lf, %lf\n", i, input_buf[i].real(), input_buf[i].imag());
+        for (u32 i = 0; i < gridDim.x * (lwe_params.size.val + 1); i++) {
+            printf("%u, %d, %lu\n", lwe_params.size.val, i, input_buf[i]);
         }
     }
 

@@ -13,8 +13,10 @@ class GlweCiphertextFft;
 class GlweCiphertext
 {
 public:
+    using BufTy = PunBuf;
+
     GlweCiphertext() = delete;
-    __device__ explicit constexpr inline GlweCiphertext(PunBuf data): m_data(data) { }
+    __device__ explicit constexpr inline GlweCiphertext(BufTy data): m_data(data) { }
 
     __device__ static constexpr inline u32 size(const GlweDef &params)
     {
@@ -35,11 +37,11 @@ public:
     __device__ inline GlweCiphertextFft fft_inplace(const GlweDef &params) &&;
 
     __device__ static constexpr inline GlweCiphertext from_ptr(cuda::std::complex<double> *ptr) {
-        return GlweCiphertext(PunBuf::from_ptr(ptr));
+        return GlweCiphertext(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const GlweCiphertext from_ptr(const cuda::std::complex<double> *ptr) {
-        return GlweCiphertext(PunBuf::from_ptr(ptr));
+        return GlweCiphertext(BufTy::from_ptr(ptr));
     }
 
     __device__ inline void clone_into(GlweCiphertext other, const GlweDef &params) const
@@ -59,14 +61,16 @@ public:
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 class GlweCiphertextFft
 {
 public:
+    using BufTy = PunBuf;
+
     GlweCiphertextFft() = delete;
-    __device__ explicit constexpr inline GlweCiphertextFft(PunBuf data): m_data(data) { }
+    __device__ explicit constexpr inline GlweCiphertextFft(BufTy data): m_data(data) { }
 
     __device__ static constexpr inline u32 size(const GlweDef &params)
     {
@@ -115,7 +119,7 @@ public:
 
 
     __device__ static constexpr inline const GlweCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
-        return GlweCiphertextFft(PunBuf::from_ptr(ptr));
+        return GlweCiphertextFft(BufTy::from_ptr(ptr));
     }
 
     __device__ inline void clone_into(GlweCiphertextFft out, const GlweDef &params) const {
@@ -133,7 +137,7 @@ public:
         b_fft.clone_into(b, params.polynomial_degree());
     }
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 __device__ inline void GlweCiphertext::fft(GlweCiphertextFft out, const GlweDef &params) const {

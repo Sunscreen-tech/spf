@@ -13,8 +13,10 @@ using BootstrapKeySizeInfo = std::tuple<LweDef, GlweDef, RadixDecomposition>;
 class BootstrapKey
 {
 public:
+    using BufTy = PunBuf;
+
     BootstrapKey() = delete;
-    __device__ explicit constexpr inline BootstrapKey(PunBuf data) : m_data(data) {}
+    __device__ explicit constexpr inline BootstrapKey(BufTy data) : m_data(data) {}
 
     __device__ static inline u32 size(const BootstrapKeySizeInfo &size_info)
     {
@@ -41,25 +43,27 @@ public:
 
     __device__ static constexpr inline BootstrapKey from_ptr(cuda::std::complex<f64> *ptr)
     {
-        return BootstrapKey(PunBuf::from_ptr(ptr));
+        return BootstrapKey(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const BootstrapKey from_ptr(const cuda::std::complex<f64> *ptr)
     {
-        return BootstrapKey(PunBuf::from_ptr(ptr));
+        return BootstrapKey(BufTy::from_ptr(ptr));
     }
 
     __device__ inline void fft(BootstrapKeyFft out, const BootstrapKeySizeInfo &size_info) const;
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 class BootstrapKeyFft
 {
 public:
+    using BufTy = PunBuf;
+
     BootstrapKeyFft() = delete;
-    __device__ explicit constexpr inline BootstrapKeyFft(PunBuf data) : m_data(data) {}
+    __device__ explicit constexpr inline BootstrapKeyFft(BufTy data) : m_data(data) {}
 
     __device__ static inline u32 size(const BootstrapKeySizeInfo &size_info)
     {
@@ -86,16 +90,16 @@ public:
 
     __device__ static constexpr inline BootstrapKeyFft from_ptr(cuda::std::complex<f64> *ptr)
     {
-        return BootstrapKeyFft(PunBuf::from_ptr(ptr));
+        return BootstrapKeyFft(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const BootstrapKeyFft from_ptr(const cuda::std::complex<f64> *ptr)
     {
-        return BootstrapKeyFft(PunBuf::from_ptr(ptr));
+        return BootstrapKeyFft(BufTy::from_ptr(ptr));
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 __device__ inline void BootstrapKey::fft(BootstrapKeyFft out, const BootstrapKeySizeInfo &size_info) const {

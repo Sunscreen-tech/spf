@@ -14,8 +14,10 @@ class PolynomialFft;
 class Polynomial
 {
 public:
+    using BufTy = PunBuf;
+
     Polynomial() = delete;
-    __device__ explicit constexpr inline Polynomial(PunBuf data): m_data(data) { }
+    __device__ explicit constexpr inline Polynomial(BufTy data): m_data(data) { }
 
     __device__ static constexpr inline u32 size(const PolynomialDegree &size_info)
     {
@@ -23,12 +25,12 @@ public:
         return size_info.val / 2;
     }
 
-    __device__ constexpr inline PunBuf coeffs()
+    __device__ constexpr inline BufTy coeffs()
     {
         return m_data;
     }
 
-    __device__ constexpr inline const PunBuf coeffs() const
+    __device__ constexpr inline const BufTy coeffs() const
     {
         return m_data;
     }
@@ -38,11 +40,11 @@ public:
     __device__ inline PolynomialFft fft_inplace(const PolynomialDegree &degree) &&;
 
     __device__ static constexpr inline Polynomial from_ptr(cuda::std::complex<f64> *ptr) {
-        return Polynomial(PunBuf::from_ptr(ptr));
+        return Polynomial(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const Polynomial from_ptr(const cuda::std::complex<f64> *ptr) {
-        return Polynomial(PunBuf::from_ptr(ptr));
+        return Polynomial(BufTy::from_ptr(ptr));
     }
 
     __device__ inline void clone_into(Polynomial other, const PolynomialDegree &degree) const
@@ -51,14 +53,16 @@ public:
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 class PolynomialFft
 {
 public:
+    using BufTy = PunBuf;
+
     PolynomialFft() = delete;
-    __device__ explicit constexpr inline PolynomialFft(PunBuf data): m_data(data) { }
+    __device__ explicit constexpr inline PolynomialFft(BufTy data): m_data(data) { }
 
     __device__ static inline u32 size(const PolynomialDegree &size_info)
     {
@@ -66,22 +70,22 @@ public:
         return size_info.val / 2;
     }
 
-    __device__ constexpr inline PunBuf coeffs()
+    __device__ constexpr inline BufTy coeffs()
     {
         return m_data;
     }
 
-    __device__ constexpr inline const PunBuf coeffs() const
+    __device__ constexpr inline const BufTy coeffs() const
     {
         return m_data;
     }
 
     __device__ static constexpr inline PolynomialFft from_ptr(cuda::std::complex<f64> *ptr) {
-        return PolynomialFft(PunBuf::from_ptr(ptr));
+        return PolynomialFft(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const PolynomialFft from_ptr(const cuda::std::complex<f64> *ptr) {
-        return PolynomialFft(PunBuf::from_ptr(ptr));
+        return PolynomialFft(BufTy::from_ptr(ptr));
     }
 
     __device__ inline void ifft(Polynomial res, const PolynomialDegree &degree) const;
@@ -96,7 +100,7 @@ public:
         BLOCK_COPY(other.coeffs().as_complex(), this->coeffs().as_complex(), degree.val / 2);
     }
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 __device__ inline void Polynomial::fft(

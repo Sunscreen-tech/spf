@@ -12,8 +12,10 @@ class GgswCiphertextFft;
 class GgswCiphertext
 {
 public:
+    using BufTy = PunBuf;
+
     GgswCiphertext() = delete;
-    __device__ explicit constexpr inline GgswCiphertext(PunBuf data) : m_data(data) {}
+    __device__ explicit constexpr inline GgswCiphertext(BufTy data) : m_data(data) {}
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
@@ -34,23 +36,25 @@ public:
 
     __device__ static constexpr inline GgswCiphertext from_ptr(cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertext(PunBuf::from_ptr(ptr));
+        return GgswCiphertext(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const GgswCiphertext from_ptr(const cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertext(PunBuf::from_ptr(ptr));
+        return GgswCiphertext(BufTy::from_ptr(ptr));
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 class GgswCiphertextFft
 {
 public:
+    using BufTy = PunBuf;
+
     GgswCiphertextFft() = delete;
-    __device__ explicit constexpr inline GgswCiphertextFft(PunBuf data) : m_data(data) {}
+    __device__ explicit constexpr inline GgswCiphertextFft(BufTy data) : m_data(data) {}
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
@@ -72,16 +76,16 @@ public:
 
     __device__ static constexpr inline GgswCiphertextFft from_ptr(cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertextFft(PunBuf::from_ptr(ptr));
+        return GgswCiphertextFft(BufTy::from_ptr(ptr));
     }
 
     __device__ static constexpr inline const GgswCiphertextFft from_ptr(const cuda::std::complex<f64> *ptr)
     {
-        return GgswCiphertextFft(PunBuf::from_ptr(ptr));
+        return GgswCiphertextFft(BufTy::from_ptr(ptr));
     }
 
 private:
-    PunBuf m_data;
+    BufTy m_data;
 };
 
 __device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSizeInfo &size_info) const {
