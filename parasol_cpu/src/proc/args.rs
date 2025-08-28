@@ -409,6 +409,8 @@ impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
     }
 }
 
+// This implementation is essentially the same as the array ToArg
+// implementation, but without the casting to an array.
 impl<T: ToArg> DynamicToArg for Vec<T> {
     fn alignment(&self) -> usize {
         T::alignment()
@@ -443,28 +445,26 @@ impl<T: ToArg> DynamicToArg for Vec<T> {
     }
 
     fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
-        // ZSTs are handled specially (same pattern as arrays)
+        // ZSTs are zesty and need to ignore the normal padding rules.
         if T::size() == 0 {
             if !data.is_empty() {
                 return Err(Error::TypeSizeMismatch);
             }
 
-            // For ZSTs, we can't determine the length from the data, so return empty vec
-            return Ok(Vec::new());
+            let as_vec = (0..data.len())
+                .map(|_| T::try_from_bytes(vec![]))
+                .collect::<Result<Vec<_>>>()?;
+
+            return Ok(as_vec);
         }
 
-        let padded_size = T::size().next_multiple_of(T::alignment());
-
-        if data.len() % padded_size != 0 {
-            return Err(Error::TypeSizeMismatch);
-        }
-
-        let elements = data
-            .chunks(padded_size)
-            .map(|chunk| T::try_from_bytes(chunk.to_vec()))
+        let as_vec = data
+            // Strip off the padding and recreate the Ts
+            .chunks(T::size().next_multiple_of(T::alignment()))
+            .map(|x| T::try_from_bytes(x.to_owned()))
             .collect::<Result<Vec<_>>>()?;
 
-        Ok(elements)
+        Ok(as_vec)
     }
 }
 
@@ -737,8 +737,6 @@ mod tests {
         // u16 has alignment = 2, but since size = 2, no extra padding needed
         let vec_u16: Vec<u16> = vec![1, 2, 3];
         assert_eq!(vec_u16.size(), 6); // 3 * 2
-
-        // For custom types with different size/alignment, padding would matter
     }
 
     #[test]
