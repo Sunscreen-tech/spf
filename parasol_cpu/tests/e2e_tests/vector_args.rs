@@ -56,16 +56,13 @@ fn can_pass_vec_as_dynamic_arg() {
         .map(|r| r.decrypt(&enc, sk) as u8);
 
     // Expected result is element-wise addition of values_a and values_b
-    let expected: [u8; 8] = [
-        (values_a[0] + values_b[0]) as u8,
-        (values_a[1] + values_b[1]) as u8,
-        (values_a[2] + values_b[2]) as u8,
-        (values_a[3] + values_b[3]) as u8,
-        (values_a[4] + values_b[4]) as u8,
-        (values_a[5] + values_b[5]) as u8,
-        (values_a[6] + values_b[6]) as u8,
-        (values_a[7] + values_b[7]) as u8,
-    ];
+    let expected: [u8; 8] = values_a
+        .iter()
+        .zip(values_b.iter())
+        .map(|(&a, &b)| (a + b) as u8)
+        .collect::<Vec<u8>>()
+        .try_into()
+        .unwrap();
     assert_eq!(result, expected);
 }
 
