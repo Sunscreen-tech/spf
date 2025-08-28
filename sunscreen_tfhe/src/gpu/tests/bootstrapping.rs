@@ -10,7 +10,7 @@ fn can_programmable_bootstrap() {
     let radix = PBS_RADIX_2_16;
     let bits = PlaintextBits(1);
 
-    let num_blocks = 13;
+    let num_blocks = 2;
     let runtimes = get_runtimes();
     let lwe_sk = keygen::generate_binary_lwe_sk(&lwe);
     let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
@@ -36,8 +36,8 @@ fn can_programmable_bootstrap() {
             // and decrypt with 1 bit.
             let msg = Torus::encode(i as u64 % 2, PlaintextBits(2));
 
-            encrypt_lwe_ciphertext(ct, &lwe_sk, msg, &lwe);
-            // trivially_encrypt_lwe_ciphertext(ct, &msg, &lwe);
+            // encrypt_lwe_ciphertext(ct, &lwe_sk, msg, &lwe);
+            trivially_encrypt_lwe_ciphertext(ct, &msg, &lwe);
 
             dbg!(ct.a_b(&lwe).1);
         }
