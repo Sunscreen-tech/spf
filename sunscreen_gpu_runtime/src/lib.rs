@@ -20,7 +20,7 @@ use bytemuck::{NoUninit, Pod};
 pub use error::*;
 use serde::{Deserialize, Serialize, de::Visitor};
 
-#[derive(Debug, Copy, Clone, PartialEq, Eq)]
+#[derive(Debug, Default, Copy, Clone, PartialEq, Eq)]
 pub struct DeviceId(pub usize);
 
 impl From<usize> for DeviceId {

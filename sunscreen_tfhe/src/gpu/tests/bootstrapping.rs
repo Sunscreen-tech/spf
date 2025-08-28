@@ -1,7 +1,21 @@
-use rand::{rng, RngCore};
+use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::DeviceId;
 
-use crate::{entities::{BootstrapKeyFft, DstArray, GlweCiphertext, LweCiphertext, Polynomial, UnivariateLookupTable}, gpu::{get_runtimes, ops::{bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key}, tests::PBS_RADIX_2_16}, high_level::{self, keygen}, ops::encryption::{decrypt_glwe_ciphertext, encrypt_lwe_ciphertext, trivially_encrypt_lwe_ciphertext}, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_2048_128, LWE_637_128};
+use crate::{
+    GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus,
+    entities::{
+        BootstrapKeyFft, DstArray, GlweCiphertext, LweCiphertext, Polynomial, UnivariateLookupTable,
+    },
+    gpu::{
+        get_runtimes,
+        ops::{bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key},
+        tests::PBS_RADIX_2_16,
+    },
+    high_level::{self, keygen},
+    ops::encryption::{
+        decrypt_glwe_ciphertext, encrypt_lwe_ciphertext, trivially_encrypt_lwe_ciphertext,
+    },
+};
 
 #[test]
 fn can_programmable_bootstrap() {
@@ -41,7 +55,7 @@ fn can_programmable_bootstrap() {
 
             dbg!(ct.a_b(&lwe).1);
         }
-    
+
         // Fill the LUT with nonsense and we'll overwrite it with
         // the correct encoding.
         let lut = UnivariateLookupTable::<u64>::trivivial_multifunctional(
@@ -61,8 +75,9 @@ fn can_programmable_bootstrap() {
             &glwe.into(),
             &radix.into(),
             &r,
-            &stream
-        ).unwrap();
+            &stream,
+        )
+        .unwrap();
 
         stream.wait().unwrap();
 

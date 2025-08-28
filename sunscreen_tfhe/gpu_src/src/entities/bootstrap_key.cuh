@@ -27,7 +27,7 @@ public:
     /// @param i
     /// @param size_info
     /// @return
-    __device__ inline GgswCiphertext s(u32 i, const BootstrapKeySizeInfo &size_info)
+    __device__ constexpr inline GgswCiphertext s(u32 i, const BootstrapKeySizeInfo &size_info)
     {
         return DstArray<GgswCiphertext>(m_data).nth(i, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
     }
@@ -36,7 +36,7 @@ public:
     /// @param i
     /// @param size_info
     /// @return
-    __device__ inline const GgswCiphertext s(u32 i, const BootstrapKeySizeInfo &size_info) const
+    __device__ constexpr inline const GgswCiphertext s(u32 i, const BootstrapKeySizeInfo &size_info) const
     {
         return DstArray<GgswCiphertext>(m_data).nth(i, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
     }

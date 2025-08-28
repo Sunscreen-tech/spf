@@ -376,8 +376,6 @@ pub fn generalized_programmable_bootstrap<S>(
 
     let (ct_a, ct_b) = ct.a_b(lwe_params);
 
-    println!("b {:#?}", ct_b.inner());
-
     // 2. Use a cmux tree to blind rotate V using the elements of the bootstrap
     // key (the input LWE secret key bits).
 

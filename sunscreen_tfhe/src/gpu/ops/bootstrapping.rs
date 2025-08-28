@@ -63,7 +63,7 @@ fn pbs_preferred_shared_memory(
 
 /// Perform multiple PBS operations on the GPU. For each input `inputs`,
 /// apply `lut` and produce the corresponding output in `outputs`.
-/// 
+///
 /// See [crate::ops::bootstrapping::generalized_programmable_bootstrap] for more
 /// details.
 pub fn gpu_generalized_functional_bootstrap(
