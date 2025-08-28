@@ -15,6 +15,12 @@ extern "C" __global__ void kernel_generalized_functional_bootstrap(
     const RadixDecomposition radix,
     u32 local_storage_amount)
 {
+    if (blockIdx.x == 0 && threadIdx.x == 0) {
+        for (u32 i = 0; i <= blockDim.x * lwe_params.size.val / 2; i++) {
+            printf("%u, %lf, %lf\n", i, input_buf[i].real(), input_buf[i].imag());
+        }
+    }
+
     // TODO, size-aware with local storage.
     auto scratch = PerBlockStackAllocator(
         get_fft_scratch().as_complex(),

@@ -35,20 +35,22 @@ __device__ inline void generalized_programmable_bootstrap(
     auto rotated_s = scratch.alloc<GlweCiphertext>(glwe_params);
     
     u64 b = input.a_b(lwe_params.size.val, lwe_params);
-    b = modulus_switch(b, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
+    auto b_mod_switched = modulus_switch(b, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
 
-    glwe_times_negative_monomial_negacyclic(*output_s, lut, static_cast<u32>(b), glwe_params);
+    glwe_times_negative_monomial_negacyclic(*output_s, lut, static_cast<u32>(b_mod_switched), glwe_params);
 
-    for (u32 i = 0; i < lwe_params.size.val; i++) {
-        u64 a = input.a_b(lwe_params.size.val, lwe_params);
-        a = modulus_switch(a, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
 
-        glwe_times_positive_monomial_negacyclic(*rotated_s, *output_s, static_cast<u32>(a), glwe_params);
 
-        auto s = bsk.s(i, std::tuple(lwe_params, glwe_params, radix));
+    // for (u32 i = 0; i < lwe_params.size.val; i++) {
+    //     u64 a = input.a_b(lwe_params.size.val, lwe_params);
+    //     a = modulus_switch(a, log_chi, log_v, glwe_params.log_poly_degree.val + 1);
 
-        destructive_cmux(*output_s, *rotated_s, s, glwe_params, radix, scratch);
-    }
+    //     glwe_times_positive_monomial_negacyclic(*rotated_s, *output_s, static_cast<u32>(a), glwe_params);
+
+    //     auto s = bsk.s(i, std::tuple(lwe_params, glwe_params, radix));
+
+    //     destructive_cmux(*output_s, *rotated_s, s, glwe_params, radix, scratch);
+    // }
 
     (*output_s).clone_into(output, glwe_params);
 }
