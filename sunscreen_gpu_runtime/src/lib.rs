@@ -189,7 +189,8 @@ impl<'a> Stream<'a> {
     /// resource is not immediately dropped, but rather enqueued to drop. This guarantees
     /// that the data is alive for any previously enqueued kernels on the same stream.
     pub fn enqueue_release_allocation<T>(&self, resource: Allocation<T>) -> Result<()>
-    where T: Pod
+    where
+        T: Pod,
     {
         let ptr = resource.inner.ptr_mut() as *mut c_void;
         self.0.enqueue_free(ptr)?;

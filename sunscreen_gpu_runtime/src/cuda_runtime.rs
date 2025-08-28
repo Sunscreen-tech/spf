@@ -8,14 +8,19 @@ use std::{
 };
 
 use cuda_driver_sys::{
-    cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet, cuDeviceGetAttribute, cuDeviceGetName, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain, cuFuncSetAttribute, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamAddCallback, cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum, CUcontext, CUdevice, CUdevice_attribute, CUdeviceptr, CUfunction, CUfunction_attribute, CUmodule, CUresult, CUstream
+    CUcontext, CUdevice, CUdevice_attribute, CUdeviceptr, CUfunction, CUfunction_attribute,
+    CUmodule, CUresult, CUstream, cuCtxSetCurrent, cuDeviceComputeCapability, cuDeviceGet,
+    cuDeviceGetAttribute, cuDeviceGetName, cuDevicePrimaryCtxRelease, cuDevicePrimaryCtxRetain,
+    cuFuncSetAttribute, cuLaunchKernel, cuModuleGetFunction, cuModuleLoadData, cuStreamAddCallback,
+    cuStreamCreate, cuStreamDestroy_v2, cuStreamSynchronize, cudaError_enum,
 };
 use cuda_runtime_sys::{
     cudaError, cudaFree, cudaGetDeviceCount, cudaMallocManaged, cudaMemAttachGlobal,
 };
 
 use crate::{
-    cuda_ext::cuMemFreeAsync, AllocationBackend, ComputeVersion, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend, Grid, Result, StreamBackend
+    AllocationBackend, ComputeVersion, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend,
+    Grid, Result, StreamBackend, cuda_ext::cuMemFreeAsync,
 };
 
 macro_rules! wrap_cuda_runtime {
@@ -352,11 +357,7 @@ impl<'a> StreamBackend for CudaStream<'a> {
         Ok(())
     }
 
-    fn insert_callback(
-        &self,
-        callback: fn(*mut c_void),
-        data: *mut c_void,
-    ) -> Result<()> {
+    fn insert_callback(&self, callback: fn(*mut c_void), data: *mut c_void) -> Result<()> {
         let data = Box::into_raw(Box::new((callback, data)));
 
         unsafe extern "C" fn on_complete(
@@ -364,21 +365,17 @@ impl<'a> StreamBackend for CudaStream<'a> {
             _: CUresult,
             user_data: *mut ::std::os::raw::c_void,
         ) {
-            let data = unsafe {
-                Box::from_raw(user_data as *mut (fn(*mut c_void), *mut c_void))
-            };
+            let data = unsafe { Box::from_raw(user_data as *mut (fn(*mut c_void), *mut c_void)) };
 
             data.0(data.1);
         }
 
-        wrap_cuda_driver!(
-            cuStreamAddCallback(
-                self.handle,
-                Some(on_complete),
-                data as *mut c_void,
-                0
-            )
-        );
+        wrap_cuda_driver!(cuStreamAddCallback(
+            self.handle,
+            Some(on_complete),
+            data as *mut c_void,
+            0
+        ));
 
         Ok(())
     }
