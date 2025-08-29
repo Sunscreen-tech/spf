@@ -1,7 +1,6 @@
 #pragma once
 #include <cuda/std/complex>
-#include <cstdint>
-#include <tuple>
+#include <cuda/std/tuple>
 
 #include "punbuf.cuh"
 #include "glev.cuh"
@@ -19,7 +18,7 @@ public:
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
-        return GlevCiphertext::size(size_info) * (std::get<0>(size_info).size.val + 1);
+        return GlevCiphertext::size(size_info) * (cuda::std::get<0>(size_info).size.val + 1);
     }
 
     __device__ inline GlevCiphertext rows(u32 i, const GlevSizeInfo &size_info)
@@ -58,7 +57,7 @@ public:
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
-        return GlevCiphertextFft::size(size_info) * (std::get<0>(size_info).size.val + 1);
+        return GlevCiphertextFft::size(size_info) * (cuda::std::get<0>(size_info).size.val + 1);
     }
 
     __device__ inline GlevCiphertextFft rows(u32 i, const GlevSizeInfo &size_info)
@@ -89,7 +88,7 @@ private:
 
 __device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
     // FFT the k + 1 rows in the GGSW. Hence `<=`.
-    for (u32 i = 0; i <= std::get<0>(size_info).size.val; i++) {
+    for (u32 i = 0; i <= cuda::std::get<0>(size_info).size.val; i++) {
         auto c_row = this->rows(i, size_info);
         auto fft_row = res.rows(i, size_info);
 
@@ -99,7 +98,7 @@ __device__ inline void GgswCiphertext::fft(GgswCiphertextFft res, const GlevSize
 
 __device__ inline void GgswCiphertextFft::ifft(GgswCiphertext res, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const {
     // IFFT the k + 1 rows in the GGSW. Hence `<=`.
-    for (u32 i = 0; i <= std::get<0>(size_info).size.val; i++) {
+    for (u32 i = 0; i <= cuda::std::get<0>(size_info).size.val; i++) {
         auto c_row = this->rows(i, size_info);
         auto fft_row = res.rows(i, size_info);
 

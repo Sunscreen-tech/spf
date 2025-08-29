@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 typedef float f32;
 typedef double f64;

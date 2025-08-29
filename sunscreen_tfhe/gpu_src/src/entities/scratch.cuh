@@ -1,6 +1,5 @@
 #pragma once
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "../math/math.cuh"
 #include "../math/primitives.cuh"

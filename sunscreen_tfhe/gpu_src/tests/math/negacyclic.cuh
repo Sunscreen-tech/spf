@@ -1,5 +1,4 @@
 #pragma once
-#include <cstdint>
 
 #include "../../src/entities/punbuf.cuh"
 #include "../../src/entities/scratch.cuh"

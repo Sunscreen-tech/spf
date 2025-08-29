@@ -4,6 +4,7 @@ use std::{
 };
 
 use bytemuck::Pod;
+use serde::{Deserialize, Serialize};
 #[cfg(feature = "gpu")]
 use sunscreen_gpu_runtime::AsKernelArg;
 
@@ -18,12 +19,13 @@ use crate::{
 /// An array of objects that share a single allocation. Borrowing results in
 /// a [`DstArrayRef`], which is an actual dynamic sized type.
 /// one.
-#[derive(Clone, PartialEq)]
+#[derive(Clone, PartialEq, Serialize, Deserialize)]
 pub struct DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     data: Allocation<<<T as Deref>::Target as InnermostType>::Ty>,
 }
@@ -54,7 +56,8 @@ impl<T> DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq + Default,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Default + Serialize + for<'a> Deserialize<'a>,
 {
     /// Create a new [`DstArray`].
     pub fn new(n: usize, size_params: <<T as Deref>::Target as OverlaySize>::Inputs) -> Self {
@@ -70,7 +73,8 @@ impl<T> Deref for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     type Target = DstArrayRef<<T as Deref>::Target>;
 
@@ -83,7 +87,8 @@ impl<T> DerefMut for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     fn deref_mut(&mut self) -> &mut Self::Target {
         DstArrayRef::from_mut_slice(self.data.as_mut_slice())
@@ -94,7 +99,8 @@ impl<T> Borrow<DstArrayRef<<T as Deref>::Target>> for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     fn borrow(&self) -> &DstArrayRef<<T as Deref>::Target> {
         DstArrayRef::from_slice(self.as_slice())
@@ -105,7 +111,8 @@ impl<T> BorrowMut<DstArrayRef<<T as Deref>::Target>> for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     fn borrow_mut(&mut self) -> &mut DstArrayRef<<T as Deref>::Target> {
         DstArrayRef::from_mut_slice(self.as_mut_slice())
@@ -116,7 +123,8 @@ impl<T> AsSlice<<<T as Deref>::Target as InnermostType>::Ty> for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     fn as_slice(&self) -> &[<<T as Deref>::Target as InnermostType>::Ty] {
         self.data.as_slice()
@@ -127,7 +135,8 @@ impl<T> AsMutSlice<<<T as Deref>::Target as InnermostType>::Ty> for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: Pod + PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     fn as_mut_slice(&mut self) -> &mut [<<T as Deref>::Target as InnermostType>::Ty] {
         self.data.as_mut_slice()
@@ -168,10 +177,11 @@ where
 impl<T> ToOwned for DstArrayRef<T>
 where
     T: ToOwned + InnermostType + OverlaySize,
-    <T as InnermostType>::Ty: Pod + PartialEq,
+    <T as InnermostType>::Ty: Pod + PartialEq + Serialize + for<'a> Deserialize<'a>,
     <T as ToOwned>::Owned: Deref,
     <<T as ToOwned>::Owned as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<<T as ToOwned>::Owned as Deref>::Target as InnermostType>::Ty: Pod + PartialEq + Default,
+    <<<T as ToOwned>::Owned as Deref>::Target as InnermostType>::Ty:
+        Pod + PartialEq + Default + Serialize + for<'a> Deserialize<'a>,
     DstArray<<T as ToOwned>::Owned>: Borrow<Self>,
 {
     type Owned = DstArray<<T as ToOwned>::Owned>;
@@ -240,7 +250,7 @@ impl<T> AsKernelArg for DstArray<T>
 where
     T: Deref,
     <T as Deref>::Target: InnermostType + OverlaySize + ToOwned,
-    <<T as Deref>::Target as InnermostType>::Ty: PartialEq,
+    <<T as Deref>::Target as InnermostType>::Ty: PartialEq + Serialize + for<'a> Deserialize<'a>,
 {
     fn as_kernel_arg(&self) -> *const std::ffi::c_void {
         (self.deref()).as_kernel_arg()

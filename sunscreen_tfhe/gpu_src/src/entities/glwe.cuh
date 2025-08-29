@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "dst_array.cuh"
 #include "polynomial.cuh"
@@ -61,6 +60,13 @@ public:
         this_b.clone_into(other_b, params.polynomial_degree());
     }
 
+    __device__ inline void clear(const GlweDef &params) {
+        for (u32 i = 0; i <= params.size.val; i++) {
+            auto a_i = this->a_b(i, params);
+
+            a_i.clear(params.polynomial_degree());
+        }
+    }
 private:
     BufTy m_data;
 };
@@ -120,18 +126,21 @@ public:
     }
 
     __device__ inline void clone_into(GlweCiphertextFft out, const GlweDef &params) const {
-        for (u32 i = 0; i < params.size.val; i++)
+        for (u32 i = 0; i <= params.size.val; i++)
         {
             auto a_fft_i = this->a_b(i, params);
             auto a_i = out.a_b(i, params);
 
             a_fft_i.clone_into(a_i, params.polynomial_degree());
         }
+    }
 
-        auto b_fft = this->a_b(params.size.val, params);
-        auto b = out.a_b(params.size.val, params);
+    __device__ inline void clear(const GlweDef &params) {
+        for (u32 i = 0; i <= params.size.val; i++) {
+            auto a_fft_i = this->a_b(i, params);
 
-        b_fft.clone_into(b, params.polynomial_degree());
+            a_fft_i.clear(params.polynomial_degree());
+        }
     }
 private:
     BufTy m_data;

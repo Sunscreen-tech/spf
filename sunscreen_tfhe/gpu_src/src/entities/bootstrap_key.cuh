@@ -8,7 +8,7 @@
 
 class BootstrapKeyFft;
 
-using BootstrapKeySizeInfo = std::tuple<LweDef, GlweDef, RadixDecomposition>;
+using BootstrapKeySizeInfo = cuda::std::tuple<LweDef, GlweDef, RadixDecomposition>;
 
 class BootstrapKey
 {
@@ -20,7 +20,7 @@ public:
 
     __device__ static inline u32 size(const BootstrapKeySizeInfo &size_info)
     {
-        return std::get<0>(size_info).size.val * GgswCiphertext::size(std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
+        return cuda::std::get<0>(size_info).size.val * GgswCiphertext::size(cuda::std::tuple(cuda::std::get<1>(size_info), cuda::std::get<2>(size_info)));
     }
 
     /// @brief  Gets the i'th GGSW encrypted bit of the LWE secret key
@@ -29,7 +29,7 @@ public:
     /// @return
     __device__ constexpr inline GgswCiphertext s(u32 i, const BootstrapKeySizeInfo &size_info)
     {
-        return DstArray<GgswCiphertext>(m_data).nth(i, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
+        return DstArray<GgswCiphertext>(m_data).nth(i, cuda::std::tuple(cuda::std::get<1>(size_info), cuda::std::get<2>(size_info)));
     }
 
     /// @brief  Gets the i'th GGSW encrypted bit of the LWE secret key
@@ -38,7 +38,7 @@ public:
     /// @return
     __device__ constexpr inline const GgswCiphertext s(u32 i, const BootstrapKeySizeInfo &size_info) const
     {
-        return DstArray<GgswCiphertext>(m_data).nth(i, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
+        return DstArray<GgswCiphertext>(m_data).nth(i, cuda::std::tuple(cuda::std::get<1>(size_info), cuda::std::get<2>(size_info)));
     }
 
     __device__ static constexpr inline BootstrapKey from_ptr(cuda::std::complex<f64> *ptr)
@@ -65,7 +65,7 @@ public:
 
     __device__ static inline u32 size(const BootstrapKeySizeInfo &size_info)
     {
-        return std::get<0>(size_info).size.val * GgswCiphertextFft::size(std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
+        return cuda::std::get<0>(size_info).size.val * GgswCiphertextFft::size(cuda::std::tuple(cuda::std::get<1>(size_info), cuda::std::get<2>(size_info)));
     }
 
     /// @brief  Gets the i'th GGSW encrypted bit of the LWE secret key
@@ -74,7 +74,7 @@ public:
     /// @return
     __device__ inline GgswCiphertextFft s(u32 i, const BootstrapKeySizeInfo &size_info)
     {
-        return DstArray<GgswCiphertextFft>(m_data).nth(i, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
+        return DstArray<GgswCiphertextFft>(m_data).nth(i, cuda::std::tuple(cuda::std::get<1>(size_info), cuda::std::get<2>(size_info)));
     }
 
     /// @brief  Gets the i'th GGSW encrypted bit of the LWE secret key
@@ -83,7 +83,7 @@ public:
     /// @return
     __device__ inline const GgswCiphertextFft s(u32 i, const BootstrapKeySizeInfo &size_info) const
     {
-        return DstArray<GgswCiphertextFft>(m_data).nth(i, std::tuple(std::get<1>(size_info), std::get<2>(size_info)));
+        return DstArray<GgswCiphertextFft>(m_data).nth(i, cuda::std::tuple(cuda::std::get<1>(size_info), cuda::std::get<2>(size_info)));
     }
 
     __device__ static constexpr inline BootstrapKeyFft from_ptr(cuda::std::complex<f64> *ptr)

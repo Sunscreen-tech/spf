@@ -145,7 +145,7 @@ mod cuda {
                     .arg("all-warnings")
                     .arg("--generate-line-info")
                     .arg("--std=c++20")
-                    .arg("--expt-relaxed-constexpr")
+                    //.arg("--expt-relaxed-constexpr")
                     .arg("-Xptxas")
                     .arg("-O4")
                     .arg("--fmad=true")

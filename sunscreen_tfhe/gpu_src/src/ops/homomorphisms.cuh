@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 #include "polynomial.cuh"
 #include "../entities/scratch.cuh"
 #include "../entities/glwe.cuh"
@@ -17,7 +15,7 @@ __device__ inline void glwe_sub(
     const GlweDef &params)
 {
     // Sub the `a` terms
-    for (u32 i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i <= params.size.val; i++)
     {
         auto c_a_i = c.a_b(i, params);
         auto a_a_i = a.a_b(i, params);
@@ -25,13 +23,6 @@ __device__ inline void glwe_sub(
 
         polynomial_sub(c_a_i, a_a_i, b_a_i, params.polynomial_degree());
     }
-
-    // Sub `b`
-    auto c_b = c.a_b(params.size.val, params);
-    auto a_b = a.a_b(params.size.val, params);
-    auto b_b = b.a_b(params.size.val, params);
-
-    polynomial_sub(c_b, a_b, b_b, params.polynomial_degree());
 }
 
 __device__ inline void glwe_add(
@@ -41,7 +32,7 @@ __device__ inline void glwe_add(
     const GlweDef &params)
 {
     // Add the `a` terms
-    for (u32 i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i <= params.size.val; i++)
     {
         auto c_a_i = c.a_b(i, params);
         auto a_a_i = a.a_b(i, params);
@@ -49,13 +40,6 @@ __device__ inline void glwe_add(
 
         polynomial_add(c_a_i, a_a_i, b_a_i, params.polynomial_degree());
     }
-
-    // Add `b`
-    auto c_b = c.a_b(params.size.val, params);
-    auto a_b = a.a_b(params.size.val, params);
-    auto b_b = b.a_b(params.size.val, params);
-
-    polynomial_add(c_b, a_b, b_b, params.polynomial_degree());
 }
 
 __device__ inline void glwe_polynomial_mad(
@@ -65,18 +49,13 @@ __device__ inline void glwe_polynomial_mad(
     const GlweDef &params)
 {
     // Multiply-add the
-    for (u32 i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i <= params.size.val; i++)
     {
         auto a_i = a.a_b(i, params);
         auto c_i = c.a_b(i, params);
 
         polynomial_mad(c_i, a_i, b, params.polynomial_degree());
     }
-
-    auto a_b = a.a_b(params.size.val, params);
-    auto c_b = c.a_b(params.size.val, params);
-
-    polynomial_mad(c_b, a_b, b, params.polynomial_degree());
 }
 
 __device__ inline void decomposed_polynomial_glev_mad(
@@ -96,7 +75,10 @@ __device__ inline void decomposed_polynomial_glev_mad(
     {
         u32 l = radix.count.val - i - 1;
 
-        auto b_l = b.decomps(l, std::tuple(glwe, radix));
+        // Ensure the previous decomposition is done being used before computing the next one.
+        __syncthreads();
+
+        auto b_l = b.decomps(l, cuda::std::tuple(glwe, radix));
         decomp.next(*decomp_poly);
 
         auto decomp_poly_fft = std::move(*decomp_poly).fft_inplace(glwe.polynomial_degree());
@@ -113,18 +95,13 @@ __device__ inline void glwe_ggsw_mad(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
-    for (u32 i = 0; i < glwe.size.val; i++)
+    for (u32 i = 0; i <= glwe.size.val; i++)
     {
         auto a_i = a.a_b(i, glwe);
-        auto glev_i = b.rows(i, std::tuple(glwe, radix));
+        auto glev_i = b.rows(i, cuda::std::tuple(glwe, radix));
 
         decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
     }
-
-    auto a_i = a.a_b(glwe.size.val, glwe);
-    auto glev_i = b.rows(glwe.size.val, std::tuple(glwe, radix));
-
-    decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
 }
 
 __device__ inline void cmux(
@@ -160,19 +137,13 @@ __device__ inline void glwe_sub_assign(
     const GlweDef &params
  ) {
     // Sub the `a` terms
-    for (u32 i = 0; i < params.size.val; i++)
+    for (u32 i = 0; i <= params.size.val; i++)
     {
         auto c_a_i = c.a_b(i, params);
         auto a_a_i = a.a_b(i, params);
 
         polynomial_sub_assign(c_a_i, a_a_i, params.polynomial_degree());
     }
-
-    // Sub `b`
-    auto c_b = c.a_b(params.size.val, params);
-    auto a_b = a.a_b(params.size.val, params);
-
-    polynomial_sub_assign(c_b, a_b, params.polynomial_degree());
 }
 
 /// @brief Same a cmux, but more memory efficient. inputs a and b are overwritten

@@ -1,7 +1,6 @@
 #pragma once
 
 #include <cuda/std/complex>
-#include <cstdint>
 
 #include "dst_array.cuh"
 #include "polynomial.cuh"

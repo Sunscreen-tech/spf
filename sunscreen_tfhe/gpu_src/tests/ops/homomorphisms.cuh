@@ -1,7 +1,5 @@
 #pragma once
 
-#include <cstdint>
-
 #include "../../src/params.cuh"
 #include "../../src/entities/dst_array.cuh"
 #include "../../src/entities/glwe.cuh"
@@ -94,13 +92,13 @@ extern "C" __global__ void can_polynomial_glev_mad(
 
     auto c_i = c.nth(blockIdx.x, glwe);
     auto a_i = a.nth(blockIdx.x, glwe.polynomial_degree());
-    auto b_i = b.nth(blockIdx.x, std::tuple(glwe, radix));
+    auto b_i = b.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
 
     auto c_i_fft = scratch_g.alloc<GlweCiphertextFft>(glwe);
-    auto b_i_fft = scratch_g.alloc<GlevCiphertextFft>(std::tuple(glwe, radix));
+    auto b_i_fft = scratch_g.alloc<GlevCiphertextFft>(cuda::std::tuple(glwe, radix));
 
     c_i.fft(*c_i_fft, glwe, scratch_s);
-    b_i.fft(*b_i_fft, std::tuple(glwe, radix), scratch_s);
+    b_i.fft(*b_i_fft, cuda::std::tuple(glwe, radix), scratch_s);
 
     decomposed_polynomial_glev_mad(*c_i_fft, a_i, *b_i_fft, glwe, radix, scratch_g);
 
@@ -125,13 +123,13 @@ extern "C" __global__ void can_glwe_ggsw_mad(
 
     auto c_i = c.nth(blockIdx.x, glwe);
     auto a_i = a.nth(blockIdx.x, glwe);
-    auto b_i = b.nth(blockIdx.x, std::tuple(glwe, radix));
+    auto b_i = b.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
 
     auto c_i_fft = scratch_g.alloc<GlweCiphertextFft>(glwe);
-    auto b_i_fft = scratch_g.alloc<GgswCiphertextFft>(std::tuple(glwe, radix));
+    auto b_i_fft = scratch_g.alloc<GgswCiphertextFft>(cuda::std::tuple(glwe, radix));
 
     c_i.fft(*c_i_fft, glwe, scratch_s);
-    b_i.fft(*b_i_fft, std::tuple(glwe, radix), scratch_s);
+    b_i.fft(*b_i_fft, cuda::std::tuple(glwe, radix), scratch_s);
 
     glwe_ggsw_mad(*c_i_fft, a_i, *b_i_fft, glwe, radix, scratch_g);
 
@@ -159,10 +157,10 @@ extern "C" __global__ void can_cmux(
     auto c_i = c.nth(blockIdx.x, glwe);
     auto a_i = a.nth(blockIdx.x, glwe);
     auto b_i = b.nth(blockIdx.x, glwe);
-    auto sel_i = sel.nth(blockIdx.x, std::tuple(glwe, radix));
+    auto sel_i = sel.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
     
-    auto sel_i_fft = scratch_g.alloc<GgswCiphertextFft>(std::tuple(glwe, radix));
-    sel_i.fft(*sel_i_fft, std::tuple(glwe, radix), scratch_s);
+    auto sel_i_fft = scratch_g.alloc<GgswCiphertextFft>(cuda::std::tuple(glwe, radix));
+    sel_i.fft(*sel_i_fft, cuda::std::tuple(glwe, radix), scratch_s);
 
     cmux(c_i, a_i, b_i, *sel_i_fft, glwe, radix, scratch_g);
 }
@@ -225,10 +223,10 @@ extern "C" __global__ void can_destructive_cmux(
 
     auto a_i = a.nth(blockIdx.x, glwe);
     auto b_i = b.nth(blockIdx.x, glwe);
-    auto sel_i = sel.nth(blockIdx.x, std::tuple(glwe, radix));
+    auto sel_i = sel.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
     
-    auto sel_i_fft = scratch.alloc<GgswCiphertextFft>(std::tuple(glwe, radix));
-    sel_i.fft(*sel_i_fft, std::tuple(glwe, radix), scratch_s);
+    auto sel_i_fft = scratch.alloc<GgswCiphertextFft>(cuda::std::tuple(glwe, radix));
+    sel_i.fft(*sel_i_fft, cuda::std::tuple(glwe, radix), scratch_s);
 
     destructive_cmux(a_i, b_i, *sel_i_fft, glwe, radix, scratch);
 }

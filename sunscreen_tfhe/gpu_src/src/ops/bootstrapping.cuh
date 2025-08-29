@@ -47,7 +47,7 @@ __device__ inline void generalized_programmable_bootstrap(
 
         glwe_times_positive_monomial_negacyclic(*rotated_s, *output_s, static_cast<u32>(a), glwe_params);
 
-        auto s = bsk.s(i, std::tuple(lwe_params, glwe_params, radix));
+        auto s = bsk.s(i, cuda::std::tuple(lwe_params, glwe_params, radix));
 
         destructive_cmux(*output_s, *rotated_s, s, glwe_params, radix, scratch);
     }

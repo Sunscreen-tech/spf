@@ -1,7 +1,5 @@
 #pragma once
-#include <bit>
 
-#include <cstdint>
 #include "math.cuh"
 #include "../iter_tools.cuh"
 
@@ -11,7 +9,7 @@
 /// @return The unsigned torus value.
 template <typename F, typename U>
 __device__ inline U signed_to_unsigned_torus(F x) {
-    using SignedTy = Unsigned<U>::SignedTy;
+    using SignedTy = typename Unsigned<U>::SignedTy;
 
     return static_cast<U>((SignedTy)x);
 }
@@ -22,7 +20,7 @@ __device__ inline U signed_to_unsigned_torus(F x) {
 /// @return The unsigned torus value.
 template <typename F, typename U>
 __device__ inline F unsigned_to_signed_torus(U x) {
-    using SignedTy = Unsigned<U>::SignedTy;
+    using SignedTy = typename Unsigned<U>::SignedTy;
 
     return static_cast<F>((SignedTy)x);
 }
@@ -30,9 +28,9 @@ __device__ inline F unsigned_to_signed_torus(U x) {
 template <uint64_t LOG2_Q>
 constexpr __device__ double q_as_float()
 {
-    uint64_t exp = 1023 + LOG2_Q;
+    u64 exp = 1023 + LOG2_Q;
 
-    return std::bit_cast<double>(exp << 52);
+    return __longlong_as_double(static_cast<i64>(exp << 52));
 }
 
 /// Reduce each value in `s_inout` by `2**LOG2_Q` and emit the results as type `U`.
