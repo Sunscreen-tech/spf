@@ -5,8 +5,8 @@ use serde::{Deserialize, Serialize};
 
 use super::{CiphertextOps, FheCircuitCtx, Muxable, Sign};
 use crate::{
-    Encryption, Evaluation, FheEdge, L1GgswCiphertext, SecretKey, fluent::GenericIntGraphNodes,
-    insert_ciphertext_conversion, safe_bincode::GetSize,
+    Encryption, Evaluation, FheEdge, L1GgswCiphertext, L1GlweCiphertext, SecretKey,
+    fluent::GenericIntGraphNodes, insert_ciphertext_conversion, safe_bincode::GetSize,
 };
 
 use petgraph::stable_graph::NodeIndex;
@@ -16,6 +16,9 @@ use petgraph::stable_graph::NodeIndex;
 pub struct Bit<T: CiphertextOps> {
     ct: Arc<AtomicRefCell<T>>,
 }
+
+/// A boolean encrypted as an `L1GlweCiphertext`.
+pub type Bool = Bit<L1GlweCiphertext>;
 
 impl<T: CiphertextOps> GetSize for Bit<T> {
     fn get_size(params: &crate::Params) -> usize {
@@ -68,6 +71,11 @@ impl<T: CiphertextOps> Bit<T> {
         Self {
             ct: Arc::new(AtomicRefCell::new(T::trivial_encryption(val, enc, eval))),
         }
+    }
+
+    /// Access the inner `Arc<AtomicRefCell<T>>` for advanced use cases.
+    pub fn inner(&self) -> Arc<AtomicRefCell<T>> {
+        self.ct.clone()
     }
 }
 

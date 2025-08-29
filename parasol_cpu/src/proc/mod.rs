@@ -25,6 +25,7 @@ use crate::{
 
 use self::ops::trivially_encrypt_value_l1glwe;
 
+/// Argument handling for Parasol programs.
 mod args;
 pub use args::*;
 
