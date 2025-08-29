@@ -17,13 +17,8 @@ public:
     using BufTy = PunBuf;
 
     GlevCiphertext() = delete;
-<<<<<<< HEAD
-    __device__ explicit constexpr inline GlevCiphertext(cuda::std::complex<f64>* data): m_data(BufTy(data)) {}
-    __device__ explicit constexpr inline GlevCiphertext(BufTy data): m_data(data) {}
-=======
     __device__ explicit constexpr inline GlevCiphertext(cuda::std::complex<f64> *data) : m_data(BufTy(data)) {}
     __device__ explicit constexpr inline GlevCiphertext(BufTy data) : m_data(data) {}
->>>>>>> 12ba245 (tests pass)
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
@@ -42,13 +37,6 @@ public:
 
     __device__ inline void fft(GlevCiphertextFft out, const GlevSizeInfo &size_info, PerBlockStackAllocator &scratch) const;
 
-<<<<<<< HEAD
-    __device__ static constexpr inline GlevCiphertext from_ptr(cuda::std::complex<f64> *ptr) {
-        return GlevCiphertext(BufTy::from_ptr(ptr));
-    }
-
-    __device__ static constexpr inline const GlevCiphertext from_ptr(const cuda::std::complex<f64> *ptr) {
-=======
     __device__ static constexpr inline GlevCiphertext from_ptr(cuda::std::complex<f64> *ptr)
     {
         return GlevCiphertext(BufTy::from_ptr(ptr));
@@ -56,7 +44,6 @@ public:
 
     __device__ static constexpr inline const GlevCiphertext from_ptr(const cuda::std::complex<f64> *ptr)
     {
->>>>>>> 12ba245 (tests pass)
         return GlevCiphertext(BufTy::from_ptr(ptr));
     }
 
@@ -70,13 +57,8 @@ public:
     using BufTy = PunBuf;
 
     GlevCiphertextFft() = delete;
-<<<<<<< HEAD
-    __device__ explicit constexpr inline GlevCiphertextFft(cuda::std::complex<f64>* data): m_data(BufTy(data)) {}
-    __device__ explicit constexpr inline GlevCiphertextFft(BufTy data): m_data(data) {}
-=======
     __device__ explicit constexpr inline GlevCiphertextFft(cuda::std::complex<f64> *data) : m_data(BufTy(data)) {}
     __device__ explicit constexpr inline GlevCiphertextFft(BufTy data) : m_data(data) {}
->>>>>>> 12ba245 (tests pass)
 
     __device__ static inline u32 size(const GlevSizeInfo &size_info)
     {
