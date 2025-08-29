@@ -10,4 +10,5 @@ mod payment;
 mod prng;
 mod transfer;
 mod vector_add;
+mod vector_args;
 mod zext_and_trunc;

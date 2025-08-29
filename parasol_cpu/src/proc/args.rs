@@ -409,6 +409,65 @@ impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
     }
 }
 
+// This implementation is essentially the same as the array ToArg
+// implementation, but without the casting to an array.
+impl<T: ToArg> DynamicToArg for Vec<T> {
+    fn alignment(&self) -> usize {
+        T::alignment()
+    }
+
+    fn size(&self) -> usize {
+        if T::size() == 0 {
+            return 0;
+        }
+
+        T::size().next_multiple_of(T::alignment()) * self.len()
+    }
+
+    fn to_bytes(&self) -> Vec<Byte> {
+        if T::size() == 0 {
+            return vec![];
+        }
+
+        self.iter()
+            .flat_map(|x| {
+                // Pad each vector element to its alignment (same pattern as arrays)
+                let bytes = x.to_bytes();
+
+                bytes
+                    .iter()
+                    .chain(std::iter::repeat(&bytes[0]))
+                    .take(T::size().next_multiple_of(T::alignment()))
+                    .cloned()
+                    .collect::<Vec<_>>()
+            })
+            .collect::<Vec<_>>()
+    }
+
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
+        // ZSTs are zesty and need to ignore the normal padding rules.
+        if T::size() == 0 {
+            if !data.is_empty() {
+                return Err(Error::TypeSizeMismatch);
+            }
+
+            let as_vec = (0..data.len())
+                .map(|_| T::try_from_bytes(vec![]))
+                .collect::<Result<Vec<_>>>()?;
+
+            return Ok(as_vec);
+        }
+
+        let as_vec = data
+            // Strip off the padding and recreate the Ts
+            .chunks(T::size().next_multiple_of(T::alignment()))
+            .map(|x| T::try_from_bytes(x.to_owned()))
+            .collect::<Result<Vec<_>>>()?;
+
+        Ok(as_vec)
+    }
+}
+
 /// A type for passing arguments to Parasol programs. When invoking
 /// [`crate::FheComputer::run_program`], the processor will transparently set up the registers
 /// and first stack frame according to Parasol ABI's calling convention.
@@ -544,7 +603,12 @@ impl<T> CallData<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::ToArg;
+    use super::{DynamicToArg, ToArg};
+    use parasol_runtime::{
+        L1GlweCiphertext,
+        fluent::UInt,
+        test_utils::{get_encryption_128, get_secret_keys_128},
+    };
 
     #[test]
     fn can_roundtrip_array() {
@@ -554,5 +618,142 @@ mod tests {
         let actual = <[u32; 16]>::try_from_bytes(bytes).unwrap();
 
         assert_eq!(values, actual);
+    }
+
+    #[test]
+    fn can_roundtrip_vec_u32() {
+        let values: Vec<u32> = (0..10).collect();
+
+        let bytes = values.to_bytes();
+        let actual = Vec::<u32>::try_from_bytes(bytes).unwrap();
+
+        assert_eq!(values, actual);
+    }
+
+    #[test]
+    fn can_roundtrip_vec_different_types() {
+        let values_u8: Vec<u8> = vec![1, 2, 3, 4, 5];
+        let bytes = values_u8.to_bytes();
+        let actual = Vec::<u8>::try_from_bytes(bytes).unwrap();
+        assert_eq!(values_u8, actual);
+
+        let values_u16: Vec<u16> = vec![100, 200, 300];
+        let bytes = values_u16.to_bytes();
+        let actual = Vec::<u16>::try_from_bytes(bytes).unwrap();
+        assert_eq!(values_u16, actual);
+
+        let values_u64: Vec<u64> = vec![1000, 2000];
+        let bytes = values_u64.to_bytes();
+        let actual = Vec::<u64>::try_from_bytes(bytes).unwrap();
+        assert_eq!(values_u64, actual);
+    }
+
+    #[test]
+    fn can_handle_empty_vec() {
+        let empty_vec: Vec<u32> = vec![];
+
+        let bytes = empty_vec.to_bytes();
+        assert_eq!(bytes.len(), 0);
+
+        let actual = Vec::<u32>::try_from_bytes(bytes).unwrap();
+        assert_eq!(empty_vec, actual);
+    }
+
+    #[test]
+    fn can_handle_vec_zst() {
+        let zst_vec: Vec<()> = vec![(), (), ()];
+
+        let bytes = zst_vec.to_bytes();
+        assert_eq!(bytes.len(), 0);
+
+        // Note: For ZSTs, we can't recover the original length, so we get empty vec
+        let actual = Vec::<()>::try_from_bytes(bytes).unwrap();
+        assert_eq!(actual.len(), 0);
+    }
+
+    #[test]
+    fn vec_alignment_and_size_calculations() {
+        let vec_u8: Vec<u8> = vec![1, 2, 3];
+        assert_eq!(vec_u8.alignment(), 1);
+        assert_eq!(vec_u8.size(), 3); // u8 size=1, alignment=1, no padding needed
+
+        let vec_u32: Vec<u32> = vec![1, 2];
+        assert_eq!(vec_u32.alignment(), 4);
+        assert_eq!(vec_u32.size(), 8); // u32 size=4, alignment=4, 2 elements
+
+        let empty_vec: Vec<u32> = vec![];
+        assert_eq!(empty_vec.alignment(), 4);
+        assert_eq!(empty_vec.size(), 0);
+    }
+
+    #[test]
+    fn vec_byte_layout_matches_array() {
+        // Vec<T> should have the same byte layout as [T; N] for same elements
+        let vec_values: Vec<u32> = vec![0x12345678, 0x9ABCDEF0];
+        let array_values = [0x12345678u32, 0x9ABCDEF0u32];
+
+        let vec_bytes = vec_values.to_bytes();
+        let array_bytes = array_values.to_bytes();
+
+        // Compare byte by byte since Byte doesn't implement PartialEq
+        assert_eq!(vec_bytes.len(), array_bytes.len());
+        for (vec_byte, array_byte) in vec_bytes.iter().zip(array_bytes.iter()) {
+            match (vec_byte, array_byte) {
+                (crate::Byte::Plaintext(a), crate::Byte::Plaintext(b)) => assert_eq!(a, b),
+                _ => panic!("Expected plaintext bytes"),
+            }
+        }
+    }
+
+    #[test]
+    fn can_roundtrip_vec_encrypted() {
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+
+        // Create a vector of encrypted values
+        let plaintext_values = [10u128, 20u128, 30u128];
+        let encrypted_vec: Vec<UInt<32, L1GlweCiphertext>> = plaintext_values
+            .iter()
+            .map(|&val| UInt::encrypt_secret(val, &enc, &sk))
+            .collect();
+
+        let bytes = encrypted_vec.to_bytes();
+        let recovered: Vec<UInt<32, L1GlweCiphertext>> = Vec::try_from_bytes(bytes).unwrap();
+
+        // Verify the encrypted values decrypt correctly
+        for (original, recovered) in encrypted_vec.iter().zip(recovered.iter()) {
+            assert_eq!(original.decrypt(&enc, &sk), recovered.decrypt(&enc, &sk));
+        }
+    }
+
+    #[test]
+    fn vec_padding_behavior() {
+        // Test that padding works correctly for types with different alignments
+
+        // u8 has no padding (alignment = 1)
+        let vec_u8: Vec<u8> = vec![1, 2, 3];
+        assert_eq!(vec_u8.size(), 3);
+
+        // u16 has alignment = 2, but since size = 2, no extra padding needed
+        let vec_u16: Vec<u16> = vec![1, 2, 3];
+        assert_eq!(vec_u16.size(), 6); // 3 * 2
+    }
+
+    #[test]
+    fn vec_error_handling() {
+        // Test size mismatch error
+        let malformed_data = vec![
+            crate::Byte::from(1u8),
+            crate::Byte::from(2u8),
+            crate::Byte::from(3u8),
+        ];
+
+        // Trying to deserialize 3 bytes as Vec<u32> should fail (u32 needs 4 bytes per element)
+        let result = Vec::<u32>::try_from_bytes(malformed_data);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            crate::Error::TypeSizeMismatch
+        ));
     }
 }
