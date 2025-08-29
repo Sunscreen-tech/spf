@@ -1,3 +1,4 @@
+use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
@@ -5,6 +6,7 @@ use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
     entities::{DstIterator, DstIteratorMut},
+    scratch::SIMD_ALIGN,
 };
 
 use super::{GlevCiphertextFftRef, GlweCiphertextRef};
@@ -71,6 +73,16 @@ where
             .zip(result.glwe_ciphertexts_mut(params))
         {
             i.fft(fft, params);
+        }
+    }
+
+    /// Create a new trivial GLev ciphertext encrypting zero from an existing
+    /// ciphertext.
+    pub fn trivial_zero_from_existing(&self) -> GlevCiphertext<S> {
+        let len = self.data.len();
+
+        GlevCiphertext {
+            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
         }
     }
 }

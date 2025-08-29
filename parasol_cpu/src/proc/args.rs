@@ -1,4 +1,3 @@
-use std::iter::repeat_n;
 use std::marker::PhantomData;
 
 use crate::Byte;
@@ -198,7 +197,7 @@ impl ToArg for bool {
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        vec![Byte::from(if *self { 0xFFu8 } else { 0u8 })]
+        vec![Byte::from(if *self { 0x01u8 } else { 0u8 })]
     }
 
     fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
@@ -299,10 +298,14 @@ impl ToArg for Bool {
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        // With ZeroOrNegativeOneBooleanContent, all 8 bits should be copies of self
-        let bits = repeat_n(self.inner(), 8).collect::<Vec<_>>();
+        // With ZeroOrOneBooleanContent, all other bits should be zero
+        let trivial_zero = self.trivial_zero_from_existing();
+        let mut bits = Vec::with_capacity(8);
+        bits.push(self.inner().clone());
+        for _ in 0..7 {
+            bits.push(trivial_zero.inner().clone());
+        }
 
-        // Create UInt<8> from the 8 bits (all copies of self)
         let uint8 = UInt::<8, L1GlweCiphertext>::from_bits_shallow(bits);
         uint8.to_bytes()
     }
@@ -312,15 +315,12 @@ impl ToArg for Bool {
             return Err(Error::TypeSizeMismatch);
         }
 
-        // Convert from UInt<8> and extract just the LSB (0th bit)
         let uint8 = UInt::<8, L1GlweCiphertext>::try_from_bytes(data)?;
 
-        // Extract the first (least significant) bit
         if uint8.bits.is_empty() {
             return Err(Error::TypeSizeMismatch);
         }
 
-        // Return the LSB as a Bool
         Ok(Bool::from(uint8.bits[0].clone()))
     }
 }
@@ -851,7 +851,7 @@ mod tests {
         let false_bytes = false.to_bytes();
 
         match &true_bytes[0] {
-            crate::Byte::Plaintext(val) => assert_eq!(*val, 0xFF),
+            crate::Byte::Plaintext(val) => assert_eq!(*val, 0x01),
             _ => panic!("Expected plaintext byte"),
         }
 

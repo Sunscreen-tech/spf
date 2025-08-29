@@ -77,6 +77,15 @@ impl<T: CiphertextOps> Bit<T> {
     pub fn inner(&self) -> Arc<AtomicRefCell<T>> {
         self.ct.clone()
     }
+
+    /// Create a trivial encryption of one as a `T` ciphertext, based on the
+    /// parameters of this bit.
+    pub fn trivial_zero_from_existing(&self) -> Self {
+        let zero = self.ct.borrow().trivial_zero_from_existing();
+        Self {
+            ct: Arc::new(AtomicRefCell::new(zero)),
+        }
+    }
 }
 
 #[derive(Debug)]

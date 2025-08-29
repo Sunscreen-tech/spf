@@ -35,6 +35,10 @@ impl TrivialZero for L0LweCiphertext {
     fn trivial_zero(enc: &Encryption) -> Self {
         enc.trivial_lwe_l0_zero()
     }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        L0LweCiphertext(self.0.trivial_zero_from_existing())
+    }
 }
 
 impl TrivialOne for L0LweCiphertext {
@@ -59,6 +63,10 @@ impl TrivialZero for L1LweCiphertext {
     fn trivial_zero(enc: &Encryption) -> Self {
         enc.trivial_lwe_l1_zero()
     }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        L1LweCiphertext(self.0.trivial_zero_from_existing())
+    }
 }
 
 impl TrivialOne for L1LweCiphertext {
@@ -82,6 +90,30 @@ impl From<GlweCiphertext<u64>> for L1GlweCiphertext {
 impl TrivialZero for L1GlweCiphertext {
     fn trivial_zero(enc: &Encryption) -> Self {
         enc.trivial_glwe_l1_zero()
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        L1GlweCiphertext(self.0.trivial_zero_from_existing())
+    }
+}
+
+impl TrivialZero for L1GlevCiphertext {
+    fn trivial_zero(enc: &Encryption) -> Self {
+        enc.trivial_glev_l1_zero()
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        L1GlevCiphertext(self.0.trivial_zero_from_existing())
+    }
+}
+
+impl TrivialZero for L1GgswCiphertext {
+    fn trivial_zero(enc: &Encryption) -> Self {
+        enc.trivial_ggsw_l1_zero()
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        L1GgswCiphertext(self.0.trivial_zero_from_existing())
     }
 }
 
@@ -457,6 +489,18 @@ impl Encryption {
         msg.coeffs_mut()[0] = 1;
 
         trivial_binary_glev(&msg, &self.params.l1_params, &self.params.cbs_radix).into()
+    }
+
+    /// Create a trivial encryption of zero for the returned ciphertext type.
+    ///
+    /// # Remarks
+    /// Trivial encryptions provide no security and decrypt to the desired message under every secret
+    /// key. They are useful as constants in FHE programs.
+    ///
+    /// # Security
+    /// We again emphasize that trivial ciphertexts provide no security.
+    pub fn trivial_ggsw_l1_zero(&self) -> L1GgswCiphertext {
+        GgswCiphertextFft::new(&self.params.l1_params, &self.params.cbs_radix).into()
     }
 }
 

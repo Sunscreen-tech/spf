@@ -1,9 +1,11 @@
+use aligned_vec::avec;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     LweDef, LweDimension, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate},
     macros::{impl_binary_op, impl_unary_op},
+    scratch::SIMD_ALIGN,
 };
 
 dst! {
@@ -89,6 +91,16 @@ impl<S: TorusOps> LweCiphertextRef<S> {
         let (_, b) = self.a_b_mut(params);
 
         b
+    }
+
+    /// Create a new trivial LWE ciphertext encrypting zero from an existing
+    /// ciphertext.
+    pub fn trivial_zero_from_existing(&self) -> LweCiphertext<S> {
+        let len = self.data.len();
+
+        LweCiphertext {
+            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
+        }
     }
 }
 

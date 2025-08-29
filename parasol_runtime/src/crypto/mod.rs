@@ -30,6 +30,9 @@ where
 {
     /// Produce a trivial encryption of zero.
     fn trivial_zero(enc: &Encryption) -> Self;
+
+    /// Produce a trivial encryption of zero from an existing value.
+    fn trivial_zero_from_existing(&self) -> Self;
 }
 
 /// A trait that produces a trivial one encryption for the implementing ciphertext type.
@@ -45,6 +48,10 @@ macro_rules! impl_trivial_int {
     ($itype:ty) => {
         impl TrivialZero for $itype {
             fn trivial_zero(_enc: &Encryption) -> Self {
+                0
+            }
+
+            fn trivial_zero_from_existing(&self) -> Self {
                 0
             }
         }
