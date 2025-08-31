@@ -2,10 +2,12 @@ use std::marker::PhantomData;
 
 use crate::Byte;
 use crate::{Error, Result};
+use parasol_runtime::fluent::Bool;
 use parasol_runtime::{
     L1GlweCiphertext,
     fluent::{DynamicInt, DynamicUInt, Int, UInt},
 };
+
 use paste::paste;
 
 // TODO: Should profile some apps, but we can likely avoid a bunch of copying
@@ -185,6 +187,31 @@ primitive_impl_to_arg!(i32);
 primitive_impl_to_arg!(i64);
 primitive_impl_to_arg!(i128);
 
+impl ToArg for bool {
+    fn alignment() -> usize {
+        1
+    }
+
+    fn size() -> usize {
+        1
+    }
+
+    fn to_bytes(&self) -> Vec<Byte> {
+        vec![Byte::from(if *self { 0x01u8 } else { 0u8 })]
+    }
+
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
+        if data.len() != 1 {
+            return Err(Error::TypeSizeMismatch);
+        }
+
+        match &data[0] {
+            Byte::Plaintext(val) => Ok(*val != 0),
+            _ => Err(Error::TypeSizeMismatch),
+        }
+    }
+}
+
 impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
     fn alignment() -> usize {
         N / 8
@@ -258,6 +285,43 @@ impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
             .collect::<Vec<_>>();
 
         Ok(Int::from_bits_shallow(data))
+    }
+}
+
+impl ToArg for Bool {
+    fn alignment() -> usize {
+        1
+    }
+
+    fn size() -> usize {
+        1
+    }
+
+    fn to_bytes(&self) -> Vec<Byte> {
+        // With ZeroOrOneBooleanContent, all other bits should be zero
+        let trivial_zero = self.trivial_zero_from_existing();
+        let mut bits = Vec::with_capacity(8);
+        bits.push(self.inner().clone());
+        for _ in 0..7 {
+            bits.push(trivial_zero.inner().clone());
+        }
+
+        let uint8 = UInt::<8, L1GlweCiphertext>::from_bits_shallow(bits);
+        uint8.to_bytes()
+    }
+
+    fn try_from_bytes(data: Vec<Byte>) -> Result<Self> {
+        if data.len() != 1 {
+            return Err(Error::TypeSizeMismatch);
+        }
+
+        let uint8 = UInt::<8, L1GlweCiphertext>::try_from_bytes(data)?;
+
+        if uint8.bits.is_empty() {
+            return Err(Error::TypeSizeMismatch);
+        }
+
+        Ok(Bool::from(uint8.bits[0].clone()))
     }
 }
 
@@ -603,7 +667,7 @@ impl<T> CallData<T> {
 
 #[cfg(test)]
 mod tests {
-    use super::{DynamicToArg, ToArg};
+    use super::{Bool, DynamicToArg, ToArg};
     use parasol_runtime::{
         L1GlweCiphertext,
         fluent::UInt,
@@ -755,5 +819,121 @@ mod tests {
             result.unwrap_err(),
             crate::Error::TypeSizeMismatch
         ));
+    }
+
+    #[test]
+    fn can_roundtrip_bool() {
+        let true_value = true;
+        let false_value = false;
+
+        let true_bytes = true_value.to_bytes();
+        let false_bytes = false_value.to_bytes();
+
+        assert_eq!(true_bytes.len(), 1);
+        assert_eq!(false_bytes.len(), 1);
+
+        let recovered_true = bool::try_from_bytes(true_bytes).unwrap();
+        let recovered_false = bool::try_from_bytes(false_bytes).unwrap();
+
+        assert!(recovered_true);
+        assert!(!recovered_false);
+    }
+
+    #[test]
+    fn bool_alignment_and_size() {
+        assert_eq!(bool::alignment(), 1);
+        assert_eq!(bool::size(), 1);
+    }
+
+    #[test]
+    fn bool_byte_representation() {
+        let true_bytes = true.to_bytes();
+        let false_bytes = false.to_bytes();
+
+        match &true_bytes[0] {
+            crate::Byte::Plaintext(val) => assert_eq!(*val, 0x01),
+            _ => panic!("Expected plaintext byte"),
+        }
+
+        match &false_bytes[0] {
+            crate::Byte::Plaintext(val) => assert_eq!(*val, 0),
+            _ => panic!("Expected plaintext byte"),
+        }
+    }
+
+    #[test]
+    fn bool_cannot_recover_from_incorrect_size() {
+        // Test wrong size
+        let wrong_size_data = vec![crate::Byte::from(1u8), crate::Byte::from(2u8)];
+        let result = bool::try_from_bytes(wrong_size_data);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            crate::Error::TypeSizeMismatch
+        ));
+    }
+
+    #[test]
+    fn bool_cannot_recover_from_encrypted_data() {
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+        let encrypted_bool = Bool::encrypt_secret(true, &enc, &sk);
+        let encrypted_data = encrypted_bool.to_bytes();
+        let result = bool::try_from_bytes(encrypted_data);
+        assert!(result.is_err());
+        assert!(matches!(
+            result.unwrap_err(),
+            crate::Error::TypeSizeMismatch
+        ));
+    }
+
+    #[test]
+    fn can_roundtrip_bool_encrypted() {
+        let enc = get_encryption_128();
+        let sk = get_secret_keys_128();
+
+        let true_value = Bool::encrypt_secret(true, &enc, &sk);
+        let false_value = Bool::encrypt_secret(false, &enc, &sk);
+
+        let true_bytes = true_value.to_bytes();
+        let false_bytes = false_value.to_bytes();
+
+        assert_eq!(true_bytes.len(), 1);
+        assert_eq!(false_bytes.len(), 1);
+
+        let recovered_true = Bool::try_from_bytes(true_bytes).unwrap();
+        let recovered_false = Bool::try_from_bytes(false_bytes).unwrap();
+
+        assert!(recovered_true.decrypt(&enc, &sk));
+        assert!(!recovered_false.decrypt(&enc, &sk));
+    }
+
+    #[test]
+    fn bool_encrypted_alignment_and_size() {
+        assert_eq!(Bool::alignment(), 1);
+        assert_eq!(Bool::size(), 1);
+    }
+
+    #[test]
+    fn bool_encrypted_cannot_recover_from_incorrect_size() {
+        let wrong_size_data = vec![crate::Byte::from(1u8), crate::Byte::from(2u8)];
+        let result = Bool::try_from_bytes(wrong_size_data);
+        assert!(result.is_err());
+        match result {
+            Err(crate::Error::TypeSizeMismatch) => {}
+            _ => panic!("Expected TypeSizeMismatch error"),
+        }
+    }
+
+    #[test]
+    fn bool_encrypted_cannot_recover_from_plaintext() {
+        let plaintext_data = vec![crate::Byte::from(1u8)];
+        let result = Bool::try_from_bytes(plaintext_data);
+        assert!(result.is_err());
+        match result {
+            Err(crate::Error::EncryptionMismatch) => {}
+            Err(crate::Error::TypeSizeMismatch) => {}
+            _ => panic!("Expected EncryptionMismatch or TypeSizeMismatch error"),
+        }
     }
 }

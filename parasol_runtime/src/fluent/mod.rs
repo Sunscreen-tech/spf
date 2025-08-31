@@ -10,7 +10,7 @@ use sunscreen_tfhe::{
 
 use crate::{
     CiphertextType, Encryption, Evaluation, FheCircuit, FheOp, L0LweCiphertext, L1GgswCiphertext,
-    L1GlweCiphertext, L1LweCiphertext, Params, SecretKey,
+    L1GlweCiphertext, L1LweCiphertext, Params, SecretKey, TrivialZero,
     crypto::{L1GlevCiphertext, PublicKey},
     fhe_circuit::MuxMode,
     safe_bincode::GetSize,
@@ -144,6 +144,10 @@ where
     /// trivial encryptions of one would require knowing and would reveal the secret key.
     fn trivial_encryption(bit: bool, encryption: &Encryption, eval: &Evaluation) -> Self;
 
+    /// Creates a zero encryption out of an existing ciphertext, so that it has
+    /// the same parameters without needing to pass in the `Encryption` object.
+    fn trivial_zero_from_existing(&self) -> Self;
+
     /// Add an [`FheOp`] corresponding to this ciphertext's trivial one node.
     fn graph_trivial_one() -> FheOp;
 
@@ -180,6 +184,10 @@ impl CiphertextOps for L0LweCiphertext {
         } else {
             encryption.trivial_lwe_l0_zero()
         }
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        <L0LweCiphertext as TrivialZero>::trivial_zero_from_existing(self)
     }
 
     fn graph_trivial_one() -> FheOp {
@@ -221,6 +229,10 @@ impl CiphertextOps for L1LweCiphertext {
         }
     }
 
+    fn trivial_zero_from_existing(&self) -> Self {
+        <L1LweCiphertext as TrivialZero>::trivial_zero_from_existing(self)
+    }
+
     fn graph_trivial_one() -> FheOp {
         unimplemented!()
     }
@@ -258,6 +270,10 @@ impl CiphertextOps for L1GgswCiphertext {
         } else {
             eval.l1ggsw_zero().to_owned()
         }
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        <L1GgswCiphertext as TrivialZero>::trivial_zero_from_existing(self)
     }
 
     fn graph_trivial_one() -> FheOp {
@@ -303,6 +319,10 @@ impl CiphertextOps for L1GlweCiphertext {
         } else {
             encryption.trivial_glwe_l1_zero()
         }
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        <L1GlweCiphertext as TrivialZero>::trivial_zero_from_existing(self)
     }
 
     fn graph_trivial_one() -> FheOp {
@@ -354,6 +374,10 @@ impl CiphertextOps for L1GlevCiphertext {
         } else {
             encryption.trivial_glev_l1_zero()
         }
+    }
+
+    fn trivial_zero_from_existing(&self) -> Self {
+        <L1GlevCiphertext as TrivialZero>::trivial_zero_from_existing(self)
     }
 }
 

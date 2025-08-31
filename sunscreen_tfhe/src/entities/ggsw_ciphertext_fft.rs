@@ -1,3 +1,4 @@
+use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
@@ -5,6 +6,7 @@ use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
     dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
     entities::{DstIterator, DstIteratorMut, GgswCiphertextRef},
+    scratch::SIMD_ALIGN,
 };
 
 use super::GlevCiphertextFftRef;
@@ -73,6 +75,16 @@ impl GgswCiphertextFftRef<Complex<f64>> {
     ) {
         for (s, r) in self.rows(params, radix).zip(result.rows_mut(params, radix)) {
             s.ifft(r, params);
+        }
+    }
+
+    /// Create a new trivial GGSW ciphertext encrypting zero from an existing
+    /// ciphertext.
+    pub fn trivial_zero_from_existing(&self) -> GgswCiphertextFft<Complex<f64>> {
+        let len = self.data.len();
+
+        GgswCiphertextFft {
+            data: avec![[SIMD_ALIGN]| Complex::from(<f64 as num::Zero>::zero()); len],
         }
     }
 }

@@ -1,6 +1,7 @@
 mod add;
 mod args;
 mod auction;
+mod boolean_ops;
 mod cardio;
 mod chi_sq;
 mod cmux;

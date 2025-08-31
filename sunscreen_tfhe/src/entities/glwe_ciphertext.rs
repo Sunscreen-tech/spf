@@ -1,3 +1,4 @@
+use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
@@ -7,6 +8,7 @@ use crate::{
     entities::{DstIterator, DstIteratorMut, GgswCiphertextRef},
     macros::{impl_binary_op, impl_unary_op},
     ops::ciphertext::external_product_ggsw_glwe,
+    scratch::SIMD_ALIGN,
 };
 
 use super::{GlweCiphertextFftRef, GlweSecretKeyRef, PolynomialRef};
@@ -245,6 +247,18 @@ where
                 poly.coeffs_mut()
                     .fill(Torus::from(<S as num::Zero>::zero()));
             }
+        }
+    }
+
+    /// Create a new trivial GLWE ciphertext encrypting zero from an existing
+    /// ciphertext.
+    pub fn trivial_zero_from_existing(&self) -> GlweCiphertext<S> {
+        let len = self.data.len();
+
+        // We are relying on dst_allocate fills in with S::default(), which
+        // should be zero.
+        GlweCiphertext {
+            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
         }
     }
 }
