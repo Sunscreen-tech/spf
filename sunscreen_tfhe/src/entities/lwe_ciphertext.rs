@@ -2,10 +2,7 @@ use aligned_vec::avec;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    LweDef, LweDimension, Torus, TorusOps,
-    dst::{OverlaySize, dst_allocate},
-    macros::{impl_binary_op, impl_unary_op},
-    scratch::SIMD_ALIGN,
+    dst::{dst_allocate, dst_from_iter, OverlaySize}, macros::{impl_binary_op, impl_unary_op}, scratch::SIMD_ALIGN, LweDef, LweDimension, Torus, TorusOps
 };
 
 dst! {
@@ -99,7 +96,10 @@ impl<S: TorusOps> LweCiphertextRef<S> {
         let len = self.data.len();
 
         LweCiphertext {
-            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
+            data: dst_from_iter(std::iter::repeat_n(
+                Torus::from(<S as num::Zero>::zero()),
+                len,
+            ))
         }
     }
 }

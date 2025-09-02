@@ -1,12 +1,10 @@
-use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, TorusOps,
-    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
+    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate, dst_from_iter},
     entities::{DstIterator, DstIteratorMut, GgswCiphertextRef},
-    scratch::SIMD_ALIGN,
 };
 
 use super::GlevCiphertextFftRef;
@@ -84,7 +82,10 @@ impl GgswCiphertextFftRef<Complex<f64>> {
         let len = self.data.len();
 
         GgswCiphertextFft {
-            data: avec![[SIMD_ALIGN]| Complex::from(<f64 as num::Zero>::zero()); len],
+            data: dst_from_iter(std::iter::repeat_n(
+                <Complex<f64> as num::Zero>::zero(),
+                len,
+            )),
         }
     }
 }

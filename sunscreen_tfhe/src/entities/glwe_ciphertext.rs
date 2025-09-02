@@ -1,4 +1,3 @@
-use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
@@ -8,7 +7,6 @@ use crate::{
     entities::{DstIterator, DstIteratorMut, GgswCiphertextRef},
     macros::{impl_binary_op, impl_unary_op},
     ops::ciphertext::external_product_ggsw_glwe,
-    scratch::SIMD_ALIGN,
 };
 
 use super::{GlweCiphertextFftRef, GlweSecretKeyRef, PolynomialRef};
@@ -258,7 +256,10 @@ where
         // We are relying on dst_allocate fills in with S::default(), which
         // should be zero.
         GlweCiphertext {
-            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
+            data: dst_from_iter(std::iter::repeat_n(
+                Torus::from(<S as num::Zero>::zero()),
+                len,
+            )),
         }
     }
 }

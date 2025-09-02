@@ -3,10 +3,7 @@ use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
-    dst::{OverlaySize, dst_allocate},
-    entities::{DstIterator, DstIteratorMut},
-    scratch::SIMD_ALIGN,
+    dst::{dst_allocate, dst_from_iter, OverlaySize}, entities::{DstIterator, DstIteratorMut}, scratch::SIMD_ALIGN, GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps
 };
 
 use super::{GlevCiphertextFftRef, GlweCiphertextRef};
@@ -82,7 +79,10 @@ where
         let len = self.data.len();
 
         GlevCiphertext {
-            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
+            data: dst_from_iter(std::iter::repeat_n(
+                Torus::from(<S as num::Zero>::zero()),
+                len,
+            )),
         }
     }
 }

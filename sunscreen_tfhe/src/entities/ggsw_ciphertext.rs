@@ -4,7 +4,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
-    dst::{OverlaySize, dst_allocate, dst_from_slice},
+    dst::{OverlaySize, dst_allocate, dst_from_iter, dst_from_slice},
     entities::{DstIterator, DstIteratorMut},
     ops::ciphertext::external_product_ggsw_glwe,
     scratch::SIMD_ALIGN,
@@ -119,7 +119,10 @@ where
         let len = self.data.len();
 
         GgswCiphertext {
-            data: avec![[SIMD_ALIGN]| Torus::from(<S as num::Zero>::zero()); len],
+            data: dst_from_iter(std::iter::repeat_n(
+                Torus::from(<S as num::Zero>::zero()),
+                len,
+            )),
         }
     }
 }
