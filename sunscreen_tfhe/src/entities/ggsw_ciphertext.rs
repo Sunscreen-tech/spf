@@ -1,4 +1,3 @@
-use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
@@ -7,7 +6,6 @@ use crate::{
     dst::{OverlaySize, dst_allocate, dst_from_iter, dst_from_slice},
     entities::{DstIterator, DstIteratorMut},
     ops::ciphertext::external_product_ggsw_glwe,
-    scratch::SIMD_ALIGN,
 };
 
 use super::{GgswCiphertextFftRef, GlevCiphertextRef, GlweCiphertext, GlweCiphertextRef};

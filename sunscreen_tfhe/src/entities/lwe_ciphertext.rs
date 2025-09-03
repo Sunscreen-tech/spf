@@ -1,11 +1,9 @@
-use aligned_vec::avec;
 use serde::{Deserialize, Serialize};
 
 use crate::{
     LweDef, LweDimension, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate, dst_from_iter},
     macros::{impl_binary_op, impl_unary_op},
-    scratch::SIMD_ALIGN,
 };
 
 dst! {

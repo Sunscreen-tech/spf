@@ -1,4 +1,3 @@
-use aligned_vec::avec;
 use num::Complex;
 use serde::{Deserialize, Serialize};
 
@@ -6,7 +5,6 @@ use crate::{
     GlweDef, GlweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
     dst::{OverlaySize, dst_allocate, dst_from_iter},
     entities::{DstIterator, DstIteratorMut},
-    scratch::SIMD_ALIGN,
 };
 
 use super::{GlevCiphertextFftRef, GlweCiphertextRef};
