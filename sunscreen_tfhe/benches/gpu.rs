@@ -9,7 +9,19 @@ mod gpu_benches {
     use num::Complex;
     use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
     use sunscreen_tfhe::{
-        entities::{BootstrapKeyFft, BootstrapKeyFftRef, DstArray, GlweCiphertext, GlweCiphertextRef, GlweSecretKey, LweCiphertext, LweSecretKey, UnivariateLookupTable}, gpu::{get_runtimes, ops::{bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key}, Scratch}, high_level, OverlaySize, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus, GLWE_1_2048_128, LWE_637_128
+        GLWE_1_2048_128, LWE_637_128, OverlaySize, PlaintextBits, RadixCount, RadixDecomposition,
+        RadixLog, Torus,
+        entities::{
+            BootstrapKeyFft, BootstrapKeyFftRef, DstArray, GlweCiphertext, GlweCiphertextRef,
+            GlweSecretKey, LweCiphertext, LweSecretKey, UnivariateLookupTable,
+        },
+        gpu::{
+            Scratch, get_runtimes,
+            ops::{
+                bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key,
+            },
+        },
+        high_level,
     };
 
     pub fn for_each_device_type<F: Fn(&str, &Arc<GpuRuntime>)>(f: F) {
@@ -134,15 +146,17 @@ mod gpu_benches {
                 let bsk = high_level::keygen::generate_bootstrapping_key(
                     &lwe_sk, &glwe_sk, &lwe, &glwe, &pbs_radix,
                 );
-                
+
                 let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &pbs_radix);
 
                 let mut results = DstArray::<GlweCiphertext<u64>>::new(pbs_count, glwe.dim);
                 let inputs = DstArray::<LweCiphertext<u64>>::new(pbs_count, lwe.dim);
 
                 let stream = r.make_stream(0.into()).unwrap();
-                let bsk = gpu_fft_bootstrap_key(&mut bsk_fft, &bsk, &lwe, &glwe, &pbs_radix, r, &stream).unwrap();
-                let lut = UnivariateLookupTable::trivial_from_fn(|_| {1}, &glwe, PlaintextBits(1));
+                let bsk =
+                    gpu_fft_bootstrap_key(&mut bsk_fft, &bsk, &lwe, &glwe, &pbs_radix, r, &stream)
+                        .unwrap();
+                let lut = UnivariateLookupTable::trivial_from_fn(|_| 1, &glwe, PlaintextBits(1));
 
                 g.borrow_mut().bench_function(
                     &format!("serial PBS {dev_name} count={pbs_count}"),
@@ -159,8 +173,9 @@ mod gpu_benches {
                                 &glwe,
                                 &pbs_radix,
                                 &r,
-                                &stream
-                            ).unwrap();
+                                &stream,
+                            )
+                            .unwrap();
 
                             stream.wait().unwrap();
                         });
