@@ -9,9 +9,18 @@ mod gpu_benches {
     use num::Complex;
     use sunscreen_gpu_runtime::{GpuRuntime, launch_kernel};
     use sunscreen_tfhe::{
-        GLWE_1_2048_128, LWE_637_128, OverlaySize, RadixCount, RadixDecomposition, RadixLog, Torus,
-        entities::{BootstrapKeyFftRef, GlweCiphertextRef, GlweSecretKey, LweSecretKey},
-        gpu::{Scratch, get_runtimes},
+        GLWE_1_2048_128, LWE_637_128, OverlaySize, PlaintextBits, RadixCount, RadixDecomposition,
+        RadixLog, Torus,
+        entities::{
+            BootstrapKeyFft, BootstrapKeyFftRef, DstArray, GlweCiphertext, GlweCiphertextRef,
+            GlweSecretKey, LweCiphertext, LweSecretKey, UnivariateLookupTable,
+        },
+        gpu::{
+            Scratch, get_runtimes,
+            ops::{
+                bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key,
+            },
+        },
         high_level,
     };
 
@@ -117,10 +126,8 @@ mod gpu_benches {
         });
     }
 
-    pub fn synthetic_pbs(c: &mut Criterion) {
-        let shared_memory = 96 * 1024;
-
-        let g = RefCell::new(c.benchmark_group("Synthetic PBS"));
+    pub fn serial_pbs(c: &mut Criterion) {
+        let g = RefCell::new(c.benchmark_group("serial PBS"));
 
         for_each_device_type(|dev_name, r| {
             for log_count in 0..12 {
@@ -139,40 +146,37 @@ mod gpu_benches {
                 let bsk = high_level::keygen::generate_bootstrapping_key(
                     &lwe_sk, &glwe_sk, &lwe, &glwe, &pbs_radix,
                 );
-                let bsk = high_level::fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix);
+
+                let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &pbs_radix);
+
+                let mut results = DstArray::<GlweCiphertext<u64>>::new(pbs_count, glwe.dim);
+                let inputs = DstArray::<LweCiphertext<u64>>::new(pbs_count, lwe.dim);
+
+                let stream = r.make_stream(0.into()).unwrap();
+                let bsk =
+                    gpu_fft_bootstrap_key(&mut bsk_fft, &bsk, &lwe, &glwe, &pbs_radix, r, &stream)
+                        .unwrap();
+                let lut = UnivariateLookupTable::trivial_from_fn(|_| 1, &glwe, PlaintextBits(1));
 
                 g.borrow_mut().bench_function(
-                    &format!("Synthetic PBS {dev_name} count={pbs_count}"),
+                    &format!("serial PBS {dev_name} count={pbs_count}"),
                     |b| {
-                        let res = GpuRuntime::allocate::<Torus<u64>>(
-                            r,
-                            pbs_count * GlweCiphertextRef::<u64>::size(glwe.dim),
-                        )
-                        .unwrap();
-                        let bsk_dev = GpuRuntime::allocate::<Complex<f64>>(
-                            r,
-                            BootstrapKeyFftRef::size((lwe.dim, glwe.dim, pbs_radix.count)),
-                        )
-                        .unwrap();
-
-                        let stream = r.make_stream(0.into()).unwrap();
-                        let tpb = glwe.dim.polynomial_degree.threads_per_block();
-                        let threads = pbs_count as u32 * tpb;
-                        let grid = (threads, tpb);
-                        let scratch = Scratch::new(r, grid).unwrap();
-
                         b.iter(|| {
-                            unsafe {
-                                launch_kernel!(
-                                    (grid)
-                                    ("synthetic_pbs")
-                                    (r, stream, shared_memory)
-                                    res,
-                                    bsk_dev,
-                                    scratch
-                                )
-                            }
+                            gpu_generalized_functional_bootstrap(
+                                &mut results,
+                                &inputs,
+                                &lut,
+                                &bsk_fft,
+                                0,
+                                3,
+                                &lwe,
+                                &glwe,
+                                &pbs_radix,
+                                &r,
+                                &stream,
+                            )
                             .unwrap();
+
                             stream.wait().unwrap();
                         });
                     },
@@ -185,7 +189,7 @@ mod gpu_benches {
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 use gpu_benches::*;
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
-criterion_group!(benches, fft, synthetic_pbs);
+criterion_group!(benches, fft, serial_pbs);
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 criterion_main!(benches);
 
