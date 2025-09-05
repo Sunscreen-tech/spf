@@ -44,7 +44,7 @@ zip = { workspace = true, optional = true }
 
 [features]
 
-default = ["cuda", "test_kernels"]
+default = [] #["cuda", "test_kernels"]
 cuda = ["gpu", "sunscreen_gpu_runtime/cuda", "dep:find_cuda_helper", "test_kernels"]
 gpu = ["dep:sunscreen_gpu_runtime", "dep:zip"]
 test_kernels = ["gpu", "dep:rug"]
