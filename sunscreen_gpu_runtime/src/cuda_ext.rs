@@ -13,6 +13,8 @@ pub struct ClusterDim {
 #[allow(non_snake_case)]
 #[derive(Clone, Copy)]
 #[repr(C)]
+// If we want to support more than one attribute, we need to actually fill this thing out
+// so the sizes line up :(
 pub union CUlaunchAttributeValue {
     // accessPolicyWindow: CUaccessPolicyWindow,
     // cooperative: i32,
