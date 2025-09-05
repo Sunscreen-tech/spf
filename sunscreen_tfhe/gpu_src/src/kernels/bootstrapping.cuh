@@ -36,3 +36,9 @@ extern "C" __global__ void kernel_generalized_functional_bootstrap(
         scratch
     );
 }
+
+#if __CUDA_ARCH__ >= 900
+#include "../ops/parallel_bootstrapping.cuh"
+
+
+#endif 

@@ -8,6 +8,24 @@
 #include "../math/signed_decomposer.cuh"
 #include "../params.cuh"
 
+__device__ inline void polynomial_mul_scalar_inplace(PolynomialFft c, double s, const PolynomialDegree &params)
+{
+    BLOCK_FOR_EACH(i, params.val)
+    {
+        c.coeffs().as_complex()[i] *= s;
+    }
+}
+
+__device__ inline void glwe_mul_scalar_inplace(GlweCiphertextFft c, double s, const GlweDef &params)
+{
+    for (u32 i = 0; i < params.size.val; i++)
+    {
+        auto a_fft_i = c.a_b(i, params);
+
+        polynomial_mul_scalar_inplace(a_fft_i, s, params.polynomial_degree());
+    }
+}
+
 __device__ inline void glwe_sub(
     GlweCiphertext c,
     const GlweCiphertext a,

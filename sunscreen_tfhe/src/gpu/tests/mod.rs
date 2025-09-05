@@ -4,6 +4,7 @@ use crate::{RadixCount, RadixDecomposition, RadixLog};
 
 mod basics;
 mod bootstrapping;
+mod cluster_groups;
 mod entities;
 mod fft;
 mod homomorphisms;
