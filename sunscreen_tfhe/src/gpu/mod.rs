@@ -68,7 +68,7 @@ pub fn get_kernels(compute_version: ComputeVersion) -> &'static [u8] {
         contents
     }
 
-    if compute_version >= v_7 {
+    if compute_version >= v_7 && compute_version < v_9 {
         let data = CUDA_70_DATA.get_or_init(|| decompress(GPU_KERNELS_CC_70_ZIP));
 
         data.as_ref()

@@ -19,8 +19,12 @@ use cuda_runtime_sys::{
 };
 
 use crate::{
-    AllocationBackend, ComputeVersion, DeviceAttributes, DeviceId, Dim, Error, GpuRuntimeBackend,
-    Grid, Result, StreamBackend, cuda_ext::cuMemFreeAsync,
+    AllocationBackend, CgGrid, ComputeVersion, DeviceAttributes, DeviceId, Dim, Error,
+    GpuRuntimeBackend, Grid, Result, StreamBackend,
+    cuda_ext::{
+        CUlaunchAttribute, CUlaunchAttributeID, CUlaunchAttributeValue, CUlaunchConfig, ClusterDim,
+        Padding, cuLaunchKernelEx, cuMemFreeAsync,
+    },
 };
 
 macro_rules! wrap_cuda_runtime {
@@ -153,6 +157,10 @@ impl Context {
                 CUdevice_attribute::CU_DEVICE_ATTRIBUTE_MULTIPROCESSOR_COUNT,
                 device,
             )?,
+            supports_cooperative_groups: get_attr(
+                CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH,
+                device,
+            )?,
         })
     }
 }
@@ -280,6 +288,20 @@ impl GpuRuntimeBackend for CudaRuntime {
 
         Ok(())
     }
+
+    unsafe fn launch_kernel_cg<'a>(
+        &'a self,
+        stream: &'a dyn StreamBackend,
+        name: &str,
+        grid: &dyn Grid,
+        cg_grid: &dyn CgGrid,
+        shared_memory: u32,
+        args: &[*const c_void],
+    ) -> Result<()> {
+        unsafe { stream.launch_kernel_cg(name, grid, cg_grid, shared_memory, args)? };
+
+        Ok(())
+    }
 }
 
 pub struct CudaStream<'a> {
@@ -288,7 +310,7 @@ pub struct CudaStream<'a> {
     handle: CUstream,
 }
 
-fn get_threads_per_block(dim: Dim) -> Result<u32> {
+fn get_thread_block_dim(dim: Dim) -> Result<u32> {
     if dim.total_threads == 0
         || dim.threads_per_block == 0
         || dim.total_threads % dim.threads_per_block != 0
@@ -320,9 +342,9 @@ impl<'a> StreamBackend for CudaStream<'a> {
         let dim_y = grid.y();
         let dim_z = grid.z();
 
-        let tbx = get_threads_per_block(dim_x)?;
-        let tby = get_threads_per_block(dim_y)?;
-        let tbz = get_threads_per_block(dim_z)?;
+        let tbx = get_thread_block_dim(dim_x)?;
+        let tby = get_thread_block_dim(dim_y)?;
+        let tbz = get_thread_block_dim(dim_z)?;
 
         let args = args
             .iter()
@@ -347,6 +369,80 @@ impl<'a> StreamBackend for CudaStream<'a> {
                 dim_z.threads_per_block,
                 shared_memory,
                 self.handle,
+                args.as_ptr() as *mut _,
+                ptr::null_mut()
+            )
+        };
+
+        Ok(())
+    }
+
+    unsafe fn launch_kernel_cg(
+        &self,
+        name: &str,
+        grid: &dyn Grid,
+        cg_grid: &dyn CgGrid,
+        shared_memory: u32,
+        args: &[*const c_void],
+    ) -> Result<()> {
+        let ctx = self
+            .runtime
+            .ctxs
+            .get(self.device_id.0)
+            .ok_or(Error::InvalidDevice)?;
+
+        let kernel_fn = ctx.module.get_function(name)?;
+        wrap_cuda_driver!(cuCtxSetCurrent(ctx.ctx));
+
+        let dim_x = grid.x();
+        let dim_y = grid.y();
+        let dim_z = grid.z();
+
+        let tbx = get_thread_block_dim(dim_x)?;
+        let tby = get_thread_block_dim(dim_y)?;
+        let tbz = get_thread_block_dim(dim_z)?;
+
+        let args = args
+            .iter()
+            .map(|x| x as *const _ as *const c_void)
+            .collect::<Vec<_>>();
+
+        // TODO: Don't use a hard-coded value that will cause crashes...
+        wrap_cuda_driver! { cuFuncSetAttribute(
+            kernel_fn.inner,
+            CUfunction_attribute::CU_FUNC_ATTRIBUTE_MAX_DYNAMIC_SHARED_SIZE_BYTES,
+            shared_memory as i32
+        ) };
+
+        let mut attrs = [CUlaunchAttribute {
+            id: CUlaunchAttributeID::CU_LAUNCH_ATTRIBUTE_CLUSTER_DIMENSION,
+            padding: Padding::new(),
+            value: CUlaunchAttributeValue {
+                clusterDim: ClusterDim {
+                    x: cg_grid.x(),
+                    y: cg_grid.y(),
+                    z: cg_grid.z(),
+                },
+            },
+        }];
+
+        let config = CUlaunchConfig {
+            gridDimX: tbx,
+            gridDimY: tby,
+            gridDimZ: tbz,
+            blockDimX: dim_x.threads_per_block,
+            blockDimY: dim_y.threads_per_block,
+            blockDimZ: dim_z.threads_per_block,
+            sharedMemBytes: shared_memory,
+            hStream: self.handle,
+            attrs: &raw mut attrs[0],
+            numAttrs: attrs.len() as u32,
+        };
+
+        wrap_cuda_driver! {
+            cuLaunchKernelEx(
+                &raw const config,
+                kernel_fn.inner,
                 args.as_ptr() as *mut _,
                 ptr::null_mut()
             )

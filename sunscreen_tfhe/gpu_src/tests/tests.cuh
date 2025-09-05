@@ -3,6 +3,6 @@
 #include "ops/mod.cuh"
 #include "misc/mod.cuh"
 
-#if __CUDA_ARCH >= 900
+#if __CUDA_ARCH__ >= 900
 #include "misc/cluster_group.cuh"
 #endif
