@@ -72,6 +72,9 @@ pub struct DeviceAttributes {
 
     /// The number of multiprocessors (i.e. CUDA SMs).
     pub multiprocessor_count: u32,
+
+    /// Whether or not this device supports cooperative groups. Nonzero indicates yes.
+    pub supports_cooperative_groups: u32,
 }
 
 pub struct GpuRuntime(pub(crate) Box<dyn GpuRuntimeBackend>);
@@ -152,6 +155,41 @@ impl GpuRuntime {
 
         Ok(())
     }
+
+    /// Launch a cooperative-group GPU kernel on the given stream and device.
+    ///
+    /// # Remarks
+    /// Don't use this directly. use the [launch_kernel] macro.
+    ///
+    /// # Safety
+    /// The given arguments must be the result of an `as_kernel_arg` call.
+    /// The number and types of arguments must match what's in the kernel declaration.
+    ///
+    /// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+    /// In particular, your host program should have no slices outstanding on any allocation
+    /// this kernel writes to during kernel execution.
+    pub unsafe fn launch_kernel_cg<'a, G: Grid, CG: CgGrid>(
+        &'a self,
+        stream: &Stream<'a>,
+        name: &str,
+        grid: G,
+        cg_grid: CG,
+        shared_memory: u32,
+        args: &[*const c_void],
+    ) -> Result<()> {
+        unsafe {
+            self.0.launch_kernel_cg(
+                stream.0.as_ref(),
+                name,
+                &grid,
+                &cg_grid,
+                shared_memory,
+                args,
+            )?;
+        }
+
+        Ok(())
+    }
 }
 
 /// Launches the kernel with the given name on the given device and stream.
@@ -174,6 +212,31 @@ macro_rules! launch_kernel {
         ];
 
         let result = $rt.launch_kernel(&$stream, $name, $grid, $sm, kernel_args.as_slice());
+
+        result
+    }};
+}
+
+/// Launches a cooperative group kernel with the given name on the given device and stream.
+/// This is the sanctioned mechanism for launching kernels that unpacks arguments
+/// as needed.
+///  
+/// # Safety
+/// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+/// In particular, your host program should have no slices outstanding on any allocation
+/// this kernel writes to during kernel execution.
+#[macro_export]
+macro_rules! launch_kernel_cg {
+    (($grid:expr) ($cg_grid:expr) ($name:expr) ($rt:ident,$stream:ident,$sm:expr) $($args:expr),*) => {{
+        use $crate::AsKernelArg;
+
+        let kernel_args = vec![
+            $(
+                $args.as_kernel_arg(),
+            )*
+        ];
+
+        let result = $rt.launch_kernel_cg(&$stream, $name, $grid, $cg_grid, $sm, kernel_args.as_slice());
 
         result
     }};
@@ -257,6 +320,25 @@ pub trait GpuRuntimeBackend: Sync + Send {
         args: &[*const c_void],
     ) -> Result<()>;
 
+    /// Launch a cooperative-group GPU kernel on the given stream and device.
+    ///
+    /// # Safety
+    /// The given arguments must be the result of an `as_kernel_arg` call.
+    /// The number and types of arguments must match what's in the kernel declaration
+    ///
+    /// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+    /// In particular, your host program should have no slices outstanding on any allocation
+    /// this kernel writes to during kernel execution.
+    unsafe fn launch_kernel_cg<'a>(
+        &'a self,
+        stream: &'a dyn StreamBackend,
+        name: &str,
+        grid: &dyn Grid,
+        cg_grid: &dyn CgGrid,
+        shared_memory: u32,
+        args: &[*const c_void],
+    ) -> Result<()>;
+
     /// Whether or not this runtime allows non-uniform thread blocks.
     fn allows_nonuniform_thread_blocks(&self) -> bool;
 }
@@ -275,6 +357,24 @@ pub trait StreamBackend {
         &self,
         kernel_name: &str,
         grid: &dyn Grid,
+        shared_memory: u32,
+        args: &[*const c_void],
+    ) -> Result<()>;
+
+    /// Launch a cooperative group GPU kernel on this stream and the given device.
+    ///
+    /// # Safety
+    /// The given arguments must be the result of an `as_kernel_arg` call.
+    /// The number and types of arguments must match what's in the kernel declaration
+    ///
+    /// You must ensure the kernel you launch doesn't violate Rust's aliasing requirements.
+    /// In particular, your host program should have no slices outstanding on any allocation
+    /// this kernel writes to during kernel execution.
+    unsafe fn launch_kernel_cg(
+        &self,
+        kernel_name: &str,
+        grid: &dyn Grid,
+        cg_grid: &dyn CgGrid,
         shared_memory: u32,
         args: &[*const c_void],
     ) -> Result<()>;
@@ -647,6 +747,54 @@ impl Grid for ((u32, u32), (u32, u32), (u32, u32)) {
             total_threads: self.2.0,
             threads_per_block: self.2.1,
         }
+    }
+}
+
+pub trait CgGrid {
+    fn x(&self) -> u32;
+    fn y(&self) -> u32;
+    fn z(&self) -> u32;
+}
+
+impl CgGrid for u32 {
+    fn x(&self) -> u32 {
+        *self
+    }
+
+    fn y(&self) -> u32 {
+        1
+    }
+
+    fn z(&self) -> u32 {
+        1
+    }
+}
+
+impl CgGrid for (u32, u32) {
+    fn x(&self) -> u32 {
+        self.0
+    }
+
+    fn y(&self) -> u32 {
+        self.1
+    }
+
+    fn z(&self) -> u32 {
+        1
+    }
+}
+
+impl CgGrid for (u32, u32, u32) {
+    fn x(&self) -> u32 {
+        self.0
+    }
+
+    fn y(&self) -> u32 {
+        self.1
+    }
+
+    fn z(&self) -> u32 {
+        self.2
     }
 }
 
