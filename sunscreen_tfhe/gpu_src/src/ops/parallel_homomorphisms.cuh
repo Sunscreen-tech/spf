@@ -61,7 +61,10 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
         decomp.next(*decomp_poly);
 
         // Only compute what our block is responsible for.
-        if (i % cluster.dim_blocks().x == cluster.block_index().x) {
+        if (
+            i % DimUtils<DimY>::extract(cluster.dim_blocks()) == 
+            DimUtils<DimY>::extract(cluster.block_index())
+        ) {
             auto decomp_poly_fft = std::move(*decomp_poly).fft_inplace(glwe.polynomial_degree());
 
             glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
@@ -71,13 +74,9 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
         }
     }
 
-    cluster.sync();
-    // Reduce c_fft across all our groups.
-    if (cluster.block_index().x == 0) {
-        for (u32 i = 1; i < radix.count.val; i++) {
-            // Get a pointer to the GLWE ciphertext for the remote group
-        }
-    }
+    // Reduce along the y dimension
+    reduce_glwe_fft<DimY>(c, glwe);
+
 }
 
 /// @brief Compute a parallel glwe_ggsw multiply-add using cooperative groups.
@@ -109,15 +108,21 @@ __device__ inline void parallel_glwe_ggsw_mad(
         __syncthreads();
     }
 
-    // The y-dimension of the cluster index is which row of the glwe-glev outer product
+    // The z-dimension of the cluster index is which row of the glwe-glev outer product
     // we're computing. This is the "map" step that computes each cluster group
-    for (u32 i = cluster.block_index().y; i <= glwe.size.val; i += cluster.dim_blocks().y)
+    for (
+        u32 i = DimUtils<DimZ>::extract(cluster.block_index());
+        i <= glwe.size.val;
+        i += DimUtils<DimZ>::extract(cluster.dim_blocks()))
     {
         auto a_i = a.a_b(i, glwe);
         auto glev_i = b.rows(i, cuda::std::tuple(glwe, radix));
 
         parallel_decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
     }
+
+    // Reduce out GLWEs along the z dimension
+    reduce_glwe_fft<DimZ>(c_fft, glwe);
 }
 
 /// @brief Same as `destructive_cmux`, but uses cooperative groups to reduce latency.
@@ -137,7 +142,7 @@ __device__ inline void parallel_destructive_cmux(
     auto a_fft = std::move(a).fft_inplace(glwe);
 
     // a += (b - a) * sel
-    glwe_ggsw_mad(a_fft, b, sel, glwe, radix, scratch);
+    parallel_glwe_ggsw_mad(a_fft, b, sel, glwe, radix, scratch);
 
     std::move(a_fft).ifft_inplace(glwe);
 }
