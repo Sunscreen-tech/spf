@@ -136,13 +136,15 @@ __device__ inline void parallel_destructive_cmux(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
+    auto result_fft = scratch.alloc<GlweCiphertextFft>(glwe);
+
     // b -= a
     glwe_sub_assign(b, a, glwe);
 
-    auto a_fft = std::move(a).fft_inplace(glwe);
-
     // a += (b - a) * sel
-    parallel_glwe_ggsw_mad(a_fft, b, sel, glwe, radix, scratch);
+    parallel_glwe_ggsw_mad(*result_fft, b, sel, glwe, radix, scratch);
 
-    std::move(a_fft).ifft_inplace(glwe);
+    auto result = std::move(*result_fft).ifft_inplace(glwe);
+
+    glwe_add_assign(a, result, glwe);
 }
