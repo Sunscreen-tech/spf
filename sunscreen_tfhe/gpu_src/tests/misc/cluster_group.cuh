@@ -1,7 +1,9 @@
 #pragma once
 
-#if __CUDA_ARCH__ < 900
-#error "This functionality requires cluster groups"
+#include "../../src/features.cuh"
+
+#ifndef THREAD_BLOCK_CLUSTERS
+#error NO_THREAD_BLOCK_CLUSTERS_ERR
 #endif
 
 #include <cooperative_groups.h>

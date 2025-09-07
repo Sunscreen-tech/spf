@@ -50,6 +50,7 @@ pub enum CUlaunchAttributeID {
     // CU_LAUNCH_ATTRIBUTE_DEVICE_UPDATABLE_KERNEL_NODE = 13,
 }
 
+#[repr(transparent)]
 pub struct Padding<const N: usize>([u8; N]);
 
 impl<const N: usize> Padding<N> {

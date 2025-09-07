@@ -15,3 +15,43 @@ BLOCK_FOR_EACH(i, N) \
 { \
     (s_ptr)[i] = (g_ptr)[i]; \
 }
+
+struct DimX {};
+struct DimY {};
+struct DimZ {};
+
+template <typename Dim>
+struct DimUtils {};
+
+template <>
+struct DimUtils<DimX> {
+    __device__ static constexpr inline u32 extract(dim3 val) {
+        return val.x;
+    }
+
+    __device__ static constexpr inline dim3 to_dim(u32 val, dim3 basis) {
+        return {val, basis.y, basis.z};
+    }
+};
+
+template <>
+struct DimUtils<DimY> {
+    __device__ static constexpr inline u32 extract(dim3 val) {
+        return val.y;
+    }
+
+    __device__ static constexpr inline dim3 to_dim(u32 val, dim3 basis) {
+        return {basis.x, val, basis.z};
+    }
+};
+
+template <>
+struct DimUtils<DimZ> {
+    __device__ static constexpr inline u32 extract(dim3 val) {
+        return val.z;
+    }
+
+    __device__ static constexpr inline dim3 to_dim(u32 val, dim3 basis) {
+        return {basis.x, basis.y, val};
+    }
+};

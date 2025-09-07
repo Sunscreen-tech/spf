@@ -110,6 +110,14 @@ public:
             this->coeffs().as_complex()[i] = cuda::std::complex(0.0, 0.0);
         }
     }
+
+    __device__ inline void dbg(const PolynomialDegree &params) {
+        if (threadIdx.x == 0) {
+            for (u32 i = 0; i < params.val / 2; i++) {
+                printf("re: %le im: %le\n", m_data.as_complex()[i].real(), m_data.as_complex()[i].imag());
+            }
+        }
+    }
 private:
     BufTy m_data;
 };

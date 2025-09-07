@@ -10,6 +10,7 @@ mod fft;
 mod homomorphisms;
 mod memory;
 mod negacyclic;
+mod parallel_homomorphisms;
 mod polynomial;
 mod signed_decomposition;
 mod simd;

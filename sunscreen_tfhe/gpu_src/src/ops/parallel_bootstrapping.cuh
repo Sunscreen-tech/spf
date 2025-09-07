@@ -1,6 +1,8 @@
 #pragma once
 
-#if __CUDA_ARCH__ < 900
+#include "../features.cuh"
+
+#ifndef THREAD_BLOCK_CLUSTERS
 #error "This feature requires compute capability 9.0 or later"
 #endif
 
