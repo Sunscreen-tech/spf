@@ -50,5 +50,5 @@ extern "C" __global__ void can_reduce_glwe_fft_dim_y(
     DstArray<GlweCiphertext> output,
     const DstArray<GlweCiphertext> input
 ) {
-    reduce_case<DimX>(output, input);
+    reduce_case<DimY>(output, input);
 }
