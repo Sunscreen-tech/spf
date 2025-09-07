@@ -18,7 +18,11 @@ mod gpu_benches {
         gpu::{
             Scratch, get_runtimes,
             ops::{
-                bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key,
+                bootstrapping::{
+                    gpu_generalized_functional_bootstrap,
+                    gpu_parallel_generalized_functional_bootstrap,
+                },
+                keys::gpu_fft_bootstrap_key,
             },
         },
         high_level,
@@ -184,12 +188,71 @@ mod gpu_benches {
             }
         });
     }
+
+    pub fn parallel_pbs(c: &mut Criterion) {
+        let g = RefCell::new(c.benchmark_group("parallel PBS"));
+
+        for_each_device_type(|dev_name, r| {
+            for log_count in 0..12 {
+                let pbs_count = 0x1 << log_count;
+
+                let pbs_radix = RadixDecomposition {
+                    count: RadixCount(2),
+                    radix_log: RadixLog(16),
+                };
+
+                let lwe = LWE_637_128;
+                let glwe = GLWE_1_2048_128;
+
+                let lwe_sk = LweSecretKey::generate_binary(&lwe);
+                let glwe_sk = GlweSecretKey::generate_binary(&glwe);
+                let bsk = high_level::keygen::generate_bootstrapping_key(
+                    &lwe_sk, &glwe_sk, &lwe, &glwe, &pbs_radix,
+                );
+
+                let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &pbs_radix);
+
+                let mut results = DstArray::<GlweCiphertext<u64>>::new(pbs_count, glwe.dim);
+                let inputs = DstArray::<LweCiphertext<u64>>::new(pbs_count, lwe.dim);
+
+                let stream = r.make_stream(0.into()).unwrap();
+                let bsk =
+                    gpu_fft_bootstrap_key(&mut bsk_fft, &bsk, &lwe, &glwe, &pbs_radix, r, &stream)
+                        .unwrap();
+                let lut = UnivariateLookupTable::trivial_from_fn(|_| 1, &glwe, PlaintextBits(1));
+
+                g.borrow_mut().bench_function(
+                    &format!("parallel PBS {dev_name} count={pbs_count}"),
+                    |b| {
+                        b.iter(|| {
+                            gpu_parallel_generalized_functional_bootstrap(
+                                &mut results,
+                                &inputs,
+                                &lut,
+                                &bsk_fft,
+                                0,
+                                3,
+                                &lwe,
+                                &glwe,
+                                &pbs_radix,
+                                &r,
+                                &stream,
+                            )
+                            .unwrap();
+
+                            stream.wait().unwrap();
+                        });
+                    },
+                );
+            }
+        });
+    }
 }
 
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 use gpu_benches::*;
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
-criterion_group!(benches, fft, serial_pbs);
+criterion_group!(benches, fft, serial_pbs, parallel_pbs);
 #[cfg(all(feature = "gpu", feature = "test_kernels"))]
 criterion_main!(benches);
 
