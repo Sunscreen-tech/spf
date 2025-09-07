@@ -1,26 +1,41 @@
 #pragma once
 
+#include "../features.cuh"
+
 // Methods in here use cooperative groups.
-#if __CUDA_ARCH__ < 900
-#error "This feature requires compute capability 9.0 or later"
+#ifndef THREAD_BLOCK_CLUSTERS
+#error NO_THREAD_BLOCK_CLUSTERS_ERR
 #endif
 
 #include <cooperative_groups.h>
 #include "../entities/glwe.cuh"
 #include "../entities/ggsw.cuh"
+#include "../cluster_group.cuh"
 #include "../params.cuh"
 #include "homomorphisms.cuh"
 
 namespace cg = cooperative_groups;
 
+template <typename Dim>
 __device__ inline void reduce_glwe_fft(
     GlweCiphertextFft c, // Must reside in shared memory
-    const GlweDef &glwe,
-    const u32 rank,
-    const u32 num_
+    const GlweDef &glwe
 ) {
     auto cluster = cg::this_cluster();
 
+    cluster.sync();
+
+    if (DimUtils<Dim>::extract(cluster.block_index()) == 0) {
+        for (u32 i = 1; i < DimUtils<Dim>::extract(cluster.dim_blocks()); i++) {
+            auto remote_thread_block = DimUtils<Dim>::to_dim(i, cluster.block_index());
+
+            auto remote_glwe = map_remote(c, get_remote_rank(remote_thread_block));
+
+            glwe_fft_add_assign(c, remote_glwe, glwe);
+        }
+    }
+
+    cluster.sync();
 }
 
 __device__ inline void parallel_decomposed_polynomial_glev_mad(

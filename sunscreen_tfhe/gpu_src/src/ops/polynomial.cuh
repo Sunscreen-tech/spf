@@ -28,6 +28,40 @@ __device__ inline void polynomial_sub_assign(
     }
 }
 
+__device__ inline void polynomial_add_assign(
+    Polynomial c,
+    const Polynomial a,
+    const PolynomialDegree params
+) {
+    BLOCK_FOR_EACH(i, params.val)
+    {
+        auto val = c.coeffs().get_u64(i) + a.coeffs().get_u64(i);
+        c.coeffs().set_u64(i, val);
+    }
+}
+
+__device__ inline void polynomial_fft_sub_assign(
+    PolynomialFft c,
+    const PolynomialFft a,
+    const PolynomialDegree params
+) {
+    BLOCK_FOR_EACH(i, params.val / 2)
+    {
+        c.coeffs().as_complex()[i] -= a.coeffs().as_complex()[i];
+    }
+}
+
+__device__ inline void polynomial_fft_add_assign(
+    PolynomialFft c,
+    const PolynomialFft a,
+    const PolynomialDegree params
+) {
+    BLOCK_FOR_EACH(i, params.val / 2)
+    {
+        c.coeffs().as_complex()[i] += a.coeffs().as_complex()[i];
+    }
+}
+
 __device__ inline void polynomial_add(
     Polynomial c,
     const Polynomial a,

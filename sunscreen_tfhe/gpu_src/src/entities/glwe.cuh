@@ -120,9 +120,16 @@ public:
         return GlweCiphertext(m_data);
     }
 
-
-    __device__ static constexpr inline const GlweCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
+    __device__ static constexpr inline GlweCiphertextFft from_ptr(cuda::std::complex<f64> *ptr) {
         return GlweCiphertextFft(BufTy::from_ptr(ptr));
+    }
+
+    __device__ static constexpr inline const GlweCiphertextFft from_ptr(const cuda::std::complex<f64> *ptr) {
+        return GlweCiphertextFft(BufTy::from_ptr(ptr));
+    }
+
+    __device__ constexpr inline cuda::std::complex<f64> *get_ptr() {
+        return m_data.as_complex();
     }
 
     __device__ inline void clone_into(GlweCiphertextFft out, const GlweDef &params) const {
@@ -140,6 +147,12 @@ public:
             auto a_fft_i = this->a_b(i, params);
 
             a_fft_i.clear(params.polynomial_degree());
+        }
+    }
+
+    __device__ inline void dbg(const GlweDef &params) {
+        for (u32 i = 0; i <= params.size.val; i++) {
+            this->a_b(i, params).dbg(params.polynomial_degree());
         }
     }
 private:

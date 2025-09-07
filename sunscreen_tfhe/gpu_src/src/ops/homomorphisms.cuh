@@ -164,6 +164,54 @@ __device__ inline void glwe_sub_assign(
     }
 }
 
+/// @brief Computes c += a
+__device__ inline void glwe_add_assign(
+    GlweCiphertext c,
+    GlweCiphertext a,
+    const GlweDef &params
+ ) {
+    // Sub the `a` terms
+    for (u32 i = 0; i <= params.size.val; i++)
+    {
+        auto c_a_i = c.a_b(i, params);
+        auto a_a_i = a.a_b(i, params);
+
+        polynomial_add_assign(c_a_i, a_a_i, params.polynomial_degree());
+    }
+}
+
+/// @brief Computes c -= a
+__device__ inline void glwe_fft_sub_assign(
+    GlweCiphertextFft c,
+    GlweCiphertextFft a,
+    const GlweDef &params
+ ) {
+    // Sub the `a` terms
+    for (u32 i = 0; i <= params.size.val; i++)
+    {
+        auto c_a_i = c.a_b(i, params);
+        auto a_a_i = a.a_b(i, params);
+
+        polynomial_fft_sub_assign(c_a_i, a_a_i, params.polynomial_degree());
+    }
+}
+
+/// @brief Computes c += a
+__device__ inline void glwe_fft_add_assign(
+    GlweCiphertextFft c,
+    GlweCiphertextFft a,
+    const GlweDef &params
+ ) {
+    // Sub the `a` terms
+    for (u32 i = 0; i <= params.size.val; i++)
+    {
+        auto c_a_i = c.a_b(i, params);
+        auto a_a_i = a.a_b(i, params);
+
+        polynomial_fft_add_assign(c_a_i, a_a_i, params.polynomial_degree());
+    }
+}
+
 /// @brief Same a cmux, but more memory efficient. inputs a and b are overwritten
 /// and the result is returned in a. Upon return, b contains b - a, as a side 
 /// effect, not that this is usually useful.

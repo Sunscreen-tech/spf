@@ -2,6 +2,7 @@
 
 #include "../entities/dst_array.cuh"
 #include "../ops/bootstrapping.cuh"
+#include "../features.cuh"
 
 extern "C" __global__ void kernel_generalized_functional_bootstrap(
     cuda::std::complex<f64> *__restrict__ output_buf,
@@ -37,8 +38,6 @@ extern "C" __global__ void kernel_generalized_functional_bootstrap(
     );
 }
 
-#if __CUDA_ARCH__ >= 900
+#ifdef THREAD_BLOCK_CLUSTERS
 #include "../ops/parallel_bootstrapping.cuh"
-
-
 #endif 
