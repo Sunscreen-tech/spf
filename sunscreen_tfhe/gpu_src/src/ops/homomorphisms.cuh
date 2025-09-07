@@ -223,15 +223,18 @@ __device__ inline void destructive_cmux(
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
 {
+    auto result_fft = scratch.alloc<GlweCiphertextFft>(glwe);
+    result_fft.clear();
+
     // b -= a
     glwe_sub_assign(b, a, glwe);
 
-    auto a_fft = std::move(a).fft_inplace(glwe);
+    // (b - a) * sel
+    glwe_ggsw_mad(*result_fft, b, sel, glwe, radix, scratch);
 
-    // a += (b - a) * sel
-    glwe_ggsw_mad(a_fft, b, sel, glwe, radix, scratch);
+    auto result = std::move(*result_fft).ifft_inplace(glwe);
 
-    std::move(a_fft).ifft_inplace(glwe);
+    glwe_add_assign(a, result, glwe);
 }
 
 
