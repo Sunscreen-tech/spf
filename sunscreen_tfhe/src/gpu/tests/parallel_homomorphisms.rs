@@ -129,8 +129,6 @@ fn can_reduce_glwe_dim_y() {
 
             stream.wait().unwrap();
 
-            dbg!(reduction_factor);
-
             for i in 0..base_count / reduction_factor {
                 let mut sum = input
                     .iter(glwe.dim)
@@ -194,7 +192,7 @@ fn compare_glwe_contents(
 #[test]
 fn can_parallel_polynomial_glev_mad() {
     let runtimes = get_runtimes();
-    let num_blocks = 1;
+    let num_blocks = 3;
 
     for r in runtimes.iter() {
         let radix = RadixDecomposition {
@@ -263,7 +261,7 @@ fn can_parallel_polynomial_glev_mad() {
 #[test]
 fn can_parallel_destructive_cmux() {
     let runtimes = get_runtimes();
-    let num_blocks = 1;
+    let num_blocks = 128;
 
     let radix = RadixDecomposition {
         count: RadixCount(2),

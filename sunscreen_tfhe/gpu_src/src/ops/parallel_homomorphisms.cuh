@@ -96,17 +96,6 @@ __device__ inline void parallel_glwe_ggsw_mad(
 {
     auto cluster = cg::this_cluster();
 
-    // Divide c_fft by the number of cooperative groups. We do this because it will get
-    // redundantly summed by each group in parallel.
-    if (cluster.num_blocks() > 1)
-    {
-        double g_inv = 1.0 / static_cast<double>(cluster.num_blocks());
-
-        glwe_mul_scalar_inplace(c_fft, g_inv, glwe);
-
-        __syncthreads();
-    }
-
     // The z-dimension of the cluster index is which row of the glwe-glev outer product
     // we're computing. This is the "map" step that computes each cluster group
     for (
