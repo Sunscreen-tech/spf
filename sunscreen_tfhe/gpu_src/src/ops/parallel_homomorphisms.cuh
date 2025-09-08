@@ -39,9 +39,9 @@ __device__ inline void reduce_glwe_fft(
 }
 
 __device__ inline void parallel_decomposed_polynomial_glev_mad(
-    GlweCiphertextFft c,
+    GlweCiphertextFft c_fft,
     const Polynomial a,
-    const GlevCiphertextFft b,
+    const GlevCiphertextFft b_fft,
     const GlweDef &glwe,
     const RadixDecomposition &radix,
     PerBlockStackAllocator &scratch)
@@ -57,7 +57,7 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
     {
         u32 l = radix.count.val - i - 1;
 
-        auto b_l = b.decomps(l, cuda::std::tuple(glwe, radix));
+        auto b_l = b_fft.decomps(l, cuda::std::tuple(glwe, radix));
         decomp.next(*decomp_poly);
 
         // Only compute what our block is responsible for.
@@ -67,7 +67,7 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
         ) {
             auto decomp_poly_fft = std::move(*decomp_poly).fft_inplace(glwe.polynomial_degree());
 
-            glwe_polynomial_mad(c, b_l, decomp_poly_fft, glwe);
+            glwe_polynomial_mad(c_fft, b_l, decomp_poly_fft, glwe);
 
             // Ensure the previous decomposition is done being used before computing the next one.
             __syncthreads();
@@ -75,8 +75,7 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
     }
 
     // Reduce along the y dimension
-    reduce_glwe_fft<DimY>(c, glwe);
-
+    reduce_glwe_fft<DimY>(c_fft, glwe);
 }
 
 /// @brief Compute a parallel glwe_ggsw multiply-add using cooperative groups.
@@ -121,7 +120,7 @@ __device__ inline void parallel_glwe_ggsw_mad(
         parallel_decomposed_polynomial_glev_mad(c_fft, a_i, glev_i, glwe, radix, scratch);
     }
 
-    // Reduce out GLWEs along the z dimension
+    // Reduce our GLWEs along the z dimension
     reduce_glwe_fft<DimZ>(c_fft, glwe);
 }
 
@@ -137,6 +136,7 @@ __device__ inline void parallel_destructive_cmux(
     PerBlockStackAllocator &scratch)
 {
     auto result_fft = scratch.alloc<GlweCiphertextFft>(glwe);
+    result_fft.clear();
 
     // b -= a
     glwe_sub_assign(b, a, glwe);

@@ -52,3 +52,59 @@ extern "C" __global__ void can_reduce_glwe_fft_dim_y(
 ) {
     reduce_case<DimY>(output, input);
 }
+
+extern "C" __global__ void can_parallel_polynomial_glev_mad(
+    DstArray<GlweCiphertext> c,
+    const DstArray<Polynomial> a,
+    const DstArray<GlevCiphertext> b,
+    cuda::std::complex<f64> *__restrict__ scratch_buffer)
+{
+    auto scratch_s = get_shared_allocator(96 * 1024);
+
+    const auto &radix = PBS_RADIX_2_16_128;
+    const auto &glwe = GLWE_1_2048_128;
+    auto scratch_g = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
+
+    auto c_i = c.nth(blockIdx.x, glwe);
+    auto a_i = a.nth(blockIdx.x, glwe.polynomial_degree());
+    auto b_i = b.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+
+    auto c_i_fft = scratch_s.alloc<GlweCiphertextFft>(glwe);
+    auto a_s  = scratch_s.alloc<Polynomial>(glwe.polynomial_degree());
+    auto b_i_fft = scratch_g.alloc<GlevCiphertextFft>(cuda::std::tuple(glwe, radix));
+
+    c_i.fft(*c_i_fft, glwe, scratch_s);
+    b_i.fft(*b_i_fft, cuda::std::tuple(glwe, radix), scratch_s);
+
+    parallel_decomposed_polynomial_glev_mad(*c_i_fft, a_i, *b_i_fft, glwe, radix, scratch_g);
+
+    (*c_i_fft).ifft(c_i, glwe, scratch_s);
+}
+
+extern "C" __global__ void can_parallel_destructive_cmux(
+    DstArray<GlweCiphertext> a,
+    DstArray<GlweCiphertext> b,
+    const DstArray<GgswCiphertext> sel,
+    cuda::std::complex<f64> *__restrict__ scratch_buffer)
+{
+    auto scratch_s = get_shared_allocator(128 * 1024 / sizeof(cuda::std::complex<f64>));
+
+    const auto &radix = PBS_RADIX_2_16_128;
+    const auto &glwe = GLWE_1_2048_128;
+    auto scratch = PerBlockStackAllocator(scratch_buffer, get_scratch_size());
+
+    auto a_i = a.nth(blockIdx.x, glwe);
+    auto b_i = b.nth(blockIdx.x, glwe);
+    auto sel_i = sel.nth(blockIdx.x, cuda::std::tuple(glwe, radix));
+    
+    auto sel_i_fft = scratch.alloc<GgswCiphertextFft>(cuda::std::tuple(glwe, radix));
+    sel_i.fft(*sel_i_fft, cuda::std::tuple(glwe, radix), scratch_s);
+
+    auto a_s = scratch_s.alloc<GlweCiphertext>(glwe);
+    auto b_s = scratch_s.alloc<GlweCiphertext>(glwe);
+
+    a_i.clone_into(*a_s, glwe);
+    b_i.clone_into(*b_s, glwe);
+
+    parallel_destructive_cmux(*a_s, *b_s, *sel_i_fft, glwe, radix, scratch_s);
+}
