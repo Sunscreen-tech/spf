@@ -75,6 +75,9 @@ pub struct DeviceAttributes {
 
     /// Whether or not this device supports cooperative groups. Nonzero indicates yes.
     pub supports_cooperative_groups: u32,
+
+    /// If non-zero, this device supports thread block clusters.
+    pub supports_cluster_groups: u32,
 }
 
 pub struct GpuRuntime(pub(crate) Box<dyn GpuRuntimeBackend>);
