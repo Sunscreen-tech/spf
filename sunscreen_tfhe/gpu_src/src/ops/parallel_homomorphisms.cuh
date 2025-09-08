@@ -78,7 +78,8 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
     reduce_glwe_fft<DimY>(c_fft, glwe);
 }
 
-/// @brief Compute a parallel glwe_ggsw multiply-add using cooperative groups.
+/// @brief Compute a parallel glwe_ggsw external product using cooperative groups,
+/// storing the result in `c_fft`.
 /// @param c_fft Must be an allocation in `scratch` (i.e. block-local)
 /// @param a
 /// @param b
@@ -86,7 +87,7 @@ __device__ inline void parallel_decomposed_polynomial_glev_mad(
 /// @param radix
 /// @param scratch
 /// @return
-__device__ inline void parallel_glwe_ggsw_mad(
+__device__ inline void parallel_glwe_ggsw_mul(
     GlweCiphertextFft c_fft,
     const GlweCiphertext a,
     const GgswCiphertextFft b,
@@ -95,6 +96,7 @@ __device__ inline void parallel_glwe_ggsw_mad(
     PerBlockStackAllocator &scratch)
 {
     auto cluster = cg::this_cluster();
+    c_fft.clear(glwe);
 
     // The z-dimension of the cluster index is which row of the glwe-glev outer product
     // we're computing. This is the "map" step that computes each cluster group
@@ -125,13 +127,12 @@ __device__ inline void parallel_destructive_cmux(
     PerBlockStackAllocator &scratch)
 {
     auto result_fft = scratch.alloc<GlweCiphertextFft>(glwe);
-    result_fft.clear();
 
     // b -= a
     glwe_sub_assign(b, a, glwe);
 
     // a += (b - a) * sel
-    parallel_glwe_ggsw_mad(*result_fft, b, sel, glwe, radix, scratch);
+    parallel_glwe_ggsw_mul(*result_fft, b, sel, glwe, radix, scratch);
 
     auto result = std::move(*result_fft).ifft_inplace(glwe);
 

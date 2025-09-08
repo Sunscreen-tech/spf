@@ -192,7 +192,7 @@ fn compare_glwe_contents(
 #[test]
 fn can_parallel_polynomial_glev_mad() {
     let runtimes = get_runtimes();
-    let num_blocks = 3;
+    let num_blocks = 13;
 
     for r in runtimes.iter() {
         let radix = RadixDecomposition {
