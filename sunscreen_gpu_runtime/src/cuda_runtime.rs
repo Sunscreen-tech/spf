@@ -134,21 +134,18 @@ impl Context {
             Ok(val as u32)
         }
 
-        const COMPUTE_CAPABILITY_9_0: ComputeVersion = ComputeVersion {
-            major: 9,
-            minor: 0
-        };
+        const COMPUTE_CAPABILITY_9_0: ComputeVersion = ComputeVersion { major: 9, minor: 0 };
 
         let compute_version = ComputeVersion {
-                major: get_attr(
-                    CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
-                    device,
-                )?,
-                minor: get_attr(
-                    CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR,
-                    device,
-                )?,
-            };
+            major: get_attr(
+                CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MAJOR,
+                device,
+            )?,
+            minor: get_attr(
+                CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COMPUTE_CAPABILITY_MINOR,
+                device,
+            )?,
+        };
 
         let supports_cluster_groups = if compute_version >= COMPUTE_CAPABILITY_9_0 {
             1
@@ -174,7 +171,7 @@ impl Context {
                 CUdevice_attribute::CU_DEVICE_ATTRIBUTE_COOPERATIVE_LAUNCH,
                 device,
             )?,
-            supports_cluster_groups
+            supports_cluster_groups,
         })
     }
 }
