@@ -60,6 +60,7 @@ extern "C" __global__ void can_parallel_polynomial_glev_mad(
     cuda::std::complex<f64> *__restrict__ scratch_buffer)
 {
     auto scratch_s = get_shared_allocator(96 * 1024);
+    auto cluster = cg::this_cluster();
 
     const auto &radix = PBS_RADIX_2_16_128;
     const auto &glwe = GLWE_1_2048_128;
@@ -78,7 +79,9 @@ extern "C" __global__ void can_parallel_polynomial_glev_mad(
 
     parallel_decomposed_polynomial_glev_mad(*c_i_fft, a_i, *b_i_fft, glwe, radix, scratch_g);
 
-    (*c_i_fft).ifft(c_i, glwe, scratch_s);
+    if (cluster.block_rank() == 0) {
+        (*c_i_fft).ifft(c_i, glwe, scratch_s);
+    }
 }
 
 extern "C" __global__ void can_parallel_destructive_cmux(
@@ -107,4 +110,10 @@ extern "C" __global__ void can_parallel_destructive_cmux(
     b_i.clone_into(*b_s, glwe);
 
     parallel_destructive_cmux(*a_s, *b_s, *sel_i_fft, glwe, radix, scratch_s);
+
+    auto cluster = cg::this_cluster();
+
+    if (cluster.block_rank() == 0) {
+        (*a_s).clone_into(a_i, glwe);
+    }
 }
