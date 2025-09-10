@@ -2,10 +2,13 @@ use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    dst::{dst_allocate, AsMutSlice, AsSlice, NoWrapper, OverlaySize}, entities::{
+    AddendCount, GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition,
+    Torus, TorusOps,
+    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
+    entities::{
         DstIterator, DstIteratorMut, GgswCiphertextFftRef, GgswCiphertextRef, ParallelDstIterator,
         ParallelDstIteratorMut,
-    }, AddendCount, GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps
+    },
 };
 
 dst! {
@@ -35,8 +38,14 @@ impl<S: TorusOps> BootstrapKey<S> {
     /// be directly with the bootstrapping functions, but the FFT version of the
     /// bootstrapping key that can be used with the bootstrapping functions can
     /// be created by calling the [BootstrapKeyRef::fft] method
-    pub fn new(lwe_params: &LweDef, glwe_params: &GlweDef, radix: &RadixDecomposition, addends: AddendCount) -> Self {
-        let len = BootstrapKeyRef::<S>::size((lwe_params.dim, glwe_params.dim, radix.count, addends));
+    pub fn new(
+        lwe_params: &LweDef,
+        glwe_params: &GlweDef,
+        radix: &RadixDecomposition,
+        addends: AddendCount,
+    ) -> Self {
+        let len =
+            BootstrapKeyRef::<S>::size((lwe_params.dim, glwe_params.dim, radix.count, addends));
 
         Self {
             data: dst_allocate(len),
@@ -89,15 +98,6 @@ impl<S: TorusOps> BootstrapKeyRef<S> {
         ParallelDstIteratorMut::new(self.as_mut_slice(), stride)
     }
 
-    pub fn keybundles(
-        &mut self,
-        params: &GlweDef,
-        radix: &RadixDecomposition,
-        addends: AddendCount
-    ) -> ParallelDstIteratorMut<'_, GgswCiphertextRef<S>> {
-        self.rows(params, radix).
-    }
-
     /// Perform an FFT on the [BootstrapKey] to obtain a [BootstrapKeyFft].
     pub fn fft(
         &self,
@@ -105,7 +105,7 @@ impl<S: TorusOps> BootstrapKeyRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
-        addends: AddendCount
+        addends: AddendCount,
     ) {
         self.assert_is_valid((lwe.dim, glwe.dim, radix.count, addends));
         result.assert_is_valid((lwe.dim, glwe.dim, radix.count, addends));
@@ -147,7 +147,7 @@ impl BootstrapKeyFft<Complex<f64>> {
         lwe_params: &LweDef,
         glwe_params: &GlweDef,
         radix: &RadixDecomposition,
-        addends: AddendCount
+        addends: AddendCount,
     ) -> Self {
         let len = BootstrapKeyFftRef::size((lwe_params.dim, glwe_params.dim, radix.count, addends));
 
@@ -203,8 +203,8 @@ fn ggsw_count(lwe: LweDimension, addends: AddendCount) -> usize {
         1 => 1,
         2 => 4,
         3 => 8,
-        _ => unimplemented!()
+        _ => unimplemented!(),
     };
-    
+
     main_bundles * ggsws_per_bundle + remainder
 }

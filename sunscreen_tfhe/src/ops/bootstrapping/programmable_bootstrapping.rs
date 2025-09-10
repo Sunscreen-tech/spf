@@ -1,5 +1,8 @@
 use num::Complex;
-use rayon::{iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator}, slice::ParallelSlice};
+use rayon::{
+    iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator},
+    slice::ParallelSlice,
+};
 
 use crate::{
     AddendCount, CarryBits, GlweDef, LweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus,
@@ -51,12 +54,14 @@ pub fn generate_bootstrap_key<S>(
     sk_to_encrypt.assert_is_valid(lwe.dim);
     addend_count.assert_valid();
 
+    let bundle_size = bundle_size(addend_count);
+
     sk_to_encrypt
         .s()
-        .par_chunks(chunk_size)
-        .zip(bootstrap_key.rows_par_mut(glwe, radix))
-        .for_each(|(s_i, ggsw)| {
-            encrypt_ggsw_ciphertext_scalar(ggsw, *s_i, sk, glwe, radix, PlaintextBits(1));
+        .par_chunks(addend_count.0 as usize)
+        .zip(bootstrap_key.rows_par_mut(glwe, radix).chunks(bundle_size))
+        .for_each(|(s_i, mut ggsw)| {
+            generate_key_bundle(ggsw.as_mut_slice(), s_i, sk, glwe, radix, PlaintextBits(1));
         });
 }
 
@@ -69,7 +74,7 @@ fn bundle_size(addend_count: AddendCount) -> usize {
 }
 
 fn generate_key_bundle<S>(
-    enc_sk: &mut [GgswCiphertext<S>],
+    enc_sk: &mut [&mut GgswCiphertextRef<S>],
     sk_bits: &[S],
     glwe_sk: &GlweSecretKeyRef<S>,
     glwe: &GlweDef,
@@ -257,6 +262,7 @@ pub(crate) fn generate_lut<S, F>(
 ///   entities::{UnivariateLookupTable, LweCiphertext},
 ///   ops::bootstrapping::programmable_bootstrap_univariate,
 ///   params::{
+///     AddendCount,
 ///     GLWE_1_2048_128,
 ///     LWE_512_128,
 ///     CarryBits,
@@ -274,6 +280,7 @@ pub(crate) fn generate_lut<S, F>(
 ///     count: RadixCount(3),
 ///     radix_log: RadixLog(4),
 /// };
+/// let addend_count = AddendCount(1);
 ///
 /// // We will be showing a binary univariate function. Note that for
 /// // programmable bootstrapping to work in general, you will need to include at
@@ -294,9 +301,9 @@ pub(crate) fn generate_lut<S, F>(
 /// let lwe_sk = keygen::generate_binary_lwe_sk(&lwe_params);
 /// let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
 ///
-/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix);
+/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix, addend_count);
 /// let bsk =
-/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix);
+/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix, addend_count);
 ///
 /// // Specify the inputs
 /// let input_plain = 0;
@@ -319,6 +326,7 @@ pub(crate) fn generate_lut<S, F>(
 ///     &lwe_params,
 ///     &glwe_params,
 ///     &radix,
+///     addend_count
 /// );
 ///
 /// // Check the result matches our plaintext function.
@@ -530,6 +538,7 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///   entities::{BivariateLookupTable, LweCiphertext},
 ///   ops::bootstrapping::programmable_bootstrap_bivariate,
 ///   params::{
+///     AddendCount,
 ///     GLWE_1_2048_128,
 ///     LWE_512_128,
 ///     CarryBits,
@@ -547,6 +556,7 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///     count: RadixCount(3),
 ///     radix_log: RadixLog(4),
 /// };
+/// let addend_count = AddendCount(1);
 ///
 /// // We will be showing a binary bivariate function, but bivariate
 /// // bootstrapping can be done on more plaintext bits. Note that the effective
@@ -571,9 +581,9 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 /// let lwe_sk = keygen::generate_binary_lwe_sk(&lwe_params);
 /// let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
 ///
-/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix);
+/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix, addend_count);
 /// let bsk =
-/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix);
+/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix, addend_count);
 ///
 /// // Specify the inputs
 /// let left_input_plain = 0;
@@ -605,6 +615,7 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///     &glwe_params,
 ///     plaintext_bits,
 ///     &radix,
+///     addend_count
 /// );
 ///
 /// // Check the result matches our plaintext function.

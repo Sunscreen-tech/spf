@@ -61,7 +61,7 @@ pub trait TorusOps:
     + ReinterpretAsSigned
     + Num
     + NumBits
-    + Not<Output=Self>
+    + Not<Output = Self>
     + From<u32>
     + TryFrom<u64>
     + FromU64

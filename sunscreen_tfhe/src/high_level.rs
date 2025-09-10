@@ -940,12 +940,13 @@ pub mod fft {
     use num::{Complex, Zero};
 
     use crate::{
+        AddendCount, GlweDef, LweDef, PolynomialDegree, RadixDecomposition,
         entities::{
             AutomorphismKeyFft, AutomorphismKeyRef, BootstrapKeyFft, BootstrapKeyRef,
             GgswCiphertextFft, GgswCiphertextRef, GlevCiphertextFft, GlevCiphertextRef,
             GlweCiphertextFft, GlweCiphertextRef, PolynomialFft, PolynomialRef, SchemeSwitchKeyFft,
             SchemeSwitchKeyRef,
-        }, AddendCount, GlweDef, LweDef, PolynomialDegree, RadixDecomposition
+        },
     };
 
     /// Take the fourier transform of a [`GlweCiphertext`](crate::entities::GlweCiphertext).

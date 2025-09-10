@@ -92,6 +92,7 @@ use crate::{
 ///   entities::GgswCiphertext,
 ///   ops::bootstrapping::circuit_bootstrap_via_pfks,
 ///   params::{
+///     AddendCount,
 ///     GLWE_1_2048_128,
 ///     LWE_512_128,
 ///     PlaintextBits,
@@ -117,6 +118,7 @@ use crate::{
 /// let level_2_params = GLWE_1_2048_128;
 /// let level_1_params = GLWE_1_2048_128;
 /// let level_0_params = LWE_512_128;
+/// let addend_count = AddendCount(1);
 ///
 /// let sk_0 = keygen::generate_binary_lwe_sk(&level_0_params);
 /// let sk_1 = keygen::generate_binary_glwe_sk(&level_1_params);
@@ -128,9 +130,15 @@ use crate::{
 ///   &level_0_params,
 ///   &level_2_params,
 ///   &pbs_radix,
+///   addend_count
 /// );
-/// let bsk =
-/// high_level::fft::fft_bootstrap_key(&bsk, &level_0_params, &level_2_params, &pbs_radix);
+/// let bsk = high_level::fft::fft_bootstrap_key(
+///   &bsk,
+///   &level_0_params,
+///   &level_2_params,
+///   &pbs_radix,
+///   addend_count
+/// );
 ///
 /// let cbsksk = keygen::generate_cbs_ksk(
 ///   sk_2.to_lwe_secret_key(),
@@ -157,6 +165,7 @@ use crate::{
 ///     &pbs_radix,
 ///     &cbs_radix,
 ///     &pfks_radix,
+///     addend_count
 /// );
 /// ```
 pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
