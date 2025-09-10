@@ -197,14 +197,21 @@ fn ggsw_count(lwe: LweDimension, addends: AddendCount) -> usize {
     addends.assert_valid();
 
     let remainder = lwe.0 % addends.0 as usize;
-
     let main_bundles = lwe.0 / addends.0 as usize;
-    let ggsws_per_bundle = match addends.0 {
-        1 => 1,
-        2 => 4,
-        3 => 8,
-        _ => unimplemented!(),
+
+    let remainder_bundles = if remainder != 0 {
+        bootstrap_key_bundle_size(AddendCount(remainder as u32))
+    } else {
+        0
     };
 
-    main_bundles * ggsws_per_bundle + remainder
+    main_bundles * bootstrap_key_bundle_size(addends) + remainder_bundles
+}
+
+pub(crate) fn bootstrap_key_bundle_size(addend_count: AddendCount) -> usize {
+    match addend_count.0 {
+        0 => unreachable!("Illegal addend count"),
+        1 => 1,
+        _ => 0x1 << addend_count.0,
+    }
 }
