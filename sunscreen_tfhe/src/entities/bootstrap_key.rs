@@ -2,12 +2,10 @@ use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
-    GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps,
-    dst::{AsMutSlice, AsSlice, NoWrapper, OverlaySize, dst_allocate},
-    entities::{
+    dst::{dst_allocate, AsMutSlice, AsSlice, NoWrapper, OverlaySize}, entities::{
         DstIterator, DstIteratorMut, GgswCiphertextFftRef, GgswCiphertextRef, ParallelDstIterator,
         ParallelDstIteratorMut,
-    },
+    }, AddendCount, GlweDef, GlweDimension, LweDef, LweDimension, RadixCount, RadixDecomposition, Torus, TorusOps
 };
 
 dst! {
@@ -22,10 +20,10 @@ dst! {
 }
 
 impl<S: TorusOps> OverlaySize for BootstrapKeyRef<S> {
-    type Inputs = (LweDimension, GlweDimension, RadixCount);
+    type Inputs = (LweDimension, GlweDimension, RadixCount, AddendCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GgswCiphertextRef::<S>::size((t.1, t.2)) * t.0.0
+        GgswCiphertextRef::<S>::size((t.1, t.2)) * ggsw_count(t.0, t.3)
     }
 }
 
@@ -37,8 +35,8 @@ impl<S: TorusOps> BootstrapKey<S> {
     /// be directly with the bootstrapping functions, but the FFT version of the
     /// bootstrapping key that can be used with the bootstrapping functions can
     /// be created by calling the [BootstrapKeyRef::fft] method
-    pub fn new(lwe_params: &LweDef, glwe_params: &GlweDef, radix: &RadixDecomposition) -> Self {
-        let len = BootstrapKeyRef::<S>::size((lwe_params.dim, glwe_params.dim, radix.count));
+    pub fn new(lwe_params: &LweDef, glwe_params: &GlweDef, radix: &RadixDecomposition, addends: AddendCount) -> Self {
+        let len = BootstrapKeyRef::<S>::size((lwe_params.dim, glwe_params.dim, radix.count, addends));
 
         Self {
             data: dst_allocate(len),
@@ -91,6 +89,15 @@ impl<S: TorusOps> BootstrapKeyRef<S> {
         ParallelDstIteratorMut::new(self.as_mut_slice(), stride)
     }
 
+    pub fn keybundles(
+        &mut self,
+        params: &GlweDef,
+        radix: &RadixDecomposition,
+        addends: AddendCount
+    ) -> ParallelDstIteratorMut<'_, GgswCiphertextRef<S>> {
+        self.rows(params, radix).
+    }
+
     /// Perform an FFT on the [BootstrapKey] to obtain a [BootstrapKeyFft].
     pub fn fft(
         &self,
@@ -98,9 +105,10 @@ impl<S: TorusOps> BootstrapKeyRef<S> {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
+        addends: AddendCount
     ) {
-        self.assert_is_valid((lwe.dim, glwe.dim, radix.count));
-        result.assert_is_valid((lwe.dim, glwe.dim, radix.count));
+        self.assert_is_valid((lwe.dim, glwe.dim, radix.count, addends));
+        result.assert_is_valid((lwe.dim, glwe.dim, radix.count, addends));
 
         for (s, r) in self.rows(glwe, radix).zip(result.rows_mut(glwe, radix)) {
             s.fft(r, glwe, radix);
@@ -120,10 +128,10 @@ dst! {
 }
 
 impl OverlaySize for BootstrapKeyFftRef<Complex<f64>> {
-    type Inputs = (LweDimension, GlweDimension, RadixCount);
+    type Inputs = (LweDimension, GlweDimension, RadixCount, AddendCount);
 
     fn size(t: Self::Inputs) -> usize {
-        GgswCiphertextFftRef::<Complex<f64>>::size((t.1, t.2)) * t.0.0
+        GgswCiphertextFftRef::<Complex<f64>>::size((t.1, t.2)) * ggsw_count(t.0, t.3)
     }
 }
 
@@ -135,8 +143,13 @@ impl BootstrapKeyFft<Complex<f64>> {
     /// GGSW ciphertexts are in the frequency domain and can be used directly by
     /// the bootstrapping functions such as
     /// [`programmable_bootstrap_univariate`](crate::ops::bootstrapping::programmable_bootstrap_univariate).
-    pub fn new(lwe_params: &LweDef, glwe_params: &GlweDef, radix: &RadixDecomposition) -> Self {
-        let len = BootstrapKeyFftRef::size((lwe_params.dim, glwe_params.dim, radix.count));
+    pub fn new(
+        lwe_params: &LweDef,
+        glwe_params: &GlweDef,
+        radix: &RadixDecomposition,
+        addends: AddendCount
+    ) -> Self {
+        let len = BootstrapKeyFftRef::size((lwe_params.dim, glwe_params.dim, radix.count, addends));
 
         Self {
             data: dst_allocate(len),
@@ -178,4 +191,20 @@ impl BootstrapKeyFftRef<Complex<f64>> {
             s.ifft(r, params, radix);
         }
     }
+}
+
+fn ggsw_count(lwe: LweDimension, addends: AddendCount) -> usize {
+    addends.assert_valid();
+
+    let remainder = lwe.0 % addends.0 as usize;
+
+    let main_bundles = lwe.0 / addends.0 as usize;
+    let ggsws_per_bundle = match addends.0 {
+        1 => 1,
+        2 => 4,
+        3 => 8,
+        _ => unimplemented!()
+    };
+    
+    main_bundles * ggsws_per_bundle + remainder
 }

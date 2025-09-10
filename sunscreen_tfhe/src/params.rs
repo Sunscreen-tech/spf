@@ -27,6 +27,26 @@ pub trait SecurityLevel {
 }
 
 #[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+/// How many bits of the secret key to unwrap at a time during bootstrapping.
+/// 
+/// # Remarks
+/// See https://eprint.iacr.org/2017/735 for more info. Must be 1, 2, or 3.
+/// 
+/// TL;DR, a larger value significantly speeds up bootstrapping and reduces noise
+/// at the expense of significantly larger bootstrap keys.
+pub struct AddendCount(pub u32);
+
+impl AddendCount {
+    /// Asserts these addend counts are valid.
+    /// 
+    /// # Panics
+    /// If the addend count is not 1, 2, or 3
+    pub fn assert_valid(&self) {
+        assert!(self.0 >= 1 && self.0 <= 3);
+    }
+}
+
+#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
 #[serde(transparent)]
 /// The number of torus elements in the LWE lattice.
 pub struct LweDimension(pub usize);

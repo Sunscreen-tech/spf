@@ -2,7 +2,7 @@ use num::Complex;
 use sunscreen_math::Zero;
 
 use crate::{
-    GlweDef, LweDef, OverlaySize, PlaintextBits, PrivateFunctionalKeyswitchLweCount,
+    AddendCount, GlweDef, LweDef, OverlaySize, PlaintextBits, PrivateFunctionalKeyswitchLweCount,
     RadixDecomposition, Torus, TorusOps,
     dst::FromMutSlice,
     entities::{
@@ -170,6 +170,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
     pbs_radix: &RadixDecomposition,
     cbs_radix: &RadixDecomposition,
     pfks_radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) {
     glwe_1.assert_valid();
     glwe_2.assert_valid();
@@ -178,7 +179,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
     cbs_radix.assert_valid::<S>();
     pfks_radix.assert_valid::<S>();
     cbsksk.assert_is_valid((glwe_2.as_lwe_def().dim, glwe_1.dim, pfks_radix.count));
-    bsk.assert_is_valid((lwe_0.dim, glwe_2.dim, pbs_radix.count));
+    bsk.assert_is_valid((lwe_0.dim, glwe_2.dim, pbs_radix.count, addend_count));
     output.assert_is_valid((glwe_1.dim, cbs_radix.count));
     input.assert_is_valid(lwe_0.dim);
 
@@ -194,6 +195,7 @@ pub fn circuit_bootstrap_via_pfks<S: TorusOps>(
         glwe_2,
         pbs_radix,
         cbs_radix,
+        addend_count,
     );
 
     // Step 2: Sample extract the first ℓ coefficients to lo noise LWE ciphertexts
@@ -351,6 +353,7 @@ pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
     trace_radix: &RadixDecomposition,
     ss_radix: &RadixDecomposition,
     cbs_radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) where
     S: TorusOps,
 {
@@ -369,6 +372,7 @@ pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
         glwe_1,
         pbs_radix,
         cbs_radix,
+        addend_count,
     );
 
     mod_switch_trace_and_rotate(
@@ -392,6 +396,7 @@ fn hi_noise_lwe_to_lo_noise_glwe<S: TorusOps>(
     glwe: &GlweDef,
     pbs_radix: &RadixDecomposition,
     cbs_radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) {
     allocate_scratch_ref!(lut, UnivariateLookupTableRef<S>, (glwe.dim));
     allocate_scratch_ref!(lwe_rotated, LweCiphertextRef<S>, (lwe.dim));
@@ -424,6 +429,7 @@ fn hi_noise_lwe_to_lo_noise_glwe<S: TorusOps>(
         lwe,
         glwe,
         pbs_radix,
+        addend_count,
     );
 }
 
@@ -544,6 +550,7 @@ mod tests {
         };
 
         let glwe_params = GLWE_1_2048_128;
+        let addend_count = AddendCount(1);
 
         let mut lo_noise_glwe = GlweCiphertext::<u64>::new(&glwe_params);
         let mut low_noise_lwe_decomp =
@@ -558,8 +565,15 @@ mod tests {
             &TEST_LWE_DEF_1,
             &glwe_params,
             &pbs_radix,
+            addend_count,
         );
-        let bsk = fft::fft_bootstrap_key(&bsk, &TEST_LWE_DEF_1, &glwe_params, &pbs_radix);
+        let bsk = fft::fft_bootstrap_key(
+            &bsk,
+            &TEST_LWE_DEF_1,
+            &glwe_params,
+            &pbs_radix,
+            addend_count,
+        );
 
         let lwe = sk.encrypt(0, &TEST_LWE_DEF_1, PlaintextBits(1)).0;
 
@@ -571,6 +585,7 @@ mod tests {
             &glwe_params,
             &pbs_radix,
             &cbs_radix,
+            addend_count,
         );
 
         extract_and_rotate_lo_noise_glwe(
@@ -606,6 +621,7 @@ mod tests {
             &glwe_params,
             &pbs_radix,
             &cbs_radix,
+            addend_count,
         );
 
         extract_and_rotate_lo_noise_glwe(
@@ -646,6 +662,7 @@ mod tests {
             count: RadixCount(3),
             radix_log: RadixLog(11),
         };
+        let addend_count = AddendCount(1);
 
         let level_2_params = GLWE_1_2048_128;
         let level_1_params = GLWE_1_2048_128;
@@ -661,9 +678,15 @@ mod tests {
             &level_0_params,
             &level_2_params,
             &pbs_radix,
+            addend_count,
         );
-        let bsk =
-            high_level::fft::fft_bootstrap_key(&bsk, &level_0_params, &level_2_params, &pbs_radix);
+        let bsk = high_level::fft::fft_bootstrap_key(
+            &bsk,
+            &level_0_params,
+            &level_2_params,
+            &pbs_radix,
+            addend_count,
+        );
 
         let cbsksk = keygen::generate_cbs_ksk(
             sk_2.to_lwe_secret_key(),
@@ -692,6 +715,7 @@ mod tests {
                 &pbs_radix,
                 &cbs_radix,
                 &pfks_radix,
+                addend_count,
             );
 
             let expected =
@@ -738,12 +762,20 @@ mod tests {
         };
         let lwe = LWE_637_128;
         let glwe = GLWE_1_2048_128;
+        let addend_count = AddendCount(1);
 
         let lwe_sk = keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
 
-        let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &pbs_radix);
-        let bsk = fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix);
+        let bsk = keygen::generate_bootstrapping_key(
+            &lwe_sk,
+            &glwe_sk,
+            &lwe,
+            &glwe,
+            &pbs_radix,
+            addend_count,
+        );
+        let bsk = fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix, addend_count);
 
         let mut ssk = SchemeSwitchKey::<u64>::new(&glwe, &ss_radix);
         generate_scheme_switch_key(&mut ssk, &glwe_sk, &glwe, &ss_radix);
@@ -772,6 +804,7 @@ mod tests {
                 &tr_radix,
                 &ss_radix,
                 &cbs_radix,
+                addend_count,
             );
 
             let mut actual_ifft = GgswCiphertext::new(&glwe, &cbs_radix);
