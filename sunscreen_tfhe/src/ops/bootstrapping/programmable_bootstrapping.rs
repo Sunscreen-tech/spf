@@ -95,6 +95,10 @@ fn generate_key_bundle<S>(
     }
 
     // Otherwise, generate the keybundle of all permutations of s_i and !s_i.
+    //
+    // Iterate over all the truth table configurations for the bundle of secret key bits.
+    // If the j'th bit of i is a zero, we invert s_i for its contributing in the product
+    // of s_i terms. Otherwise, we just take s_i as-is.
     for i in 0..bundle_size {
         let kb = sk_bits
             .iter()
@@ -1129,61 +1133,80 @@ mod tests {
                 addend_count,
             );
 
-            //     let actual_keybundles = AtomicUsize::new(0);
-            //     sk.s()
-            //         .par_chunks(addend_count.0 as usize)
-            //         .zip(
-            //             bootstrap_key
-            //                 .rows_par(&glwe_params, &radix)
-            //                 .chunks(bundle_size(addend_count)),
-            //         )
-            //         .enumerate()
-            //         .for_each(|(bid, (s_i, ct))| {
-            //             let bs = bundle_size(AddendCount(s_i.len() as u32));
-            //             assert_eq!(bs, ct.len());
+            let actual_keybundles = AtomicUsize::new(0);
+            sk.s()
+                .par_chunks(addend_count.0 as usize)
+                .zip(
+                    bootstrap_key
+                        .rows_par(&glwe_params, &radix)
+                        .chunks(bootstrap_key_bundle_size(addend_count)),
+                )
+                .enumerate()
+                .for_each(|(bid, (s_i, ct))| {
+                    let bs = bootstrap_key_bundle_size(AddendCount(s_i.len() as u32));
+                    assert_eq!(bs, ct.len());
 
-            //             for i in 0..bs {
-            //                 let expected = s_i
-            //                     .iter()
-            //                     .enumerate()
-            //                     .map(|(j, s_i)| {
-            //                         if (i >> j) & 0x1 == 1 {
-            //                             *s_i
-            //                         } else {
-            //                             !*s_i & 0x1
-            //                         }
-            //                     })
-            //                     .fold(1, |s, x| s & x);
+                    // If the current bundle has more than one element in it, assert
+                    // each key in the bundle encrypts the appropriate sum-of-products
+                    // term of the orginal key.
+                    if s_i.len() > 1 {
+                        for i in 0..bs {
+                            let expected = s_i
+                                .iter()
+                                .enumerate()
+                                .map(|(j, s_i)| {
+                                    if (i >> j) & 0x1 == 1 {
+                                        *s_i
+                                    } else {
+                                        !*s_i & 0x1
+                                    }
+                                })
+                                .fold(1, |s, x| s & x);
 
-            //                 let mut msg =
-            //                     Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
-            //                 decrypt_ggsw_ciphertext(&mut msg, ct[i], &glwe_sk, &glwe_params, &radix);
+                            let mut msg =
+                                Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
+                            decrypt_ggsw_ciphertext(
+                                &mut msg,
+                                ct[i],
+                                &glwe_sk,
+                                &glwe_params,
+                                &radix,
+                            );
 
-            //                 if msg.coeffs()[0].inner() != expected {
-            //                     println!(
-            //                         "Bundle {bid}, ct {i}: actual {} does not match {expected}",
-            //                         msg.coeffs()[0].inner()
-            //                     );
-            //                 }
+                            assert_eq!(
+                                msg.coeffs()[0].inner(),
+                                expected,
+                                "Bundle {bid}, ct {i}: actual {} does not match {expected}",
+                                msg.coeffs()[0].inner()
+                            );
+                        }
+                    } else {
+                        let mut msg =
+                            Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
 
-            //                 // assert_eq!(
-            //                 //     msg.coeffs()[0].inner(),
-            //                 //     expected,
-            //                 //     "Bundle {bid}, ct {i}: actual {} does not match {expected}",
-            //                 //     msg.coeffs()[0].inner()
-            //                 // );
-            //             }
+                        // If the bundle *does* have only one element, it should just
+                        // encrypt the corresponding term in s_i.
+                        decrypt_ggsw_ciphertext(&mut msg, ct[0], &glwe_sk, &glwe_params, &radix);
 
-            //             actual_keybundles.fetch_add(1, Ordering::Relaxed);
-            //         });
+                        assert_eq!(
+                            msg.coeffs()[0].inner(),
+                            s_i[0],
+                            "Bundle {bid}, ct 0: actual {} does not match {}",
+                            msg.coeffs()[0].inner(),
+                            s_i[0]
+                        );
+                    }
 
-            //     let expected_keybundles = lwe_params.dim.0.next_multiple_of(addend_count.0 as usize)
-            //         / addend_count.0 as usize;
+                    actual_keybundles.fetch_add(1, Ordering::Relaxed);
+                });
 
-            //     assert_eq!(
-            //         actual_keybundles.load(Ordering::Relaxed),
-            //         expected_keybundles
-            //     );
+            let expected_keybundles = lwe_params.dim.0.next_multiple_of(addend_count.0 as usize)
+                / addend_count.0 as usize;
+
+            assert_eq!(
+                actual_keybundles.load(Ordering::Relaxed),
+                expected_keybundles
+            );
         }
     }
 }
