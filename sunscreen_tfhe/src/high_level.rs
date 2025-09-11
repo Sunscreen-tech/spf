@@ -943,9 +943,9 @@ pub mod fft {
         AddendCount, GlweDef, LweDef, PolynomialDegree, RadixDecomposition,
         entities::{
             AutomorphismKeyFft, AutomorphismKeyRef, BootstrapKeyFft, BootstrapKeyRef,
-            GgswCiphertextFft, GgswCiphertextRef, GlevCiphertextFft, GlevCiphertextRef,
-            GlweCiphertextFft, GlweCiphertextRef, PolynomialFft, PolynomialRef, SchemeSwitchKeyFft,
-            SchemeSwitchKeyRef,
+            GgswCiphertext, GgswCiphertextFft, GgswCiphertextRef, GlevCiphertextFft,
+            GlevCiphertextRef, GlweCiphertextFft, GlweCiphertextRef, PolynomialFft, PolynomialRef,
+            SchemeSwitchKeyFft, SchemeSwitchKeyRef,
         },
     };
 
@@ -1075,6 +1075,21 @@ pub mod fft {
     ) -> GlevCiphertextFft<Complex<f64>> {
         let mut out = GlevCiphertextFft::new(glwe, radix);
         glev.fft(&mut out, glwe);
+
+        out
+    }
+
+    /// Take the inverse Fourier transform of a [`GgswCiphertextFft`].
+    ///
+    /// # Panics
+    /// If `glwe` or `radix` parameters are incorrect.
+    pub fn ifft_ggsw(
+        ggsw: &GgswCiphertextFft<Complex<f64>>,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> GgswCiphertext<u64> {
+        let mut out = GgswCiphertext::new(glwe, radix);
+        ggsw.ifft(&mut out, glwe, radix);
 
         out
     }

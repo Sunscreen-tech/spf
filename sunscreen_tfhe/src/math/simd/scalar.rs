@@ -16,6 +16,20 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 }
 
 #[inline(always)]
+pub fn complex_add(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
+        *c = a + b;
+    }
+}
+
+#[inline(always)]
+pub fn complex_sub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
+        *c = a - b;
+    }
+}
+
+#[inline(always)]
 pub fn complex_twist<T: Float>(c: &mut [Complex<T>], re: &[T], im: &[T], twist: &[Complex<T>]) {
     for ((c, (re, im)), b) in c.iter_mut().zip(re.iter().zip(im.iter())).zip(twist.iter()) {
         *c = Complex::new(*re, *im) * b;

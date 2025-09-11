@@ -3,14 +3,14 @@ use std::{
     ops::{Add, AddAssign, Mul, Neg, Sub, SubAssign},
 };
 
-use num::traits::MulAdd;
+use num::{Complex, traits::MulAdd};
 
 use crate::{
     ToF64, Torus, TorusOps,
     dst::{AsMutSlice, AsSlice, FromMutSlice},
-    entities::PolynomialRef,
+    entities::{PolynomialFftRef, PolynomialRef},
     scratch::allocate_scratch,
-    simd::VectorOps,
+    simd::{VectorOps, complex_add, complex_sub},
 };
 
 /// Polynomial subtraction in place. This is equivalent to `a -= b` for each
@@ -81,6 +81,30 @@ where
     assert_eq!(c.len(), b.len());
 
     S::vector_add(c.as_mut_slice(), a.as_slice(), b.as_slice());
+}
+
+/// Compute `c = a + b` where a, b, and c are polynomials.
+pub fn polynomial_add_fft(
+    c: &mut PolynomialFftRef<Complex<f64>>,
+    a: &PolynomialFftRef<Complex<f64>>,
+    b: &PolynomialFftRef<Complex<f64>>,
+) {
+    assert_eq!(c.len(), a.len());
+    assert_eq!(c.len(), b.len());
+
+    complex_add(c.as_mut_slice(), a.as_slice(), b.as_slice());
+}
+
+/// Compute `c = a - b` where a, b, and c are polynomials.
+pub fn polynomial_sub_fft(
+    c: &mut PolynomialFftRef<Complex<f64>>,
+    a: &PolynomialFftRef<Complex<f64>>,
+    b: &PolynomialFftRef<Complex<f64>>,
+) {
+    assert_eq!(c.len(), a.len());
+    assert_eq!(c.len(), b.len());
+
+    complex_sub(c.as_mut_slice(), a.as_slice(), b.as_slice());
 }
 
 /// Polynomial addition in place. This is equivalent to `a += b` for each
