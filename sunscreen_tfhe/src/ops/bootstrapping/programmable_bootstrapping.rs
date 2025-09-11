@@ -1247,6 +1247,7 @@ mod tests {
                     // each key in the bundle encrypts the appropriate sum-of-products
                     // term of the orginal key.
                     if s_i.len() > 1 {
+                        #[allow(clippy::needless_range_loop)]
                         for i in 0..bs {
                             let expected = s_i
                                 .iter()

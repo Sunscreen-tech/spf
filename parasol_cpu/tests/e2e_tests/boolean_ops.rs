@@ -66,8 +66,7 @@ fn test_operation(function_name: &str, op: fn(bool, bool) -> bool) {
 
         assert_eq!(
             actual, expected,
-            "{}: {} should be {}. Inputs were a={} (enc={}), b={} (enc={})",
-            function_name, actual, expected, a_val, encrypt_a, b_val, encrypt_b
+            "{function_name}: {actual} should be {expected}. Inputs were a={a_val} (enc={encrypt_a}), b={b_val} (enc={encrypt_b})"
         );
     }
 }
