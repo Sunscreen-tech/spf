@@ -180,7 +180,7 @@ impl Evaluation {
                 &params.tr_radix,
                 &params.ss_radix,
                 &params.cbs_radix,
-                params.addend_count
+                params.addend_count,
             );
 
             output
@@ -222,7 +222,7 @@ impl Evaluation {
             &self.params.tr_radix,
             &self.params.ss_radix,
             &self.params.cbs_radix,
-            self.params.addend_count
+            self.params.addend_count,
         );
     }
 

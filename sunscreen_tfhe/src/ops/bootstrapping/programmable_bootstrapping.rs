@@ -81,14 +81,7 @@ fn generate_key_bundle<S>(
     // If our bundle size is 1, just encrypt the bit as we'll use the CMUX method
     // during bootstrapping.
     if sk_bits.len() == 1 {
-        encrypt_ggsw_ciphertext_scalar(
-            &mut enc_sk[0],
-            sk_bits[0],
-            glwe_sk,
-            glwe,
-            radix,
-            plaintext_bits,
-        );
+        encrypt_ggsw_ciphertext_scalar(enc_sk[0], sk_bits[0], glwe_sk, glwe, radix, plaintext_bits);
 
         return;
     }
@@ -98,6 +91,7 @@ fn generate_key_bundle<S>(
     // Iterate over all the truth table configurations for the bundle of secret key bits.
     // If the j'th bit of i is a zero, we invert s_i for its contributing in the product
     // of s_i terms. Otherwise, we just take s_i as-is.
+    #[allow(clippy::needless_range_loop)]
     for i in 0..bundle_size {
         let kb = sk_bits
             .iter()
@@ -111,7 +105,7 @@ fn generate_key_bundle<S>(
             })
             .fold(<S as num::One>::one(), |s, x| s & x);
 
-        encrypt_ggsw_ciphertext_scalar(&mut enc_sk[i], kb, glwe_sk, glwe, radix, plaintext_bits);
+        encrypt_ggsw_ciphertext_scalar(enc_sk[i], kb, glwe_sk, glwe, radix, plaintext_bits);
     }
 }
 
@@ -242,6 +236,7 @@ pub(crate) fn generate_lut<S, F>(
     c.rotate_left(stride / 2);
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Programmable bootstrapping with a univariate function.
 ///
 /// The LUT this is a table that maps two inputs into a single output.  For
@@ -553,7 +548,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         // cleared.
         rotate_glwe_positive_monomial_negacyclic(
             rotated_ct,
-            &accumulator,
+            accumulator,
             a_i.next().unwrap().to_u64() as usize,
             glwe_params,
         );

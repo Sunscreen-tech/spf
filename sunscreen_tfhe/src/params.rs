@@ -30,7 +30,7 @@ pub trait SecurityLevel {
 /// How many bits of the secret key to unwrap at a time during bootstrapping.
 ///
 /// # Remarks
-/// See https://eprint.iacr.org/2017/735 for more info. Must be 1, 2, or 3.
+/// See this [paper](https://eprint.iacr.org/2017/735) for more info. Must be 1, 2, or 3.
 ///
 /// TL;DR, a larger value significantly speeds up bootstrapping and reduces noise
 /// at the expense of significantly larger bootstrap keys.

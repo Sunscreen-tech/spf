@@ -396,6 +396,7 @@ pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
     scheme_switch_fft(output, lo_noise_glev, ssk, glwe_1, cbs_radix, ss_radix);
 }
 
+#[allow(clippy::too_many_arguments)]
 #[inline(always)]
 fn hi_noise_lwe_to_lo_noise_glwe<S: TorusOps>(
     output: &mut GlweCiphertextRef<S>,
