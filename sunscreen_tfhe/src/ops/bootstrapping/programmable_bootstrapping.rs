@@ -1,13 +1,17 @@
 use num::Complex;
-use rayon::iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator};
+use rayon::{
+    iter::{IndexedParallelIterator, ParallelIterator},
+    slice::ParallelSlice,
+};
 
 use crate::{
-    CarryBits, GlweDef, LweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus, TorusOps,
+    AddendCount, CarryBits, GlweDef, LweDef, OverlaySize, PlaintextBits, RadixDecomposition, Torus,
+    TorusOps,
     dst::FromMutSlice,
     entities::{
-        BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GlweCiphertextRef,
-        GlweSecretKeyRef, LweCiphertextRef, LweSecretKeyRef, Polynomial, PolynomialRef,
-        UnivariateLookupTableRef,
+        BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GgswCiphertextFftRef,
+        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, LweCiphertextRef, LweSecretKeyRef,
+        Polynomial, PolynomialRef, UnivariateLookupTableRef, bootstrap_key_bundle_size,
     },
     ops::{
         bootstrapping::rotate_glwe_positive_monomial_negacyclic,
@@ -38,23 +42,71 @@ pub fn generate_bootstrap_key<S>(
     lwe: &LweDef,
     glwe: &GlweDef,
     radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) where
     S: TorusOps,
 {
     lwe.assert_valid();
     glwe.assert_valid();
     radix.assert_valid::<S>();
-    bootstrap_key.assert_is_valid((lwe.dim, glwe.dim, radix.count));
+    bootstrap_key.assert_is_valid((lwe.dim, glwe.dim, radix.count, addend_count));
     sk.assert_is_valid(glwe.dim);
     sk_to_encrypt.assert_is_valid(lwe.dim);
+    addend_count.assert_valid();
+
+    let bundle_size = bootstrap_key_bundle_size(addend_count);
 
     sk_to_encrypt
         .s()
-        .par_iter()
-        .zip(bootstrap_key.rows_par_mut(glwe, radix))
-        .for_each(|(s_i, ggsw)| {
-            encrypt_ggsw_ciphertext_scalar(ggsw, *s_i, sk, glwe, radix, PlaintextBits(1));
+        .par_chunks(addend_count.0 as usize)
+        .zip(bootstrap_key.rows_par_mut(glwe, radix).chunks(bundle_size))
+        .for_each(|(s_i, mut ggsw)| {
+            generate_key_bundle(ggsw.as_mut_slice(), s_i, sk, glwe, radix, PlaintextBits(1));
         });
+}
+
+fn generate_key_bundle<S>(
+    enc_sk: &mut [&mut GgswCiphertextRef<S>],
+    sk_bits: &[S],
+    glwe_sk: &GlweSecretKeyRef<S>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+    plaintext_bits: PlaintextBits,
+) where
+    S: TorusOps,
+{
+    let bundle_size = bootstrap_key_bundle_size(AddendCount(sk_bits.len() as u32));
+    assert_eq!(bundle_size, enc_sk.len());
+
+    // If our bundle size is 1, just encrypt the bit as we'll use the CMUX method
+    // during bootstrapping.
+    if sk_bits.len() == 1 {
+        encrypt_ggsw_ciphertext_scalar(enc_sk[0], sk_bits[0], glwe_sk, glwe, radix, plaintext_bits);
+
+        return;
+    }
+
+    // Otherwise, generate the keybundle of all permutations of s_i and !s_i.
+    //
+    // Iterate over all the truth table configurations for the bundle of secret key bits.
+    // If the j'th bit of i is a zero, we invert s_i for its contributing in the product
+    // of s_i terms. Otherwise, we just take s_i as-is.
+    #[allow(clippy::needless_range_loop)]
+    for i in 0..bundle_size {
+        let kb = sk_bits
+            .iter()
+            .enumerate()
+            .map(|(j, x)| {
+                if (i >> j) & 0x1 == 1 {
+                    *x
+                } else {
+                    !*x & <S as num::One>::one()
+                }
+            })
+            .fold(<S as num::One>::one(), |s, x| s & x);
+
+        encrypt_ggsw_ciphertext_scalar(enc_sk[i], kb, glwe_sk, glwe, radix, plaintext_bits);
+    }
 }
 
 /// Generate a negacyclic LUT for bootstrapping. Another name for this structure
@@ -178,12 +230,13 @@ pub(crate) fn generate_lut<S, F>(
     // Negate the first half of p_0 in the LUT in preparation for it to be
     // rotated.
     c[0..stride / 2].iter_mut().for_each(|c| {
-        *c = -(*c);
+        *c = num::traits::WrappingNeg::wrapping_neg(c);
     });
 
     c.rotate_left(stride / 2);
 }
 
+#[allow(clippy::too_many_arguments)]
 /// Programmable bootstrapping with a univariate function.
 ///
 /// The LUT this is a table that maps two inputs into a single output.  For
@@ -206,6 +259,7 @@ pub(crate) fn generate_lut<S, F>(
 ///   entities::{UnivariateLookupTable, LweCiphertext},
 ///   ops::bootstrapping::programmable_bootstrap_univariate,
 ///   params::{
+///     AddendCount,
 ///     GLWE_1_2048_128,
 ///     LWE_512_128,
 ///     CarryBits,
@@ -223,6 +277,7 @@ pub(crate) fn generate_lut<S, F>(
 ///     count: RadixCount(3),
 ///     radix_log: RadixLog(4),
 /// };
+/// let addend_count = AddendCount(1);
 ///
 /// // We will be showing a binary univariate function. Note that for
 /// // programmable bootstrapping to work in general, you will need to include at
@@ -243,9 +298,9 @@ pub(crate) fn generate_lut<S, F>(
 /// let lwe_sk = keygen::generate_binary_lwe_sk(&lwe_params);
 /// let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
 ///
-/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix);
+/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix, addend_count);
 /// let bsk =
-/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix);
+/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix, addend_count);
 ///
 /// // Specify the inputs
 /// let input_plain = 0;
@@ -268,6 +323,7 @@ pub(crate) fn generate_lut<S, F>(
 ///     &lwe_params,
 ///     &glwe_params,
 ///     &radix,
+///     addend_count
 /// );
 ///
 /// // Check the result matches our plaintext function.
@@ -296,6 +352,7 @@ pub fn programmable_bootstrap_univariate<S>(
     lwe_params: &LweDef,
     glwe_params: &GlweDef,
     radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) where
     S: TorusOps,
 {
@@ -311,6 +368,7 @@ pub fn programmable_bootstrap_univariate<S>(
         lwe_params,
         glwe_params,
         radix,
+        addend_count,
     );
 
     // 3. Sample extract.
@@ -349,20 +407,22 @@ pub fn generalized_programmable_bootstrap<S>(
     lwe_params: &LweDef,
     glwe_params: &GlweDef,
     radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) where
     S: TorusOps,
 {
     lwe_params.assert_valid();
     glwe_params.assert_valid();
     radix.assert_valid::<S>();
-    bootstrap_key.assert_is_valid((lwe_params.dim, glwe_params.dim, radix.count));
+    bootstrap_key.assert_is_valid((lwe_params.dim, glwe_params.dim, radix.count, addend_count));
     lut.assert_is_valid(glwe_params.dim);
     input.assert_is_valid(lwe_params.dim);
     output.assert_is_valid(glwe_params.dim);
+    addend_count.assert_valid();
 
     // Steps:
     // 1. Modulus switch the ciphertext to 2N.
-    // 2. Use a cmux tree to blind rotate V using the elements of the bootstrap key (the input LWE secret key bits).
+    // 2. Blind rotate V using the elements of the bootstrap key (the input LWE secret key bits). The algorithm for this depends on addend_count.
     // 3. Sample extract.
     // 4. (Optional, done outside of this method) Key switch to the output LWE
     // secret key (should be the one extracted from the GLWE key).
@@ -374,10 +434,7 @@ pub fn generalized_programmable_bootstrap<S>(
     let mut ct = input.to_owned();
     lwe_ciphertext_modulus_switch(&mut ct, log_chi, log_v, two_n, lwe_params);
 
-    let (ct_a, ct_b) = ct.a_b(lwe_params);
-
-    // 2. Use a cmux tree to blind rotate V using the elements of the bootstrap
-    // key (the input LWE secret key bits).
+    let (_, ct_b) = ct.a_b(lwe_params);
 
     // Perform V_0 ^ X^{-b}
     output.clear();
@@ -389,23 +446,128 @@ pub fn generalized_programmable_bootstrap<S>(
         glwe_params,
     );
 
-    allocate_scratch_ref!(rotated_ct, GlweCiphertextRef<S>, (glwe_params.dim));
+    apply_blind_rotations(
+        output,
+        &ct,
+        bootstrap_key,
+        lwe_params,
+        glwe_params,
+        radix,
+        addend_count,
+    );
+}
+
+#[inline(always)]
+fn apply_blind_rotations<S>(
+    accumulator: &mut GlweCiphertextRef<S>,
+    mod_switched_lwe: &LweCiphertextRef<S>,
+    bootstrap_key: &BootstrapKeyFftRef<Complex<f64>>,
+    lwe_params: &LweDef,
+    glwe_params: &GlweDef,
+    radix: &RadixDecomposition,
+    addend_count: AddendCount,
+) where
+    S: TorusOps,
+{
+    let (ct_a, _) = mod_switched_lwe.a_b(lwe_params);
+
+    let bundle_size = bootstrap_key_bundle_size(addend_count);
 
     // Perform the cmux tree from the bootstrap key with the relation
     // V_n = V_{n-1} ^ X^{a_{n-1} s_{n-1}}
-    for (a_i, index_select) in ct_a.iter().zip(bootstrap_key.rows(glwe_params, radix)) {
-        let tmp = output.to_owned();
+
+    // Do the body of work that cleanly divides the addend count.
+    for i in 0..lwe_params.dim.0 / addend_count.0 as usize {
+        let a_i = ct_a
+            .iter()
+            .skip(i * addend_count.0 as usize)
+            .take(addend_count.0 as usize);
+        let bsk_bundle = bootstrap_key
+            .rows(glwe_params, radix)
+            .skip(i * bundle_size)
+            .take(bundle_size);
+
+        apply_addends(
+            accumulator,
+            a_i,
+            bsk_bundle,
+            glwe_params,
+            radix,
+            addend_count,
+        );
+    }
+
+    let remainder = lwe_params.dim.0 % addend_count.0 as usize;
+
+    // Handle the remaining elements.
+    if remainder > 0 {
+        let skip = lwe_params.dim.0 / addend_count.0 as usize * addend_count.0 as usize;
+
+        let a_i = ct_a.iter().skip(skip).take(remainder);
+        let bsk_bundle = bootstrap_key
+            .rows(glwe_params, radix)
+            .skip(skip)
+            .take(remainder);
+
+        apply_addends(
+            accumulator,
+            a_i,
+            bsk_bundle,
+            glwe_params,
+            radix,
+            addend_count,
+        );
+    }
+}
+
+/// Applies a single set of blind rotations using a bundle of bootstrap key elements,
+/// and the corresponding a_i terms.
+///
+/// # Remarks
+/// When addend count is 1, this applies the standard CMUX operations given in the original
+/// CGGI16 TFHE paper. When rotating 2 or 3 bits at a time, computes a GGSW keybundle and
+/// performs an outer product as described in ZYLL18.
+#[inline(always)]
+fn apply_addends<'a, IA, IBSK, S>(
+    accumulator: &mut GlweCiphertextRef<S>,
+    mut a_i: IA,
+    mut bsk_bundle: IBSK,
+    glwe_params: &GlweDef,
+    radix: &RadixDecomposition,
+    addend_count: AddendCount,
+) where
+    IA: Iterator<Item = &'a Torus<S>> + 'a,
+    IBSK: Iterator<Item = &'a GgswCiphertextFftRef<Complex<f64>>> + 'a,
+    S: TorusOps,
+{
+    if addend_count.0 == 1 {
+        allocate_scratch_ref!(rotated_ct, GlweCiphertextRef<S>, (glwe_params.dim));
+        let accumulator_clone = accumulator.to_owned();
 
         // This operation performs a copy so the rotated_ct doesn't need to be
         // cleared.
         rotate_glwe_positive_monomial_negacyclic(
             rotated_ct,
-            output,
-            a_i.inner().to_u64() as usize,
+            accumulator,
+            a_i.next().unwrap().to_u64() as usize,
             glwe_params,
         );
 
-        cmux(output, &tmp, rotated_ct, index_select, glwe_params, radix);
+        cmux(
+            accumulator,
+            &accumulator_clone,
+            rotated_ct,
+            bsk_bundle.next().unwrap(),
+            glwe_params,
+            radix,
+        );
+
+        assert!(bsk_bundle.next().is_none());
+        assert!(a_i.next().is_none());
+    } else if addend_count.0 == 2 {
+        todo!("Need to finish 2 addends algo");
+    } else if addend_count.0 == 3 {
+        todo!("Need to finish 3 addends algo");
     }
 }
 
@@ -476,6 +638,7 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///   entities::{BivariateLookupTable, LweCiphertext},
 ///   ops::bootstrapping::programmable_bootstrap_bivariate,
 ///   params::{
+///     AddendCount,
 ///     GLWE_1_2048_128,
 ///     LWE_512_128,
 ///     CarryBits,
@@ -493,6 +656,7 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///     count: RadixCount(3),
 ///     radix_log: RadixLog(4),
 /// };
+/// let addend_count = AddendCount(1);
 ///
 /// // We will be showing a binary bivariate function, but bivariate
 /// // bootstrapping can be done on more plaintext bits. Note that the effective
@@ -517,9 +681,9 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 /// let lwe_sk = keygen::generate_binary_lwe_sk(&lwe_params);
 /// let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
 ///
-/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix);
+/// let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe_params, &glwe_params, &radix, addend_count);
 /// let bsk =
-/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix);
+/// fft::fft_bootstrap_key(&bsk, &lwe_params, &glwe_params, &radix, addend_count);
 ///
 /// // Specify the inputs
 /// let left_input_plain = 0;
@@ -551,6 +715,7 @@ pub(crate) fn generate_bivariate_lut<S, F>(
 ///     &glwe_params,
 ///     plaintext_bits,
 ///     &radix,
+///     addend_count
 /// );
 ///
 /// // Check the result matches our plaintext function.
@@ -582,6 +747,7 @@ pub fn programmable_bootstrap_bivariate<S>(
     glwe_params: &GlweDef,
     plaintext_bits: PlaintextBits,
     radix: &RadixDecomposition,
+    addend_count: AddendCount,
 ) where
     S: TorusOps,
 {
@@ -617,14 +783,17 @@ pub fn programmable_bootstrap_bivariate<S>(
         lwe_params,
         glwe_params,
         radix,
+        addend_count,
     )
 }
 
 #[cfg(test)]
 mod tests {
 
+    use std::sync::atomic::{AtomicUsize, Ordering};
+
     use crate::{
-        GLWE_1_2048_128, LWE_637_128, RadixCount, RadixLog, RoundedDiv,
+        AddendCount, GLWE_1_2048_128, LWE_637_128, LweDimension, RadixCount, RadixLog, RoundedDiv,
         entities::{
             BivariateLookupTable, BootstrapKey, BootstrapKeyFft, GlweCiphertext, LweCiphertext,
             LweKeyswitchKey, UnivariateLookupTable,
@@ -634,6 +803,7 @@ mod tests {
             encryption::{decrypt_ggsw_ciphertext, encrypt_lwe_ciphertext},
             keyswitch::lwe_keyswitch_key::generate_keyswitch_key_lwe,
         },
+        rand::Stddev,
     };
 
     use super::*;
@@ -679,11 +849,12 @@ mod tests {
         let lwe_params = TEST_LWE_DEF_1;
         let glwe_params = TEST_GLWE_DEF_1;
         let radix = TEST_RADIX;
+        let addend_count = AddendCount(1);
 
         let sk = keygen::generate_binary_lwe_sk(&lwe_params);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
 
-        let mut bootstrap_key = BootstrapKey::new(&lwe_params, &glwe_params, &radix);
+        let mut bootstrap_key = BootstrapKey::new(&lwe_params, &glwe_params, &radix, addend_count);
         generate_bootstrap_key(
             &mut bootstrap_key,
             &sk,
@@ -691,6 +862,7 @@ mod tests {
             &lwe_params,
             &glwe_params,
             &radix,
+            addend_count,
         );
 
         let mut count = 0;
@@ -714,6 +886,7 @@ mod tests {
             count: RadixCount(2),
             radix_log: RadixLog(16),
         };
+        let addend_count = AddendCount(1);
 
         let original_sk = keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
@@ -729,11 +902,19 @@ mod tests {
             &radix,
         );
 
-        let mut bsk_nonfft = BootstrapKey::new(&lwe, &glwe, &radix);
-        generate_bootstrap_key(&mut bsk_nonfft, &original_sk, &glwe_sk, &lwe, &glwe, &radix);
+        let mut bsk_nonfft = BootstrapKey::new(&lwe, &glwe, &radix, addend_count);
+        generate_bootstrap_key(
+            &mut bsk_nonfft,
+            &original_sk,
+            &glwe_sk,
+            &lwe,
+            &glwe,
+            &radix,
+            addend_count,
+        );
 
-        let mut bsk = BootstrapKeyFft::new(&lwe, &glwe, &radix);
-        bsk_nonfft.fft(&mut bsk, &lwe, &glwe, &radix);
+        let mut bsk = BootstrapKeyFft::new(&lwe, &glwe, &radix, addend_count);
+        bsk_nonfft.fft(&mut bsk, &lwe, &glwe, &radix, addend_count);
 
         // Generate the LUT
         let lut = UnivariateLookupTable::trivial_from_fn(&map, &glwe, bits);
@@ -761,6 +942,7 @@ mod tests {
                 &lwe,
                 &glwe,
                 &radix,
+                addend_count,
             );
 
             let decoded = glwe_sk
@@ -796,6 +978,7 @@ mod tests {
 
         let carry_bits = CarryBits(1);
         let radix = TEST_RADIX;
+        let addend_count = AddendCount(1);
 
         let original_sk = keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
@@ -811,11 +994,19 @@ mod tests {
             &radix,
         );
 
-        let mut bsk_nonfft = BootstrapKey::new(&lwe, &glwe, &radix);
-        generate_bootstrap_key(&mut bsk_nonfft, &original_sk, &glwe_sk, &lwe, &glwe, &radix);
+        let mut bsk_nonfft = BootstrapKey::new(&lwe, &glwe, &radix, addend_count);
+        generate_bootstrap_key(
+            &mut bsk_nonfft,
+            &original_sk,
+            &glwe_sk,
+            &lwe,
+            &glwe,
+            &radix,
+            addend_count,
+        );
 
-        let mut bsk = BootstrapKeyFft::new(&lwe, &glwe, &radix);
-        bsk_nonfft.fft(&mut bsk, &lwe, &glwe, &radix);
+        let mut bsk = BootstrapKeyFft::new(&lwe, &glwe, &radix, addend_count);
+        bsk_nonfft.fft(&mut bsk, &lwe, &glwe, &radix, addend_count);
 
         // Generate the LUT
         let lut = BivariateLookupTable::trivial_from_fn(&map, &glwe, bits, carry_bits);
@@ -858,6 +1049,7 @@ mod tests {
                     &glwe,
                     bits,
                     &radix,
+                    addend_count,
                 );
 
                 let decrypted = glwe_sk
@@ -926,14 +1118,17 @@ mod tests {
         let radix = &TEST_RADIX;
         let lwe = &LWE_637_128;
         let glwe = &GLWE_1_2048_128;
+        let addend_count = AddendCount(1);
 
         // 1 message bit + 1 padding
         let bits = PlaintextBits(1);
 
         let lwe_sk = keygen::generate_binary_lwe_sk(lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(glwe);
-        let bs_key = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, lwe, glwe, radix);
-        let bs_key = fft::fft_bootstrap_key(&bs_key, lwe, glwe, radix);
+        let bs_key =
+            keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, lwe, glwe, radix, addend_count);
+        let bs_key = fft::fft_bootstrap_key(&bs_key, lwe, glwe, radix, addend_count);
+        let addend_count = AddendCount(1);
 
         // Fill the LUT with nonsense and we'll overwrite it with
         // the correct encoding.
@@ -944,7 +1139,7 @@ mod tests {
         );
 
         for i in [0, 1] {
-            // let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, PlaintextBits(2));
+            //let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, bits);
             let input = encryption::trivial_lwe(i, lwe, PlaintextBits(2));
             let mut output = GlweCiphertext::new(glwe);
 
@@ -958,6 +1153,7 @@ mod tests {
                 lwe,
                 glwe,
                 radix,
+                addend_count,
             );
 
             let res = encryption::decrypt_glwe(&output, &glwe_sk, glwe, bits);
@@ -981,6 +1177,134 @@ mod tests {
                 assert_eq!(res.coeffs()[6], 1);
                 assert_eq!(res.coeffs()[7], 0);
             }
+        }
+    }
+
+    #[test]
+    fn bsk_len_vs_addends() {
+        let lwe = LweDef {
+            dim: LweDimension(131),
+            std: Stddev(1e-16),
+        };
+        let glwe = TEST_GLWE_DEF_1;
+        let radix = TEST_RADIX;
+
+        let bootstrap_key = BootstrapKey::<u64>::new(&lwe, &glwe, &radix, AddendCount(1));
+
+        assert_eq!(bootstrap_key.rows(&glwe, &radix).len(), lwe.dim.0);
+
+        let bootstrap_key = BootstrapKey::<u64>::new(&lwe, &glwe, &radix, AddendCount(2));
+
+        // 4 elements for the first 130 / 2 elements + 1 for the leftover
+        assert_eq!(bootstrap_key.rows(&glwe, &radix).len(), 65 * 4 + 1);
+
+        let bootstrap_key = BootstrapKey::<u64>::new(&lwe, &glwe, &radix, AddendCount(3));
+
+        // 8 elements for the first 130 / 3 elements + 4 for the remaining 2 elements
+        assert_eq!(bootstrap_key.rows(&glwe, &radix).len(), 43 * 8 + 4);
+    }
+
+    #[test]
+    fn can_generate_bsk_multiple_addends() {
+        for addend_count in [AddendCount(2), AddendCount(3)] {
+            // Use a value that isn't a multiple of the addend count.
+            let lwe_params = LweDef {
+                dim: LweDimension(131),
+                std: Stddev(1e-16),
+            };
+            let glwe_params = TEST_GLWE_DEF_1;
+            let radix = TEST_RADIX;
+
+            let sk = keygen::generate_binary_lwe_sk(&lwe_params);
+            let glwe_sk = keygen::generate_binary_glwe_sk(&glwe_params);
+
+            let mut bootstrap_key =
+                BootstrapKey::new(&lwe_params, &glwe_params, &radix, addend_count);
+            generate_bootstrap_key(
+                &mut bootstrap_key,
+                &sk,
+                &glwe_sk,
+                &lwe_params,
+                &glwe_params,
+                &radix,
+                addend_count,
+            );
+
+            let actual_keybundles = AtomicUsize::new(0);
+            sk.s()
+                .par_chunks(addend_count.0 as usize)
+                .zip(
+                    bootstrap_key
+                        .rows_par(&glwe_params, &radix)
+                        .chunks(bootstrap_key_bundle_size(addend_count)),
+                )
+                .enumerate()
+                .for_each(|(bid, (s_i, ct))| {
+                    let bs = bootstrap_key_bundle_size(AddendCount(s_i.len() as u32));
+                    assert_eq!(bs, ct.len());
+
+                    // If the current bundle has more than one element in it, assert
+                    // each key in the bundle encrypts the appropriate sum-of-products
+                    // term of the orginal key.
+                    if s_i.len() > 1 {
+                        #[allow(clippy::needless_range_loop)]
+                        for i in 0..bs {
+                            let expected = s_i
+                                .iter()
+                                .enumerate()
+                                .map(|(j, s_i)| {
+                                    if (i >> j) & 0x1 == 1 {
+                                        *s_i
+                                    } else {
+                                        !*s_i & 0x1
+                                    }
+                                })
+                                .fold(1, |s, x| s & x);
+
+                            let mut msg =
+                                Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
+                            decrypt_ggsw_ciphertext(
+                                &mut msg,
+                                ct[i],
+                                &glwe_sk,
+                                &glwe_params,
+                                &radix,
+                            );
+
+                            assert_eq!(
+                                msg.coeffs()[0].inner(),
+                                expected,
+                                "Bundle {bid}, ct {i}: actual {} does not match {expected}",
+                                msg.coeffs()[0].inner()
+                            );
+                        }
+                    } else {
+                        let mut msg =
+                            Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
+
+                        // If the bundle *does* have only one element, it should just
+                        // encrypt the corresponding term in s_i.
+                        decrypt_ggsw_ciphertext(&mut msg, ct[0], &glwe_sk, &glwe_params, &radix);
+
+                        assert_eq!(
+                            msg.coeffs()[0].inner(),
+                            s_i[0],
+                            "Bundle {bid}, ct 0: actual {} does not match {}",
+                            msg.coeffs()[0].inner(),
+                            s_i[0]
+                        );
+                    }
+
+                    actual_keybundles.fetch_add(1, Ordering::Relaxed);
+                });
+
+            let expected_keybundles = lwe_params.dim.0.next_multiple_of(addend_count.0 as usize)
+                / addend_count.0 as usize;
+
+            assert_eq!(
+                actual_keybundles.load(Ordering::Relaxed),
+                expected_keybundles
+            );
         }
     }
 }

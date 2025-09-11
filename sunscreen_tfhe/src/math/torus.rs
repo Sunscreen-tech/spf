@@ -8,7 +8,7 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Binary, Debug, LowerHex, UpperHex},
     num::Wrapping,
-    ops::{Add, AddAssign, BitAnd, Deref, Mul, Neg, Shl, Shr, Sub, SubAssign},
+    ops::{Add, AddAssign, BitAnd, Deref, Mul, Neg, Not, Shl, Shr, Sub, SubAssign},
 };
 use sunscreen_math::{Zero, refify_binary_op};
 
@@ -61,6 +61,7 @@ pub trait TorusOps:
     + ReinterpretAsSigned
     + Num
     + NumBits
+    + Not<Output = Self>
     + From<u32>
     + TryFrom<u64>
     + FromU64

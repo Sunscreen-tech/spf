@@ -59,7 +59,7 @@ pub const TEST_LWE_DEF_3: LweDef = LweDef {
 /// TFHE functionality related to key generation.
 pub mod keygen {
     use crate::{
-        GlweDef, LweDef, RadixDecomposition,
+        AddendCount, GlweDef, LweDef, RadixDecomposition,
         entities::{
             AutomorphismKey, BootstrapKey, CircuitBootstrappingKeyswitchKeys, GlweSecretKey,
             GlweSecretKeyRef, LweKeyswitchKey, LwePublicKey, LweSecretKey, LweSecretKeyRef,
@@ -340,10 +340,11 @@ pub mod keygen {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
+        addend_count: AddendCount,
     ) -> BootstrapKey<u64> {
-        let mut bsk = BootstrapKey::new(lwe, glwe, radix);
+        let mut bsk = BootstrapKey::new(lwe, glwe, radix, addend_count);
 
-        generate_bootstrap_key(&mut bsk, sk, glwe_key, lwe, glwe, radix);
+        generate_bootstrap_key(&mut bsk, sk, glwe_key, lwe, glwe, radix, addend_count);
 
         bsk
     }
@@ -939,7 +940,7 @@ pub mod fft {
     use num::{Complex, Zero};
 
     use crate::{
-        GlweDef, LweDef, PolynomialDegree, RadixDecomposition,
+        AddendCount, GlweDef, LweDef, PolynomialDegree, RadixDecomposition,
         entities::{
             AutomorphismKeyFft, AutomorphismKeyRef, BootstrapKeyFft, BootstrapKeyRef,
             GgswCiphertextFft, GgswCiphertextRef, GlevCiphertextFft, GlevCiphertextRef,
@@ -1008,10 +1009,11 @@ pub mod fft {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
+        addend_count: AddendCount,
     ) -> BootstrapKeyFft<Complex<f64>> {
-        let mut bsk_fft = BootstrapKeyFft::new(lwe, glwe, radix);
+        let mut bsk_fft = BootstrapKeyFft::new(lwe, glwe, radix, addend_count);
 
-        bsk.fft(&mut bsk_fft, lwe, glwe, radix);
+        bsk.fft(&mut bsk_fft, lwe, glwe, radix, addend_count);
 
         bsk_fft
     }
@@ -1083,7 +1085,7 @@ pub mod evaluation {
     use num::Complex;
 
     use crate::{
-        GlweDef, LweDef, RadixDecomposition,
+        AddendCount, GlweDef, LweDef, RadixDecomposition,
         entities::{
             AutomorphismKeyFftRef, BootstrapKeyFft, BootstrapKeyFftRef, GgswCiphertextFft,
             GgswCiphertextFftRef, GlevCiphertext, GlevCiphertextRef, GlweCiphertext,
@@ -1195,11 +1197,19 @@ pub mod evaluation {
         lwe: &LweDef,
         glwe: &GlweDef,
         radix: &RadixDecomposition,
+        addend_count: AddendCount,
     ) -> LweCiphertext<u64> {
         let mut out = LweCiphertext::new(&glwe.as_lwe_def());
 
         crate::ops::bootstrapping::programmable_bootstrap_univariate(
-            &mut out, input, lut, bsk, lwe, glwe, radix,
+            &mut out,
+            input,
+            lut,
+            bsk,
+            lwe,
+            glwe,
+            radix,
+            addend_count,
         );
 
         out
@@ -1263,12 +1273,23 @@ pub mod evaluation {
         tr_radix: &RadixDecomposition,
         ss_radix: &RadixDecomposition,
         cbs_radix: &RadixDecomposition,
+        addend_count: AddendCount,
     ) -> GgswCiphertextFft<Complex<f64>> {
         let mut out = GgswCiphertextFft::new(glwe_1, cbs_radix);
 
         crate::ops::bootstrapping::circuit_bootstrap_via_trace_and_scheme_switch(
-            &mut out, input, bsk, ak, ss_key, lwe_0, glwe_1, pbs_radix, tr_radix, ss_radix,
+            &mut out,
+            input,
+            bsk,
+            ak,
+            ss_key,
+            lwe_0,
+            glwe_1,
+            pbs_radix,
+            tr_radix,
+            ss_radix,
             cbs_radix,
+            addend_count,
         );
 
         out
