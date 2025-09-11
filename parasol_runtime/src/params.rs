@@ -1,7 +1,6 @@
 use serde::{Deserialize, Serialize};
 use sunscreen_tfhe::{
-    GLWE_1_2048_128, GlweDef, LWE_637_128, LweDef, PolynomialDegree, RadixCount,
-    RadixDecomposition, RadixLog,
+    AddendCount, GlweDef, LweDef, PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, GLWE_1_2048_128, LWE_637_128
 };
 
 #[derive(Debug, Clone, Serialize, Deserialize)]
@@ -81,6 +80,11 @@ pub struct Params {
 
     /// The automorphism key used for homomorphic traces during circuit bootstrapping.
     pub tr_radix: RadixDecomposition,
+
+    /// The number of addends to compute at once during bootstrapping. Can be 1, 2, or 3.
+    /// A larger number results in significantly bigger keys, but faster runtime and less
+    /// noise.
+    pub addend_count: AddendCount
 }
 
 impl Params {
@@ -149,4 +153,5 @@ pub const DEFAULT_128: Params = Params {
         count: RadixCount(6),
         radix_log: RadixLog(7),
     },
+    addend_count: AddendCount(1)
 };

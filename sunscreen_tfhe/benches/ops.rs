@@ -4,6 +4,7 @@ use criterion::{
     BenchmarkGroup, Criterion, criterion_group, criterion_main, measurement::WallTime,
 };
 
+use sunscreen_tfhe::AddendCount;
 #[allow(deprecated)]
 use sunscreen_tfhe::{
     GLWE_1_2048_128, GlweDef, GlweDimension, GlweSize, LWE_637_128, LweDef, LweDimension,
@@ -90,18 +91,19 @@ fn programmable_bootstrapping(c: &mut Criterion) {
         lwe: &LweDef,
         glwe: &GlweDef,
         bs_radix: &RadixDecomposition,
+        addend_count: AddendCount
     ) {
         let lwe_sk = keygen::generate_binary_lwe_sk(lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(glwe);
-        let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, lwe, glwe, bs_radix);
-        let bsk = fft::fft_bootstrap_key(&bsk, lwe, glwe, bs_radix);
+        let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, lwe, glwe, bs_radix, addend_count);
+        let bsk = fft::fft_bootstrap_key(&bsk, lwe, glwe, bs_radix, addend_count);
 
         let ct = lwe_sk.encrypt(1, lwe, PlaintextBits(1)).0;
         let lut = UnivariateLookupTable::trivial_from_fn(|x| x, glwe, PlaintextBits(1));
 
         g.bench_function(name, |b| {
             b.iter(|| {
-                evaluation::univariate_programmable_bootstrap(&ct, &lut, &bsk, lwe, glwe, bs_radix);
+                evaluation::univariate_programmable_bootstrap(&ct, &lut, &bsk, lwe, glwe, bs_radix, addend_count);
             });
         });
     }
@@ -120,6 +122,7 @@ fn programmable_bootstrapping(c: &mut Criterion) {
         &LWE_637_128,
         &GLWE_1_2048_128,
         &radix,
+        AddendCount(1)
     );
 
     // Binary PBS parameters
@@ -143,6 +146,7 @@ fn programmable_bootstrapping(c: &mut Criterion) {
             std: Stddev(0.00000004990272175010415),
         },
         &bs_radix,
+        AddendCount(1)
     );
 
     // 3-bit message 1-bit carry PBS parameters
@@ -166,6 +170,7 @@ fn programmable_bootstrapping(c: &mut Criterion) {
             std: Stddev(0.00000000000000029403601535432533),
         },
         &bs_radix,
+        AddendCount(1)
     );
 }
 
@@ -182,6 +187,7 @@ fn circuit_bootstrapping_via_pfks(c: &mut Criterion) {
         count: RadixCount(2),
         radix_log: RadixLog(17),
     };
+    let addend_count = AddendCount(1);
 
     let level_2_params = GLWE_1_2048_128;
     let level_1_params = GLWE_1_2048_128;
@@ -197,8 +203,9 @@ fn circuit_bootstrapping_via_pfks(c: &mut Criterion) {
         &level_0_params,
         &level_2_params,
         &pbs_radix,
+        addend_count
     );
-    let bsk = fft::fft_bootstrap_key(&bsk, &level_0_params, &level_2_params, &pbs_radix);
+    let bsk = fft::fft_bootstrap_key(&bsk, &level_0_params, &level_2_params, &pbs_radix, addend_count);
 
     let cbsksk = keygen::generate_cbs_ksk(
         sk_2.to_lwe_secret_key(),
@@ -228,6 +235,7 @@ fn circuit_bootstrapping_via_pfks(c: &mut Criterion) {
                 &pbs_radix,
                 &cbs_radix,
                 &pfks_radix,
+                addend_count
             );
         });
     });
@@ -253,12 +261,13 @@ fn circuit_bootstrapping_via_trace_and_scheme_switch(c: &mut Criterion) {
 
     let glwe = GLWE_1_2048_128;
     let lwe = LWE_637_128;
+    let addend_count = AddendCount(1);
 
     let sk_0 = keygen::generate_binary_lwe_sk(&lwe);
     let sk_2 = keygen::generate_binary_glwe_sk(&glwe);
 
-    let bsk = keygen::generate_bootstrapping_key(&sk_0, &sk_2, &lwe, &glwe, &pbs_radix);
-    let bsk = fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix);
+    let bsk = keygen::generate_bootstrapping_key(&sk_0, &sk_2, &lwe, &glwe, &pbs_radix, addend_count);
+    let bsk = fft::fft_bootstrap_key(&bsk, &lwe, &glwe, &pbs_radix, addend_count);
 
     let mut ssk = SchemeSwitchKey::<u64>::new(&glwe, &ss_radix);
     generate_scheme_switch_key(&mut ssk, &sk_2, &glwe, &ss_radix);
@@ -291,6 +300,7 @@ fn circuit_bootstrapping_via_trace_and_scheme_switch(c: &mut Criterion) {
                 &tr_radix,
                 &ss_radix,
                 &cbs_radix,
+                addend_count
             );
         });
     });
@@ -361,6 +371,8 @@ fn keygen(c: &mut Criterion) {
         radix_log: RadixLog(16),
     };
 
+    let addend_count = AddendCount(1);
+    
     c.bench_function("BSK keygen", |b| {
         let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&LWE_637_128);
         let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&GLWE_1_2048_128);
@@ -372,6 +384,7 @@ fn keygen(c: &mut Criterion) {
                 &LWE_637_128,
                 &GLWE_1_2048_128,
                 &radix,
+                addend_count
             );
         })
     });

@@ -211,6 +211,7 @@ impl GetSize for ComputeKeyNonFft {
             params.l0_params.dim,
             params.l1_params.dim,
             params.pbs_radix.count,
+            params.addend_count
         ));
 
         let size = size
@@ -238,6 +239,7 @@ impl GetSize for ComputeKeyNonFft {
             params.l0_params.dim,
             params.l1_params.dim,
             params.pbs_radix.count,
+            params.addend_count
         ))?;
         self.ks_key.check_is_valid((
             params.l1_params.as_lwe_def().dim,
@@ -265,6 +267,7 @@ impl ComputeKeyNonFft {
             &params.l0_params,
             &params.l1_params,
             &params.pbs_radix,
+            params.addend_count
         );
 
         let ks_key = keygen::generate_ksk(
@@ -319,6 +322,7 @@ impl ComputeKeyNonFft {
                 &params.l0_params,
                 &params.l1_params,
                 &params.pbs_radix,
+                params.addend_count
             ),
             ks_key: self.ks_key.clone(),
             ss_key: ssk_fft,
@@ -370,6 +374,7 @@ impl GetSize for ComputeKey {
             params.l0_params.dim,
             params.l1_params.dim,
             params.pbs_radix.count,
+            params.addend_count
         ));
 
         let size = size
@@ -401,6 +406,7 @@ impl GetSize for ComputeKey {
             params.l0_params.dim,
             params.l1_params.dim,
             params.pbs_radix.count,
+            params.addend_count
         ))?;
         self.ks_key.check_is_valid((
             params.l1_params.as_lwe_def().dim,
