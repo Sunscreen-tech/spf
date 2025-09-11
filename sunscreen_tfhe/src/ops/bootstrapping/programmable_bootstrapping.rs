@@ -1,6 +1,6 @@
 use num::Complex;
 use rayon::{
-    iter::{IndexedParallelIterator, IntoParallelRefIterator, ParallelIterator},
+    iter::{IndexedParallelIterator, ParallelIterator},
     slice::ParallelSlice,
 };
 
@@ -9,7 +9,7 @@ use crate::{
     TorusOps,
     dst::FromMutSlice,
     entities::{
-        BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GgswCiphertext,
+        BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GgswCiphertextFftRef,
         GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, LweCiphertextRef, LweSecretKeyRef,
         Polynomial, PolynomialRef, UnivariateLookupTableRef, bootstrap_key_bundle_size,
     },
@@ -60,8 +60,7 @@ pub fn generate_bootstrap_key<S>(
         .s()
         .par_chunks(addend_count.0 as usize)
         .zip(bootstrap_key.rows_par_mut(glwe, radix).chunks(bundle_size))
-        .enumerate()
-        .for_each(|(id, (s_i, mut ggsw))| {
+        .for_each(|(s_i, mut ggsw)| {
             generate_key_bundle(ggsw.as_mut_slice(), s_i, sk, glwe, radix, PlaintextBits(1));
         });
 }
@@ -424,10 +423,11 @@ pub fn generalized_programmable_bootstrap<S>(
     lut.assert_is_valid(glwe_params.dim);
     input.assert_is_valid(lwe_params.dim);
     output.assert_is_valid(glwe_params.dim);
+    addend_count.assert_valid();
 
     // Steps:
     // 1. Modulus switch the ciphertext to 2N.
-    // 2. Use a cmux tree to blind rotate V using the elements of the bootstrap key (the input LWE secret key bits).
+    // 2. Blind rotate V using the elements of the bootstrap key (the input LWE secret key bits). The algorithm for this depends on addend_count.
     // 3. Sample extract.
     // 4. (Optional, done outside of this method) Key switch to the output LWE
     // secret key (should be the one extracted from the GLWE key).
@@ -439,10 +439,7 @@ pub fn generalized_programmable_bootstrap<S>(
     let mut ct = input.to_owned();
     lwe_ciphertext_modulus_switch(&mut ct, log_chi, log_v, two_n, lwe_params);
 
-    let (ct_a, ct_b) = ct.a_b(lwe_params);
-
-    // 2. Use a cmux tree to blind rotate V using the elements of the bootstrap
-    // key (the input LWE secret key bits).
+    let (_, ct_b) = ct.a_b(lwe_params);
 
     // Perform V_0 ^ X^{-b}
     output.clear();
@@ -454,23 +451,128 @@ pub fn generalized_programmable_bootstrap<S>(
         glwe_params,
     );
 
-    allocate_scratch_ref!(rotated_ct, GlweCiphertextRef<S>, (glwe_params.dim));
+    apply_blind_rotations(
+        output,
+        &ct,
+        bootstrap_key,
+        lwe_params,
+        glwe_params,
+        radix,
+        addend_count,
+    );
+}
+
+#[inline(always)]
+fn apply_blind_rotations<S>(
+    accumulator: &mut GlweCiphertextRef<S>,
+    mod_switched_lwe: &LweCiphertextRef<S>,
+    bootstrap_key: &BootstrapKeyFftRef<Complex<f64>>,
+    lwe_params: &LweDef,
+    glwe_params: &GlweDef,
+    radix: &RadixDecomposition,
+    addend_count: AddendCount,
+) where
+    S: TorusOps,
+{
+    let (ct_a, _) = mod_switched_lwe.a_b(lwe_params);
+
+    let bundle_size = bootstrap_key_bundle_size(addend_count);
 
     // Perform the cmux tree from the bootstrap key with the relation
     // V_n = V_{n-1} ^ X^{a_{n-1} s_{n-1}}
-    for (a_i, index_select) in ct_a.iter().zip(bootstrap_key.rows(glwe_params, radix)) {
-        let tmp = output.to_owned();
+
+    // Do the body of work that cleanly divides the addend count.
+    for i in 0..lwe_params.dim.0 / addend_count.0 as usize {
+        let a_i = ct_a
+            .iter()
+            .skip(i * addend_count.0 as usize)
+            .take(addend_count.0 as usize);
+        let bsk_bundle = bootstrap_key
+            .rows(glwe_params, radix)
+            .skip(i * bundle_size)
+            .take(bundle_size);
+
+        apply_addends(
+            accumulator,
+            a_i,
+            bsk_bundle,
+            glwe_params,
+            radix,
+            addend_count,
+        );
+    }
+
+    let remainder = lwe_params.dim.0 % addend_count.0 as usize;
+
+    // Handle the remaining elements.
+    if remainder > 0 {
+        let skip = lwe_params.dim.0 / addend_count.0 as usize * addend_count.0 as usize;
+
+        let a_i = ct_a.iter().skip(skip).take(remainder);
+        let bsk_bundle = bootstrap_key
+            .rows(glwe_params, radix)
+            .skip(skip)
+            .take(remainder);
+
+        apply_addends(
+            accumulator,
+            a_i,
+            bsk_bundle,
+            glwe_params,
+            radix,
+            addend_count,
+        );
+    }
+}
+
+/// Applies a single set of blind rotations using a bundle of bootstrap key elements,
+/// and the corresponding a_i terms.
+///
+/// # Remarks
+/// When addend count is 1, this applies the standard CMUX operations given in the original
+/// CGGI16 TFHE paper. When rotating 2 or 3 bits at a time, computes a GGSW keybundle and
+/// performs an outer product as described in ZYLL18.
+#[inline(always)]
+fn apply_addends<'a, IA, IBSK, S>(
+    accumulator: &mut GlweCiphertextRef<S>,
+    mut a_i: IA,
+    mut bsk_bundle: IBSK,
+    glwe_params: &GlweDef,
+    radix: &RadixDecomposition,
+    addend_count: AddendCount,
+) where
+    IA: Iterator<Item = &'a Torus<S>> + 'a,
+    IBSK: Iterator<Item = &'a GgswCiphertextFftRef<Complex<f64>>> + 'a,
+    S: TorusOps,
+{
+    if addend_count.0 == 1 {
+        allocate_scratch_ref!(rotated_ct, GlweCiphertextRef<S>, (glwe_params.dim));
+        let accumulator_clone = accumulator.to_owned();
 
         // This operation performs a copy so the rotated_ct doesn't need to be
         // cleared.
         rotate_glwe_positive_monomial_negacyclic(
             rotated_ct,
-            output,
-            a_i.inner().to_u64() as usize,
+            &accumulator,
+            a_i.next().unwrap().to_u64() as usize,
             glwe_params,
         );
 
-        cmux(output, &tmp, rotated_ct, index_select, glwe_params, radix);
+        cmux(
+            accumulator,
+            &accumulator_clone,
+            rotated_ct,
+            bsk_bundle.next().unwrap(),
+            glwe_params,
+            radix,
+        );
+
+        assert!(bsk_bundle.next().is_none());
+        assert!(a_i.next().is_none());
+    } else if addend_count.0 == 2 {
+        todo!("Need to finish 2 addends algo");
+    } else if addend_count.0 == 3 {
+        todo!("Need to finish 3 addends algo");
     }
 }
 
