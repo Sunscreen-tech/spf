@@ -1,3 +1,5 @@
+#![allow(unused)]
+
 use std::ops::{Add, BitAnd, Shl, Shr};
 
 use num::{
