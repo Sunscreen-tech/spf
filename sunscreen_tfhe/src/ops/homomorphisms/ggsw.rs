@@ -1,7 +1,7 @@
 use num::Complex;
 
 use crate::{
-    GlweDef, RadixDecomposition, TorusOps,
+    GlweDef, RadixDecomposition,
     entities::GgswCiphertextFftRef,
     ops::homomorphisms::{add_glev_ciphertexts_fft, sub_glev_ciphertexts_fft},
 };
@@ -42,14 +42,13 @@ pub fn sub_ggsw_ciphertexts_fft(
 
 #[cfg(test)]
 mod tests {
-    use num::traits::WrappingSub;
     use rand::{RngCore, rng};
 
     use super::*;
 
     use crate::{
         GLWE_1_2048_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
-        entities::{GgswCiphertext, GgswCiphertextFft, GlweSecretKey},
+        entities::{GgswCiphertextFft, GlweSecretKey},
         high_level::{self, encryption::decrypt_ggsw},
     };
 

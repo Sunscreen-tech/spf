@@ -1,12 +1,9 @@
 use num::Complex;
 
 use crate::{
-    GlweDef, RadixDecomposition,
+    GlweDef,
     entities::GlevCiphertextFftRef,
-    ops::{
-        ciphertext::add_glwe_ciphertexts,
-        homomorphisms::{add_glwe_ciphertexts_fft, sub_glwe_ciphertexts_fft},
-    },
+    ops::homomorphisms::{add_glwe_ciphertexts_fft, sub_glwe_ciphertexts_fft},
 };
 
 /// Given 2 FFT'd GLEV ciphertexts, compute `a + b`.

@@ -3,7 +3,7 @@ use num::Complex;
 use crate::{
     GlweDef,
     entities::GlweCiphertextFftRef,
-    polynomial::{polynomial_add, polynomial_add_fft, polynomial_sub_fft},
+    polynomial::{polynomial_add_fft, polynomial_sub_fft},
 };
 
 /// Given 2 FFT'd GLEV ciphertexts, compute `a + b`.
