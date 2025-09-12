@@ -968,12 +968,12 @@ pub mod fft {
         fft
     }
 
-    /// Take the fourier transform of a [`GgswCiphertext`](crate::entities::GgswCiphertext).
+    /// Take the fourier transform of a [`GgswCiphertext`].
     ///
     /// # Remarks
     /// `glwe` and `radix` must be the same parameters that produced `ggsw`.
     ///
-    /// For [`GgswCiphertext`](crate::entities::GgswCiphertext)s that result from a
+    /// For [`GgswCiphertext`]s that result from a
     /// [`circuit_bootstrap`](super::evaluation::circuit_bootstrap) operation, these
     /// must match `glwe_1` and `cbs_radix` respectively.
     ///
