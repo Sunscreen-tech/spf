@@ -1247,6 +1247,8 @@ mod tests {
                     // each key in the bundle encrypts the appropriate sum-of-products
                     // term of the orginal key.
                     if s_i.len() > 1 {
+                        let mut num_ones = 0;
+
                         #[allow(clippy::needless_range_loop)]
                         for i in 0..bs {
                             let expected = s_i
@@ -1277,7 +1279,14 @@ mod tests {
                                 "Bundle {bid}, ct {i}: actual {} does not match {expected}",
                                 msg.coeffs()[0].inner()
                             );
+
+                            if msg.coeffs()[0].inner() != 0 {
+                                num_ones += 1;
+                            }
                         }
+
+                        // The product of exactly one of the addend terms should be 1.
+                        assert_eq!(num_ones, 1);
                     } else {
                         let mut msg =
                             Polynomial::<Torus<u64>>::zero(glwe_params.dim.polynomial_degree.0);
