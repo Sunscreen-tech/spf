@@ -1,9 +1,79 @@
-use std::ops::Mul;
+use std::{
+    ops::{Deref, Mul},
+    sync::{Arc, OnceLock},
+};
 
-use crate::{PlaintextBits, Torus, TorusOps, entities::PolynomialRef, simd::VectorOps};
+use crate::{
+    PlaintextBits, PolynomialDegree, Torus, TorusOps,
+    dst::{FromMutSlice, dst_allocate},
+    entities::{DstArray, DstArrayRef, Polynomial, PolynomialFft, PolynomialFftRef, PolynomialRef},
+    scratch::allocate_scratch_ref,
+    simd::{VectorOps, complex_add, complex_mul},
+};
+use dashmap::DashMap;
 
-use num::traits::WrappingSub;
+use num::{Complex, traits::WrappingSub};
 use sunscreen_math::{One, Zero};
+
+fn x_i_cache(degree: PolynomialDegree) -> Arc<DstArray<PolynomialFft<Complex<f64>>>> {
+    type PolyCache = DashMap<usize, OnceLock<Arc<DstArray<PolynomialFft<Complex<f64>>>>>>;
+    static X_I_CACHE: OnceLock<PolyCache> = OnceLock::new();
+
+    let cache = X_I_CACHE.get_or_init(|| PolyCache::new());
+
+    let entry = cache
+        .entry(degree.0)
+        .or_default()
+        .get_or_init(|| {
+            let mut lut = DstArray::<PolynomialFft<Complex<f64>>>::new(2 * degree.0, degree);
+
+            allocate_scratch_ref!(non_fft, PolynomialRef<u64>, (degree));
+
+            for i in 0..2 * degree.0 {
+                non_fft.clear();
+
+                if i < degree.0 {
+                    non_fft.coeffs_mut()[i] = 1u64;
+                } else {
+                    non_fft.coeffs_mut()[i - degree.0] = 0u64.wrapping_sub(1);
+                }
+
+                // TODO: We can directly fill in the FFT for with higher precision. The
+                // input is a Driac delta, so the FFT is just a sinusoid.
+                non_fft.fft(&mut lut.iter_mut(degree).nth(i).unwrap());
+            }
+
+            Arc::new(lut)
+        })
+        .to_owned();
+
+    entry
+}
+
+/// Multiply a negacyclic polynomial by x^i in the Fourier domain.
+///
+/// # Panics
+/// If result.len() is not a power of 2.
+pub fn polynomial_mul_positive_monomial_fft<S>(
+    result: &mut PolynomialFftRef<Complex<f64>>,
+    x: &PolynomialFftRef<Complex<f64>>,
+    i: usize,
+) where
+    S: TorusOps,
+{
+    assert!(result.len().is_power_of_two() && result.len() > 0);
+
+    let degree = 2 * result.len();
+
+    let cache = x_i_cache(PolynomialDegree(degree));
+
+    let x_i = cache
+        .iter(PolynomialDegree(degree))
+        .nth(i % (2 * degree))
+        .unwrap();
+
+    complex_mul(result.coeffs_mut(), x_i.coeffs(), x.coeffs());
+}
 
 /// Encode a polynomial for encryption.
 ///
@@ -97,7 +167,12 @@ where
 
 #[cfg(test)]
 mod tests {
-    use crate::entities::Polynomial;
+    use num::Zero;
+    use rand::{RngCore, rng};
+
+    use crate::{
+        entities::Polynomial, ops::bootstrapping::rotate_glwe_negative_monomial_negacyclic,
+    };
 
     use super::*;
 
@@ -167,5 +242,35 @@ mod tests {
         polynomial_shr_round(&mut result, &poly, 2);
 
         assert_eq!(result, Polynomial::new(&[0, 0, 1, 1, 1, 1, 2, 2]));
+    }
+
+    #[test]
+    fn can_multiply_positive_monomial_fft() {
+        // Use small-ish coefficients so we don't have to deal with roundoff in our
+        // analysis.
+        let poly = Polynomial::new(
+            &(0..2048)
+                .map(|_| rng().next_u64() % 0x1 << 16)
+                .collect::<Vec<_>>(),
+        );
+
+        let mut result = PolynomialFft::new(&vec![Complex::zero(); 1024]);
+
+        let mut poly_fft = result.clone();
+        poly.fft(&mut poly_fft);
+
+        for i in 0..4096 {
+            polynomial_mul_positive_monomial_fft::<u64>(&mut result, &poly_fft, i);
+
+            let mut actual = Polynomial::<u64>::zero(2048);
+            result.ifft(&mut actual);
+
+            let mut expected = poly.map(|x| Torus::from(*x));
+
+            expected.mul_by_monomial_negacyclic(i as isize);
+            let expected = expected.map(|x| x.inner());
+
+            assert_eq!(actual.coeffs(), expected.coeffs())
+        }
     }
 }

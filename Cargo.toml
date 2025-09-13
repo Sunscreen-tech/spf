@@ -39,6 +39,7 @@ crypto-bigint = { version = "0.5", features = ["serde"] }
 cuda-driver-sys = "0.3"
 cuda-runtime-sys = "0.3.0-alpha.1"
 darling = "0.20"
+dashmap = "6"
 elf = "0.7"
 env_logger = "0.11"
 find_cuda_helper = "0.2"

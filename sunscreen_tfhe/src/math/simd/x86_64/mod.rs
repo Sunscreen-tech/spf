@@ -96,6 +96,28 @@ pub fn complex_add(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
     }
 }
 
+/// Compute vector `c = a + b` over &[Complex<f64>].
+///
+/// # Panics
+/// If `c.len() != a.len() != b.len()`
+/// If `a.len() % 8 != 0`
+/// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
+pub fn complex_mul(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    // Regardless of our runtime vectorization strategy, our input buffers should be aligned for AVX512.
+    assert_eq!(c.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
+    assert_eq!(b.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
+    assert_eq!(a.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
+    assert_eq!(c.len(), a.len());
+    assert_eq!(b.len(), a.len());
+    assert_eq!(a.len() % 8, 0);
+
+    if fma_available() && avx2_available() {
+        unsafe { avx2::complex_mul_avx2(c, a, b) }
+    } else {
+        scalar::complex_mul(c, a, b)
+    }
+}
+
 /// Compute vector `c = a - b` over &[Complex<f64>].
 ///
 /// # Panics
