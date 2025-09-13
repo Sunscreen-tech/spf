@@ -3,7 +3,10 @@ use num::Complex;
 use crate::{
     GlweDef, RadixDecomposition,
     entities::GgswCiphertextFftRef,
-    ops::homomorphisms::{add_glev_ciphertexts_fft, sub_glev_ciphertexts_fft},
+    ops::homomorphisms::{
+        add_glev_ciphertexts_fft, mul_glev_ciphertext_negative_monomial_fft,
+        mul_glev_ciphertext_positive_monomial_fft, sub_glev_ciphertexts_fft,
+    },
 };
 
 /// Given 2 FFT'd GGSW ciphertexts, compute `a + b`.
@@ -40,6 +43,32 @@ pub fn sub_ggsw_ciphertexts_fft(
     }
 }
 
+/// Multiply [`GgswCiphertextFft`](crate::entities::GgswCiphertextFft) `a` by `x^i`.
+pub fn mul_ggsw_ciphertext_positive_monomial_fft(
+    c: &mut GgswCiphertextFftRef<Complex<f64>>,
+    a: &GgswCiphertextFftRef<Complex<f64>>,
+    i: usize,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    for (c, a) in c.rows_mut(glwe, radix).zip(a.rows(glwe, radix)) {
+        mul_glev_ciphertext_positive_monomial_fft(c, a, i, glwe);
+    }
+}
+
+/// Multiply [`GgswCiphertextFft`](crate::entities::GgswCiphertextFft) `a` by `x^-i`.
+pub fn mul_ggsw_ciphertext_negative_monomial_fft(
+    c: &mut GgswCiphertextFftRef<Complex<f64>>,
+    a: &GgswCiphertextFftRef<Complex<f64>>,
+    i: usize,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    for (c, a) in c.rows_mut(glwe, radix).zip(a.rows(glwe, radix)) {
+        mul_glev_ciphertext_negative_monomial_fft(c, a, i, glwe);
+    }
+}
+
 #[cfg(test)]
 mod tests {
     use rand::{RngCore, rng};
@@ -48,7 +77,7 @@ mod tests {
 
     use crate::{
         GLWE_1_2048_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
-        entities::{GgswCiphertextFft, GlweSecretKey},
+        entities::{GgswCiphertextFft, GlweSecretKey, Polynomial},
         high_level::{self, encryption::decrypt_ggsw},
     };
 
@@ -118,6 +147,78 @@ mod tests {
                 actual.coeffs()[0],
                 a_msg.wrapping_sub(b_msg) % (0x1 << radix.radix_log.0) as u64
             );
+        }
+    }
+
+    #[test]
+    fn can_mul_ggsw_fft_by_positive_monomial_negacyclic() {
+        let glwe = GLWE_1_2048_128;
+        let radix = RadixDecomposition {
+            radix_log: RadixLog(8),
+            count: RadixCount(2),
+        };
+
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let msg = Polynomial::new(
+            &(0..2048u64)
+                .map(|_| rng().next_u64() % 2)
+                .collect::<Vec<_>>(),
+        );
+
+        let ct = sk.encode_encrypt_ggsw(&msg, &glwe, &radix, PlaintextBits(1));
+
+        let ct_fft = high_level::fft::fft_ggsw(&ct, &glwe, &radix);
+
+        for i in 0..4096 {
+            let mut actual_fft = GgswCiphertextFft::new(&glwe, &radix);
+
+            mul_ggsw_ciphertext_positive_monomial_fft(&mut actual_fft, &ct_fft, i, &glwe, &radix);
+
+            let actual = high_level::fft::ifft_ggsw(&actual_fft, &glwe, &radix);
+            let actual = decrypt_ggsw(&actual, &sk, &glwe, &radix, PlaintextBits(1));
+
+            let mut expected = msg.as_torus().to_owned();
+            expected.mul_by_positive_monomial_negacyclic(i);
+            let expected = expected.map(|x| x.inner() % (0x1 << radix.radix_log.0));
+
+            assert_eq!(actual.coeffs(), expected.coeffs())
+        }
+    }
+
+    #[test]
+    fn can_mul_ggsw_fft_by_negative_monomial_negacyclic() {
+        let glwe = GLWE_1_2048_128;
+        let radix = RadixDecomposition {
+            radix_log: RadixLog(8),
+            count: RadixCount(2),
+        };
+
+        let sk = GlweSecretKey::generate_binary(&glwe);
+
+        let msg = Polynomial::new(
+            &(0..2048u64)
+                .map(|_| rng().next_u64() % 2)
+                .collect::<Vec<_>>(),
+        );
+
+        let ct = sk.encode_encrypt_ggsw(&msg, &glwe, &radix, PlaintextBits(1));
+
+        let ct_fft = high_level::fft::fft_ggsw(&ct, &glwe, &radix);
+
+        for i in 0..4096 {
+            let mut actual_fft = GgswCiphertextFft::new(&glwe, &radix);
+
+            mul_ggsw_ciphertext_negative_monomial_fft(&mut actual_fft, &ct_fft, i, &glwe, &radix);
+
+            let actual = high_level::fft::ifft_ggsw(&actual_fft, &glwe, &radix);
+            let actual = decrypt_ggsw(&actual, &sk, &glwe, &radix, PlaintextBits(1));
+
+            let mut expected = msg.as_torus().to_owned();
+            expected.mul_by_negative_monomial_negacyclic(i);
+            let expected = expected.map(|x| x.inner() % (0x1 << radix.radix_log.0));
+
+            assert_eq!(actual.coeffs(), expected.coeffs())
         }
     }
 }
