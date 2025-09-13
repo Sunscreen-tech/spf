@@ -1,14 +1,14 @@
 use std::{
-    ops::{Deref, Mul},
+    ops::Mul,
     sync::{Arc, OnceLock},
 };
 
 use crate::{
     PlaintextBits, PolynomialDegree, Torus, TorusOps,
-    dst::{FromMutSlice, dst_allocate},
-    entities::{DstArray, DstArrayRef, Polynomial, PolynomialFft, PolynomialFftRef, PolynomialRef},
+    dst::FromMutSlice,
+    entities::{DstArray, PolynomialFft, PolynomialFftRef, PolynomialRef},
     scratch::allocate_scratch_ref,
-    simd::{VectorOps, complex_add, complex_mul},
+    simd::{VectorOps, complex_mul},
 };
 use dashmap::DashMap;
 
@@ -19,9 +19,9 @@ fn x_i_cache(degree: PolynomialDegree) -> Arc<DstArray<PolynomialFft<Complex<f64
     type PolyCache = DashMap<usize, OnceLock<Arc<DstArray<PolynomialFft<Complex<f64>>>>>>;
     static X_I_CACHE: OnceLock<PolyCache> = OnceLock::new();
 
-    let cache = X_I_CACHE.get_or_init(|| PolyCache::new());
+    let cache = X_I_CACHE.get_or_init(PolyCache::new);
 
-    let entry = cache
+    cache
         .entry(degree.0)
         .or_default()
         .get_or_init(|| {
@@ -40,14 +40,12 @@ fn x_i_cache(degree: PolynomialDegree) -> Arc<DstArray<PolynomialFft<Complex<f64
 
                 // TODO: We can directly fill in the FFT for with higher precision. The
                 // input is a Driac delta, so the FFT is just a sinusoid.
-                non_fft.fft(&mut lut.iter_mut(degree).nth(i).unwrap());
+                non_fft.fft(lut.iter_mut(degree).nth(i).unwrap());
             }
 
             Arc::new(lut)
         })
-        .to_owned();
-
-    entry
+        .to_owned()
 }
 
 /// Multiply a negacyclic polynomial by x^i in the Fourier domain.
@@ -61,7 +59,7 @@ pub fn polynomial_mul_positive_monomial_fft<S>(
 ) where
     S: TorusOps,
 {
-    assert!(result.len().is_power_of_two() && result.len() > 0);
+    assert!(result.len().is_power_of_two() && !result.is_empty());
 
     let degree = 2 * result.len();
 
@@ -170,9 +168,7 @@ mod tests {
     use num::Zero;
     use rand::{RngCore, rng};
 
-    use crate::{
-        entities::Polynomial, ops::bootstrapping::rotate_glwe_negative_monomial_negacyclic,
-    };
+    use crate::entities::Polynomial;
 
     use super::*;
 
@@ -250,7 +246,7 @@ mod tests {
         // analysis.
         let poly = Polynomial::new(
             &(0..2048)
-                .map(|_| rng().next_u64() % 0x1 << 16)
+                .map(|_| rng().next_u64() % (0x1 << 16))
                 .collect::<Vec<_>>(),
         );
 
@@ -270,6 +266,7 @@ mod tests {
             expected.mul_by_monomial_negacyclic(i as isize);
             let expected = expected.map(|x| x.inner());
 
+            // Should get same answer as non-fft computation.
             assert_eq!(actual.coeffs(), expected.coeffs())
         }
     }
