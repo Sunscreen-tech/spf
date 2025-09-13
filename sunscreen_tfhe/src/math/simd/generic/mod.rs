@@ -143,3 +143,13 @@ pub fn complex_add(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 pub fn complex_sub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
     scalar::complex_sub(c, a, b)
 }
+
+/// Compute vector `c = a + b` over &[Complex<f64>].
+///
+/// # Panics
+/// If `c.len() != a.len() != b.len()`
+/// If `a.len() % 8 != 0`
+/// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
+pub fn complex_mul(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    scalar::complex_mul(c, a, b)
+}
