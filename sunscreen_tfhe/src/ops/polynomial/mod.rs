@@ -52,13 +52,11 @@ fn x_i_cache(degree: PolynomialDegree) -> Arc<DstArray<PolynomialFft<Complex<f64
 ///
 /// # Panics
 /// If result.len() is not a power of 2.
-pub fn polynomial_mul_positive_monomial_fft<S>(
+pub fn polynomial_mul_positive_monomial_fft(
     result: &mut PolynomialFftRef<Complex<f64>>,
     x: &PolynomialFftRef<Complex<f64>>,
     i: usize,
-) where
-    S: TorusOps,
-{
+) {
     assert!(result.len().is_power_of_two() && !result.is_empty());
 
     let degree = 2 * result.len();
@@ -68,6 +66,29 @@ pub fn polynomial_mul_positive_monomial_fft<S>(
     let x_i = cache
         .iter(PolynomialDegree(degree))
         .nth(i % (2 * degree))
+        .unwrap();
+
+    complex_mul(result.coeffs_mut(), x_i.coeffs(), x.coeffs());
+}
+
+/// Multiply a negacyclic polynomial by x^-i in the Fourier domain.
+///
+/// # Panics
+/// If result.len() is not a power of 2.
+pub fn polynomial_mul_negative_monomial_fft(
+    result: &mut PolynomialFftRef<Complex<f64>>,
+    x: &PolynomialFftRef<Complex<f64>>,
+    i: usize,
+) {
+    assert!(result.len().is_power_of_two() && !result.is_empty());
+
+    let degree = 2 * result.len();
+
+    let cache = x_i_cache(PolynomialDegree(degree));
+
+    let x_i = cache
+        .iter(PolynomialDegree(degree))
+        .nth((2 * degree - i) % (2 * degree))
         .unwrap();
 
     complex_mul(result.coeffs_mut(), x_i.coeffs(), x.coeffs());
@@ -256,7 +277,7 @@ mod tests {
         poly.fft(&mut poly_fft);
 
         for i in 0..4096 {
-            polynomial_mul_positive_monomial_fft::<u64>(&mut result, &poly_fft, i);
+            polynomial_mul_positive_monomial_fft(&mut result, &poly_fft, i);
 
             let mut actual = Polynomial::<u64>::zero(2048);
             result.ifft(&mut actual);
@@ -264,6 +285,37 @@ mod tests {
             let mut expected = poly.map(|x| Torus::from(*x));
 
             expected.mul_by_monomial_negacyclic(i as isize);
+            let expected = expected.map(|x| x.inner());
+
+            // Should get same answer as non-fft computation.
+            assert_eq!(actual.coeffs(), expected.coeffs())
+        }
+    }
+
+    #[test]
+    fn can_multiply_negative_monomial_fft() {
+        // Use small-ish coefficients so we don't have to deal with roundoff in our
+        // analysis.
+        let poly = Polynomial::new(
+            &(0..2048)
+                .map(|_| rng().next_u64() % (0x1 << 16))
+                .collect::<Vec<_>>(),
+        );
+
+        let mut result = PolynomialFft::new(&vec![Complex::zero(); 1024]);
+
+        let mut poly_fft = result.clone();
+        poly.fft(&mut poly_fft);
+
+        for i in 0..4096 {
+            polynomial_mul_negative_monomial_fft(&mut result, &poly_fft, i);
+
+            let mut actual = Polynomial::<u64>::zero(2048);
+            result.ifft(&mut actual);
+
+            let mut expected = poly.map(|x| Torus::from(*x));
+
+            expected.mul_by_monomial_negacyclic(-(i as isize));
             let expected = expected.map(|x| x.inner());
 
             // Should get same answer as non-fft computation.
