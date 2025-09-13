@@ -150,7 +150,7 @@ pub fn complex_sub_assign(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
     // Regardless of our runtime vectorization strategy, our input buffers should be aligned for AVX512.
     assert_eq!(c.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
     assert_eq!(b.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
-    assert_eq!(c.len(), a.len());
+    assert_eq!(c.len(), b.len());
     assert_eq!(b.len() % 8, 0);
 
     if fma_available() && avx2_available() {
@@ -170,13 +170,13 @@ pub fn complex_add_assign(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
     // Regardless of our runtime vectorization strategy, our input buffers should be aligned for AVX512.
     assert_eq!(c.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
     assert_eq!(b.as_ptr().align_offset(core::mem::align_of::<__m512d>()), 0);
-    assert_eq!(c.len(), a.len());
+    assert_eq!(c.len(), b.len());
     assert_eq!(b.len() % 8, 0);
 
     if fma_available() && avx2_available() {
-        unsafe { avx2::complex_sub_assign_avx2(c, b) }
+        unsafe { avx2::complex_add_assign_avx2(c, b) }
     } else {
-        scalar::complex_sub_assign(c, b)
+        scalar::complex_add_assign(c, b)
     }
 }
 
