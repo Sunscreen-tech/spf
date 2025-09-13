@@ -107,7 +107,7 @@ pub fn polynomial_sub_fft(
     complex_sub(c.as_mut_slice(), a.as_slice(), b.as_slice());
 }
 
-/// Compute `c -= b` where a, b, and c are polynomials.
+/// Compute `c -= b` where b and c are polynomials.
 pub fn polynomial_sub_assign_fft(
     c: &mut PolynomialFftRef<Complex<f64>>,
     b: &PolynomialFftRef<Complex<f64>>,
@@ -117,7 +117,7 @@ pub fn polynomial_sub_assign_fft(
     complex_sub_assign(c.as_mut_slice(), b.as_slice());
 }
 
-/// Compute `c -= b` where a, b, and c are polynomials.
+/// Compute `c += b` where b, and c are polynomials.
 pub fn polynomial_add_assign_fft(
     c: &mut PolynomialFftRef<Complex<f64>>,
     b: &PolynomialFftRef<Complex<f64>>,
