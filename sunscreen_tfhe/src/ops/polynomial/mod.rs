@@ -39,7 +39,7 @@ fn x_i_cache(degree: PolynomialDegree) -> Arc<DstArray<PolynomialFft<Complex<f64
                 }
 
                 // TODO: We can directly fill in the FFT for with higher precision. The
-                // input is a Driac delta, so the FFT is just a sinusoid.
+                // input is a Dirac delta, so the FFT is just a sinusoid.
                 non_fft.fft(lut.iter_mut(degree).nth(i).unwrap());
             }
 

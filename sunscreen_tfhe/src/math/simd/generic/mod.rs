@@ -148,7 +148,7 @@ pub fn complex_sub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 ///
 /// # Panics
 /// If `c.len() != b.len()`
-/// If `a.len() % 8 != 0`
+/// If `b.len() % 8 != 0`
 /// If `b`, `c` are not aligned to a 512-bit boundary.
 pub fn complex_sub_assign(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
     scalar::complex_sub_assign(c, b)
@@ -158,13 +158,13 @@ pub fn complex_sub_assign(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
 ///
 /// # Panics
 /// If `c.len() != b.len()`
-/// If `a.len() % 8 != 0`
+/// If `b.len() % 8 != 0`
 /// If `b`, `c` are not aligned to a 512-bit boundary.
 pub fn complex_add_assign(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
     scalar::complex_add_assign(c, b)
 }
 
-/// Compute vector `c = a + b` over &[Complex<f64>].
+/// Compute vector `c = a * b` over &[Complex<f64>].
 ///
 /// # Panics
 /// If `c.len() != a.len() != b.len()`
