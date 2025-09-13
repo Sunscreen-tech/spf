@@ -116,7 +116,7 @@ mod tests {
 
             assert_eq!(
                 actual.coeffs()[0],
-                a_msg.wrapping_sub(b_msg) % radix.count.0 as u64
+                a_msg.wrapping_sub(b_msg) % (0x1 << radix.radix_log.0) as u64
             );
         }
     }
