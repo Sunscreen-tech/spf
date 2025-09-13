@@ -41,9 +41,18 @@ pub fn complex_sub_avx2(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex
 
 #[inline]
 #[target_feature(enable = "avx2,fma")]
-pub fn complex_sub_assign_avx2(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
-    for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
+pub fn complex_sub_assign_avx2(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
+    for (c, b) in c.iter_mut().zip(b.iter()) {
         *c -= b;
+    }
+}
+
+
+#[inline]
+#[target_feature(enable = "avx2,fma")]
+pub fn complex_add_assign_avx2(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
+    for (c, b) in c.iter_mut().zip(b.iter()) {
+        *c += b;
     }
 }
 
