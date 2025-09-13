@@ -283,7 +283,7 @@ mod tests {
     }
 
     #[test]
-    fn can_trivially_decrypy_ggsw() {
+    fn can_trivially_decrypt_ggsw() {
         let params = TEST_GLWE_DEF_1;
         let radix = TEST_RADIX;
         let bits = PlaintextBits(1);

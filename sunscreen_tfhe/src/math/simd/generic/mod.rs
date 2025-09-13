@@ -123,3 +123,23 @@ pub fn complex_untwist<T: Float>(output: &mut [T], ifft: &[Complex<T>], twist_in
 pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
     scalar::complex_mad(c, a, b)
 }
+
+/// Compute vector `c = a + b` over &[Complex<f64>].
+///
+/// # Panics
+/// If `c.len() != a.len() != b.len()`
+/// If `a.len() % 8 != 0`
+/// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
+pub fn complex_add(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    scalar::complex_add(c, a, b)
+}
+
+/// Compute vector `c = a - b` over &[Complex<f64>].
+///
+/// # Panics
+/// If `c.len() != a.len() != b.len()`
+/// If `a.len() % 8 != 0`
+/// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
+pub fn complex_sub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    scalar::complex_sub(c, a, b)
+}
