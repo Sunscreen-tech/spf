@@ -185,11 +185,7 @@ mod tests {
 
         let sk = GlweSecretKey::generate_binary(&glwe);
 
-        let msg = Polynomial::new(
-            &(0..2048u64)
-                .map(|_| rng().next_u64() % 2)
-                .collect::<Vec<_>>(),
-        );
+        let msg = Polynomial::new(&(0..2048).map(|_| rng().next_u64() % 2).collect::<Vec<_>>());
 
         let ct = sk.encode_encrypt_ggsw(&msg, &glwe, &radix, PlaintextBits(1));
 
@@ -221,11 +217,7 @@ mod tests {
 
         let sk = GlweSecretKey::generate_binary(&glwe);
 
-        let msg = Polynomial::new(
-            &(0..2048u64)
-                .map(|_| rng().next_u64() % 2)
-                .collect::<Vec<_>>(),
-        );
+        let msg = Polynomial::new(&(0..2048).map(|_| rng().next_u64() % 2).collect::<Vec<_>>());
 
         let ct = sk.encode_encrypt_ggsw(&msg, &glwe, &radix, PlaintextBits(1));
 
