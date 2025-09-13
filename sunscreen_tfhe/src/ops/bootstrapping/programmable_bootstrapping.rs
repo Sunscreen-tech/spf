@@ -10,8 +10,9 @@ use crate::{
     dst::FromMutSlice,
     entities::{
         BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GgswCiphertextFftRef,
-        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, LweCiphertextRef, LweSecretKeyRef,
-        Polynomial, PolynomialRef, UnivariateLookupTableRef, bootstrap_key_bundle_size,
+        GgswCiphertextRef, GlweCiphertextFftRef, GlweCiphertextRef, GlweSecretKeyRef,
+        LweCiphertextRef, LweSecretKeyRef, Polynomial, PolynomialRef, UnivariateLookupTableRef,
+        bootstrap_key_bundle_size,
     },
     ops::{
         bootstrapping::rotate_glwe_positive_monomial_negacyclic,
@@ -20,7 +21,11 @@ use crate::{
             scalar_mul_ciphertext_mad,
         },
         encryption::encrypt_ggsw_ciphertext_scalar,
-        fft_ops::cmux,
+        fft_ops::{cmux, glwe_ggsw_mad},
+        homomorphisms::{
+            add_assign_ggsw_ciphertexts_fft, mul_ggsw_ciphertext_positive_monomial_fft,
+            sub_assign_ggsw_ciphertexts_fft,
+        },
     },
     scratch::allocate_scratch_ref,
 };
@@ -501,13 +506,12 @@ fn apply_blind_rotations<S>(
 
     // Handle the remaining elements.
     if remainder > 0 {
-        let skip = lwe_params.dim.0 / addend_count.0 as usize * addend_count.0 as usize;
+        let skip = lwe_params.dim.0 / addend_count.0 as usize;
 
-        let a_i = ct_a.iter().skip(skip).take(remainder);
+        let a_i = ct_a.iter().skip(skip * addend_count.0 as usize);
         let bsk_bundle = bootstrap_key
             .rows(glwe_params, radix)
-            .skip(skip)
-            .take(remainder);
+            .skip(skip * bundle_size);
 
         apply_addends(
             accumulator,
@@ -515,7 +519,7 @@ fn apply_blind_rotations<S>(
             bsk_bundle,
             glwe_params,
             radix,
-            addend_count,
+            AddendCount(remainder as u32),
         );
     }
 }
@@ -530,7 +534,7 @@ fn apply_blind_rotations<S>(
 #[inline(always)]
 fn apply_addends<'a, IA, IBSK, S>(
     accumulator: &mut GlweCiphertextRef<S>,
-    mut a_i: IA,
+    mut a: IA,
     mut bsk_bundle: IBSK,
     glwe_params: &GlweDef,
     radix: &RadixDecomposition,
@@ -549,7 +553,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         rotate_glwe_positive_monomial_negacyclic(
             rotated_ct,
             accumulator,
-            a_i.next().unwrap().to_u64() as usize,
+            a.next().unwrap().to_u64() as usize,
             glwe_params,
         );
 
@@ -563,9 +567,69 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         assert!(bsk_bundle.next().is_none());
-        assert!(a_i.next().is_none());
+        assert!(a.next().is_none());
     } else if addend_count.0 == 2 {
-        todo!("Need to finish 2 addends algo");
+        let a_i_min_1 = a.next().unwrap().to_u64() as usize;
+        let a_i = a.next().unwrap().to_u64() as usize;
+        assert!(a.next().is_none());
+
+        allocate_scratch_ref!(
+            result,
+            GlweCiphertextFftRef<Complex<f64>>,
+            (glwe_params.dim)
+        );
+        allocate_scratch_ref!(
+            prod,
+            GgswCiphertextFftRef<Complex<f64>>,
+            (glwe_params.dim, radix.count)
+        );
+        allocate_scratch_ref!(
+            sum_addends,
+            GgswCiphertextFftRef<Complex<f64>>,
+            (glwe_params.dim, radix.count)
+        );
+
+        // (s_i - 1)(s_(i - 1) - 1)
+        sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
+
+        // a_(i - 1)(s_i - 1)(s_(i - 1))
+        mul_ggsw_ciphertext_positive_monomial_fft(
+            prod,
+            bsk_bundle.next().unwrap(),
+            a_i_min_1,
+            glwe_params,
+            radix,
+        );
+        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
+
+        // a_i(s_i)(s_(i - 1) - 1)
+        mul_ggsw_ciphertext_positive_monomial_fft(
+            prod,
+            bsk_bundle.next().unwrap(),
+            a_i,
+            glwe_params,
+            radix,
+        );
+        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
+
+        // a_i * a_(i - 1)(s_i)(s_(i - 1))
+        mul_ggsw_ciphertext_positive_monomial_fft(
+            prod,
+            bsk_bundle.next().unwrap(),
+            a_i + a_i_min_1,
+            glwe_params,
+            radix,
+        );
+        add_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
+
+        assert!(bsk_bundle.next().is_none());
+
+        result.clear();
+
+        // acc *= sum_addends
+        glwe_ggsw_mad(result, accumulator, sum_addends, glwe_params, radix);
+
+        result.ifft(accumulator, glwe_params);
     } else if addend_count.0 == 3 {
         todo!("Need to finish 3 addends algo");
     }
@@ -1113,12 +1177,10 @@ mod tests {
         }
     }
 
-    #[test]
-    fn can_generalized_bootstrap() {
+    fn generalized_bootstrap_case(addend_count: AddendCount) {
         let radix = &TEST_RADIX;
         let lwe = &LWE_637_128;
         let glwe = &GLWE_1_2048_128;
-        let addend_count = AddendCount(1);
 
         // 1 message bit + 1 padding
         let bits = PlaintextBits(1);
@@ -1128,7 +1190,6 @@ mod tests {
         let bs_key =
             keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, lwe, glwe, radix, addend_count);
         let bs_key = fft::fft_bootstrap_key(&bs_key, lwe, glwe, radix, addend_count);
-        let addend_count = AddendCount(1);
 
         // Fill the LUT with nonsense and we'll overwrite it with
         // the correct encoding.
@@ -1178,6 +1239,16 @@ mod tests {
                 assert_eq!(res.coeffs()[7], 0);
             }
         }
+    }
+
+    #[test]
+    fn can_generalized_bootstrap() {
+        generalized_bootstrap_case(AddendCount(1));
+    }
+
+    #[test]
+    fn can_generalized_bootstrap_2_addends() {
+        generalized_bootstrap_case(AddendCount(2));
     }
 
     #[test]

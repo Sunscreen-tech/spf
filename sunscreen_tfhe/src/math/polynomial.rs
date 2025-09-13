@@ -10,7 +10,7 @@ use crate::{
     dst::{AsMutSlice, AsSlice, FromMutSlice},
     entities::{PolynomialFftRef, PolynomialRef},
     scratch::allocate_scratch,
-    simd::{VectorOps, complex_add, complex_sub},
+    simd::{VectorOps, complex_add, complex_add_assign, complex_sub, complex_sub_assign},
 };
 
 /// Polynomial subtraction in place. This is equivalent to `a -= b` for each
@@ -105,6 +105,26 @@ pub fn polynomial_sub_fft(
     assert_eq!(c.len(), b.len());
 
     complex_sub(c.as_mut_slice(), a.as_slice(), b.as_slice());
+}
+
+/// Compute `c -= b` where a, b, and c are polynomials.
+pub fn polynomial_sub_assign_fft(
+    c: &mut PolynomialFftRef<Complex<f64>>,
+    b: &PolynomialFftRef<Complex<f64>>,
+) {
+    assert_eq!(c.len(), b.len());
+
+    complex_sub_assign(c.as_mut_slice(), b.as_slice());
+}
+
+/// Compute `c -= b` where a, b, and c are polynomials.
+pub fn polynomial_add_assign_fft(
+    c: &mut PolynomialFftRef<Complex<f64>>,
+    b: &PolynomialFftRef<Complex<f64>>,
+) {
+    assert_eq!(c.len(), b.len());
+
+    complex_add_assign(c.as_mut_slice(), b.as_slice());
 }
 
 /// Polynomial addition in place. This is equivalent to `a += b` for each
