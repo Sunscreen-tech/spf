@@ -47,7 +47,6 @@ pub fn complex_sub_assign_avx2(c: &mut [Complex<f64>], b: &[Complex<f64>]) {
     }
 }
 
-
 #[inline]
 #[target_feature(enable = "avx2,fma")]
 pub fn complex_add_assign_avx2(c: &mut [Complex<f64>], b: &[Complex<f64>]) {

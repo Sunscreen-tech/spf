@@ -10,9 +10,9 @@ use crate::{
     dst::FromMutSlice,
     entities::{
         BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GgswCiphertextFftRef,
-        GgswCiphertextRef, GlweCiphertextFftRef, GlweCiphertextRef,
-        GlweSecretKeyRef, LweCiphertextRef, LweSecretKeyRef, Polynomial, PolynomialRef,
-        UnivariateLookupTableRef, bootstrap_key_bundle_size,
+        GgswCiphertextRef, GlweCiphertextFftRef, GlweCiphertextRef, GlweSecretKeyRef,
+        LweCiphertextRef, LweSecretKeyRef, Polynomial, PolynomialRef, UnivariateLookupTableRef,
+        bootstrap_key_bundle_size,
     },
     ops::{
         bootstrapping::rotate_glwe_positive_monomial_negacyclic,
