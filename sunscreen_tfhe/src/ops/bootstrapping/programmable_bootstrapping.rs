@@ -10,7 +10,7 @@ use crate::{
     dst::FromMutSlice,
     entities::{
         BivariateLookupTableRef, BootstrapKeyFftRef, BootstrapKeyRef, GgswCiphertextFftRef,
-        GgswCiphertextRef, GlweCiphertextFft, GlweCiphertextFftRef, GlweCiphertextRef,
+        GgswCiphertextRef, GlweCiphertextFftRef, GlweCiphertextRef,
         GlweSecretKeyRef, LweCiphertextRef, LweSecretKeyRef, Polynomial, PolynomialRef,
         UnivariateLookupTableRef, bootstrap_key_bundle_size,
     },
@@ -24,7 +24,7 @@ use crate::{
         fft_ops::{cmux, glwe_ggsw_mad},
         homomorphisms::{
             add_assign_ggsw_ciphertexts_fft, mul_ggsw_ciphertext_positive_monomial_fft,
-            sub_assign_ggsw_ciphertexts_fft, sub_ggsw_ciphertexts_fft,
+            sub_assign_ggsw_ciphertexts_fft,
         },
     },
     scratch::allocate_scratch_ref,
@@ -627,7 +627,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         result.clear();
 
         // acc *= sum_addends
-        glwe_ggsw_mad(result, accumulator, &sum_addends, glwe_params, radix);
+        glwe_ggsw_mad(result, accumulator, sum_addends, glwe_params, radix);
 
         result.ifft(accumulator, glwe_params);
     } else if addend_count.0 == 3 {
