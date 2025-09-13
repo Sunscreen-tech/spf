@@ -1,7 +1,7 @@
 use num::Complex;
 
 use crate::{
-    GlweDef, RadixDecomposition,
+    GlweDef,
     entities::GlevCiphertextFftRef,
     ops::homomorphisms::{
         add_glwe_ciphertexts_fft, mul_glwe_ciphertext_negative_monomial_fft,
