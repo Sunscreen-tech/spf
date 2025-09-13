@@ -41,6 +41,14 @@ pub fn complex_sub_avx2(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex
 
 #[inline]
 #[target_feature(enable = "avx2,fma")]
+pub fn complex_sub_assign_avx2(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
+        *c -= b;
+    }
+}
+
+#[inline]
+#[target_feature(enable = "avx2,fma")]
 pub fn complex_twist<T: Float>(c: &mut [Complex<T>], re: &[T], im: &[T], twist: &[Complex<T>]) {
     for ((c, (re, im)), b) in c.iter_mut().zip(re.iter().zip(im.iter())).zip(twist.iter()) {
         *c = Complex::new(*re, *im) * b;
