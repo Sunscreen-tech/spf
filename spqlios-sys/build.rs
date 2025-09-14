@@ -7,11 +7,15 @@ fn main() {
         .define("ENABLE_TESTING", "OFF")
         .build();
 
+    // println!(
+    //     "cargo::rustc-link-search={}",
+    //     cmake_loc.join("lib").to_string_lossy()
+    // );
+    //println!("cargo::rustc-link-lib=static=spqlios");
     println!(
-        "cargo::rustc-link-search={}",
-        cmake_loc.join("lib").to_string_lossy()
+        "cargo::rustc-link-arg={}",
+        cmake_loc.join("lib/libspqlios.a").to_string_lossy()
     );
-    println!("cargo::rustc-link-lib=spqlios");
 
     let bindings = bindgen::builder()
         .header("bindgen.h")

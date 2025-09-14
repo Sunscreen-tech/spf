@@ -2927,6 +2927,7 @@ name = "spqlios-sys"
 version = "0.1.0"
 dependencies = [
  "aligned-vec",
+ "approx 0.5.1",
  "bindgen",
  "cmake",
 ]

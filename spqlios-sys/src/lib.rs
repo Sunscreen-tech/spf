@@ -15,6 +15,7 @@ mod sys {
 pub struct Fft {
     fwd: *mut REIM_FFT_PRECOMP,
     rev: *mut REIM_IFFT_PRECOMP,
+    n: u32,
 }
 
 impl Fft {
@@ -22,7 +23,7 @@ impl Fft {
         let fwd = unsafe { new_reim_fft_precomp(n, 0) };
         let rev = unsafe { new_reim_ifft_precomp(n, 0) };
 
-        Self { fwd, rev }
+        Self { fwd, rev, n }
     }
 
     pub fn fft_inplace(&self, data: &mut [f64]) {
@@ -31,6 +32,7 @@ impl Fft {
             data.as_ptr().align_offset(64) == 0,
             "FFT inputs must be 64-byte aligned"
         );
+        assert_eq!(data.len(), self.n as usize * 2);
 
         unsafe { reim_fft(self.fwd, data.as_mut_ptr()) };
     }
@@ -41,6 +43,7 @@ impl Fft {
             data.as_ptr().align_offset(64) == 0,
             "FFT inputs must be 64-byte aligned"
         );
+        assert_eq!(data.len(), self.n as usize * 2);
 
         unsafe { reim_ifft(self.rev, data.as_mut_ptr()) };
     }
@@ -59,14 +62,18 @@ mod tests {
     fn can_roundtrip() {
         let fft = Fft::new(16);
 
-        let x = (0..16).map(|x| x as f64).collect::<Vec<_>>();
-        let mut y = avec![[64]| 0.0f64; 16];
+        let x = (0..32).map(|x| x as f64).collect::<Vec<_>>();
+        let mut y = avec![[64]| 0.0f64; 32];
 
         (*y).clone_from_slice(&x);
 
         fft.fft_inplace(&mut y);
         fft.ifft_inplace(&mut y);
 
-        assert_eq!(x.as_slice(), &*y);
+        for r in y.iter_mut() {
+            *r /= 16 as f64;
+        }
+
+        approx::assert_relative_eq!(x.as_slice(), &*y, max_relative = 1e-12);
     }
 }
