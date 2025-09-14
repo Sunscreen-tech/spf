@@ -23,8 +23,7 @@ use crate::{
         encryption::encrypt_ggsw_ciphertext_scalar,
         fft_ops::{cmux, glwe_ggsw_mad},
         homomorphisms::{
-            add_assign_ggsw_ciphertexts_fft, mul_ggsw_ciphertext_positive_monomial_fft,
-            sub_assign_ggsw_ciphertexts_fft,
+            mad_ggsw_ciphertext_positive_monomial_fft, msub_ggsw_ciphertext_positive_monomial_fft,
         },
     },
     scratch::allocate_scratch_ref,
@@ -579,11 +578,6 @@ fn apply_addends<'a, IA, IBSK, S>(
             (glwe_params.dim)
         );
         allocate_scratch_ref!(
-            prod,
-            GgswCiphertextFftRef<Complex<f64>>,
-            (glwe_params.dim, radix.count)
-        );
-        allocate_scratch_ref!(
             sum_addends,
             GgswCiphertextFftRef<Complex<f64>>,
             (glwe_params.dim, radix.count)
@@ -593,34 +587,31 @@ fn apply_addends<'a, IA, IBSK, S>(
         sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
 
         // a_(i - 1)(s_i - 1)(s_(i - 1))
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        msub_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a_i(s_i)(s_(i - 1) - 1)
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        msub_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a_i * a_(i - 1)(s_i)(s_(i - 1))
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        mad_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i + a_i_min_1,
             glwe_params,
             radix,
         );
-        add_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         assert!(bsk_bundle.next().is_none());
 
@@ -642,11 +633,6 @@ fn apply_addends<'a, IA, IBSK, S>(
             (glwe_params.dim)
         );
         allocate_scratch_ref!(
-            prod,
-            GgswCiphertextFftRef<Complex<f64>>,
-            (glwe_params.dim, radix.count)
-        );
-        allocate_scratch_ref!(
             sum_addends,
             GgswCiphertextFftRef<Complex<f64>>,
             (glwe_params.dim, radix.count)
@@ -656,74 +642,67 @@ fn apply_addends<'a, IA, IBSK, S>(
         sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
 
         // a^{i - 2} ⊠ ((s_{i} - 1) (s_{i - 1} - 1) s_{i - 2})
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        msub_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_2,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a^{i - 1} ⊠ ((s_{i} - 1) s_{i - 1} (s_{i - 2} - 1))
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        msub_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a^{i - 1} a^{i - 2} ⊠ ((s_{i} - 1) s_{i - 1} s_{i - 2})
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        mad_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1 + a_i_min_2,
             glwe_params,
             radix,
         );
-        add_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a^{i} ⊠ ( s_{i} (s_{i - 1} - 1) (s_{i - 2} - 1))
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        msub_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a^{i} a^{i - 2} ⊠ ((s_{i} - 1) (s_{i - 1} - 1) s_{i - 2})
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        mad_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i + a_i_min_2,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a^{i} a^{i - 1} ⊠ (s_{i} s_{i - 1} (s_{i - 2} - 1))
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        mad_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i + a_i_min_1,
             glwe_params,
             radix,
         );
-        sub_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         // a^{i} a^{i - 1} a^{i - 2} ⊠ (s_{i} s_{i - 1} s_{i - 2})
-        mul_ggsw_ciphertext_positive_monomial_fft(
-            prod,
+        msub_ggsw_ciphertext_positive_monomial_fft(
+            sum_addends,
             bsk_bundle.next().unwrap(),
             a_i + a_i_min_1 + a_i_min_2,
             glwe_params,
             radix,
         );
-        add_assign_ggsw_ciphertexts_fft(sum_addends, prod, glwe_params, radix);
 
         assert!(bsk_bundle.next().is_none());
 

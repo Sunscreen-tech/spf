@@ -4,7 +4,7 @@ use sunscreen_tfhe::{
     RadixDecomposition, RadixLog,
 };
 
-#[derive(Debug, Clone, Serialize, Deserialize)]
+#[derive(Debug, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 /// The set of parameters for performing FHE computation with Sunscreen's circuit bootstrapping (CBS)
 /// approach.
 ///
@@ -155,4 +155,66 @@ pub const DEFAULT_128: Params = Params {
         radix_log: RadixLog(7),
     },
     addend_count: AddendCount(1),
+};
+
+/// A balance of speed and keysize.
+pub const FAST_BIG_128: Params = Params {
+    l0_params: LWE_637_128,
+    l1_params: GLWE_1_2048_128,
+    cbs_radix: RadixDecomposition {
+        radix_log: RadixLog(4),
+        count: RadixCount(4),
+    },
+    pbs_radix: RadixDecomposition {
+        radix_log: RadixLog(16),
+        count: RadixCount(2),
+    },
+    pfks_radix: RadixDecomposition {
+        radix_log: RadixLog(17),
+        count: RadixCount(2),
+    },
+    ks_radix: RadixDecomposition {
+        radix_log: RadixLog(2),
+        count: RadixCount(6),
+    },
+    ss_radix: RadixDecomposition {
+        radix_log: RadixLog(3),
+        count: RadixCount(15),
+    },
+    tr_radix: RadixDecomposition {
+        count: RadixCount(6),
+        radix_log: RadixLog(7),
+    },
+    addend_count: AddendCount(2),
+};
+
+/// Fastest parameters at the expense of significantly larger key size.
+pub const TURBO_CHUNGUS_128: Params = Params {
+    l0_params: LWE_637_128,
+    l1_params: GLWE_1_2048_128,
+    cbs_radix: RadixDecomposition {
+        radix_log: RadixLog(4),
+        count: RadixCount(4),
+    },
+    pbs_radix: RadixDecomposition {
+        radix_log: RadixLog(16),
+        count: RadixCount(2),
+    },
+    pfks_radix: RadixDecomposition {
+        radix_log: RadixLog(17),
+        count: RadixCount(2),
+    },
+    ks_radix: RadixDecomposition {
+        radix_log: RadixLog(2),
+        count: RadixCount(6),
+    },
+    ss_radix: RadixDecomposition {
+        radix_log: RadixLog(3),
+        count: RadixCount(15),
+    },
+    tr_radix: RadixDecomposition {
+        count: RadixCount(6),
+        radix_log: RadixLog(7),
+    },
+    addend_count: AddendCount(3),
 };

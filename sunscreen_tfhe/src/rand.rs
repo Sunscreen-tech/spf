@@ -1,4 +1,4 @@
-use std::fmt::Debug;
+use std::{fmt::Debug, hash::Hash};
 
 use rand::{Rng, rng};
 use rand_chacha::rand_core::{RngCore, SeedableRng};
@@ -72,6 +72,26 @@ impl Seed {
 /// The standard deviation of a Gaussian distribution normalized over the torus
 /// `T_q`.
 pub struct Stddev(pub f64);
+
+impl Hash for Stddev {
+    fn hash<H: std::hash::Hasher>(&self, state: &mut H) {
+        // Git outta here you no good yellow bellied total ordering ruining varmint
+        assert!(!self.0.is_nan());
+
+        self.0.to_bits().hash(state);
+    }
+}
+
+impl PartialEq for Stddev {
+    fn eq(&self, other: &Self) -> bool {
+        assert!(!self.0.is_nan());
+        assert!(!other.0.is_nan());
+
+        self.0.eq(&other.0)
+    }
+}
+
+impl Eq for Stddev {}
 
 /// Generate a normal torus element using a sampling function
 fn normal_torus_with_sampler<S: TorusOps, F>(std: Stddev, sampler: F) -> Torus<S>

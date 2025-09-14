@@ -26,7 +26,7 @@ pub trait SecurityLevel {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 /// How many bits of the secret key to unwrap at a time during bootstrapping.
 ///
 /// # Remarks
@@ -46,7 +46,7 @@ impl AddendCount {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The number of torus elements in the LWE lattice.
 pub struct LweDimension(pub usize);
@@ -58,7 +58,7 @@ impl LweDimension {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize, PartialEq, Eq)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The degree of the modulus polynomial `(x^N+1)` in a GLWE instance.
 ///
@@ -76,7 +76,7 @@ impl PolynomialDegree {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The number of polynomials in a GLWE instance.
 pub struct GlweSize(pub usize);
@@ -92,22 +92,22 @@ pub struct GlweSize(pub usize);
 /// For binary, set this to one.
 pub struct PlaintextBits(pub u32);
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The number of padding bits to include in an LWE ciphertext.
 pub struct CarryBits(pub u32);
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The number of digits to decompose a value into.
 pub struct RadixCount(pub usize);
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The number of bits in a digit output during base decomposition.
 pub struct RadixLog(pub usize);
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 #[serde(transparent)]
 /// The number of [`LweCiphertext`](crate::entities::LweCiphertext)s that get
 /// mapped into a [`GlweCiphertext`](crate::entities::GlweCiphertext) during
@@ -122,7 +122,7 @@ impl PrivateFunctionalKeyswitchLweCount {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 /// The parameters defining how to do approximately perform base decomposition. I.e.
 /// decompose values into digits.
 ///
@@ -153,7 +153,7 @@ impl RadixDecomposition {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 /// A [`PolynomialDegree`] and [`GlweSize`] in a GLWE instance.
 pub struct GlweDimension {
     /// The degree of the polynomial in a GLWE instance.
@@ -179,7 +179,7 @@ impl GlweDimension {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 /// Parameters that define an LWE problem instance.
 ///
 /// # Security
@@ -207,7 +207,7 @@ impl SecurityLevel for LweDef {
     }
 }
 
-#[derive(Debug, Copy, Clone, Serialize, Deserialize)]
+#[derive(Debug, Copy, Clone, Serialize, Deserialize, Hash, PartialEq, Eq)]
 /// Parameters that define a GLWE problem instance.
 ///
 /// # Security

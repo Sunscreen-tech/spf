@@ -25,6 +25,13 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 }
 
 #[inline(always)]
+pub fn complex_msub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
+    for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
+        *c -= a * b;
+    }
+}
+
+#[inline(always)]
 pub fn complex_add(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
     for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
         *c = a + b;
