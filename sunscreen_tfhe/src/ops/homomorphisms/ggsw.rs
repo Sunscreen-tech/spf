@@ -1,13 +1,9 @@
 use num::Complex;
 
 use crate::{
-    GlweDef, RadixDecomposition,
-    entities::GgswCiphertextFftRef,
-    ops::homomorphisms::{
-        add_assign_glev_ciphertexts_fft, add_glev_ciphertexts_fft,
-        mul_glev_ciphertext_negative_monomial_fft, mul_glev_ciphertext_positive_monomial_fft,
-        sub_assign_glev_ciphertexts_fft, sub_glev_ciphertexts_fft,
-    },
+    entities::GgswCiphertextFftRef, ops::homomorphisms::{
+        add_assign_glev_ciphertexts_fft, add_glev_ciphertexts_fft, mad_glev_ciphertext_positive_monomial_fft, msub_glev_ciphertext_positive_monomial_fft, mul_glev_ciphertext_negative_monomial_fft, mul_glev_ciphertext_positive_monomial_fft, sub_assign_glev_ciphertexts_fft, sub_glev_ciphertexts_fft
+    }, GlweDef, RadixDecomposition
 };
 
 /// Given 2 FFT'd GGSW ciphertexts, compute `a + b`.
@@ -78,6 +74,32 @@ pub fn mul_ggsw_ciphertext_positive_monomial_fft(
 ) {
     for (c, a) in c.rows_mut(glwe, radix).zip(a.rows(glwe, radix)) {
         mul_glev_ciphertext_positive_monomial_fft(c, a, i, glwe);
+    }
+}
+
+/// Compute `c += a * x^i`.
+pub fn mad_ggsw_ciphertext_positive_monomial_fft(
+    c: &mut GgswCiphertextFftRef<Complex<f64>>,
+    a: &GgswCiphertextFftRef<Complex<f64>>,
+    i: usize,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    for (c, a) in c.rows_mut(glwe, radix).zip(a.rows(glwe, radix)) {
+        mad_glev_ciphertext_positive_monomial_fft(c, a, i, glwe);
+    }
+}
+
+/// Compute `c -= a * x^i`.
+pub fn msub_ggsw_ciphertext_positive_monomial_fft(
+    c: &mut GgswCiphertextFftRef<Complex<f64>>,
+    a: &GgswCiphertextFftRef<Complex<f64>>,
+    i: usize,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    for (c, a) in c.rows_mut(glwe, radix).zip(a.rows(glwe, radix)) {
+        msub_glev_ciphertext_positive_monomial_fft(c, a, i, glwe);
     }
 }
 

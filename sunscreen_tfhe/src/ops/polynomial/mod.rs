@@ -4,11 +4,7 @@ use std::{
 };
 
 use crate::{
-    PlaintextBits, PolynomialDegree, Torus, TorusOps,
-    dst::FromMutSlice,
-    entities::{DstArray, PolynomialFft, PolynomialFftRef, PolynomialRef},
-    scratch::allocate_scratch_ref,
-    simd::{VectorOps, complex_mul},
+    dst::FromMutSlice, entities::{DstArray, PolynomialFft, PolynomialFftRef, PolynomialRef}, scratch::allocate_scratch_ref, simd::{complex_mad, complex_msub, complex_mul, VectorOps}, PlaintextBits, PolynomialDegree, Torus, TorusOps
 };
 use dashmap::DashMap;
 
@@ -69,6 +65,52 @@ pub fn polynomial_mul_positive_monomial_fft(
         .unwrap();
 
     complex_mul(result.coeffs_mut(), x_i.coeffs(), x.coeffs());
+}
+
+/// Multiply a negacyclic polynomial by x^i in the Fourier domain.
+///
+/// # Panics
+/// If result.len() is not a power of 2.
+pub fn polynomial_mad_positive_monomial_fft(
+    result: &mut PolynomialFftRef<Complex<f64>>,
+    x: &PolynomialFftRef<Complex<f64>>,
+    i: usize,
+) {
+    assert!(result.len().is_power_of_two() && !result.is_empty());
+
+    let degree = 2 * result.len();
+
+    let cache = x_i_cache(PolynomialDegree(degree));
+
+    let x_i = cache
+        .iter(PolynomialDegree(degree))
+        .nth(i % (2 * degree))
+        .unwrap();
+
+    complex_mad(result.coeffs_mut(), x_i.coeffs(), x.coeffs());
+}
+
+/// Multiply a negacyclic polynomial by x^i in the Fourier domain.
+///
+/// # Panics
+/// If result.len() is not a power of 2.
+pub fn polynomial_msub_positive_monomial_fft(
+    result: &mut PolynomialFftRef<Complex<f64>>,
+    x: &PolynomialFftRef<Complex<f64>>,
+    i: usize,
+) {
+    assert!(result.len().is_power_of_two() && !result.is_empty());
+
+    let degree = 2 * result.len();
+
+    let cache = x_i_cache(PolynomialDegree(degree));
+
+    let x_i = cache
+        .iter(PolynomialDegree(degree))
+        .nth(i % (2 * degree))
+        .unwrap();
+
+    complex_msub(result.coeffs_mut(), x_i.coeffs(), x.coeffs());
 }
 
 /// Multiply a negacyclic polynomial by x^-i in the Fourier domain.

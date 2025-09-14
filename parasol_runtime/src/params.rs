@@ -197,8 +197,8 @@ pub const TURBO_CHUNGUS_128: Params = Params {
         count: RadixCount(4),
     },
     pbs_radix: RadixDecomposition {
-        radix_log: RadixLog(23),
-        count: RadixCount(1),
+        radix_log: RadixLog(16),
+        count: RadixCount(2),
     },
     pfks_radix: RadixDecomposition {
         radix_log: RadixLog(17),
