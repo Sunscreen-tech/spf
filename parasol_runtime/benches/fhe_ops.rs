@@ -15,7 +15,7 @@ fn get_keys(params: &Params) -> (Arc<SecretKey>, Encryption, Evaluation) {
     static SK: OnceLock<DashMap<Params, OnceLock<Arc<SecretKey>>>> = OnceLock::new();
     static COMPUTE_KEY: OnceLock<DashMap<Params, OnceLock<Arc<ComputeKey>>>> = OnceLock::new();
 
-    let sk_cache = SK.get_or_init(|| DashMap::new());
+    let sk_cache = SK.get_or_init(DashMap::new);
 
     let sk = sk_cache
         .entry(params.clone())
@@ -23,7 +23,7 @@ fn get_keys(params: &Params) -> (Arc<SecretKey>, Encryption, Evaluation) {
         .get_or_init(|| Arc::new(SecretKey::generate(params)))
         .clone();
 
-    let ck_cache = COMPUTE_KEY.get_or_init(|| DashMap::new());
+    let ck_cache = COMPUTE_KEY.get_or_init(DashMap::new);
 
     let compute_key = ck_cache
         .entry(params.clone())
@@ -36,7 +36,7 @@ fn get_keys(params: &Params) -> (Arc<SecretKey>, Encryption, Evaluation) {
         .clone();
 
     let enc = Encryption::new(params);
-    let eval = Evaluation::new(compute_key.to_owned(), &params, &enc);
+    let eval = Evaluation::new(compute_key.to_owned(), params, &enc);
 
     (sk, enc, eval)
 }
