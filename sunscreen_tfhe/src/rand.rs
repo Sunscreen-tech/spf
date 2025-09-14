@@ -91,7 +91,7 @@ impl PartialEq for Stddev {
     }
 }
 
-impl Eq for Stddev { }
+impl Eq for Stddev {}
 
 /// Generate a normal torus element using a sampling function
 fn normal_torus_with_sampler<S: TorusOps, F>(std: Stddev, sampler: F) -> Torus<S>

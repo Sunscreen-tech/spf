@@ -1,10 +1,16 @@
 use num::Complex;
 
 use crate::{
-    entities::GlweCiphertextFftRef, ops::polynomial::{polynomial_mad_positive_monomial_fft, polynomial_msub_positive_monomial_fft, polynomial_mul_negative_monomial_fft, polynomial_mul_positive_monomial_fft}, polynomial::{
+    GlweDef,
+    entities::GlweCiphertextFftRef,
+    ops::polynomial::{
+        polynomial_mad_positive_monomial_fft, polynomial_msub_positive_monomial_fft,
+        polynomial_mul_negative_monomial_fft, polynomial_mul_positive_monomial_fft,
+    },
+    polynomial::{
         polynomial_add_assign_fft, polynomial_add_fft, polynomial_sub_assign_fft,
         polynomial_sub_fft,
-    }, GlweDef
+    },
 };
 
 /// Given 2 FFT'd GLEV ciphertexts, compute `a + b`.

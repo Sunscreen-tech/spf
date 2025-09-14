@@ -4,7 +4,11 @@ use std::{
 };
 
 use crate::{
-    dst::FromMutSlice, entities::{DstArray, PolynomialFft, PolynomialFftRef, PolynomialRef}, scratch::allocate_scratch_ref, simd::{complex_mad, complex_msub, complex_mul, VectorOps}, PlaintextBits, PolynomialDegree, Torus, TorusOps
+    PlaintextBits, PolynomialDegree, Torus, TorusOps,
+    dst::FromMutSlice,
+    entities::{DstArray, PolynomialFft, PolynomialFftRef, PolynomialRef},
+    scratch::allocate_scratch_ref,
+    simd::{VectorOps, complex_mad, complex_msub, complex_mul},
 };
 use dashmap::DashMap;
 

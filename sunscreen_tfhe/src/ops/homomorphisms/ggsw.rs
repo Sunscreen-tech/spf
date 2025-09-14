@@ -1,9 +1,14 @@
 use num::Complex;
 
 use crate::{
-    entities::GgswCiphertextFftRef, ops::homomorphisms::{
-        add_assign_glev_ciphertexts_fft, add_glev_ciphertexts_fft, mad_glev_ciphertext_positive_monomial_fft, msub_glev_ciphertext_positive_monomial_fft, mul_glev_ciphertext_negative_monomial_fft, mul_glev_ciphertext_positive_monomial_fft, sub_assign_glev_ciphertexts_fft, sub_glev_ciphertexts_fft
-    }, GlweDef, RadixDecomposition
+    GlweDef, RadixDecomposition,
+    entities::GgswCiphertextFftRef,
+    ops::homomorphisms::{
+        add_assign_glev_ciphertexts_fft, add_glev_ciphertexts_fft,
+        mad_glev_ciphertext_positive_monomial_fft, msub_glev_ciphertext_positive_monomial_fft,
+        mul_glev_ciphertext_negative_monomial_fft, mul_glev_ciphertext_positive_monomial_fft,
+        sub_assign_glev_ciphertexts_fft, sub_glev_ciphertexts_fft,
+    },
 };
 
 /// Given 2 FFT'd GGSW ciphertexts, compute `a + b`.
