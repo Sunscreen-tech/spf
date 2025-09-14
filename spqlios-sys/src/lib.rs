@@ -1,4 +1,3 @@
-use std::{cell::RefCell, ops::{Deref, DerefMut}, sync::{atomic::{AtomicBool, AtomicUsize, Ordering}, Mutex}};
 
 use crate::sys::{
     new_reim_fft_precomp, new_reim_ifft_precomp, reim_fft, reim_ifft, REIM_FFT_PRECOMP, REIM_IFFT_PRECOMP
@@ -9,6 +8,7 @@ mod sys {
     #![allow(non_upper_case_globals)]
     #![allow(unused)]
     #![allow(non_camel_case_types)]
+    #![allow(clippy::all)]
     include!(concat!(env!("OUT_DIR"), "/bindings.rs"));
 }
 
