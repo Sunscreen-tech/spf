@@ -1,4 +1,7 @@
-use std::{collections::HashMap, sync::{Arc, OnceLock}};
+use std::{
+    collections::HashMap,
+    sync::{Arc, OnceLock},
+};
 
 use criterion::{Criterion, criterion_group, criterion_main};
 use dashmap::DashMap;
@@ -43,7 +46,9 @@ fn ops(c: &mut Criterion) {
         (DEFAULT_128, "DEFAULT_128".to_owned()),
         (FAST_BIG_128, "FAST_BIG_128".to_owned()),
         (TURBO_CHUNGUS_128, "TURBO_CHUNGUS_128".to_owned()),
-    ].into_iter().collect::<HashMap<Params, String>>();
+    ]
+    .into_iter()
+    .collect::<HashMap<Params, String>>();
 
     for p in [DEFAULT_128, FAST_BIG_128, TURBO_CHUNGUS_128] {
         let params_name = params_names.get(&p).unwrap();
@@ -87,11 +92,14 @@ fn ops(c: &mut Criterion) {
 
         let mut result = enc.allocate_ggsw_l1();
 
-        c.bench_function(&format!("Circuit bootstrap params: {params_name}"), |bench| {
-            bench.iter(|| {
-                eval.circuit_bootstrap(&mut result, &a);
-            });
-        });
+        c.bench_function(
+            &format!("Circuit bootstrap params: {params_name}"),
+            |bench| {
+                bench.iter(|| {
+                    eval.circuit_bootstrap(&mut result, &a);
+                });
+            },
+        );
 
         let a = enc.encrypt_lwe_l1_secret(false, &sk);
 

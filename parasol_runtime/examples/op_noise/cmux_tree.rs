@@ -292,7 +292,7 @@ fn ggsw_fft_encryption(
         &params.tr_radix,
         &params.ss_radix,
         &params.cbs_radix,
-        params.addend_count
+        params.addend_count,
     )
 }
 
@@ -319,7 +319,7 @@ fn choose_permutation<T: Clone>(a: &[T], b: &[T]) -> Vec<(Order, T, T)> {
         .into_iter()
         .zip(b_permuted)
         .map(|(a, b)| {
-            if rng.gen_bool(0.5) {
+            if rng.random_bool(0.5) {
                 (Order::Normal, a, b)
             } else {
                 (Order::Flipped, b, a)
