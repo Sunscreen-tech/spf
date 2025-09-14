@@ -292,6 +292,7 @@ fn ggsw_fft_encryption(
         &params.tr_radix,
         &params.ss_radix,
         &params.cbs_radix,
+        params.addend_count
     )
 }
 

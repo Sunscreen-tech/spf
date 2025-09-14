@@ -1,6 +1,10 @@
-use std::sync::{Arc, OnceLock, mpsc::Receiver};
+use std::{
+    collections::HashMap,
+    sync::{Arc, OnceLock, mpsc::Receiver},
+};
 
 use criterion::{Criterion, criterion_group, criterion_main};
+use dashmap::DashMap;
 use parasol_runtime::{
     CircuitProcessor,
     ComputeKey,
@@ -8,37 +12,63 @@ use parasol_runtime::{
     DEFAULT_128,
     Encryption,
     Evaluation,
+    FAST_BIG_128,
     L1GgswCiphertext,
     L1GlweCiphertext,
+    Params,
     SecretKey,
+    TURBO_CHUNGUS_128, // L1GlevCiphertext, // Uncomment when re-enabling GLEV benchmarks
     fluent::{Bit, CiphertextOps, FheCircuitCtx, Muxable, UInt, UIntGraphNodes},
-    // L1GlevCiphertext, // Uncomment when re-enabling GLEV benchmarks
 };
 
-fn make_computer() -> (
+const PARAMS: &[Params] = &[DEFAULT_128, FAST_BIG_128, TURBO_CHUNGUS_128];
+
+fn params_name(params: &Params) -> String {
+    let params_names = [
+        (DEFAULT_128, "DEFAULT_128".to_owned()),
+        (FAST_BIG_128, "FAST_BIG_128".to_owned()),
+        (TURBO_CHUNGUS_128, "TURBO_CHUNGUS_128".to_owned()),
+    ]
+    .into_iter()
+    .collect::<HashMap<Params, String>>();
+
+    params_names.get(params).unwrap().to_owned()
+}
+
+fn make_computer(
+    params: &Params,
+) -> (
     Encryption,
     Arc<SecretKey>,
     CircuitProcessor,
     Receiver<()>,
     Evaluation,
 ) {
-    static SK: OnceLock<Arc<SecretKey>> = OnceLock::new();
-    static COMPUTE_KEY: OnceLock<Arc<ComputeKey>> = OnceLock::new();
+    static SK: OnceLock<DashMap<Params, OnceLock<Arc<SecretKey>>>> = OnceLock::new();
+    static COMPUTE_KEY: OnceLock<DashMap<Params, OnceLock<Arc<ComputeKey>>>> = OnceLock::new();
 
-    let sk = SK
-        .get_or_init(|| Arc::new(SecretKey::generate(&DEFAULT_128)))
+    let sk_cache = SK.get_or_init(|| DashMap::new());
+
+    let sk = sk_cache
+        .entry(params.clone())
+        .or_default()
+        .get_or_init(|| Arc::new(SecretKey::generate(params)))
         .clone();
 
-    let compute_key = COMPUTE_KEY
-        .get_or_init(|| {
-            let compute = ComputeKeyNonFft::generate(&sk, &DEFAULT_128);
+    let ck_cache = COMPUTE_KEY.get_or_init(|| DashMap::new());
 
-            Arc::new(compute.fft(&DEFAULT_128))
+    let compute_key = ck_cache
+        .entry(params.clone())
+        .or_default()
+        .get_or_init(|| {
+            let compute = ComputeKeyNonFft::generate(&sk, params);
+
+            Arc::new(compute.fft(params))
         })
         .clone();
 
-    let enc = Encryption::new(&DEFAULT_128);
-    let eval = Evaluation::new(compute_key.to_owned(), &DEFAULT_128, &enc);
+    let enc = Encryption::new(params);
+    let eval = Evaluation::new(compute_key.to_owned(), params, &enc);
 
     let (uproc, fc) = CircuitProcessor::new(16384, None, &eval, &enc);
 
@@ -54,60 +84,68 @@ where
         &UIntGraphNodes<N, L1GgswCiphertext>,
     ),
 {
-    let (enc, sk, mut uproc, fc, _) = make_computer();
+    for p in PARAMS {
+        let (enc, sk, mut uproc, fc, _) = make_computer(p);
 
-    let ctx = FheCircuitCtx::new();
+        let ctx = FheCircuitCtx::new();
 
-    // Encrypt inputs with the specified ciphertext type
-    let a = UInt::<N, InCt>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
-    let b = UInt::<N, InCt>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
+        // Encrypt inputs with the specified ciphertext type
+        let a =
+            UInt::<N, InCt>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
+        let b =
+            UInt::<N, InCt>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
 
-    // Convert to GGSW for computation
-    let a = a.convert::<L1GgswCiphertext>(&ctx).into();
-    let b = b.convert::<L1GgswCiphertext>(&ctx).into();
+        // Convert to GGSW for computation
+        let a = a.convert::<L1GgswCiphertext>(&ctx).into();
+        let b = b.convert::<L1GgswCiphertext>(&ctx).into();
 
-    // Apply the operation once
-    op(&ctx, &a, &b);
+        // Apply the operation once
+        op(&ctx, &a, &b);
 
-    crit.bench_function(name, |bench| {
-        bench.iter(|| {
-            uproc
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
-                .unwrap();
+        crit.bench_function(&format!("{name} params: {}", params_name(p)), |bench| {
+            bench.iter(|| {
+                uproc
+                    .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                    .unwrap();
+            });
         });
-    });
+    }
 }
 
 fn bench_select_function<const N: usize, InCt>(crit: &mut Criterion, name: &str)
 where
     InCt: CiphertextOps + Muxable,
 {
-    let (enc, sk, mut uproc, fc, _) = make_computer();
+    for p in PARAMS {
+        let (enc, sk, mut uproc, fc, _) = make_computer(p);
 
-    let ctx = FheCircuitCtx::new();
+        let ctx = FheCircuitCtx::new();
 
-    // Selector starts with the same type as inputs, then converts to GGSW
-    let selector = Bit::<InCt>::encrypt_secret(true, &enc, &sk)
-        .graph_input(&ctx)
-        .convert::<L1GgswCiphertext>(&ctx);
+        // Selector starts with the same type as inputs, then converts to GGSW
+        let selector = Bit::<InCt>::encrypt_secret(true, &enc, &sk)
+            .graph_input(&ctx)
+            .convert::<L1GgswCiphertext>(&ctx);
 
-    // Encrypt inputs with the specified ciphertext type
-    let a = UInt::<N, InCt>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
-    let b = UInt::<N, InCt>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
+        // Encrypt inputs with the specified ciphertext type
+        let a =
+            UInt::<N, InCt>::encrypt_secret(42 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
+        let b =
+            UInt::<N, InCt>::encrypt_secret(35 & ((0x1 << N) - 1), &enc, &sk).graph_inputs(&ctx);
 
-    // Convert to the same type for select (no conversion needed, already InCt)
-    let a: UIntGraphNodes<N, InCt> = a.into();
-    let b: UIntGraphNodes<N, InCt> = b.into();
+        // Convert to the same type for select (no conversion needed, already InCt)
+        let a: UIntGraphNodes<N, InCt> = a.into();
+        let b: UIntGraphNodes<N, InCt> = b.into();
 
-    selector.select(&a, &b, &ctx);
+        selector.select(&a, &b, &ctx);
 
-    crit.bench_function(name, |bench| {
-        bench.iter(|| {
-            uproc
-                .run_graph_blocking(&ctx.circuit.borrow(), &fc)
-                .unwrap();
+        crit.bench_function(&format!("{name} params: {}", params_name(p)), |bench| {
+            bench.iter(|| {
+                uproc
+                    .run_graph_blocking(&ctx.circuit.borrow(), &fc)
+                    .unwrap();
+            });
         });
-    });
+    }
 }
 
 fn ops(c: &mut Criterion) {

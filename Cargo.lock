@@ -2026,6 +2026,7 @@ dependencies = [
  "chrono",
  "clap",
  "criterion",
+ "dashmap",
  "getrandom 0.2.15",
  "indicatif",
  "log",

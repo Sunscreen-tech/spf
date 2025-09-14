@@ -3,8 +3,8 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
-    GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits, PolynomialDegree,
-    RadixCount, RadixDecomposition, RadixLog,
+    AddendCount, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits,
+    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
     entities::{GgswCiphertext, GlweSecretKey, LweSecretKey},
     high_level::{self, keygen},
     rand::Stddev,
@@ -53,12 +53,22 @@ pub fn analyze_cbs(cbs: &AnalyzeCbs) -> Result<CbsSample> {
         radix_log: RadixLog(cbs.tr_radix_log),
     };
 
+    let addend_count = AddendCount(cbs.addend_count);
+
     let l0_sk = LweSecretKey::<u64>::generate_binary(&l0_lwe);
     let l1_sk = GlweSecretKey::<u64>::generate_binary(&l1_glwe);
 
-    let pbs_key = keygen::generate_bootstrapping_key(&l0_sk, &l1_sk, &l0_lwe, &l1_glwe, &pbs_radix);
+    let pbs_key = keygen::generate_bootstrapping_key(
+        &l0_sk,
+        &l1_sk,
+        &l0_lwe,
+        &l1_glwe,
+        &pbs_radix,
+        addend_count,
+    );
 
-    let pbs_key = high_level::fft::fft_bootstrap_key(&pbs_key, &l0_lwe, &l1_glwe, &pbs_radix);
+    let pbs_key =
+        high_level::fft::fft_bootstrap_key(&pbs_key, &l0_lwe, &l1_glwe, &pbs_radix, addend_count);
 
     let ss_key = keygen::generate_scheme_switch_key(&l1_sk, &l1_glwe, &ss_radix);
     let ss_key = high_level::fft::fft_scheme_switch_key(&ss_key, &l1_glwe, &ss_radix);
@@ -79,8 +89,17 @@ pub fn analyze_cbs(cbs: &AnalyzeCbs) -> Result<CbsSample> {
             let ct0 = l0_sk.encrypt(1, &encryption_params, PlaintextBits(1)).0;
 
             let ggsw_fft = high_level::evaluation::circuit_bootstrap(
-                &ct0, &pbs_key, &auto_key, &ss_key, &l0_lwe, &l1_glwe, &pbs_radix, &tr_radix,
-                &ss_radix, &cbs_radix,
+                &ct0,
+                &pbs_key,
+                &auto_key,
+                &ss_key,
+                &l0_lwe,
+                &l1_glwe,
+                &pbs_radix,
+                &tr_radix,
+                &ss_radix,
+                &cbs_radix,
+                addend_count,
             );
 
             let mut ggsw = GgswCiphertext::new(&l1_glwe, &cbs_radix);
