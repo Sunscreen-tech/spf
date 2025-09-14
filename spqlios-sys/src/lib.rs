@@ -1,6 +1,6 @@
-
 use crate::sys::{
-    new_reim_fft_precomp, new_reim_ifft_precomp, reim_fft, reim_ifft, REIM_FFT_PRECOMP, REIM_IFFT_PRECOMP
+    REIM_FFT_PRECOMP, REIM_IFFT_PRECOMP, new_reim_fft_precomp, new_reim_ifft_precomp, reim_fft,
+    reim_ifft,
 };
 
 mod sys {
@@ -27,14 +27,20 @@ impl Fft {
 
     pub fn fft_inplace(&self, data: &mut [f64]) {
         // This requirement is an implementation detail of spqlios
-        assert!(data.as_ptr().align_offset(64) == 0, "FFT inputs must be 64-byte aligned");
+        assert!(
+            data.as_ptr().align_offset(64) == 0,
+            "FFT inputs must be 64-byte aligned"
+        );
 
         unsafe { reim_fft(self.fwd, data.as_mut_ptr()) };
     }
 
     pub fn ifft_inplace(&self, data: &mut [f64]) {
         // This requirement is an implementation detail of spqlios
-        assert!(data.as_ptr().align_offset(64) == 0, "FFT inputs must be 64-byte aligned");
+        assert!(
+            data.as_ptr().align_offset(64) == 0,
+            "FFT inputs must be 64-byte aligned"
+        );
 
         unsafe { reim_ifft(self.rev, data.as_mut_ptr()) };
     }
