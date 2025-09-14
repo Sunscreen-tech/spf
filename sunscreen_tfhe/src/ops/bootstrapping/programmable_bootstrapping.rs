@@ -23,8 +23,7 @@ use crate::{
         encryption::encrypt_ggsw_ciphertext_scalar,
         fft_ops::{cmux, glwe_ggsw_mad},
         homomorphisms::{
-            mad_ggsw_ciphertext_positive_monomial_fft,
-            msub_ggsw_ciphertext_positive_monomial_fft, 
+            mad_ggsw_ciphertext_positive_monomial_fft, msub_ggsw_ciphertext_positive_monomial_fft,
         },
     },
     scratch::allocate_scratch_ref,
