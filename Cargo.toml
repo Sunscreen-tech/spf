@@ -7,11 +7,11 @@ members = [
     "parasol_cpu",
     "parasol_cpu_macros",
     "parasol_runtime",
+    "spqlios-sys",
     "sunscreen_math",
     "sunscreen_math_macros",
     "sunscreen_tfhe",
-    "sunscreen_gpu_runtime"
-]
+    "sunscreen_gpu_runtime"]
 default-members = [
     "benchmark_system_info",
     "examples/basic_add",
@@ -19,6 +19,7 @@ default-members = [
     "parasol_cpu",
     "parasol_cpu_macros",
     "parasol_runtime",
+    "spqlios-sys",
     "sunscreen_math",
     "sunscreen_math_macros",
     "sunscreen_tfhe",
@@ -80,6 +81,7 @@ parasol_concurrency = { version = "0.9", path = "./parasol_concurrency" }
 parasol_cpu = { version = "0.9", path = "./parasol_cpu" }
 parasol_cpu_macros = { version = "0.9", path = "./parasol_cpu_macros" }
 parasol_runtime = { version = "0.9", path = "./parasol_runtime" }
+spqlios-sys = { version = "0.1", path = "./spqlios-sys" }
 sunscreen_compiler_macros = { version = "0.9", path = "./sunscreen_compiler_macros" }
 sunscreen_gpu_runtime = { version = "0.9", path = "./sunscreen_gpu_runtime" }
 sunscreen_math = { version = "0.9", path = "./sunscreen_math" }
