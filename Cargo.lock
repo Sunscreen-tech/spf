@@ -3050,6 +3050,7 @@ dependencies = [
  "rug",
  "rustfft",
  "serde",
+ "spqlios-sys",
  "sunscreen_gpu_runtime",
  "sunscreen_math",
  "thiserror 2.0.12",

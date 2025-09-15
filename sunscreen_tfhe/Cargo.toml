@@ -27,6 +27,7 @@ rayon = { workspace = true }
 realfft = { workspace = true }
 rustfft = { workspace = true }
 serde = { workspace = true }
+spqlios-sys = { workspace = true }
 sunscreen_gpu_runtime = { workspace = true, optional = true }
 sunscreen_math = { workspace = true }
 thiserror = { workspace = true }
