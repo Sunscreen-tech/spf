@@ -25,6 +25,21 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 }
 
 #[inline(always)]
+pub fn realimag_mad(c: &mut [f64], a: &[f64], b: &[f64]) {
+    let n = c.len();
+    let n_div_2 = n / 2;
+
+    let (c_re, c_im) = c.split_at_mut(n_div_2);
+    let (a_re, a_im) = a.split_at(n_div_2);
+    let (b_re, b_im) = b.split_at(n_div_2);
+
+    for i in 0..n_div_2 {
+        c_re[i] += a_re[i] * b_re[i] - a_im[i] * b_im[i];
+        c_im[i] += a_re[i] * b_im[i] + a_im[i] * b_re[i];
+    }
+}
+
+#[inline(always)]
 pub fn complex_msub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
     for ((c, a), b) in c.iter_mut().zip(a.iter()).zip(b.iter()) {
         *c -= a * b;

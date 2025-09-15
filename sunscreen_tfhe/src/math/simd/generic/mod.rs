@@ -130,6 +130,16 @@ pub fn complex_mad(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>
 /// If `c.len() != a.len() != b.len()`
 /// If `a.len() % 8 != 0`
 /// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
+pub fn realimag_mad(c: &mut [f64], a: &[f64], b: &[f64]) {
+    scalar::realimag_mad(c, a, b)
+}
+
+/// Compute vector `c += a * b` over &[Complex<f64>].
+///
+/// # Panics
+/// If `c.len() != a.len() != b.len()`
+/// If `a.len() % 8 != 0`
+/// If `a`, `b`, `c` are not aligned to a 512-bit boundary.
 pub fn complex_msub(c: &mut [Complex<f64>], a: &[Complex<f64>], b: &[Complex<f64>]) {
     scalar::complex_msub(c, a, b)
 }

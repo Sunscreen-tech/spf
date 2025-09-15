@@ -22,9 +22,7 @@ use crate::{
         },
         encryption::encrypt_ggsw_ciphertext_scalar,
         fft_ops::{cmux, glwe_ggsw_mad},
-        homomorphisms::{
-            mad_ggsw_ciphertext_positive_monomial_fft, msub_ggsw_ciphertext_positive_monomial_fft,
-        },
+        homomorphisms::mad_ggsw_ciphertext_positive_monomial_fft,
     },
     scratch::allocate_scratch_ref,
 };
@@ -587,7 +585,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
 
         // a_(i - 1)(s_i - 1)(s_(i - 1))
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1,
@@ -596,7 +594,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a_i(s_i)(s_(i - 1) - 1)
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i,
@@ -642,7 +640,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
 
         // a^{i - 2} ⊠ ((s_{i} - 1) (s_{i - 1} - 1) s_{i - 2})
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_2,
@@ -651,7 +649,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a^{i - 1} ⊠ ((s_{i} - 1) s_{i - 1} (s_{i - 2} - 1))
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1,
@@ -669,7 +667,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a^{i} ⊠ ( s_{i} (s_{i - 1} - 1) (s_{i - 2} - 1))
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i,
@@ -696,7 +694,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a^{i} a^{i - 1} a^{i - 2} ⊠ (s_{i} s_{i - 1} s_{i - 2})
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i + a_i_min_1 + a_i_min_2,

@@ -18,7 +18,8 @@ pub use torus::*;
 mod basic;
 pub use basic::*;
 
-pub(crate) mod simd;
+#[doc(hidden)]
+pub mod simd;
 
 /// Types where the roots of unity in the given field can be found.
 pub trait RootOfUnity

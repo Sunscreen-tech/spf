@@ -140,6 +140,36 @@ fn programmable_bootstrapping(c: &mut Criterion) {
         AddendCount(1),
     );
 
+    // CBS parameters 2 addends
+    let radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(16),
+    };
+
+    run_bench(
+        "CBS parameters 2 addends",
+        &mut g,
+        &LWE_637_128,
+        &GLWE_1_2048_128,
+        &radix,
+        AddendCount(2),
+    );
+
+    // CBS parameters 3 addends
+    let radix = RadixDecomposition {
+        count: RadixCount(2),
+        radix_log: RadixLog(16),
+    };
+
+    run_bench(
+        "CBS parameters 3 addends",
+        &mut g,
+        &LWE_637_128,
+        &GLWE_1_2048_128,
+        &radix,
+        AddendCount(3),
+    );
+
     // Binary PBS parameters
     let bs_radix = RadixDecomposition {
         count: RadixCount(3),
