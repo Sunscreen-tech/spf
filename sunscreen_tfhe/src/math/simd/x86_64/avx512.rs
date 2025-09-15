@@ -88,6 +88,81 @@ pub unsafe fn complex_mad_avx_512_unchecked(
 /// the lengths of c, a, and b must be the equal or UB may result.
 /// the lengths of c, a, and b must be a multiple of 8 or UB will result.
 #[inline(always)]
+pub unsafe fn realimag_mad_avx_512_unchecked(c: &mut [f64], a: &[f64], b: &[f64]) {
+    let mut i = 0;
+    let n = a.len();
+    let n_div_2 = n / 2;
+
+    // Complex<T> is declared as repr(C), so the location of re and im are guaranteed
+    // at address offsets 0 and 8 for Complex<f64>. This allows us to treat
+    // &[Complex<f64>] as &[f64] for the below asm snippet.
+    let (a_re, a_im) = a.split_at(n_div_2);
+    let (b_re, b_im) = b.split_at(n_div_2);
+    let (c_re, c_im) = c.split_at_mut(n_div_2);
+
+    let a_re_ptr = a_re.as_ptr() as *const f64;
+    let b_re_ptr = b_re.as_ptr() as *const f64;
+    let c_re_ptr = c_re.as_ptr() as *mut f64;
+
+    let a_im_ptr = a_im.as_ptr() as *const f64;
+    let b_im_ptr = b_im.as_ptr() as *const f64;
+    let c_im_ptr = c_im.as_ptr() as *mut f64;
+
+    // Each complex is 2 f64 values.
+    while i < n_div_2 {
+        // AVX512 isn't currently available on stable, so write some goddamn assembly
+        // code I guess ¯\_(ツ)_/¯
+        //
+        // This snippet reads 2 vectors of 4 complex numbers from a, b, c and computes
+        // stores the complex multiply-add result to c. Thus, it iterates over 16 f64
+        // elements from each vector at a time.
+        unsafe {
+            asm!(
+                // Load 2 __m512d of Complex<f64> from a
+                "vmovapd zmm0, [{a_re_ptr}+8*{i}]",
+                "vmovapd zmm1, [{a_im_ptr}+8*{i}]",
+                // Load 2 __m512d of Complex<f64> from b
+                "vmovapd zmm2, [{b_re_ptr}+8*{i}]",
+                "vmovapd zmm3, [{b_im_ptr}+8*{i}]",
+                // Load 2 __m512d of Complex<f64> from c
+                "vmovapd zmm4, [{c_re_ptr}+8*{i}]",
+                "vmovapd zmm5, [{c_im_ptr}+8*{i}]",
+                "vfmadd231pd zmm4, zmm0, zmm2",   // re(c) += re(a) * re(b)
+                "vfmadd231pd zmm5, zmm0, zmm3",   // im(c) += re(a) * im(b)
+                "vfnmadd231pd zmm4, zmm1, zmm3",  // re(c) -= im(a) * im(b)
+                "vfmadd231pd zmm5, zmm1, zmm2",   // im(c) += im(a) * re(b)
+                "vmovapd [{c_re_ptr}+8*{i}], zmm4",    // Write the repacked values back.
+                "vmovapd [{c_im_ptr}+8*{i}], zmm5", // Write the repacked values back.
+                a_re_ptr = in(reg) a_re_ptr,
+                b_re_ptr = in(reg) b_re_ptr,
+                c_re_ptr = in(reg) c_re_ptr,
+                a_im_ptr = in(reg) a_im_ptr,
+                b_im_ptr = in(reg) b_im_ptr,
+                c_im_ptr = in(reg) c_im_ptr,
+                i = in(reg) i,
+                out("zmm0") _, // Indicate our clobbers
+                out("zmm1") _,
+                out("zmm2") _,
+                out("zmm3") _,
+                out("zmm4") _,
+                out("zmm5") _,
+            );
+        }
+
+        i += 8;
+    }
+}
+
+/// Compute vector `c += a * b` over `&[Complex<f64>]`.
+/// This function is very unsafe.
+///
+/// # Safety
+/// c, a, b must be aligned to a 512-bit boundary. The program will otherwise bus error
+/// and crash.
+///
+/// the lengths of c, a, and b must be the equal or UB may result.
+/// the lengths of c, a, and b must be a multiple of 8 or UB will result.
+#[inline(always)]
 pub unsafe fn complex_msub_avx_512_unchecked(
     c: &mut [Complex<f64>],
     a: &[Complex<f64>],
@@ -214,9 +289,11 @@ pub fn vector_scalar_mad(c: &mut [u64], a: &[u64], s: u64) {
 
 #[cfg(test)]
 mod tests {
+    use aligned_vec::avec;
+
     use crate::{
         dst::{dst_from_iter, dst_from_slice},
-        simd::x86_64::avx_512_available,
+        simd::{scalar, x86_64::avx_512_available},
     };
 
     use super::*;
@@ -233,6 +310,32 @@ mod tests {
             vector_scalar_mad(&mut c, &a, s as u64);
 
             assert_eq!(c, expected);
+        }
+    }
+
+    #[test]
+    fn can_realimag_mad() {
+        // Skip the test if the current hardware can't run it.
+        if avx_512_available() {
+            let mut a = avec![[64]| 0.0f64; 2048];
+            let mut b = a.clone();
+            let mut actual = a.clone();
+
+            for i in 0..2048 {
+                a[i] = i as f64;
+                b[i] = 2.0 * i as f64;
+                actual[i] = 3.0 * i as f64;
+            }
+
+            let mut expected = actual.clone();
+
+            unsafe {
+                realimag_mad_avx_512_unchecked(&mut actual, &a, &b);
+            }
+
+            scalar::realimag_mad(&mut expected, &a, &b);
+
+            assert_eq!(expected, actual);
         }
     }
 }

@@ -1,6 +1,6 @@
 use aligned_vec::avec;
 use criterion::{Criterion, criterion_group, criterion_main};
-use num::{Complex};
+use num::Complex;
 use rustfft::{FftDirection, FftPlanner as RustfftFft};
 use spqlios_sys::Fft as SpqliosFft;
 use sunscreen_tfhe::{FrequencyTransform, math::fft::negacyclic::TwistedFft};
