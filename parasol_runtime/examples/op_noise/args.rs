@@ -2,7 +2,7 @@ use std::path::{Path, PathBuf};
 
 use anyhow::{Result, anyhow};
 use clap::{Args, Parser, Subcommand};
-use parasol_runtime::{DEFAULT_128, Params};
+use parasol_runtime::{DEFAULT_128, FAST_BIG_128, Params, TURBO_CHUNGUS_128};
 use serde::{Deserialize, Serialize};
 
 use crate::cmux_tree::CMuxTreeParameters;
@@ -147,40 +147,42 @@ pub struct SearchSchemeSwitchCommand {
 
 #[derive(Debug, Args)]
 pub struct AnalyzeCbs {
-    #[arg(default_value_t = 3, long)]
-    /// The radix decomposition count of the scheme switch operation.
-    pub ss_radix_count: usize,
-
-    #[arg(default_value_t = 15, long)]
-    /// The radix decomposition base-log of the scheme switch operation.
-    pub ss_radix_log: usize,
-
-    #[arg(default_value_t = 2, long)]
-    /// The radix decomposition count of the pbs operation.
-    pub pbs_radix_count: usize,
-
-    #[arg(default_value_t = 16, long)]
-    /// The radix decomposition base-log of the pbs operation.
-    pub pbs_radix_log: usize,
-
-    #[arg(default_value_t = 6, long)]
-    /// The radix decomposition count of the tr operation.
-    pub tr_radix_count: usize,
-
-    #[arg(default_value_t = 7, long)]
-    /// The radix decomposition base-log of the tr operation.
-    pub tr_radix_log: usize,
+    #[arg(default_value_t = 4, long)]
+    /// The radix decomposition base-log of the resulting GGSW.
+    pub cbs_radix_log: usize,
 
     #[arg(default_value_t = 4, long)]
     /// The radix decomposition count of the resulting GGSW.
     pub cbs_radix_count: usize,
 
-    #[arg(default_value_t = 4, long)]
-    /// The radix decomposition base-log of the resulting GGSW.
-    pub cbs_radix_log: usize,
+    #[arg(default_value_t = 16, long)]
+    /// The radix decomposition base-log of the pbs operation.
+    pub pbs_radix_log: usize,
+
+    #[arg(default_value_t = 2, long)]
+    /// The radix decomposition count of the pbs operation.
+    pub pbs_radix_count: usize,
+
+    #[arg(default_value_t = 3, long)]
+    /// The radix decomposition base-log of the scheme switch operation.
+    pub ss_radix_log: usize,
+
+    #[arg(default_value_t = 15, long)]
+    /// The radix decomposition count of the scheme switch operation.
+    pub ss_radix_count: usize,
+
+    #[arg(default_value_t = 7, long)]
+    /// The radix decomposition base-log of the tr operation.
+    pub tr_radix_log: usize,
+
+    #[arg(default_value_t = 6, long)]
+    /// The radix decomposition count of the tr operation.
+    pub tr_radix_count: usize,
 
     #[arg(default_value_t = 7.25e-5, long)]
-    /// The std deviation of the L0 LWE instance.
+    /// The std deviation of the L0 LWE instance. See
+    /// `sunscreen_tfhe/src/params.rs` for LWE for parameter sets for what this
+    /// number should be for a given LWE size and security level.
     pub l0_sigma: f64,
 
     #[arg(default_value_t = 7e-16, long)]
@@ -188,11 +190,15 @@ pub struct AnalyzeCbs {
     pub l1_sigma: f64,
 
     #[arg(default_value_t = 7.25e-5, long)]
-    /// The std deviation given to the input L0 LWE ciphertext.
+    /// The std deviation given to the input L0 LWE ciphertext. See
+    /// `sunscreen_tfhe/src/params.rs` for LWE for parameter sets for what this
+    /// number should be for a given LWE size and security level.
     pub input_sigma: f64,
 
     #[arg(default_value_t = 637, long)]
-    /// The number of polynomials in the GLWE problem instance.
+    /// The number of polynomials in the GLWE problem instance. See
+    /// `sunscreen_tfhe/src/params.rs` for LWE for parameter sets for what this
+    /// number should be for a given LWE size and security level.
     pub l0_lwe_size: usize,
 
     #[arg(default_value_t = 1, long)]
@@ -309,6 +315,8 @@ impl AnalyzeCMuxTreeSource {
                 let parameter_set = match parameter_set_name.to_lowercase().as_str() {
                     "default" => Params::default(),
                     "default_128" => DEFAULT_128,
+                    "fast_big_128" => FAST_BIG_128,
+                    "turbo_chungus_128" => TURBO_CHUNGUS_128,
                     _ => Err(anyhow!("Invalid parameter set"))?,
                 };
                 Ok(CMuxTreeParameters {

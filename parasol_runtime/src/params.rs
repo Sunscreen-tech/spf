@@ -151,8 +151,8 @@ pub const DEFAULT_128: Params = Params {
         count: RadixCount(15),
     },
     tr_radix: RadixDecomposition {
-        count: RadixCount(6),
         radix_log: RadixLog(7),
+        count: RadixCount(6),
     },
     addend_count: AddendCount(1),
 };
@@ -182,8 +182,8 @@ pub const FAST_BIG_128: Params = Params {
         count: RadixCount(15),
     },
     tr_radix: RadixDecomposition {
-        count: RadixCount(6),
         radix_log: RadixLog(7),
+        count: RadixCount(6),
     },
     addend_count: AddendCount(2),
 };
@@ -213,8 +213,8 @@ pub const TURBO_CHUNGUS_128: Params = Params {
         count: RadixCount(15),
     },
     tr_radix: RadixDecomposition {
-        count: RadixCount(6),
         radix_log: RadixLog(7),
+        count: RadixCount(6),
     },
     addend_count: AddendCount(3),
 };

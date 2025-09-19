@@ -54,7 +54,7 @@ impl<S: TorusOps> UnivariateLookupTable<S> {
     /// # Remarks
     /// The result of this should be used with
     /// [`generalized_programmable_bootstrap`](crate::ops::bootstrapping::generalized_programmable_bootstrap).
-    pub fn trivivial_multifunctional<F>(
+    pub fn trivial_multifunctional<F>(
         maps: &[F],
         glwe: &GlweDef,
         plaintext_bits: PlaintextBits,
@@ -86,7 +86,7 @@ impl<S: TorusOps> UnivariateLookupTableRef<S> {
         GlweCiphertextRef::from_mut_slice(&mut self.data)
     }
 
-    /// Generates a look up table filled with the values from the provided map,
+    /// Generates a look up table filled with the values from the provided maps,
     /// and trivially encrypts the lookup table.
     pub fn fill_trivial_from_fns<F: Fn(u64) -> u64>(
         &mut self,

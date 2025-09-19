@@ -22,9 +22,7 @@ use crate::{
         },
         encryption::encrypt_ggsw_ciphertext_scalar,
         fft_ops::{cmux, glwe_ggsw_mad},
-        homomorphisms::{
-            mad_ggsw_ciphertext_positive_monomial_fft, msub_ggsw_ciphertext_positive_monomial_fft,
-        },
+        homomorphisms::mad_ggsw_ciphertext_positive_monomial_fft,
     },
     scratch::allocate_scratch_ref,
 };
@@ -34,7 +32,9 @@ use super::rotate_glwe_negative_monomial_negacyclic;
 /// Generate a bootstrap key from a LWE secret key to a GLWE secret key.
 ///
 /// Mathematically, this key is a list of GGSW ciphertexts, one for each bit of
-/// the secret key being encrypted.
+/// the secret key being encrypted (for the case of one addend) or a bundle of
+/// GGSW ciphertexts for each `addend` group of bits of the secret key (for the case of
+/// multiple addends).
 ///
 /// See
 /// [`programmable_bootstrap_univariate`](crate::ops::bootstrapping::programmable_bootstrap_univariate)
@@ -90,27 +90,32 @@ fn generate_key_bundle<S>(
         return;
     }
 
-    // Otherwise, generate the keybundle of all permutations of s_i and !s_i.
-    //
-    // Iterate over all the truth table configurations for the bundle of secret key bits.
-    // If the j'th bit of i is a zero, we invert s_i for its contributing in the product
-    // of s_i terms. Otherwise, we just take s_i as-is.
-    #[allow(clippy::needless_range_loop)]
-    for i in 0..bundle_size {
-        let kb = sk_bits
-            .iter()
-            .enumerate()
-            .map(|(j, x)| {
-                if (i >> j) & 0x1 == 1 {
-                    *x
-                } else {
-                    !*x & <S as num::One>::one()
-                }
-            })
-            .fold(<S as num::One>::one(), |s, x| s & x);
-
-        encrypt_ggsw_ciphertext_scalar(enc_sk[i], kb, glwe_sk, glwe, radix, plaintext_bits);
+    // Compute the one-hot encoding of the bits in the secret key.
+    for (i, ggsw) in enc_sk.iter_mut().enumerate() {
+        let kb = is_one_hot(i, sk_bits);
+        encrypt_ggsw_ciphertext_scalar(ggsw, kb, glwe_sk, glwe, radix, plaintext_bits);
     }
+}
+
+/// Computes whether a position is the one-hot position for the given bits.
+/// This counts up from the left (i.e., the least significant bit is at the
+/// start of the slice).
+#[inline(always)]
+fn is_one_hot<S>(position: usize, sk_bits: &[S]) -> S
+where
+    S: TorusOps,
+{
+    sk_bits
+        .iter()
+        .enumerate()
+        .map(|(j, x)| {
+            if (position >> j) & 0x1 == 1 {
+                *x
+            } else {
+                !*x & <S as num::One>::one()
+            }
+        })
+        .fold(<S as num::One>::one(), |s, x| s & x)
 }
 
 /// Generate a negacyclic LUT for bootstrapping. Another name for this structure
@@ -174,8 +179,8 @@ fn generate_negacyclic_lut<S, F>(
 /// not negacyclic, and hence must be used with LWE inputs that have at least
 /// one padding bit.
 ///
-/// The input `map` is used for generating programmable bootstrapping LUTs. This
-/// function takes an element in the plaintext space and must produce another
+/// The input `maps` is used for generating programmable bootstrapping LUTs. These
+/// functions takes an element in the plaintext space and must produce another
 /// element in the plaintext space.
 ///
 /// # Remarks
@@ -392,15 +397,15 @@ pub fn programmable_bootstrap_univariate<S>(
 /// [`programmable_bootstrap_bivariate`] compute a single function of the
 /// input ciphertext, this can compute multiple functions. To do this,
 /// create a [`UnivariateLookupTable`](crate::entities::UnivariateLookupTable) using
-/// [`UnivariateLookupTable::trivivial_multifunctional`](crate::entities::UnivariateLookupTable::trivivial_multifunctional).
-///
-/// `log_v` should equal `ceil(log2(maps.len()))` for the `maps` you
-/// used when creating the LUT.
+/// [`UnivariateLookupTable::trivial_multifunctional`](crate::entities::UnivariateLookupTable::trivial_multifunctional).
 ///
 /// `log_chi` is the number of most-significant bits to drop during
 /// bootstrapping. Generally, you should set this to zero unless building
 /// other cryptographic primitives, such as Without Padding Bootstrapping
 /// (WoP-PBS)
+///
+/// `log_v` should equal `ceil(log2(maps.len()))` for the `maps` you
+/// used when creating the LUT.
 pub fn generalized_programmable_bootstrap<S>(
     output: &mut GlweCiphertextRef<S>,
     input: &LweCiphertextRef<S>,
@@ -426,7 +431,8 @@ pub fn generalized_programmable_bootstrap<S>(
 
     // Steps:
     // 1. Modulus switch the ciphertext to 2N.
-    // 2. Blind rotate V using the elements of the bootstrap key (the input LWE secret key bits). The algorithm for this depends on addend_count.
+    // 2. Blind rotate V using the elements of the bootstrap key (the input LWE
+    //    secret key bits). The algorithm for this depends on addend_count.
     // 3. Sample extract.
     // 4. (Optional, done outside of this method) Key switch to the output LWE
     // secret key (should be the one extracted from the GLWE key).
@@ -567,7 +573,35 @@ fn apply_addends<'a, IA, IBSK, S>(
 
         assert!(bsk_bundle.next().is_none());
         assert!(a.next().is_none());
-    } else if addend_count.0 == 2 {
+    }
+    // TODO: The following code for addend counts 2 and 3 is not quite the
+    // formulas that are specified in the paper. In the paper, terms are either
+    // added or subtracted based on if the number of set secret key bits for the
+    // number of addends is even or odd (subtract for odd). For example, for the
+    // 2 addends case, the formula in the paper is
+    //
+    //   X^{-a_{i - 1} - a_i} s_i s_{i - 1}
+    // - X^{-a_{i - 1}} s_{i - 1} (s_i - 1)
+    // - X^{-a_i} s_i (s_{i - 1} - 1)
+    // + (s_i - 1)(s_{i - 1} - 1)
+    //
+    // In this case, the negatives in front of the second and third terms are
+    // due to the bit selecting the particular term in the truth table above is
+    // -1 (ex: s_i - 1, where s_i is 0, produces -1).
+    //
+    // This did not immediately work when implemented for CBS, potentially due
+    // to the fact that what the encoding of -1 is changes based on the number
+    // of plaintext bits needed (which changes during the bootstrapping
+    // procedure). Instead, we encode the truth table using only positive terms:
+    //
+    //   X^{-a_{i - 1} - a_i} s_i s_{i - 1}
+    // + X^{-a_{i - 1}} s_{i - 1} (1 - s_i)
+    // + X^{-a_i} s_i (1 - s_{i - 1})
+    // + (1 - s_i)(1 - s_{i - 1})
+    //
+    // While this work in theory and in practice is fine, we should double check
+    // that it is the approach that we want to take.
+    else if addend_count.0 == 2 {
         let a_i_min_1 = a.next().unwrap().to_u64() as usize;
         let a_i = a.next().unwrap().to_u64() as usize;
         assert!(a.next().is_none());
@@ -587,7 +621,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
 
         // a_(i - 1)(s_i - 1)(s_(i - 1))
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1,
@@ -596,7 +630,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a_i(s_i)(s_(i - 1) - 1)
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i,
@@ -642,7 +676,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         sum_addends.clone_from_ref(bsk_bundle.next().unwrap());
 
         // a^{i - 2} ⊠ ((s_{i} - 1) (s_{i - 1} - 1) s_{i - 2})
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_2,
@@ -651,7 +685,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a^{i - 1} ⊠ ((s_{i} - 1) s_{i - 1} (s_{i - 2} - 1))
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i_min_1,
@@ -669,7 +703,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a^{i} ⊠ ( s_{i} (s_{i - 1} - 1) (s_{i - 2} - 1))
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i,
@@ -696,7 +730,7 @@ fn apply_addends<'a, IA, IBSK, S>(
         );
 
         // a^{i} a^{i - 1} a^{i - 2} ⊠ (s_{i} s_{i - 1} s_{i - 2})
-        msub_ggsw_ciphertext_positive_monomial_fft(
+        mad_ggsw_ciphertext_positive_monomial_fft(
             sum_addends,
             bsk_bundle.next().unwrap(),
             a_i + a_i_min_1 + a_i_min_2,
@@ -710,6 +744,8 @@ fn apply_addends<'a, IA, IBSK, S>(
 
         // acc *= sum_addends
         glwe_ggsw_mad(result, accumulator, sum_addends, glwe_params, radix);
+
+        result.ifft(accumulator, glwe_params);
     }
 }
 
@@ -1271,15 +1307,11 @@ mod tests {
 
         // Fill the LUT with nonsense and we'll overwrite it with
         // the correct encoding.
-        let lut = UnivariateLookupTable::trivivial_multifunctional(
-            [|x| x % 2, |x| (x + 1) % 2, |x| x % 2].as_slice(),
-            glwe,
-            bits,
-        );
+        let maps = [|x| x % 2, |x| (x + 1) % 2, |x| x % 2];
+        let lut = UnivariateLookupTable::trivial_multifunctional(maps.as_slice(), glwe, bits);
 
         for i in [0, 1] {
-            //let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, bits);
-            let input = encryption::trivial_lwe(i, lwe, PlaintextBits(2));
+            let input = encryption::encrypt_lwe_secret(i, &lwe_sk, lwe, PlaintextBits(2));
             let mut output = GlweCiphertext::new(glwe);
 
             generalized_programmable_bootstrap(
@@ -1288,7 +1320,7 @@ mod tests {
                 &lut,
                 &bs_key,
                 0,
-                3,
+                maps.len().next_power_of_two().ilog2(),
                 lwe,
                 glwe,
                 radix,
@@ -1321,17 +1353,23 @@ mod tests {
 
     #[test]
     fn can_generalized_bootstrap() {
-        generalized_bootstrap_case(AddendCount(1));
+        for _ in 0..6 {
+            generalized_bootstrap_case(AddendCount(1));
+        }
     }
 
     #[test]
     fn can_generalized_bootstrap_2_addends() {
-        generalized_bootstrap_case(AddendCount(2));
+        for _ in 0..6 {
+            generalized_bootstrap_case(AddendCount(2));
+        }
     }
 
     #[test]
     fn can_generalized_bootstrap_3_addends() {
-        generalized_bootstrap_case(AddendCount(3));
+        for _ in 0..6 {
+            generalized_bootstrap_case(AddendCount(3));
+        }
     }
 
     #[test]
@@ -1356,6 +1394,56 @@ mod tests {
 
         // 8 elements for the first 130 / 3 elements + 4 for the remaining 2 elements
         assert_eq!(bootstrap_key.rows(&glwe, &radix).len(), 43 * 8 + 4);
+    }
+
+    #[test]
+    fn test_truth_table_generation_2_bits() {
+        // Test every position for every possible 2-bit input
+        let test_cases = [
+            ([0u64, 0u64], 0),
+            ([1u64, 0u64], 1),
+            ([0u64, 1u64], 2),
+            ([1u64, 1u64], 3),
+        ];
+
+        for (input_bits, expected_hot_pos) in test_cases.iter() {
+            for pos in 0..4 {
+                let result = is_one_hot(pos, input_bits) == 1;
+                let expected = pos == *expected_hot_pos;
+                assert_eq!(
+                    result, expected,
+                    "Position {} should be {} for input {:?}",
+                    pos, expected, input_bits
+                );
+            }
+        }
+    }
+
+    #[test]
+    fn test_truth_table_generation_3_bits() {
+        // Test every position for every possible 3-bit input
+        let test_cases = [
+            ([0u64, 0u64, 0u64], 0),
+            ([1u64, 0u64, 0u64], 1),
+            ([0u64, 1u64, 0u64], 2),
+            ([1u64, 1u64, 0u64], 3),
+            ([0u64, 0u64, 1u64], 4),
+            ([1u64, 0u64, 1u64], 5),
+            ([0u64, 1u64, 1u64], 6),
+            ([1u64, 1u64, 1u64], 7),
+        ];
+
+        for (input_bits, expected_hot_pos) in test_cases.iter() {
+            for pos in 0..8 {
+                let result = is_one_hot(pos, input_bits) == 1;
+                let expected = pos == *expected_hot_pos;
+                assert_eq!(
+                    result, expected,
+                    "Position {} should be {} for input {:?}",
+                    pos, expected, input_bits
+                );
+            }
+        }
     }
 
     #[test]

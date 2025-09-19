@@ -349,7 +349,7 @@ fn mod_switch_trace_and_rotate<S>(
 /// bandwidth bottlenecking.
 ///
 /// In fact, this algorithm's runtime is over 90% dominated by the programmable
-/// bootstrap operation even under agressive radix decompositions.
+/// bootstrap operation even under aggressive radix decompositions.
 pub fn circuit_bootstrap_via_trace_and_scheme_switch<S>(
     output: &mut GgswCiphertextFftRef<Complex<f64>>,
     input: &LweCiphertextRef<S>,
@@ -535,10 +535,9 @@ mod tests {
 
     use crate::{
         GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
-        dst::AsSlice,
         entities::{
             AutomorphismKey, AutomorphismKeyFft, DstArray, GgswCiphertext, GgswCiphertextFft,
-            GlweCiphertext, LweCiphertext, SchemeSwitchKey, SchemeSwitchKeyFft,
+            GlweCiphertext, LweCiphertext, Polynomial, SchemeSwitchKey, SchemeSwitchKeyFft,
         },
         high_level::{self, TEST_LWE_DEF_1, encryption, fft, keygen},
         ops::{
@@ -752,27 +751,45 @@ mod tests {
         }
     }
 
-    #[test]
-    fn can_circuit_bootstrap_via_trace_ss() {
+    struct FailedBootstrapGGSW {
+        value: u64,
+        glev_index: usize,
+        glwe_index: usize,
+        actual: Polynomial<u64>,
+        expected: Polynomial<u64>,
+    }
+
+    impl std::fmt::Display for FailedBootstrapGGSW {
+        fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+            write!(
+                f,
+                "Failed bootstrapping value {} at GLEV index {}, GLWE index {}: actual = {:?}, expected = {:?}",
+                self.value, self.glev_index, self.glwe_index, self.actual, self.expected
+            )
+        }
+    }
+
+    fn circuit_bootstrap_via_trace_ss(addend_count: u32) {
         let pbs_radix = RadixDecomposition {
-            count: RadixCount(2),
             radix_log: RadixLog(15),
+            count: RadixCount(2),
         };
         let cbs_radix = RadixDecomposition {
-            count: RadixCount(4),
             radix_log: RadixLog(4),
+            count: RadixCount(4),
         };
         let tr_radix = RadixDecomposition {
-            count: RadixCount(6),
             radix_log: RadixLog(7),
+            count: RadixCount(6),
         };
         let ss_radix = RadixDecomposition {
-            count: RadixCount(2),
-            radix_log: RadixLog(17),
+            radix_log: RadixLog(3),
+            count: RadixCount(15),
         };
+
         let lwe = LWE_637_128;
         let glwe = GLWE_1_2048_128;
-        let addend_count = AddendCount(1);
+        let addend_count = AddendCount(addend_count);
 
         let lwe_sk = keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
@@ -797,6 +814,8 @@ mod tests {
         let mut ak_fft = AutomorphismKeyFft::new(&glwe, &tr_radix);
         ak.fft(&mut ak_fft, &glwe, &tr_radix);
 
+        let mut failed = Vec::new();
+
         for b in [0, 1] {
             let ct = lwe_sk.encrypt(b, &lwe, PlaintextBits(1)).0;
 
@@ -819,31 +838,66 @@ mod tests {
 
             let mut actual_ifft = GgswCiphertext::new(&glwe, &cbs_radix);
 
-            dbg!(actual.as_slice());
-
             actual.ifft(&mut actual_ifft, &glwe, &cbs_radix);
 
             let expected =
                 encryption::encrypt_ggsw(b, &glwe_sk, &glwe, &cbs_radix, PlaintextBits(1));
 
-            for (a, e) in actual_ifft
+            for (glev_index, (a, e)) in actual_ifft
                 .rows(&glwe, &cbs_radix)
                 .zip(expected.rows(&glwe, &cbs_radix))
+                .enumerate()
             {
-                for (i, (a, e)) in a
+                for (glwe_index, (a, e)) in a
                     .glwe_ciphertexts(&glwe)
                     .zip(e.glwe_ciphertexts(&glwe))
                     .enumerate()
                 {
-                    let plaintext_bits = (i + 1) * cbs_radix.radix_log.0;
+                    let plaintext_bits = (glwe_index + 1) * cbs_radix.radix_log.0;
                     let plaintext_bits = PlaintextBits(plaintext_bits as u32);
 
                     let a = encryption::decrypt_glwe(a, &glwe_sk, &glwe, plaintext_bits);
                     let e = encryption::decrypt_glwe(e, &glwe_sk, &glwe, plaintext_bits);
 
-                    assert_eq!(a, e);
+                    if a != e {
+                        failed.push(FailedBootstrapGGSW {
+                            value: b,
+                            glev_index,
+                            glwe_index,
+                            actual: a,
+                            expected: e,
+                        });
+                    }
                 }
             }
+        }
+
+        if !failed.is_empty() {
+            for fail in &failed {
+                eprintln!("{}", fail);
+            }
+            panic!("Bootstrapping failed with {} errors", failed.len());
+        }
+    }
+
+    #[test]
+    fn can_circuit_bootstrap_via_trace_ss_1_addend() {
+        for _ in 0..6 {
+            circuit_bootstrap_via_trace_ss(1);
+        }
+    }
+
+    #[test]
+    fn can_circuit_bootstrap_via_trace_ss_2_addends() {
+        for _ in 0..6 {
+            circuit_bootstrap_via_trace_ss(2);
+        }
+    }
+
+    #[test]
+    fn can_circuit_bootstrap_via_trace_ss_3_addends() {
+        for _ in 0..6 {
+            circuit_bootstrap_via_trace_ss(3);
         }
     }
 }

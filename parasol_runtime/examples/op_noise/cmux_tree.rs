@@ -516,7 +516,7 @@ fn run_compute_tree(
 
     let mut samples_per_level = Vec::with_capacity(depth);
 
-    for (order, select_1, select_2) in permutation.iter() {
+    for (level, (order, select_1, select_2)) in permutation.iter().enumerate() {
         let outputs @ (out_a_expected, out_b_expected) = match order {
             Order::Normal => (last_inputs.0, last_inputs.1),
             Order::Flipped => (last_inputs.1, last_inputs.0),
@@ -539,6 +539,10 @@ fn run_compute_tree(
             PlaintextBits(1),
         );
 
+        if noise_a.is_err() {
+            eprintln!("Error measuring noise in CMUX tree at level {level}");
+        }
+
         let noise_b = measure_noise_by_keyswitch_glwe_to_lwe(
             &out_b,
             &secret_key.lwe_0,
@@ -547,6 +551,10 @@ fn run_compute_tree(
             params,
             PlaintextBits(1),
         );
+
+        if noise_b.is_err() {
+            eprintln!("Error measuring noise in CMUX tree at level {level}");
+        }
 
         // Concat the samples.
         samples_per_level.push((noise_a, noise_b));
@@ -711,16 +719,20 @@ fn drift_analysis(
         .collect::<Vec<_>>();
     progress.finish_and_clear();
 
+    let noise_decode_error_msg =
+        |depth| format!("Expected a sample noise but received None instead at depth {depth}");
     let samples_per_tree = samples_per_run
         .into_iter()
         .flat_map(|x| {
             let left = x
                 .iter()
-                .map(|(a, _)| a.unwrap().clone())
+                .enumerate()
+                .map(|(i, (a, _))| a.expect(&noise_decode_error_msg(i)).clone())
                 .collect::<Vec<_>>();
             let right = x
                 .iter()
-                .map(|(_, b)| b.unwrap().clone())
+                .enumerate()
+                .map(|(i, (_, b))| b.expect(&noise_decode_error_msg(i)).clone())
                 .collect::<Vec<_>>();
 
             [left, right]
