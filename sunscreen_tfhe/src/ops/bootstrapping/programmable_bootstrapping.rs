@@ -397,7 +397,7 @@ pub fn programmable_bootstrap_univariate<S>(
 /// [`programmable_bootstrap_bivariate`] compute a single function of the
 /// input ciphertext, this can compute multiple functions. To do this,
 /// create a [`UnivariateLookupTable`](crate::entities::UnivariateLookupTable) using
-/// [`UnivariateLookupTable::trivivial_multifunctional`](crate::entities::UnivariateLookupTable::trivivial_multifunctional).
+/// [`UnivariateLookupTable::trivial_multifunctional`](crate::entities::UnivariateLookupTable::trivial_multifunctional).
 ///
 /// `log_chi` is the number of most-significant bits to drop during
 /// bootstrapping. Generally, you should set this to zero unless building

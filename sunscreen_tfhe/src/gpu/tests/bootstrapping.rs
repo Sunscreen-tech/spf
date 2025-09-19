@@ -56,7 +56,7 @@ fn can_programmable_bootstrap() {
 
         // Fill the LUT with nonsense and we'll overwrite it with
         // the correct encoding.
-        let lut = UnivariateLookupTable::<u64>::trivivial_multifunctional(
+        let lut = UnivariateLookupTable::<u64>::trivial_multifunctional(
             [|x| x % 2, |x| (x + 1) % 2, |x| x % 2].as_slice(),
             &glwe,
             bits,
