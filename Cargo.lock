@@ -1978,10 +1978,6 @@ name = "parasol_cpu"
 version = "0.9.0"
 dependencies = [
  "benchmark_system_info",
- "bincode",
- "biodivine-lib-bdd",
- "bytemuck",
- "cached",
  "criterion",
  "elf",
  "env_logger",
@@ -2000,7 +1996,6 @@ dependencies = [
  "seq-macro",
  "serde",
  "serde_json",
- "sunscreen_math",
  "sunscreen_tfhe",
  "thiserror 2.0.12",
 ]
@@ -2037,13 +2032,11 @@ dependencies = [
  "petgraph",
  "rand 0.9.1",
  "rayon",
- "reqwest",
  "scirs2-optimize",
  "serde",
  "serde_json",
  "sunscreen_math",
  "sunscreen_tfhe",
- "sysinfo",
  "thiserror 2.0.12",
  "wasm-bindgen-test",
 ]
@@ -2900,9 +2893,6 @@ dependencies = [
  "cuda-driver-sys",
  "cuda-runtime-sys",
  "find_cuda_helper",
- "log",
- "num",
- "parasol_concurrency",
  "serde",
  "thiserror 2.0.12",
 ]

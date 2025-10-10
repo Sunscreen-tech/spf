@@ -211,7 +211,7 @@ where
 
         // If we land on an even multiple of degree, then we're not in a negacyclic wrapping. Else,
         // we need to multiply by -1.
-        let sign = if ((i * k) / degree) % 2 == 0 {
+        let sign = if ((i * k) / degree).is_multiple_of(2) {
             one
         } else {
             minus_one

@@ -127,3 +127,12 @@ jobs:
       env:
         RUSTDOCFLAGS: -D warnings
       run: cargo doc --release --no-deps
+
+  unused-dependencies:
+    runs-on: ubuntu-latest
+    steps:
+    - uses: actions/checkout@v3
+      with:
+        submodules: 'recursive'
+    - name: Check for unused dependencies
+      uses: bnjbvr/cargo-machete@main
