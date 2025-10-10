@@ -575,7 +575,7 @@ impl Memory {
 
     /// Attempt to load a plaintext word from the given address.
     pub(crate) fn try_load_plaintext_word(&self, virtual_address: Ptr32) -> Result<u32> {
-        if virtual_address.0 % WORD_SIZE != 0 {
+        if !virtual_address.0.is_multiple_of(WORD_SIZE) {
             return Err(Error::UnalignedAccess(virtual_address.0));
         }
 
@@ -585,7 +585,7 @@ impl Memory {
 
     /// Attempt to load a plaintext double word from the given address.
     pub(crate) fn try_load_plaintext_dword(&self, virtual_address: Ptr32) -> Result<u64> {
-        if virtual_address.0 % (DOUBLE_WORD_SIZE) != 0 {
+        if !virtual_address.0.is_multiple_of(DOUBLE_WORD_SIZE) {
             return Err(Error::UnalignedAccess(virtual_address.0));
         }
 
@@ -637,7 +637,7 @@ impl Memory {
     /// In the event of an error, the contents between addresses `ptr`` and `ptr + T::size()`
     /// are undefined.
     pub fn try_write_type<T: ToArg>(&self, ptr: Ptr32, x: &T) -> Result<()> {
-        if ptr.0 % T::alignment() as u32 != 0 {
+        if !ptr.0.is_multiple_of(T::alignment() as u32) {
             return Err(Error::UnalignedAccess(ptr.0));
         }
 
@@ -652,7 +652,7 @@ impl Memory {
 
     /// Similar to [`Memory::try_write_type`] but the value to write is [`DynamicToArg`]
     pub fn try_write_type_dyn<T: DynamicToArg>(&self, ptr: Ptr32, x: &T) -> Result<()> {
-        if ptr.0 % x.alignment() as u32 != 0 {
+        if !ptr.0.is_multiple_of(x.alignment() as u32) {
             return Err(Error::UnalignedAccess(ptr.0));
         }
 
@@ -667,7 +667,7 @@ impl Memory {
 
     /// Attempt to read a type `T` starting at address ptr.
     pub fn try_load_type<T: ToArg>(&self, ptr: Ptr32) -> Result<T> {
-        if ptr.0 % T::alignment() as u32 != 0 {
+        if !ptr.0.is_multiple_of(T::alignment() as u32) {
             return Err(Error::UnalignedAccess(ptr.0));
         }
 
@@ -690,7 +690,7 @@ impl Memory {
         align: usize,
         num_bytes: usize,
     ) -> Result<T> {
-        if ptr.0 % align as u32 != 0 {
+        if !ptr.0.is_multiple_of(align as u32) {
             return Err(Error::UnalignedAccess(ptr.0));
         }
 

@@ -7,9 +7,6 @@ edition = "2024"
 bytemuck = { workspace = true }
 cuda-driver-sys = { workspace = true, optional = true }
 cuda-runtime-sys = { workspace = true, optional = true }
-log = { workspace = true, optional = true }
-num = { workspace = true }
-parasol_concurrency = { workspace = true }
 serde = { workspace = true }
 thiserror = { workspace = true }
 
@@ -21,7 +18,7 @@ default = [] #["cuda"]
 test_kernels = []
 cuda = ["gpu", "dep:find_cuda_helper", "dep:cuda-runtime-sys", "dep:cuda-driver-sys"]
 amdhip = ["gpu"]
-gpu = ["dep:log"]
+gpu = []
 
 [[bin]]
 name = "device_info"

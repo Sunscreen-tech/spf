@@ -222,7 +222,7 @@ impl<const N: usize> ToArg for UInt<N, L1GlweCiphertext> {
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        assert!(N.is_power_of_two() && N % 8 == 0);
+        assert!(N.is_power_of_two() && N.is_multiple_of(8));
 
         self.bits
             .chunks(8)
@@ -260,7 +260,7 @@ impl<const N: usize> ToArg for Int<N, L1GlweCiphertext> {
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        assert!(N.is_power_of_two() && N % 8 == 0);
+        assert!(N.is_power_of_two() && N.is_multiple_of(8));
 
         self.bits
             .chunks(8)
@@ -415,7 +415,7 @@ impl DynamicToArg for DynamicUInt<L1GlweCiphertext> {
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        assert!(self.bits.len().is_power_of_two() && self.bits.len() % 8 == 0);
+        assert!(self.bits.len().is_power_of_two() && self.bits.len().is_multiple_of(8));
 
         self.bits
             .chunks(8)
@@ -449,7 +449,7 @@ impl DynamicToArg for DynamicInt<L1GlweCiphertext> {
     }
 
     fn to_bytes(&self) -> Vec<Byte> {
-        assert!(self.bits.len().is_power_of_two() && self.bits.len() % 8 == 0);
+        assert!(self.bits.len().is_power_of_two() && self.bits.len().is_multiple_of(8));
 
         self.bits
             .chunks(8)

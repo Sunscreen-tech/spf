@@ -655,7 +655,7 @@ mod tests {
             // Note that we need to negate the result from what we see in the paper,
             // as the paper uses a different convention for the body than our
             // implementation.
-            let expected_m_from_b_encoded = expected_m_from_b_encoded.map(|x| (x.wrapping_neg()));
+            let expected_m_from_b_encoded = expected_m_from_b_encoded.map(|x| x.wrapping_neg());
 
             assert_eq!(
                 expected_m_from_b_encoded, m_from_b_encoded,
