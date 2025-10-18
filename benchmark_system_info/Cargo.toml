@@ -1,7 +1,16 @@
 [package]
 name = "benchmark_system_info"
-version = "0.9.0"
+version = "0.10.0"
 edition = "2024"
+authors = ["Sunscreen"]
+rust-version = "1.87.0"
+license = "AGPL-3.0-only"
+description = "Prints system info when running benchmarks"
+homepage = "https://sunscreen.tech"
+repository = "https://github.com/Sunscreen-tech/spf"
+documentation = "https://docs.sunscreen.tech"
+keywords = ["FHE", "TFHE", "lattice", "cryptography"]
+categories = ["cryptography"]
 
 [dependencies]
 reqwest = { workspace = true }

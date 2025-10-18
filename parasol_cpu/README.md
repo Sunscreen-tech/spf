@@ -82,8 +82,8 @@ version = "0.1.0"
 edition = "2024"
 
 [dependencies]
-parasol_cpu = "0.9"
-parasol_runtime = "0.9"
+parasol_cpu = "0.10"
+parasol_runtime = "0.10"
 ```
 
 When we run our program
