@@ -74,17 +74,17 @@ thiserror = "2"
 zip = { version = "4", default-features = false, features = ["deflate"] }
 
 # Crates in this repo
-benchmark_system_info = { version = "0.9", path = "./benchmark_system_info" }
-mux_circuits = { version = "0.9", path = "./mux_circuits" }
-parasol_concurrency = { version = "0.9", path = "./parasol_concurrency" }
-parasol_cpu = { version = "0.9", path = "./parasol_cpu" }
-parasol_cpu_macros = { version = "0.9", path = "./parasol_cpu_macros" }
-parasol_runtime = { version = "0.9", path = "./parasol_runtime" }
-sunscreen_compiler_macros = { version = "0.9", path = "./sunscreen_compiler_macros" }
-sunscreen_gpu_runtime = { version = "0.9", path = "./sunscreen_gpu_runtime" }
-sunscreen_math = { version = "0.9", path = "./sunscreen_math" }
-sunscreen_math_macros = { version = "0.9", path = "./sunscreen_math_macros" }
-sunscreen_tfhe = { version = "0.9", path = "./sunscreen_tfhe" }
+benchmark_system_info = { version = "0.10", path = "./benchmark_system_info" }
+mux_circuits = { version = "0.10", path = "./mux_circuits" }
+parasol_concurrency = { version = "0.10", path = "./parasol_concurrency" }
+parasol_cpu = { version = "0.10", path = "./parasol_cpu" }
+parasol_cpu_macros = { version = "0.10", path = "./parasol_cpu_macros" }
+parasol_runtime = { version = "0.10", path = "./parasol_runtime" }
+sunscreen_compiler_macros = { version = "0.10", path = "./sunscreen_compiler_macros" }
+sunscreen_gpu_runtime = { version = "0.10", path = "./sunscreen_gpu_runtime" }
+sunscreen_math = { version = "0.10", path = "./sunscreen_math" }
+sunscreen_math_macros = { version = "0.10", path = "./sunscreen_math_macros" }
+sunscreen_tfhe = { version = "0.10", path = "./sunscreen_tfhe" }
 
 [profile.bench]
 lto = "fat"
