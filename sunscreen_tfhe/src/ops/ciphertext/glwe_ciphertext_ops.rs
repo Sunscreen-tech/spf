@@ -317,26 +317,45 @@ pub fn cmux<S>(
     add_glwe_ciphertexts(c, prod, d_0, params);
 }
 
-/// Given a standard power-of-two `q` modulus, switch to `q' < q`, where `q' | q`, then
-/// switch back to `q`.
+/// Given a standard power-of-two `q` modulus, switch to `q' < q`, where `q' |
+/// q`, then switch back to `q`.
+///
+/// # Arguments
+/// * `y` - Output GLWE ciphertext
+/// * `x` - Input GLWE ciphertext
+/// * `glwe` - GLWE parameters
+/// * `log_modulus_ratio` - log2(q / q'), the difference in the shift amount.
 ///
 /// # Remarks
-/// This introduces noise in the most significant bits of the ciphertext, but shifts the message down
-/// by `log2(q) - log2(q')` places. This is the "preprocessing" step in
-/// [WHS+24](https://eprint.iacr.org/2024/1318.pdf) for fast circuit bootstrapping.
+/// This introduces noise in the most significant bits of the ciphertext, but
+/// shifts the message down by `log_modulus_ratio` places, effectively
+/// multiplying the message by `2^(-log_modulus_ratio)`.
+///
+/// To mod switch from `q` to `q' = q/N` (where N is the polynomial degree),
+/// pass `log_modulus_ratio = log2(N)`. This effectively multiplies the message
+/// by `N^(-1)`, which is used in the WHS+24 paper for circuit bootstrapping to
+/// cancel the factor of N introduced by the trace operation.
+///
+/// In the LY25 paper, one needs to mod switch from q to q/2 during it's
+/// RevHomTrace operation, which means log_modulus_ratio = log2(2) = 1.
+///
+/// [WHS+24](https://eprint.iacr.org/2024/1318.pdf) for fast circuit
+/// bootstrapping.
+/// [LY25](https://eprint.iacr.org/2025/1088.pdf) for RevHomTrace (HomTrace with
+/// O(N log N) noise instead of O(N^3))
 pub fn glwe_mod_switch_and_expand_pow_2<S>(
     y: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
     glwe: &GlweDef,
-    log_q_prime: u32,
+    log_modulus_ratio: u32,
 ) where
     S: TorusOps,
 {
     for (y, x) in y.a_mut(glwe).zip(x.a(glwe)) {
-        polynomial_shr_round(y, x, log_q_prime);
+        polynomial_shr_round(y, x, log_modulus_ratio);
     }
 
-    polynomial_shr_round(y.b_mut(glwe), x.b(glwe), log_q_prime);
+    polynomial_shr_round(y.b_mut(glwe), x.b(glwe), log_modulus_ratio);
 }
 
 /// Rotate all message coefficients by `rotation` amount. GLWE analoge of

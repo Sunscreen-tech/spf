@@ -62,4 +62,43 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
             GlweKeyswitchKeyFftRef::<Complex<f64>>::size((glwe.dim, radix.count)),
         )
     }
+
+    /// Retrieve the keyswitch key for automorphism with power d.
+    ///
+    /// The automorphism keys are stored for d = [N, N/2, N/4, ..., 4, 2] where
+    /// N is the polynomial degree.
+    ///
+    /// # Arguments
+    /// * `d` - The power of 2 for the automorphism (d - 1 must be a power of 2 in range [1, N-1])
+    /// * `glwe` - GLWE parameters containing dimension information
+    /// * `radix` - Radix decomposition parameters
+    ///
+    /// # Panics
+    /// Panics if:
+    /// * `d - 1` is not a power of 2
+    /// * `d < 2` or `d > N` where N is the polynomial degree
+    pub fn keyswitch_key_at(
+        &self,
+        d: usize,
+        glwe: &GlweDef,
+        radix: &RadixDecomposition,
+    ) -> &GlweKeyswitchKeyFftRef<Complex<f64>> {
+        let n = glwe.dim.polynomial_degree.0;
+
+        assert!(d >= 2, "d must be at least 2, got {d}");
+        assert!(
+            (d - 1).is_power_of_two(),
+            "d - 1 must be a power of 2, got d = {d}"
+        );
+        assert!(d <= (n + 1), "d must be at most {n}, got {d}");
+
+        // Convert d to index: index = log(N) - log(d - 1)
+        let log_n = n.ilog2();
+        let log_d_minus_1 = (d - 1).ilog2();
+        let index = (log_n - log_d_minus_1) as usize;
+
+        self.keyswitch_keys(glwe, radix)
+            .nth(index)
+            .expect("index out of bounds")
+    }
 }

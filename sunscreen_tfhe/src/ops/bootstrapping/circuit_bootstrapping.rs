@@ -11,11 +11,11 @@ use crate::{
         LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
     ops::{
-        automorphisms::trace,
+        automorphisms::rev_trace,
         bootstrapping::{
             generalized_programmable_bootstrap, rotate_glwe_negative_monomial_negacyclic,
         },
-        ciphertext::{glwe_mod_switch_and_expand_pow_2, sample_extract},
+        ciphertext::sample_extract,
         fft_ops::scheme_switch_fft,
         homomorphisms::lwe_rotate,
         keyswitch::private_functional_keyswitch::private_functional_keyswitch,
@@ -298,13 +298,8 @@ fn mod_switch_trace_and_rotate<S>(
         // Multiply by x^-i to shift the i'th coefficient into the constant term.
         rotate_glwe_negative_monomial_negacyclic(glwe_permuted, glwe_rotated, i, glwe);
 
-        // Mod shift to implicitly multiply by N^-1
-        glwe_mod_switch_and_expand_pow_2(glwe_shifted, glwe_permuted, glwe, shift_amount);
-
-        // Compute a trace to zero all but the constant term. A by-product of this
-        // multiplies the constant coefficient by N, but this cancels our N^-1 in the
-        // previous step, leaving us with the our message's i'th decomposition term.
-        trace(glev_i, glwe_shifted, ak, glwe, trace_radix);
+        // Zero out all coefficients except the constant term.
+        rev_trace(glev_i, glwe_permuted, ak, glwe, trace_radix);
     }
 }
 
