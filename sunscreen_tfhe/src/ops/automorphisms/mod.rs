@@ -21,7 +21,7 @@ use crate::{
 /// d = [2^{log(N)} + 1, ..., 2^{log(N) - i + 1} + 1, ..., 2^1 + 1]
 /// for i = [1, ..., log(N)]
 ///
-/// Particularly it should be noted that this is in reverse order.
+/// Note that the key is defined in the aformentioned order.
 ///
 /// # Panics
 /// If the given entities are invalid for the given parameters.
