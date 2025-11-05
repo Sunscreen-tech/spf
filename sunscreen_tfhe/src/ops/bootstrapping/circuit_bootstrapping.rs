@@ -316,13 +316,6 @@ fn mod_switch_trace_and_rotate<S>(
 /// contained in `input` into the first `ℓ` coefficients of a
 /// [`GlweCiphertext`](crate::entities::GlweCiphertext).
 ///
-/// Next, we [`glwe_mod_switch_and_expand_pow_2`] the first `ℓ` coefficients. This
-/// first mod switches from `q` down to `q / N`, where `N` is the GLWE polynomial degree
-/// before mod switching back to `q`. This has the practical effect of multiplying
-/// the message by `N^-1` in preparation for applying the homomorphic trace. When
-/// `q` is a power of two, both of these operations collectively amount to right
-/// shifting the coefficient by `log2(N)` places.
-///
 /// We then perform `ℓ` [`trace`] operations to extract these coefficients into their
 /// own [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Collectively,
 /// their base decomposed messages form a
