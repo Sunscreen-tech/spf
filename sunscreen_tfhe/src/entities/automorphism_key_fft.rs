@@ -76,7 +76,7 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
     ///
     /// # Panics
     /// Panics if:
-    /// * d is not in the aformentioned set.
+    /// * d is not in the aforementioned set.
     pub fn keyswitch_key_at(
         &self,
         d: usize,

@@ -11,7 +11,7 @@ use crate::{
         LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
     ops::{
-        automorphisms::rev_trace,
+        automorphisms::trace_ly25,
         bootstrapping::{
             generalized_programmable_bootstrap, rotate_glwe_negative_monomial_negacyclic,
         },
@@ -296,7 +296,7 @@ fn mod_switch_trace_and_rotate<S>(
         rotate_glwe_negative_monomial_negacyclic(glwe_permuted, glwe_rotated, i, glwe);
 
         // Zero out all coefficients except the constant term.
-        rev_trace(glev_i, glwe_permuted, ak, glwe, trace_radix);
+        trace_ly25(glev_i, glwe_permuted, ak, glwe, trace_radix);
     }
 }
 
@@ -316,7 +316,7 @@ fn mod_switch_trace_and_rotate<S>(
 /// contained in `input` into the first `ℓ` coefficients of a
 /// [`GlweCiphertext`](crate::entities::GlweCiphertext).
 ///
-/// We then perform `ℓ` [`rev_trace`] operations to extract these coefficients into their
+/// We then perform `ℓ` [`trace_ly25`] operations to extract these coefficients into their
 /// own [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Collectively,
 /// their base decomposed messages form a
 /// [`GlevCiphertext`](crate::entities::GlevCiphertext).

@@ -21,7 +21,7 @@ use crate::{
 /// d = [2^{log(N)} + 1, ..., 2^{log(N) - i + 1} + 1, ..., 2^1 + 1]
 /// for i = [1, ..., log(N)]
 ///
-/// Note that the key is defined in the aformentioned order.
+/// Note that the key is defined in the aforementioned order.
 ///
 /// # Panics
 /// If the given entities are invalid for the given parameters.
@@ -74,16 +74,29 @@ fn eval_auto<S: TorusOps>(
     keyswitch_glwe_to_glwe(out, glwe_k, atk_d, glwe, radix);
 }
 
+#[deprecated(
+    since = "0.1.0",
+    note = "Prefer `trace_ly25` instead. trace_ly25 does not require the preprocessing modulus switch to multiply by N^-1, and has a much lower error (O(N log N) versus this method's O(N^3), where N is the polynomial dimension)."
+)]
 /// Compute the homomorphic trace on a given [`GlweCiphertext`](crate::entities::GlweCiphertext). This zeros all
 /// coefficients except the constant term, which is multiplied by N
 /// (i.e. the GLWE polynomial degree).
 ///
 /// In the LY25 paper, this is called "HomTrace(C, n)", where n = 1.
 ///
+/// # Remarks
+///
+/// This produces error as O(N^3), where N is the polynomial dimension.
+///
+/// # Deprecated
+/// This function is deprecated. Prefer [`trace_ly25`] instead, which implements
+/// the RevHomTrace algorithm that has much lower error and does not need the
+/// preprocessing step that multiplies by N^-1.
+///
 /// # Panics
 /// If the given parameters are invalid.
 /// If the given entities are invalid for the given parameters.
-pub fn trace<S: TorusOps>(
+pub fn trace_whsl25<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
     ak: &AutomorphismKeyFftRef<Complex<f64>>,
@@ -111,15 +124,18 @@ pub fn trace<S: TorusOps>(
 }
 
 /// Compute the homomorphic trace on a given [`GlweCiphertext`](crate::entities::GlweCiphertext). This zeros all
-/// coefficients except the constant term, which is multiplied by N
-/// (i.e. the GLWE polynomial degree).
+/// coefficients except the constant term.
 ///
 /// In the LY25 paper, this is called "RevHomTrace(C, n)", where n = 1.
+///
+/// # Remarks
+///
+/// This produces error as O(N log N), where N is the polynomial dimension.
 ///
 /// # Panics
 /// If the given parameters are invalid.
 /// If the given entities are invalid for the given parameters.
-pub fn rev_trace<S: TorusOps>(
+pub fn trace_ly25<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
     ak: &AutomorphismKeyFftRef<Complex<f64>>,
@@ -154,7 +170,7 @@ pub fn rev_trace<S: TorusOps>(
 #[cfg(test)]
 mod tests {
     use num::Complex;
-    use rand::Rng;
+    use rand::RngCore;
 
     use crate::{
         GLWE_1_2048_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
@@ -162,11 +178,12 @@ mod tests {
             AutomorphismKey, AutomorphismKeyFft, GlweCiphertext, GlweSecretKey, Polynomial,
         },
         high_level::encryption::decrypt_glwe,
-        ops::automorphisms::{generate_automorphism_key, rev_trace, trace},
+        ops::automorphisms::{generate_automorphism_key, trace_ly25},
     };
 
     #[test]
-    fn can_trace() {
+    #[allow(deprecated)]
+    fn can_trace_whsl25() {
         let plaintext_bits = PlaintextBits(12);
         let glwe = GLWE_1_2048_128;
         let radix = RadixDecomposition {
@@ -191,7 +208,7 @@ mod tests {
 
         let mut out = GlweCiphertext::new(&glwe);
 
-        trace(&mut out, &ct, &ak_fft, &glwe, &radix);
+        super::trace_whsl25(&mut out, &ct, &ak_fft, &glwe, &radix);
 
         let actual = decrypt_glwe(&out, &glwe_sk, &glwe, plaintext_bits);
 
@@ -205,7 +222,7 @@ mod tests {
     }
 
     #[test]
-    fn can_rev_trace() {
+    fn can_trace_ly25() {
         let plaintext_bits = PlaintextBits(12);
 
         let glwe = GLWE_1_2048_128;
@@ -224,7 +241,7 @@ mod tests {
         let mut rng = rand::rng();
 
         for _ in 0..10 {
-            let constant_coeff = rng.random_range(0..8);
+            let constant_coeff = rng.next_u64() % ((1 << plaintext_bits.0) - 1);
 
             let poly = Polynomial::new(
                 &(0..glwe.dim.polynomial_degree.0)
@@ -236,7 +253,7 @@ mod tests {
 
             let mut out = GlweCiphertext::new(&glwe);
 
-            rev_trace(&mut out, &ct, &ak_fft, &glwe, &radix);
+            trace_ly25(&mut out, &ct, &ak_fft, &glwe, &radix);
 
             let actual = decrypt_glwe(&out, &glwe_sk, &glwe, plaintext_bits);
 
