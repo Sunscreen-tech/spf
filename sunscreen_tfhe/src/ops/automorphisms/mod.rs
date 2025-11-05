@@ -55,8 +55,8 @@ pub fn generate_automorphism_key<S: TorusOps>(
 
 fn eval_auto<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
-    d: usize,
     x: &GlweCiphertextRef<S>,
+    d: usize,
     ak: &AutomorphismKeyFftRef<Complex<f64>>,
     glwe: &GlweDef,
     radix: &RadixDecomposition,
@@ -105,7 +105,7 @@ pub fn trace<S: TorusOps>(
     for k in 1..=poly_degree.ilog2() {
         // 2^{log(N) - k + 1}
         let d = poly_degree / (1 << (k - 1)) + 1;
-        eval_auto(eval_auto_term, d, out, ak, glwe, radix);
+        eval_auto(eval_auto_term, out, d, ak, glwe, radix);
         glwe_add_assign(out, eval_auto_term, glwe);
     }
 }
@@ -145,7 +145,7 @@ pub fn rev_trace<S: TorusOps>(
 
         // Switch from q to q/2 and back
         glwe_mod_switch_and_expand_pow_2(mod_switch_term, out, glwe, 1);
-        eval_auto(eval_auto_term, d, mod_switch_term, ak, glwe, radix);
+        eval_auto(eval_auto_term, mod_switch_term, d, ak, glwe, radix);
 
         add_glwe_ciphertexts(out, mod_switch_term, eval_auto_term, glwe);
     }
