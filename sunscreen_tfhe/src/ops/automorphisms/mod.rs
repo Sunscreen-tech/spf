@@ -82,11 +82,15 @@ fn eval_auto<S: TorusOps>(
 /// coefficients except the constant term, which is multiplied by N
 /// (i.e. the GLWE polynomial degree).
 ///
-/// In the LY25 paper, this is called "HomTrace(C, n)", where n = 1.
+/// In the LY25 paper, this is called "HomTrace(C, n)", where n = 1. In older
+/// papers such as WHS+24, this is referred to as just `HomTrace(C)`.
 ///
 /// # Remarks
 ///
 /// This produces error as O(N^3), where N is the polynomial dimension.
+///
+/// [LY25](https://eprint.iacr.org/2025/1088.pdf)
+/// [WHS+24](https://eprint.iacr.org/2024/1318)
 ///
 /// # Deprecated
 /// This function is deprecated. Prefer [`trace_ly25`] instead, which implements
@@ -96,7 +100,7 @@ fn eval_auto<S: TorusOps>(
 /// # Panics
 /// If the given parameters are invalid.
 /// If the given entities are invalid for the given parameters.
-pub fn trace_whsl25<S: TorusOps>(
+pub fn trace_whs24<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
     ak: &AutomorphismKeyFftRef<Complex<f64>>,
@@ -131,6 +135,8 @@ pub fn trace_whsl25<S: TorusOps>(
 /// # Remarks
 ///
 /// This produces error as O(N log N), where N is the polynomial dimension.
+///
+/// [LY25](https://eprint.iacr.org/2025/1088.pdf)
 ///
 /// # Panics
 /// If the given parameters are invalid.
@@ -183,7 +189,7 @@ mod tests {
 
     #[test]
     #[allow(deprecated)]
-    fn can_trace_whsl25() {
+    fn can_trace_whs24() {
         let plaintext_bits = PlaintextBits(12);
         let glwe = GLWE_1_2048_128;
         let radix = RadixDecomposition {
@@ -208,7 +214,7 @@ mod tests {
 
         let mut out = GlweCiphertext::new(&glwe);
 
-        super::trace_whsl25(&mut out, &ct, &ak_fft, &glwe, &radix);
+        super::trace_whs24(&mut out, &ct, &ak_fft, &glwe, &radix);
 
         let actual = decrypt_glwe(&out, &glwe_sk, &glwe, plaintext_bits);
 
