@@ -316,7 +316,7 @@ fn mod_switch_trace_and_rotate<S>(
 /// contained in `input` into the first `ℓ` coefficients of a
 /// [`GlweCiphertext`](crate::entities::GlweCiphertext).
 ///
-/// We then perform `ℓ` [`trace`] operations to extract these coefficients into their
+/// We then perform `ℓ` [`rev_trace`] operations to extract these coefficients into their
 /// own [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Collectively,
 /// their base decomposed messages form a
 /// [`GlevCiphertext`](crate::entities::GlevCiphertext).
