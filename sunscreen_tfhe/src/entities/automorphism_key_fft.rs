@@ -65,18 +65,18 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
 
     /// Retrieve the keyswitch key for automorphism with power d.
     ///
-    /// The automorphism keys are stored for d = [N, N/2, N/4, ..., 4, 2] where
-    /// N is the polynomial degree.
+    /// The automorphism keys are derived for the automorphisms
+    /// d = [2^1 + 1, ..., 2^{log(N) - k +1} + 1, ..., 2^{log(N)} + 1]
+    /// where N is the polynomial degree.
     ///
     /// # Arguments
-    /// * `d` - The power of 2 for the automorphism (d - 1 must be a power of 2 in range [1, N-1])
+    /// * `d` - The index to get. Invalid indexes will result in a panic.
     /// * `glwe` - GLWE parameters containing dimension information
     /// * `radix` - Radix decomposition parameters
     ///
     /// # Panics
     /// Panics if:
-    /// * `d - 1` is not a power of 2
-    /// * `d < 2` or `d > N` where N is the polynomial degree
+    /// * d is not in the aformentioned set.
     pub fn keyswitch_key_at(
         &self,
         d: usize,
@@ -90,7 +90,7 @@ impl AutomorphismKeyFftRef<Complex<f64>> {
             (d - 1).is_power_of_two(),
             "d - 1 must be a power of 2, got d = {d}"
         );
-        assert!(d <= (n + 1), "d must be at most {n}, got {d}");
+        assert!(d <= (n + 1), "d must be at most {}, got {}", n + 1, d);
 
         // Convert d to index: index = log(N) - log(d - 1)
         let log_n = n.ilog2();
