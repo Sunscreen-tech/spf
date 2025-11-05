@@ -9,7 +9,7 @@ use crate::{
 
 dst! {
     /// Keys used for evaluating automorphisms on [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Typically used
-    /// to compute [`trace`](crate::ops::automorphisms::trace)
+    /// to compute [`trace_ly25`](crate::ops::automorphisms::trace_ly25)
     AutomorphismKey,
     AutomorphismKeyRef,
     Torus,

@@ -5,13 +5,23 @@ use crate::{
     dst::FromMutSlice,
     entities::{AutomorphismKeyFftRef, AutomorphismKeyRef, GlweCiphertextRef, GlweSecretKeyRef},
     ops::{
-        ciphertext::glwe_add_assign, fft_ops::keyswitch_glwe_to_glwe,
-        keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe, polynomial::polynomial_pow_k,
+        ciphertext::{add_glwe_ciphertexts, glwe_add_assign, glwe_mod_switch_and_expand_pow_2},
+        fft_ops::keyswitch_glwe_to_glwe,
+        keyswitch::glwe_keyswitch_key::generate_keyswitch_key_glwe,
+        polynomial::polynomial_pow_k,
     },
     scratch::allocate_scratch_ref,
 };
 
 /// Generate a new [`AutomorphismKey`](crate::entities::AutomorphismKey) set for the given `glwe_sk`.
+///
+/// The automorphism key is a set of keyswitching keys. In this particular
+/// implementation, the set is defined by
+///
+/// d = [2^{log(N)} + 1, ..., 2^{log(N) - i + 1} + 1, ..., 2^1 + 1]
+/// for i = [1, ..., log(N)]
+///
+/// Note that the key is defined in the aforementioned order.
 ///
 /// # Panics
 /// If the given entities are invalid for the given parameters.
@@ -43,14 +53,54 @@ pub fn generate_automorphism_key<S: TorusOps>(
     }
 }
 
+fn eval_auto<S: TorusOps>(
+    out: &mut GlweCiphertextRef<S>,
+    x: &GlweCiphertextRef<S>,
+    d: usize,
+    ak: &AutomorphismKeyFftRef<Complex<f64>>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    allocate_scratch_ref!(glwe_k, GlweCiphertextRef<S>, (glwe.dim));
+
+    let atk_d = ak.keyswitch_key_at(d, glwe, radix);
+
+    for (glwe_k_a, x_a) in glwe_k.a_mut(glwe).zip(x.a(glwe)) {
+        polynomial_pow_k::<_, S>(glwe_k_a, x_a, d);
+    }
+
+    polynomial_pow_k::<_, S>(glwe_k.b_mut(glwe), x.b(glwe), d);
+
+    keyswitch_glwe_to_glwe(out, glwe_k, atk_d, glwe, radix);
+}
+
+#[deprecated(
+    since = "0.1.0",
+    note = "Prefer `trace_ly25` instead. trace_ly25 does not require the preprocessing modulus switch to multiply by N^-1, and has a much lower error (O(N log N) versus this method's O(N^3), where N is the polynomial dimension)."
+)]
 /// Compute the homomorphic trace on a given [`GlweCiphertext`](crate::entities::GlweCiphertext). This zeros all
 /// coefficients except the constant term, which is multiplied by N
 /// (i.e. the GLWE polynomial degree).
 ///
+/// In the LY25 paper, this is called "HomTrace(C, n)", where n = 1. In older
+/// papers such as WHS+24, this is referred to as just `HomTrace(C)`.
+///
+/// # Remarks
+///
+/// This produces error as O(N^3), where N is the polynomial dimension.
+///
+/// [LY25](https://eprint.iacr.org/2025/1088.pdf)
+/// [WHS+24](https://eprint.iacr.org/2024/1318)
+///
+/// # Deprecated
+/// This function is deprecated. Prefer [`trace_ly25`] instead, which implements
+/// the RevHomTrace algorithm that has much lower error and does not need the
+/// preprocessing step that multiplies by N^-1.
+///
 /// # Panics
 /// If the given parameters are invalid.
 /// If the given entities are invalid for the given parameters.
-pub fn trace<S: TorusOps>(
+pub fn trace_whs24<S: TorusOps>(
     out: &mut GlweCiphertextRef<S>,
     x: &GlweCiphertextRef<S>,
     ak: &AutomorphismKeyFftRef<Complex<f64>>,
@@ -63,42 +113,84 @@ pub fn trace<S: TorusOps>(
     x.assert_is_valid(glwe.dim);
     ak.assert_is_valid((glwe.dim, radix.count));
 
-    allocate_scratch_ref!(keyswitched, GlweCiphertextRef<S>, (glwe.dim));
-    allocate_scratch_ref!(glwe_k, GlweCiphertextRef<S>, (glwe.dim));
+    allocate_scratch_ref!(eval_auto_term, GlweCiphertextRef<S>, (glwe.dim));
+
     let poly_degree = glwe.dim.polynomial_degree.0;
 
     out.clone_from_ref(x);
 
-    for (i, glwe_ksk) in (1..=poly_degree.ilog2()).zip(ak.keyswitch_keys(glwe, radix)) {
-        let k = poly_degree / (1 << (i - 1)) + 1;
+    for k in 1..=poly_degree.ilog2() {
+        // 2^{log(N) - k + 1}
+        let d = poly_degree / (1 << (k - 1)) + 1;
+        eval_auto(eval_auto_term, out, d, ak, glwe, radix);
+        glwe_add_assign(out, eval_auto_term, glwe);
+    }
+}
 
-        for (glwe_k_a, x_a) in glwe_k.a_mut(glwe).zip(out.a(glwe)) {
-            polynomial_pow_k::<_, S>(glwe_k_a, x_a, k);
-        }
+/// Compute the homomorphic trace on a given [`GlweCiphertext`](crate::entities::GlweCiphertext). This zeros all
+/// coefficients except the constant term.
+///
+/// In the LY25 paper, this is called "RevHomTrace(C, n)", where n = 1.
+///
+/// # Remarks
+///
+/// This produces error as O(N log N), where N is the polynomial dimension.
+///
+/// [LY25](https://eprint.iacr.org/2025/1088.pdf)
+///
+/// # Panics
+/// If the given parameters are invalid.
+/// If the given entities are invalid for the given parameters.
+pub fn trace_ly25<S: TorusOps>(
+    out: &mut GlweCiphertextRef<S>,
+    x: &GlweCiphertextRef<S>,
+    ak: &AutomorphismKeyFftRef<Complex<f64>>,
+    glwe: &GlweDef,
+    radix: &RadixDecomposition,
+) {
+    glwe.assert_valid();
+    radix.assert_valid::<S>();
+    out.assert_is_valid(glwe.dim);
+    x.assert_is_valid(glwe.dim);
+    ak.assert_is_valid((glwe.dim, radix.count));
 
-        polynomial_pow_k::<_, S>(glwe_k.b_mut(glwe), out.b(glwe), k);
+    let poly_degree = glwe.dim.polynomial_degree.0;
 
-        keyswitch_glwe_to_glwe(keyswitched, glwe_k, glwe_ksk, glwe, radix);
+    out.clone_from_ref(x);
 
-        glwe_add_assign(out, keyswitched, glwe);
+    allocate_scratch_ref!(eval_auto_term, GlweCiphertextRef<S>, (glwe.dim));
+    allocate_scratch_ref!(mod_switch_term, GlweCiphertextRef<S>, (glwe.dim));
+
+    for k in 1..=poly_degree.ilog2() {
+        // 2^k + 1
+        let d = (1 << k) + 1;
+
+        // Switch from q to q/2 and back
+        glwe_mod_switch_and_expand_pow_2(mod_switch_term, out, glwe, 1);
+        eval_auto(eval_auto_term, mod_switch_term, d, ak, glwe, radix);
+
+        add_glwe_ciphertexts(out, mod_switch_term, eval_auto_term, glwe);
     }
 }
 
 #[cfg(test)]
 mod tests {
     use num::Complex;
+    use rand::RngCore;
 
     use crate::{
-        GLWE_1_2048_128, RadixCount, RadixDecomposition, RadixLog,
+        GLWE_1_2048_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
         entities::{
             AutomorphismKey, AutomorphismKeyFft, GlweCiphertext, GlweSecretKey, Polynomial,
         },
         high_level::encryption::decrypt_glwe,
-        ops::automorphisms::{generate_automorphism_key, trace},
+        ops::automorphisms::{generate_automorphism_key, trace_ly25},
     };
 
     #[test]
-    fn can_trace() {
+    #[allow(deprecated)]
+    fn can_trace_whs24() {
+        let plaintext_bits = PlaintextBits(12);
         let glwe = GLWE_1_2048_128;
         let radix = RadixDecomposition {
             count: RadixCount(6),
@@ -118,13 +210,13 @@ mod tests {
                 .collect::<Vec<_>>(),
         );
 
-        let ct = glwe_sk.encode_encrypt_glwe(&poly, &glwe, crate::PlaintextBits(12));
+        let ct = glwe_sk.encode_encrypt_glwe(&poly, &glwe, plaintext_bits);
 
         let mut out = GlweCiphertext::new(&glwe);
 
-        trace(&mut out, &ct, &ak_fft, &glwe, &radix);
+        super::trace_whs24(&mut out, &ct, &ak_fft, &glwe, &radix);
 
-        let actual = decrypt_glwe(&out, &glwe_sk, &glwe, crate::PlaintextBits(12));
+        let actual = decrypt_glwe(&out, &glwe_sk, &glwe, plaintext_bits);
 
         // The constant coefficient should be multiplied by N
         assert_eq!(actual.coeffs()[0], glwe.dim.polynomial_degree.0 as u64);
@@ -132,6 +224,52 @@ mod tests {
         // Everywhere else should be zero
         for i in actual.coeffs().iter().skip(1) {
             assert_eq!(*i, 0);
+        }
+    }
+
+    #[test]
+    fn can_trace_ly25() {
+        let plaintext_bits = PlaintextBits(12);
+
+        let glwe = GLWE_1_2048_128;
+        let radix = RadixDecomposition {
+            count: RadixCount(6),
+            radix_log: RadixLog(7),
+        };
+
+        let glwe_sk = GlweSecretKey::<u64>::generate_binary(&glwe);
+
+        let mut ak = AutomorphismKey::<u64>::new(&glwe, &radix);
+        generate_automorphism_key(&mut ak, &glwe_sk, &glwe, &radix);
+        let mut ak_fft = AutomorphismKeyFft::<Complex<f64>>::new(&glwe, &radix);
+        ak.fft(&mut ak_fft, &glwe, &radix);
+
+        let mut rng = rand::rng();
+
+        for _ in 0..10 {
+            let constant_coeff = rng.next_u64() % ((1 << plaintext_bits.0) - 1);
+
+            let poly = Polynomial::new(
+                &(0..glwe.dim.polynomial_degree.0)
+                    .map(|i| if i == 0 { constant_coeff } else { 1u64 })
+                    .collect::<Vec<_>>(),
+            );
+
+            let ct = glwe_sk.encode_encrypt_glwe(&poly, &glwe, plaintext_bits);
+
+            let mut out = GlweCiphertext::new(&glwe);
+
+            trace_ly25(&mut out, &ct, &ak_fft, &glwe, &radix);
+
+            let actual = decrypt_glwe(&out, &glwe_sk, &glwe, plaintext_bits);
+
+            // The constant coefficient should remain unchanged (no factor of N)
+            assert_eq!(actual.coeffs()[0], constant_coeff);
+
+            // Everywhere else should be zero
+            for i in actual.coeffs().iter().skip(1) {
+                assert_eq!(*i, 0);
+            }
         }
     }
 }

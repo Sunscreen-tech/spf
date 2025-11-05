@@ -11,11 +11,11 @@ use crate::{
         LweCiphertextRef, SchemeSwitchKeyFftRef, UnivariateLookupTableRef,
     },
     ops::{
-        automorphisms::trace,
+        automorphisms::trace_ly25,
         bootstrapping::{
             generalized_programmable_bootstrap, rotate_glwe_negative_monomial_negacyclic,
         },
-        ciphertext::{glwe_mod_switch_and_expand_pow_2, sample_extract},
+        ciphertext::sample_extract,
         fft_ops::scheme_switch_fft,
         homomorphisms::lwe_rotate,
         keyswitch::private_functional_keyswitch::private_functional_keyswitch,
@@ -278,11 +278,8 @@ fn mod_switch_trace_and_rotate<S>(
 ) where
     S: TorusOps,
 {
-    let shift_amount = glwe.dim.polynomial_degree.0.ilog2();
-
     allocate_scratch_ref!(glwe_rotated, GlweCiphertextRef<S>, (glwe.dim));
     allocate_scratch_ref!(glwe_permuted, GlweCiphertextRef<S>, (glwe.dim));
-    allocate_scratch_ref!(glwe_shifted, GlweCiphertextRef<S>, (glwe.dim));
 
     glwe_rotated.clone_from_ref(lo_noise_glwe);
 
@@ -298,13 +295,8 @@ fn mod_switch_trace_and_rotate<S>(
         // Multiply by x^-i to shift the i'th coefficient into the constant term.
         rotate_glwe_negative_monomial_negacyclic(glwe_permuted, glwe_rotated, i, glwe);
 
-        // Mod shift to implicitly multiply by N^-1
-        glwe_mod_switch_and_expand_pow_2(glwe_shifted, glwe_permuted, glwe, shift_amount);
-
-        // Compute a trace to zero all but the constant term. A by-product of this
-        // multiplies the constant coefficient by N, but this cancels our N^-1 in the
-        // previous step, leaving us with the our message's i'th decomposition term.
-        trace(glev_i, glwe_shifted, ak, glwe, trace_radix);
+        // Zero out all coefficients except the constant term.
+        trace_ly25(glev_i, glwe_permuted, ak, glwe, trace_radix);
     }
 }
 
@@ -324,14 +316,7 @@ fn mod_switch_trace_and_rotate<S>(
 /// contained in `input` into the first `ℓ` coefficients of a
 /// [`GlweCiphertext`](crate::entities::GlweCiphertext).
 ///
-/// Next, we [`glwe_mod_switch_and_expand_pow_2`] the first `ℓ` coefficients. This
-/// first mod switches from `q` down to `q / N`, where `N` is the GLWE polynomial degree
-/// before mod switching back to `q`. This has the practical effect of multiplying
-/// the message by `N^-1` in preparation for applying the homomorphic trace. When
-/// `q` is a power of two, both of these operations collectively amount to right
-/// shifting the coefficient by `log2(N)` places.
-///
-/// We then perform `ℓ` [`trace`] operations to extract these coefficients into their
+/// We then perform `ℓ` [`trace_ly25`] operations to extract these coefficients into their
 /// own [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Collectively,
 /// their base decomposed messages form a
 /// [`GlevCiphertext`](crate::entities::GlevCiphertext).
