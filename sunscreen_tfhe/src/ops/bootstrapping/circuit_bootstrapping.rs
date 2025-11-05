@@ -278,11 +278,8 @@ fn mod_switch_trace_and_rotate<S>(
 ) where
     S: TorusOps,
 {
-    let shift_amount = glwe.dim.polynomial_degree.0.ilog2();
-
     allocate_scratch_ref!(glwe_rotated, GlweCiphertextRef<S>, (glwe.dim));
     allocate_scratch_ref!(glwe_permuted, GlweCiphertextRef<S>, (glwe.dim));
-    allocate_scratch_ref!(glwe_shifted, GlweCiphertextRef<S>, (glwe.dim));
 
     glwe_rotated.clone_from_ref(lo_noise_glwe);
 
