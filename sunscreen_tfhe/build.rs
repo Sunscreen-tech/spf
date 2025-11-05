@@ -47,11 +47,13 @@ mod gpu {
         let mut lines = String::new();
 
         let (complex_ty, suffix, ty) = match precision {
-            Precision::F32 => ("float2", "f", "F32"),
-            Precision::F64 => ("double2", "", "F64"),
+            Precision::F32 => ("cuda::std::complex<float>", "f", "F32"),
+            Precision::F64 => ("cuda::std::complex<double>", "", "F64"),
         };
 
         lines += "#pragma once\n\n";
+        lines += "#include <cuda/std/complex>\n\n";
+
 
         fn format_value(x: &Float, suffix: &'static str) -> String {
             if *x == 0.0 {
@@ -73,7 +75,7 @@ mod gpu {
                     let c = x.clone().cos_pi();
 
                     lines += &format!(
-                        "\n\t{{\n\t\t{},\n\t\t{}\n\t}}",
+                        "\n\tcuda::std::complex(\n\t\t{},\n\t\t{}\n\t)",
                         format_value(&c, suffix),
                         format_value(&s, suffix)
                     );

@@ -3,24 +3,19 @@ use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::{DeviceId, launch_kernel};
 
 use crate::{
-    GLWE_1_2048_128, LWE_637_128, OverlaySize, PlaintextBits, Torus,
-    dst::{AsMutSlice, AsSlice},
-    entities::{
+    AddendCount, GLWE_1_2048_128, LWE_637_128, OverlaySize, PlaintextBits, Torus, dst::{AsMutSlice, AsSlice}, entities::{
         BootstrapKeyFft, DstArray, GgswCiphertext, GgswCiphertextFft, GlevCiphertext,
         GlevCiphertextFft, GlweCiphertext, GlweCiphertextFft, GlweCiphertextRef, GlweSecretKey,
         Polynomial,
-    },
-    gpu::{
+    }, gpu::{
         Scratch, get_runtimes, gpu_params,
         ops::keys::{gpu_fft_bootstrap_key, gpu_ifft_bootstrap_key},
         tests::{PBS_RADIX_2_16, get_shared_memory_bytes},
-    },
-    high_level::{self, encryption::trivial_glwe},
-    ops::encryption::{
+    }, high_level::{self, encryption::trivial_glwe}, ops::encryption::{
         decrypt_ggsw_ciphertext, decrypt_glev_ciphertext, decrypt_glwe_ciphertext,
         encrypt_glwe_ciphertext_secret, encrypt_secret_glev_ciphertext,
         trivially_encrypt_glwe_ciphertext,
-    },
+    }
 };
 
 #[test]
@@ -326,9 +321,9 @@ fn can_fft_roundtrip_bsk() {
         let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&glwe);
         let bsk =
-            high_level::keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &radix);
+            high_level::keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &radix, AddendCount(1));
         let mut bsk_clone = bsk.clone();
-        let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &radix);
+        let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &radix, AddendCount(1));
 
         let stream = r.make_stream(DeviceId::default()).unwrap();
 
@@ -363,8 +358,8 @@ fn can_recover_lwe_sk_from_bsk() {
         let lwe_sk = high_level::keygen::generate_binary_lwe_sk(&lwe);
         let glwe_sk = high_level::keygen::generate_binary_glwe_sk(&glwe);
         let bsk =
-            high_level::keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &radix);
-        let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &radix);
+            high_level::keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &radix, AddendCount(1));
+        let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &radix, AddendCount(1));
 
         let mut glwe_in = DstArray::<GlweCiphertext<u64>>::new(lwe.dim.0, glwe.dim);
         let glwe_out = glwe_in.clone();

@@ -32,7 +32,7 @@ extern "C" __global__ void can_roundtrip_fft_f64(
 /// 2. Using CUDA's sincos function.
 /// 3. Using CUDA's sincospi function.
 extern "C" __global__ void get_twiddles_f64(
-    double2 *__restrict__ method_lut,
+    cuda::std::complex<double> *__restrict__ method_lut,
     double2 *__restrict__ method_sincos,
     double2 *__restrict__ method_sincospi,
     u32 n,

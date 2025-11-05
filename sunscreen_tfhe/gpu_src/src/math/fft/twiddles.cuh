@@ -46,14 +46,12 @@ public:
 #else
     static __device__ __inline__ constexpr cuda::std::complex<f32> Get_W_value(int N, int m)
     {
-        auto twiddle = TWIDDLES_F32[N - 2 + m];
-        return cuda::std::complex(twiddle.x, twiddle.y);
+        return TWIDDLES_F32[N - 2 + m];
     }
 
     static __device__ __inline__ constexpr cuda::std::complex<f32> Get_W_value_inverse(int N, int m)
     {
-        auto twiddle = TWIDDLES_INV_F32[N - 2 + m];
-        return cuda::std::complex(twiddle.x, twiddle.y);
+        return TWIDDLES_INV_F32[N - 2 + m];
     }
 #endif
 };
@@ -93,14 +91,12 @@ public:
 #else
     static __device__ __inline__ constexpr cuda::std::complex<f64> Get_W_value(int N, int m)
     {
-        auto twiddle = TWIDDLES_F64[N - 2 + m];
-        return cuda::std::complex(twiddle.x, twiddle.y);
+        return TWIDDLES_F64[N - 2 + m];
     }
 
     static __device__ __inline__ constexpr cuda::std::complex<f64> Get_W_value_inverse(int N, int m)
     {
-        auto twiddle = TWIDDLES_INV_F64[N - 2 + m];
-        return cuda::std::complex(twiddle.x, twiddle.y);
+        return TWIDDLES_INV_F64[N - 2 + m];
     }
 #endif
 };

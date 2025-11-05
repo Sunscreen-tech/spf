@@ -2,19 +2,15 @@ use rand::{RngCore, rng};
 use sunscreen_gpu_runtime::DeviceId;
 
 use crate::{
-    GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus,
-    entities::{
+    AddendCount, GLWE_1_2048_128, LWE_637_128, PlaintextBits, RadixCount, RadixDecomposition, RadixLog, Torus, entities::{
         BootstrapKeyFft, DstArray, GlweCiphertext, LweCiphertext, Polynomial, UnivariateLookupTable,
-    },
-    gpu::{
+    }, gpu::{
         get_runtimes,
         ops::{bootstrapping::gpu_generalized_functional_bootstrap, keys::gpu_fft_bootstrap_key},
         tests::PBS_RADIX_2_16,
-    },
-    high_level::{self, keygen},
-    ops::encryption::{
+    }, high_level::{self, keygen}, ops::encryption::{
         decrypt_glwe_ciphertext, encrypt_lwe_ciphertext, trivially_encrypt_lwe_ciphertext,
-    },
+    }
 };
 
 #[test]
@@ -28,9 +24,9 @@ fn can_programmable_bootstrap() {
     let runtimes = get_runtimes();
     let lwe_sk = keygen::generate_binary_lwe_sk(&lwe);
     let glwe_sk = keygen::generate_binary_glwe_sk(&glwe);
-    let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &radix);
+    let bsk = keygen::generate_bootstrapping_key(&lwe_sk, &glwe_sk, &lwe, &glwe, &radix, AddendCount(1));
 
-    let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &radix);
+    let mut bsk_fft = BootstrapKeyFft::new(&lwe, &glwe, &radix, AddendCount(1));
 
     for r in runtimes.iter() {
         let stream = r.make_stream(DeviceId(0)).unwrap();
