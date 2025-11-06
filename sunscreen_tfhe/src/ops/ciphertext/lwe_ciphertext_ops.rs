@@ -105,6 +105,7 @@ pub fn lwe_ciphertext_modulus_switch<S>(
 {
     let (c_a, c_b) = ct.a_b_mut(params);
 
+    let mut cum_err = <S as sunscreen_math::Zero>::zero();
     // We specifically want to zero out the MSBs instead of shifting them back
     // around.
     for a in c_a {
@@ -114,31 +115,43 @@ pub fn lwe_ciphertext_modulus_switch<S>(
             log_v as usize,
             log_modulus as usize,
         );
-        *a = Torus::from(res);
+        *a = Torus::from(res.0);
+        cum_err = cum_err.wrapping_add(&res.1);
     }
 
+    // multiply `cum_err` by mean of secret key which is 1/2, so we implement right shift by 1
+    // for this purpose, and note here `cum_err` must be interpreted as signed value so we mask
+    // its MSB to add back later
+    let cum_err_msb = cum_err & (<S as sunscreen_math::One>::one() << (S::BITS as usize - 1));
+    cum_err = cum_err >> 1;
+    cum_err |= cum_err_msb;
+
     let res = modulus_switch(
-        c_b.inner(),
+        c_b.inner().wrapping_sub(&cum_err),
         log_chi as usize,
         log_v as usize,
         log_modulus as usize,
     );
 
-    *c_b = Torus::from(res);
+    *c_b = Torus::from(res.0);
 }
 
-fn modulus_switch<S: TorusOps>(x: S, log_chi: usize, log_v: usize, log_modulus: usize) -> S {
+fn modulus_switch<S: TorusOps>(x: S, log_chi: usize, log_v: usize, log_modulus: usize) -> (S, S) {
     let one = <S as sunscreen_math::One>::one();
     let mask = (one << log_modulus) - one;
     let x = x << log_chi;
     let shift_amount = S::BITS as usize - (log_modulus - log_v);
 
     let round = (x >> (shift_amount - 1)) & one;
+    let original_x = x;
     let x = x >> shift_amount;
 
     // TODO: Non-power-of_two input moduli
 
-    (x.wrapping_add(&round) & mask) << log_v
+    let result = (x.wrapping_add(&round) & mask) << log_v;
+    let result_in_prev_modulus = result << (shift_amount - log_v);
+
+    (result, original_x.wrapping_sub(&result_in_prev_modulus))
 }
 
 #[cfg(test)]
@@ -150,15 +163,19 @@ mod tests {
         let x = 0xDEADBEEF_BEEFDEADu64;
 
         let y = modulus_switch(x, 0, 0, 10);
-        assert_eq!(y, 0b11_0111_1011);
+        assert_eq!(y.0, 0b11_0111_1011);
+        assert_eq!(y.1, 0xFFEDBEEF_BEEFDEADu64);
 
         let y = modulus_switch(x, 2, 0, 10);
-        assert_eq!(y, 0b01_1110_1011);
+        assert_eq!(y.0, 0b01_1110_1011);
+        assert_eq!(y.1, 0xFFF6FBBE_FBBF7AB4u64);
 
         let y = modulus_switch(x, 0, 3, 10);
-        assert_eq!(y, 0b11_0111_1000);
+        assert_eq!(y.0, 0b11_0111_1000);
+        assert_eq!(y.1, 0xADBEEF_BEEFDEADu64);
 
         let y = modulus_switch(x, 2, 3, 10);
-        assert_eq!(y, 0b01_1110_1000);
+        assert_eq!(y.0, 0b01_1110_1000);
+        assert_eq!(y.1, 0xB6FBBE_FBBF7AB4u64);
     }
 }
