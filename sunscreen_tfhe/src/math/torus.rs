@@ -57,7 +57,6 @@ pub trait TorusOps:
     + WrappingShl
     + WrappingShr
     + WrappingNeg
-    + BitAnd
     + ReinterpretAsSigned
     + Num
     + NumBits
@@ -79,7 +78,6 @@ pub trait TorusOps:
     + ToF64
     + FromF64
     + ToU64
-    + NumBits
     + VectorOps
     + Sync
     + Send
