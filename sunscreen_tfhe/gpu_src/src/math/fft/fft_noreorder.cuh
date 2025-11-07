@@ -21,38 +21,38 @@ SOFTWARE.
 */
 
 #pragma once
+#include <cuda/std/complex>
+
 #include "twiddles.cuh"
 #include "../math.cuh"
 
 #define WARP 32
 
 template <typename T>
-__device__ __inline__ T shfl(T *value, int par)
+__device__ __inline__ T shfl(T value, int par)
 {
-	return __shfl_sync(0xffffffff, (*value), par);
+	return __shfl_sync(0xffffffff, value, par);
 }
 
 template <typename T>
-__device__ __inline__ T shfl_xor(T *value, int par)
+__device__ __inline__ T shfl_xor(T value, int par)
 {
-	return __shfl_xor_sync(0xffffffff, (*value), par);
+	return __shfl_xor_sync(0xffffffff, value, par);
 }
 
 template <typename T>
-__device__ __inline__ T shfl_down(T *value, int par)
+__device__ __inline__ T shfl_down(T value, int par)
 {
-	return __shfl_down_sync(0xffffffff, (*value), par);
+	return __shfl_down_sync(0xffffffff, value, par);
 }
 
 /// Forward decimation in time FFT.
-template <class const_params, typename VecT>
-__inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
+template <class const_params, typename T>
+__inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
 {
-	using T = typename ScalarOf<VecT>::Ty;
-
-	VecT A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
-	VecT W;
-	VecT Aftemp, Bftemp, Cftemp, Dftemp;
+	cuda::std::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
+	cuda::std::complex<T> W;
+	cuda::std::complex<T> Aftemp, Bftemp, Cftemp, Dftemp;
 
 	int local_id, warp_id;
 	int j, m_param;
@@ -78,14 +78,14 @@ __inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
 
 	__syncthreads();
 
-	A_DFT_value.x = parity * A_DFT_value.x + shfl_xor(&A_DFT_value.x, 1);
-	A_DFT_value.y = parity * A_DFT_value.y + shfl_xor(&A_DFT_value.y, 1);
-	B_DFT_value.x = parity * B_DFT_value.x + shfl_xor(&B_DFT_value.x, 1);
-	B_DFT_value.y = parity * B_DFT_value.y + shfl_xor(&B_DFT_value.y, 1);
-	C_DFT_value.x = parity * C_DFT_value.x + shfl_xor(&C_DFT_value.x, 1);
-	C_DFT_value.y = parity * C_DFT_value.y + shfl_xor(&C_DFT_value.y, 1);
-	D_DFT_value.x = parity * D_DFT_value.x + shfl_xor(&D_DFT_value.x, 1);
-	D_DFT_value.y = parity * D_DFT_value.y + shfl_xor(&D_DFT_value.y, 1);
+	A_DFT_value.real(parity * A_DFT_value.real() + shfl_xor(A_DFT_value.real(), 1));
+	A_DFT_value.imag(parity * A_DFT_value.imag() + shfl_xor(A_DFT_value.imag(), 1));
+	B_DFT_value.real(parity * B_DFT_value.real() + shfl_xor(B_DFT_value.real(), 1));
+	B_DFT_value.imag(parity * B_DFT_value.imag() + shfl_xor(B_DFT_value.imag(), 1));
+	C_DFT_value.real(parity * C_DFT_value.real() + shfl_xor(C_DFT_value.real(), 1));
+	C_DFT_value.imag(parity * C_DFT_value.imag() + shfl_xor(C_DFT_value.imag(), 1));
+	D_DFT_value.real(parity * D_DFT_value.real() + shfl_xor(D_DFT_value.real(), 1));
+	D_DFT_value.imag(parity * D_DFT_value.imag() + shfl_xor(D_DFT_value.imag(), 1));
 
 	//--> Second through Fifth iteration (no synchronization)
 	PoT = 2;
@@ -98,23 +98,23 @@ __inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
 
 		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, itemp * m_param);
 
-		Aftemp.x = W.x * A_DFT_value.x - W.y * A_DFT_value.y;
-		Aftemp.y = W.x * A_DFT_value.y + W.y * A_DFT_value.x;
-		Bftemp.x = W.x * B_DFT_value.x - W.y * B_DFT_value.y;
-		Bftemp.y = W.x * B_DFT_value.y + W.y * B_DFT_value.x;
-		Cftemp.x = W.x * C_DFT_value.x - W.y * C_DFT_value.y;
-		Cftemp.y = W.x * C_DFT_value.y + W.y * C_DFT_value.x;
-		Dftemp.x = W.x * D_DFT_value.x - W.y * D_DFT_value.y;
-		Dftemp.y = W.x * D_DFT_value.y + W.y * D_DFT_value.x;
+		Aftemp.real(W.real() * A_DFT_value.real() - W.imag() * A_DFT_value.imag());
+		Aftemp.imag(W.real() * A_DFT_value.imag() + W.imag() * A_DFT_value.real());
+		Bftemp.real(W.real() * B_DFT_value.real() - W.imag() * B_DFT_value.imag());
+		Bftemp.imag(W.real() * B_DFT_value.imag() + W.imag() * B_DFT_value.real());
+		Cftemp.real(W.real() * C_DFT_value.real() - W.imag() * C_DFT_value.imag());
+		Cftemp.imag(W.real() * C_DFT_value.imag() + W.imag() * C_DFT_value.real());
+		Dftemp.real(W.real() * D_DFT_value.real() - W.imag() * D_DFT_value.imag());
+		Dftemp.imag(W.real() * D_DFT_value.imag() + W.imag() * D_DFT_value.real());
 
-		A_DFT_value.x = Aftemp.x + parity * shfl_xor(&Aftemp.x, PoT);
-		A_DFT_value.y = Aftemp.y + parity * shfl_xor(&Aftemp.y, PoT);
-		B_DFT_value.x = Bftemp.x + parity * shfl_xor(&Bftemp.x, PoT);
-		B_DFT_value.y = Bftemp.y + parity * shfl_xor(&Bftemp.y, PoT);
-		C_DFT_value.x = Cftemp.x + parity * shfl_xor(&Cftemp.x, PoT);
-		C_DFT_value.y = Cftemp.y + parity * shfl_xor(&Cftemp.y, PoT);
-		D_DFT_value.x = Dftemp.x + parity * shfl_xor(&Dftemp.x, PoT);
-		D_DFT_value.y = Dftemp.y + parity * shfl_xor(&Dftemp.y, PoT);
+		A_DFT_value.real(Aftemp.real() + parity * shfl_xor(Aftemp.real(), PoT));
+		A_DFT_value.imag(Aftemp.imag() + parity * shfl_xor(Aftemp.imag(), PoT));
+		B_DFT_value.real(Bftemp.real() + parity * shfl_xor(Bftemp.real(), PoT));
+		B_DFT_value.imag(Bftemp.imag() + parity * shfl_xor(Bftemp.imag(), PoT));
+		C_DFT_value.real(Cftemp.real() + parity * shfl_xor(Cftemp.real(), PoT));
+		C_DFT_value.imag(Cftemp.imag() + parity * shfl_xor(Cftemp.imag(), PoT));
+		D_DFT_value.real(Dftemp.real() + parity * shfl_xor(Dftemp.real(), PoT));
+		D_DFT_value.imag(Dftemp.imag() + parity * shfl_xor(Dftemp.imag(), PoT));
 
 		PoT = PoT << 1;
 		PoTp1 = PoTp1 << 1;
@@ -141,17 +141,17 @@ __inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
 
 		Aftemp = s_input[A_read_index];
 		Bftemp = s_input[B_read_index];
-		A_DFT_value.x = Aftemp.x + W.x * Bftemp.x - W.y * Bftemp.y;
-		A_DFT_value.y = Aftemp.y + W.x * Bftemp.y + W.y * Bftemp.x;
-		B_DFT_value.x = Aftemp.x - W.x * Bftemp.x + W.y * Bftemp.y;
-		B_DFT_value.y = Aftemp.y - W.x * Bftemp.y - W.y * Bftemp.x;
+		A_DFT_value.real(Aftemp.real() + W.real() * Bftemp.real() - W.imag() * Bftemp.imag());
+		A_DFT_value.imag(Aftemp.imag() + W.real() * Bftemp.imag() + W.imag() * Bftemp.real());
+		B_DFT_value.real(Aftemp.real() - W.real() * Bftemp.real() + W.imag() * Bftemp.imag());
+		B_DFT_value.imag(Aftemp.imag() - W.real() * Bftemp.imag() - W.imag() * Bftemp.real());
 
 		Cftemp = s_input[C_read_index];
 		Dftemp = s_input[D_read_index];
-		C_DFT_value.x = Cftemp.x + W.x * Dftemp.x - W.y * Dftemp.y;
-		C_DFT_value.y = Cftemp.y + W.x * Dftemp.y + W.y * Dftemp.x;
-		D_DFT_value.x = Cftemp.x - W.x * Dftemp.x + W.y * Dftemp.y;
-		D_DFT_value.y = Cftemp.y - W.x * Dftemp.y - W.y * Dftemp.x;
+		C_DFT_value.real(Cftemp.real() + W.real() * Dftemp.real() - W.imag() * Dftemp.imag());
+		C_DFT_value.imag(Cftemp.imag() + W.real() * Dftemp.imag() + W.imag() * Dftemp.real());
+		D_DFT_value.real(Cftemp.real() - W.real() * Dftemp.real() + W.imag() * Dftemp.imag());
+		D_DFT_value.imag(Cftemp.imag() - W.real() * Dftemp.imag() - W.imag() * Dftemp.real());
 
 		s_input[A_read_index] = A_DFT_value;
 		s_input[B_read_index] = B_DFT_value;
@@ -175,17 +175,17 @@ __inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
 
 	Aftemp = s_input[A_read_index];
 	Bftemp = s_input[B_read_index];
-	A_DFT_value.x = Aftemp.x + W.x * Bftemp.x - W.y * Bftemp.y;
-	A_DFT_value.y = Aftemp.y + W.x * Bftemp.y + W.y * Bftemp.x;
-	B_DFT_value.x = Aftemp.x - W.x * Bftemp.x + W.y * Bftemp.y;
-	B_DFT_value.y = Aftemp.y - W.x * Bftemp.y - W.y * Bftemp.x;
+	A_DFT_value.real(Aftemp.real() + W.real() * Bftemp.real() - W.imag() * Bftemp.imag());
+	A_DFT_value.imag(Aftemp.imag() + W.real() * Bftemp.imag() + W.imag() * Bftemp.real());
+	B_DFT_value.real(Aftemp.real() - W.real() * Bftemp.real() + W.imag() * Bftemp.imag());
+	B_DFT_value.imag(Aftemp.imag() - W.real() * Bftemp.imag() - W.imag() * Bftemp.real());
 
 	Cftemp = s_input[C_read_index];
 	Dftemp = s_input[D_read_index];
-	C_DFT_value.x = Cftemp.x - W.y * Dftemp.x - W.x * Dftemp.y;
-	C_DFT_value.y = Cftemp.y - W.y * Dftemp.y + W.x * Dftemp.x;
-	D_DFT_value.x = Cftemp.x + W.y * Dftemp.x + W.x * Dftemp.y;
-	D_DFT_value.y = Cftemp.y + W.y * Dftemp.y - W.x * Dftemp.x;
+	C_DFT_value.real(Cftemp.real() - W.imag() * Dftemp.real() - W.real() * Dftemp.imag());
+	C_DFT_value.imag(Cftemp.imag() - W.imag() * Dftemp.imag() + W.real() * Dftemp.real());
+	D_DFT_value.real(Cftemp.real() + W.imag() * Dftemp.real() + W.real() * Dftemp.imag());
+	D_DFT_value.imag(Cftemp.imag() + W.imag() * Dftemp.imag() - W.real() * Dftemp.real());
 
 	s_input[A_read_index] = A_DFT_value;
 	s_input[B_read_index] = B_DFT_value;
@@ -195,14 +195,12 @@ __inline__ __device__ void CT_DIT_FFT_4way(VecT *s_input)
 	__syncthreads();
 }
 
-template <class const_params, typename VecT>
-__device__ inline void CT_DIF_FFT_4way(VecT *s_input)
+template <class const_params, typename T>
+__device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input)
 {
-	using T = typename ScalarOf<VecT>::Ty;
-
-	VecT A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
-	VecT W;
-	VecT Aftemp, Bftemp, Cftemp, Dftemp;
+	cuda::std::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
+	cuda::std::complex<T> W;
+	cuda::std::complex<T> Aftemp, Bftemp, Cftemp, Dftemp;
 
 	int local_id, warp_id;
 	int j, m_param, parity;
@@ -232,15 +230,15 @@ __device__ inline void CT_DIF_FFT_4way(VecT *s_input)
 	Cftemp = s_input[C_read_index];
 	Dftemp = s_input[D_read_index];
 
-	A_DFT_value.x = Aftemp.x + Bftemp.x;
-	A_DFT_value.y = Aftemp.y + Bftemp.y;
-	B_DFT_value.x = W.x * (Aftemp.x - Bftemp.x) - W.y * (Aftemp.y - Bftemp.y);
-	B_DFT_value.y = W.x * (Aftemp.y - Bftemp.y) + W.y * (Aftemp.x - Bftemp.x);
+	A_DFT_value.real(Aftemp.real() + Bftemp.real());
+	A_DFT_value.imag(Aftemp.imag() + Bftemp.imag());
+	B_DFT_value.real(W.real() * (Aftemp.real() - Bftemp.real()) - W.imag() * (Aftemp.imag() - Bftemp.imag()));
+	B_DFT_value.imag(W.real() * (Aftemp.imag() - Bftemp.imag()) + W.imag() * (Aftemp.real() - Bftemp.real()));
 
-	C_DFT_value.x = Cftemp.x + Dftemp.x;
-	C_DFT_value.y = Cftemp.y + Dftemp.y;
-	D_DFT_value.x = W.y * (Cftemp.x - Dftemp.x) + W.x * (Cftemp.y - Dftemp.y);
-	D_DFT_value.y = W.y * (Cftemp.y - Dftemp.y) - W.x * (Cftemp.x - Dftemp.x);
+	C_DFT_value.real(Cftemp.real() + Dftemp.real());
+	C_DFT_value.imag(Cftemp.imag() + Dftemp.imag());
+	D_DFT_value.real(W.imag() * (Cftemp.real() - Dftemp.real()) + W.real() * (Cftemp.imag() - Dftemp.imag()));
+	D_DFT_value.imag(W.imag() * (Cftemp.imag() - Dftemp.imag()) - W.real() * (Cftemp.real() - Dftemp.real()));
 
 	s_input[A_read_index] = A_DFT_value;
 	s_input[B_read_index] = B_DFT_value;
@@ -268,15 +266,15 @@ __device__ inline void CT_DIF_FFT_4way(VecT *s_input)
 		Cftemp = s_input[C_read_index];
 		Dftemp = s_input[D_read_index];
 
-		A_DFT_value.x = Aftemp.x + Bftemp.x;
-		A_DFT_value.y = Aftemp.y + Bftemp.y;
-		C_DFT_value.x = Cftemp.x + Dftemp.x;
-		C_DFT_value.y = Cftemp.y + Dftemp.y;
+		A_DFT_value.real(Aftemp.real() + Bftemp.real());
+		A_DFT_value.imag(Aftemp.imag() + Bftemp.imag());
+		C_DFT_value.real(Cftemp.real() + Dftemp.real());
+		C_DFT_value.imag(Cftemp.imag() + Dftemp.imag());
 
-		B_DFT_value.x = W.x * (Aftemp.x - Bftemp.x) - W.y * (Aftemp.y - Bftemp.y);
-		B_DFT_value.y = W.x * (Aftemp.y - Bftemp.y) + W.y * (Aftemp.x - Bftemp.x);
-		D_DFT_value.x = W.x * (Cftemp.x - Dftemp.x) - W.y * (Cftemp.y - Dftemp.y);
-		D_DFT_value.y = W.x * (Cftemp.y - Dftemp.y) + W.y * (Cftemp.x - Dftemp.x);
+		B_DFT_value.real(W.real() * (Aftemp.real() - Bftemp.real()) - W.imag() * (Aftemp.imag() - Bftemp.imag()));
+		B_DFT_value.imag(W.real() * (Aftemp.imag() - Bftemp.imag()) + W.imag() * (Aftemp.real() - Bftemp.real()));
+		D_DFT_value.real(W.real() * (Cftemp.real() - Dftemp.real()) - W.imag() * (Cftemp.imag() - Dftemp.imag()));
+		D_DFT_value.imag(W.real() * (Cftemp.imag() - Dftemp.imag()) + W.imag() * (Cftemp.real() - Dftemp.real()));
 
 		s_input[A_read_index] = A_DFT_value;
 		s_input[B_read_index] = B_DFT_value;
@@ -301,23 +299,23 @@ __device__ inline void CT_DIF_FFT_4way(VecT *s_input)
 		parity = (1 - j * 2);
 		W = FftTwiddles<T>::Get_W_value(PoT, j * (m_param - PoTm1));
 
-		Aftemp.x = parity * A_DFT_value.x + shfl_xor(&A_DFT_value.x, PoTm1);
-		Aftemp.y = parity * A_DFT_value.y + shfl_xor(&A_DFT_value.y, PoTm1);
-		Bftemp.x = parity * B_DFT_value.x + shfl_xor(&B_DFT_value.x, PoTm1);
-		Bftemp.y = parity * B_DFT_value.y + shfl_xor(&B_DFT_value.y, PoTm1);
-		Cftemp.x = parity * C_DFT_value.x + shfl_xor(&C_DFT_value.x, PoTm1);
-		Cftemp.y = parity * C_DFT_value.y + shfl_xor(&C_DFT_value.y, PoTm1);
-		Dftemp.x = parity * D_DFT_value.x + shfl_xor(&D_DFT_value.x, PoTm1);
-		Dftemp.y = parity * D_DFT_value.y + shfl_xor(&D_DFT_value.y, PoTm1);
+		Aftemp.real(parity * A_DFT_value.real() + shfl_xor(A_DFT_value.real(), PoTm1));
+		Aftemp.imag(parity * A_DFT_value.imag() + shfl_xor(A_DFT_value.imag(), PoTm1));
+		Bftemp.real(parity * B_DFT_value.real() + shfl_xor(B_DFT_value.real(), PoTm1));
+		Bftemp.imag(parity * B_DFT_value.imag() + shfl_xor(B_DFT_value.imag(), PoTm1));
+		Cftemp.real(parity * C_DFT_value.real() + shfl_xor(C_DFT_value.real(), PoTm1));
+		Cftemp.imag(parity * C_DFT_value.imag() + shfl_xor(C_DFT_value.imag(), PoTm1));
+		Dftemp.real(parity * D_DFT_value.real() + shfl_xor(D_DFT_value.real(), PoTm1));
+		Dftemp.imag(parity * D_DFT_value.imag() + shfl_xor(D_DFT_value.imag(), PoTm1));
 
-		A_DFT_value.x = W.x * Aftemp.x - W.y * Aftemp.y;
-		A_DFT_value.y = W.x * Aftemp.y + W.y * Aftemp.x;
-		B_DFT_value.x = W.x * Bftemp.x - W.y * Bftemp.y;
-		B_DFT_value.y = W.x * Bftemp.y + W.y * Bftemp.x;
-		C_DFT_value.x = W.x * Cftemp.x - W.y * Cftemp.y;
-		C_DFT_value.y = W.x * Cftemp.y + W.y * Cftemp.x;
-		D_DFT_value.x = W.x * Dftemp.x - W.y * Dftemp.y;
-		D_DFT_value.y = W.x * Dftemp.y + W.y * Dftemp.x;
+		A_DFT_value.real(W.real() * Aftemp.real() - W.imag() * Aftemp.imag());
+		A_DFT_value.imag(W.real() * Aftemp.imag() + W.imag() * Aftemp.real());
+		B_DFT_value.real(W.real() * Bftemp.real() - W.imag() * Bftemp.imag());
+		B_DFT_value.imag(W.real() * Bftemp.imag() + W.imag() * Bftemp.real());
+		C_DFT_value.real(W.real() * Cftemp.real() - W.imag() * Cftemp.imag());
+		C_DFT_value.imag(W.real() * Cftemp.imag() + W.imag() * Cftemp.real());
+		D_DFT_value.real(W.real() * Dftemp.real() - W.imag() * Dftemp.imag());
+		D_DFT_value.imag(W.real() * Dftemp.imag() + W.imag() * Dftemp.real());
 
 		PoT = PoT >> 1;
 		PoTm1 = PoTm1 >> 1;

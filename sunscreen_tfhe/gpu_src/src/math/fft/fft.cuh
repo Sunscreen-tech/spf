@@ -3,11 +3,7 @@
 
 #include "../../features.cuh"
 
-#ifdef COMPLEX_FFT
-#include "fft_noreorder2.cuh"
-#else
 #include "fft_noreorder.cuh"
-#endif
 
 #include "fft_params.cuh"
 #include "../math.cuh"
@@ -21,12 +17,7 @@ __device__ void fft_noreorder(cuda::std::complex<T> *s_input, u32 n)
     switch (n)
     {
     case 1024:
-#ifdef COMPLEX_FFT
         CT_DIF_FFT_4way<FFT_1024_forward_noreorder, T>(s_input);
-#else
-        // TODO: Remove this UB
-        CT_DIF_FFT_4way<FFT_1024_forward_noreorder>(reinterpret_cast<double2 *>(s_input));
-#endif
         break;
     default:
         printf("Illegal FFT size %d", n);
@@ -44,12 +35,7 @@ __device__ void ifft_noreorder(cuda::std::complex<T> *s_input, u32 n)
     switch (n)
     {
     case 1024:
-#ifdef COMPLEX_FFT
         CT_DIT_FFT_4way< FFT_1024_inverse_noreorder, T>(s_input);
-#else
-        // TODO: Remove this UB
-        CT_DIT_FFT_4way<FFT_1024_inverse_noreorder>(reinterpret_cast<double2 *>(s_input));
-#endif
         break;
     default:
         printf("Illegal FFT size %d", n);
