@@ -432,7 +432,7 @@ impl ComputeKey {
     }
 
     /// Generate the compute keys from the given secret keys with default
-    /// parameters (['crate::DEFAULT_128`])
+    /// parameters ([`crate::DEFAULT_128`])
     ///
     /// # Remarks
     /// The secret key must have also been generated with the default parameters.
