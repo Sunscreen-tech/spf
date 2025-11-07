@@ -29,7 +29,7 @@ fn can_unsigned_mul_plain_plain() {
         let b_ptr = memory.try_allocate_type(&b).unwrap();
         let c_ptr = memory.try_allocate(16).unwrap();
 
-        let program = memory.allocate_program(&vec![
+        let program = memory.allocate_program(&[
             IsaOp::Load(T0, SP, 32, 0),
             IsaOp::Load(T1, SP, 32, 4),
             IsaOp::Load(T2, SP, 32, 8),
