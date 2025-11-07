@@ -10,7 +10,7 @@ use std::{
     num::Wrapping,
     ops::{Add, AddAssign, BitAnd, Deref, Mul, Neg, Not, Shl, Shr, Sub, SubAssign},
 };
-use sunscreen_math::{Zero, refify_binary_op};
+use sunscreen_math::{One, Zero, refify_binary_op};
 
 use crate::{
     PlaintextBits,
@@ -49,38 +49,24 @@ where
 
 /// A type that supports operations on a Torus.
 pub trait TorusOps:
-    BitAnd<Self, Output = Self>
-    + Default
-    + WrappingAdd
-    + WrappingSub
-    + WrappingMul
-    + WrappingShl
-    + WrappingShr
-    + WrappingNeg
-    + ReinterpretAsSigned
-    + Num
-    + NumBits
-    + Not<Output = Self>
-    + From<u32>
-    + TryFrom<u64>
-    + FromU64
-    + Clone
-    + Copy
-    + Binary
-    + LowerHex
-    + UpperHex
-    + std::fmt::Debug
-    + Ord
-    + Zero
-    + sunscreen_math::One
-    + Pod
-    + Bounded
-    + ToF64
-    + FromF64
-    + ToU64
-    + VectorOps
-    + Sync
-    + Send
+    // boilerplate
+    Ord + Default + Clone + Copy + Send + Sync + Debug +
+    // formatting
+    Binary + LowerHex + UpperHex +
+    // standard math
+    BitAnd<Self, Output = Self> + Not<Output = Self> +
+    // nums trait
+    Num + Bounded + WrappingAdd + WrappingSub + WrappingNeg + WrappingMul + WrappingShl + WrappingShr +
+    // bytemuck
+    Pod +
+    // sunscreen math
+    Zero + One +
+    // custom conversions
+    FromU64 + ToU64 + FromF64 + ToF64 +
+    // custom operations
+    ReinterpretAsSigned + VectorOps +
+    // misc
+    NumBits
 {
 }
 
@@ -292,8 +278,8 @@ impl<S: TorusOps> Torus<S> {
     pub fn decode(&self, plain_bits: PlaintextBits) -> S {
         assert!(plain_bits.0 < S::BITS);
 
-        let round_bit = self.0.wrapping_shr(S::BITS - plain_bits.0 - 1) & S::from(0x1);
-        let mask = S::from((0x1 << plain_bits.0) - 1);
+        let round_bit = self.0.wrapping_shr(S::BITS - plain_bits.0 - 1) & S::from_u64(0x1);
+        let mask = S::from_u64((0x1 << plain_bits.0) - 1);
 
         (self.0.wrapping_shr(S::BITS - plain_bits.0) + round_bit) & mask
     }
@@ -329,7 +315,7 @@ impl<S: TorusOps> From<S> for Torus<S> {
 
 impl<S: TorusOps> Zero for Torus<S> {
     fn zero() -> Self {
-        Self(S::from(0))
+        Self(S::from_u64(0))
     }
 
     fn vartime_is_zero(&self) -> bool {
