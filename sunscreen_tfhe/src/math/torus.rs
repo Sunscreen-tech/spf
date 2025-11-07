@@ -8,7 +8,10 @@ use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Binary, Debug, LowerHex, UpperHex},
     num::Wrapping,
-    ops::{Add, AddAssign, BitAnd, Deref, Mul, Neg, Not, Shl, Shr, Sub, SubAssign},
+    ops::{
+        Add, AddAssign, BitAnd, BitAndAssign, BitOr, BitOrAssign, Deref, Mul, Neg, Not, Shl, Shr,
+        Sub, SubAssign,
+    },
 };
 use sunscreen_math::{One, Zero, refify_binary_op};
 
@@ -50,11 +53,11 @@ where
 /// A type that supports operations on a Torus.
 pub trait TorusOps:
     // boilerplate
-    Ord + Default + Clone + Copy + Send + Sync + Debug +
+    Default + Clone + Copy + Send + Sync + Debug +
     // formatting
     Binary + LowerHex + UpperHex +
-    // standard math
-    BitAnd<Self, Output = Self> + Not<Output = Self> +
+    // standard math operator
+    Ord + BitAnd<Output = Self> + BitOr<Output = Self> + Not<Output = Self> + BitAndAssign + BitOrAssign +
     // nums trait
     Num + Bounded + WrappingAdd + WrappingSub + WrappingNeg + WrappingMul + WrappingShl + WrappingShr +
     // bytemuck
