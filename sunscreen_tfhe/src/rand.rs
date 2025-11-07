@@ -166,7 +166,6 @@ mod tests {
         where
             S: TorusOps,
             I: ToF64 + Copy + Debug,
-            <S as TryFrom<u64>>::Error: Debug,
         {
             let q = (S::BITS as f64).exp2();
             let n: i32 = 100_000;
