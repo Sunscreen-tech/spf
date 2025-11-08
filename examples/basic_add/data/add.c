@@ -1,4 +1,4 @@
-typedef unsigned char uint8_t;
+#include <parasol.h>
 
 [[clang::fhe_program]] uint8_t add(
     [[clang::encrypted]] uint8_t a,
