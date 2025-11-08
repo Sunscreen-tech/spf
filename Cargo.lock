@@ -246,6 +246,17 @@ source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "72b3254f16251a8381aa12e40e3c4d2f0199f8c6508fbecb9d91f575e0fbb8c6"
 
 [[package]]
+name = "basic-add"
+version = "0.1.0"
+dependencies = [
+ "bincode",
+ "parasol_cpu",
+ "parasol_runtime",
+ "rayon",
+ "serde",
+]
+
+[[package]]
 name = "benchmark_system_info"
 version = "0.10.0"
 dependencies = [
@@ -1066,17 +1077,6 @@ name = "heck"
 version = "0.5.0"
 source = "registry+https://github.com/rust-lang/crates.io-index"
 checksum = "2304e00983f87ffb38b55b444b5e3b60a884b5d30c0fca7d82fe33449bbe55ea"
-
-[[package]]
-name = "hello-world"
-version = "0.1.0"
-dependencies = [
- "bincode",
- "parasol_cpu",
- "parasol_runtime",
- "rayon",
- "serde",
-]
 
 [[package]]
 name = "hermit-abi"
