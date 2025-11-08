@@ -27,12 +27,14 @@ default-members = [
 
 [workspace.dependencies]
 aligned-vec = { version = ">=0.6.2", features = ["serde"] }
+anyhow = "1.0.98"
 approx = "0.5"
 bincode = "1"
 biodivine-lib-bdd = "0.5"
 bumpalo = "3"
 bytemuck = "1"
 cached = "0.55"
+chrono = "0.4.41"
 clap = { version = "4", features = ["derive"] }
 criterion = { version = "0.5", default-features = false }
 crypto-bigint = { version = "0.5", features = ["serde"] }
@@ -46,6 +48,7 @@ find_cuda_helper = "0.2"
 indicatif = "0.17"
 itertools = "0.14"
 log = "0.4"
+ndarray = "0.16.1"
 num = { version = "0.4", features = ["serde"] }
 num-complex = { version = "0.4", features = ["bytemuck"] }
 num_cpus = "1"
@@ -63,6 +66,7 @@ realfft = "3"
 reqwest = { version = "0.12", features = ["blocking"] }
 rug = "1"
 rustfft = "6"
+scirs2-optimize = "0.1.0-alpha.3"
 seq-macro = "0.3"
 serde = { version = "1", features = ["rc", "derive"] }
 serde_json = "1"
