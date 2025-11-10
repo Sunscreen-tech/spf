@@ -1,6 +1,5 @@
 use std::sync::Arc;
 
-use benchmark_system_info::{SystemInfo, get_system_info};
 use clap::Args;
 use indicatif::{ProgressBar, ProgressStyle};
 use ndarray::{Array1, Array2};
@@ -160,7 +159,6 @@ pub struct CMuxTreeDataFile {
     pub version: u32,
     pub time: String,
     pub cmux_tree_parameters: CMuxTreeParameters,
-    pub system_info: SystemInfo,
     pub method: Method,
     pub drift: Drift,
     pub fit: FitResults,
@@ -184,7 +182,6 @@ impl CMuxTreeDataFile {
             version: 3,
             time: chrono::Local::now().to_string(),
             cmux_tree_parameters,
-            system_info: get_system_info(),
             method: Method::RandomSelectLinesCascadedDataLinesWithDrift,
             drift,
             fit,
