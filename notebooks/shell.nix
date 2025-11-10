@@ -6,7 +6,23 @@ let
     sha256 = "1n8pcbr63ixf7y1zywki9giys1sjqrhlyib080p44bpmqvb5i1bs";
   }) { };
 
-  python = pkgs.python313;
+  # Base Python interpreter
+  basePython = pkgs.python313;
+
+  # Override Python packages to include marimo 0.17.7
+  python = basePython.override {
+    self = python;
+    packageOverrides = pself: psuper:
+      let
+        customPackages = import ./marimo-override.nix {
+          inherit pkgs;
+          python = basePython;
+        };
+      in {
+        msgspec-m = customPackages.msgspec-m;
+        marimo = customPackages.marimo;
+      };
+  };
 
   pythonEnv = python.withPackages (ps:
     with ps; [
@@ -16,6 +32,7 @@ let
       jupyterlab
       marimo
       matplotlib
+      mcp
       numpy
       scipy
       virtualenv
