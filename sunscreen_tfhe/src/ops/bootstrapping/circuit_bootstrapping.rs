@@ -316,12 +316,12 @@ fn mod_switch_trace_and_rotate<S>(
 /// contained in `input` into the first `ℓ` coefficients of a
 /// [`GlweCiphertext`](crate::entities::GlweCiphertext).
 ///
-/// We then perform `ℓ` [`trace_ly25`] operations to extract these coefficients into their
+/// We then perform `ℓ` [trace_ly25] operations to extract these coefficients into their
 /// own [`GlweCiphertext`](crate::entities::GlweCiphertext)s. Collectively,
 /// their base decomposed messages form a
 /// [`GlevCiphertext`](crate::entities::GlevCiphertext).
 ///
-/// Finally, we apply a [`scheme_switch_fft`] operation to convert the GLEV ciphertext
+/// Finally, we apply a [scheme_switch_fft] operation to convert the GLEV ciphertext
 /// into a [`GgswCiphertextFft`](crate::entities::GgswCiphertextFft). Conveniently, this
 /// method naturally emits the GGSW result in FFT form, which is readily compatible with
 /// CMUX operations.

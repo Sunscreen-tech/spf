@@ -251,3 +251,6 @@ $RECYCLE.BIN/
 *.lnk
 
 # End of https://www.toptal.com/developers/gitignore/api/emacs,vim,visualstudiocode,macos,windows,linux,direnv,rust,c,jupyternotebooks
+
+CLAUDE.md
+.claude

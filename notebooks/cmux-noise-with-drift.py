@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.17.7"
 app = marimo.App(width="medium")
 
 
@@ -12,8 +12,7 @@ def _():
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     # Drift-Corrected Noise Model for CBS Systems
 
     ## Model Overview
@@ -35,12 +34,11 @@ def _(mo):
     The figure shows three different scenarios:
 
     - Initial: Encoding with only the initial noise
-    - Spread Only: FHE operational noise model without assuming the encoding position drifts  
+    - Spread Only: FHE operational noise model without assuming the encoding position drifts
     - Drift-Corrected: Model showing systematic position drift on top of the spreading distribution.
 
     The key insight is that drift moves the entire noise distribution away from the intended encoding position, increasing the probability that distribution tails cross into failure regions.
-    """
-    )
+    """)
     return
 
 
@@ -216,13 +214,12 @@ def _():
             "axes.titlesize": 14,
         }
     )
-    return NormalDist, curve_fit, json, np, plt, stats
+    return NormalDist, curve_fit, json, np, plt
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     ## Experimental Data Overview
 
     Our analysis is based on two complementary experiments measuring noise characteristics in CMUX operations:
@@ -250,8 +247,7 @@ def _(mo):
     This captures the inherent noise growth from FHE operations, independent of the systematic drift measured in Experiment 1. We should note that the observed drift in this case is constant for each CMUX tree run; the drift appears to be a function of the generated compute keys.
 
     Together, these experiments allow us to decompose total system noise into interpretable components for accurate error rate prediction.
-    """
-    )
+    """)
     return
 
 
@@ -261,9 +257,6 @@ def _(json):
     import os
 
     data_files = [
-        "../../../../noise_analysis/analyze_cmux_tree.json",
-        "../../../noise_analysis/analyze_cmux_tree.json",
-        "../../noise_analysis/analyze_cmux_tree.json",
         "../noise_analysis/analyze_cmux_tree.json",
         "analyze_cmux_tree.json",
     ]
@@ -310,8 +303,7 @@ def _(np, results):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     ## Mathematical Framework for Noise Decomposition
 
     Remember that we are using this model for characterizing the standard deviation in the message position over circuit depth:
@@ -325,8 +317,7 @@ def _(mo):
     - $\sigma_s^2(d)$: Depth-dependent spread - intrinsic FHE noise growth from cryptographic operations
 
     This decomposition allows us to separately characterize drift (from Experiment 1) and spread based noise (from Experiment 2), and then combine those experiments to characterize the total error at a given circuit depth $d$.
-    """
-    )
+    """)
     return
 
 
@@ -450,9 +441,9 @@ def _(np):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""We have almost all the pieces we need. First we need to find an empirical model for determining $\sigma_s(d)$, the depth-dependent spread variance from FHE operations. We do this by fitting the spread data to the rational model defined above."""
-    )
+    mo.md(r"""
+    We have almost all the pieces we need. First we need to find an empirical model for determining $\sigma_s(d)$, the depth-dependent spread variance from FHE operations. We do this by fitting the spread data to the rational model defined above.
+    """)
     return
 
 
@@ -529,9 +520,9 @@ def _(curve_fit, depths, measured_stds, np, plt, rational_model):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""And we need to mesure the drift based distributions $\sigma_0$ and $\sigma_m$. Those calculations are simple (the standard deviation); here we provide an additional check on our assumption that these distributions are indeed well modeled by a Gaussian distribution and are independent."""
-    )
+    mo.md(r"""
+    And we need to mesure the drift based distributions $\sigma_0$ and $\sigma_m$. Those calculations are simple (the standard deviation); here we provide an additional check on our assumption that these distributions are indeed well modeled by a Gaussian distribution and are independent.
+    """)
     return
 
 
@@ -550,7 +541,6 @@ def _(
     gaussian_pdf,
     np,
     plt,
-    stats,
     std_drift,
     std_offset,
 ):
@@ -602,23 +592,12 @@ def _(
     plt.show()
 
     print(f"Drift correlation coefficient: {correlation:.4f}")
-
-    # Statistical tests for drift distributions
-    # Note: With large N, Shapiro-Wilk W statistic is more reliable than p-value
-    (offset_statistic, offset_pvalue) = stats.shapiro(drift_offsets)
-    (slope_statistic, slope_pvalue) = stats.shapiro(drift_slopes)
-
-    print(f"\nShapiro-Wilk Test (N={len(drift_offsets)}):")
-    print(f"  Offset: W={offset_statistic:.4f}")
-    print(f"  Slope:  W={slope_statistic:.4f}")
-    print("Drift components can be modeled as independent Gaussian variables.")
     return
 
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""
+    mo.md(r"""
     Now that we have the estimates for $\sigma_0$, $\sigma_m$, and $\sigma_s(d)$, we can calculate the error rate for a given depth $d$ using the drift-corrected noise model.
 
     ## Decryption error probability from torus position probability distributions
@@ -629,8 +608,7 @@ def _(mo):
 
     - When the ratio is low, we can calculate the area of the probability distribution that lies outside the valid encoded value range directly.
     - When the ratio is high, we can use a simple polynomial approximation for the percentage of the probability curve outside of the valid encoded value range. This returns a log10 answer, as otherwise the returned answers are far too close to the limits of floating point number representations.
-    """
-    )
+    """)
     return
 
 
@@ -782,9 +760,9 @@ def _(
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""Since we have all of the estimated distributions and a function to calculate our decryption error from it, we can finally plot how our probability of decryption failure changes over circuit depth and compare it to our old spread only model."""
-    )
+    mo.md(r"""
+    Since we have all of the estimated distributions and a function to calculate our decryption error from it, we can finally plot how our probability of decryption failure changes over circuit depth and compare it to our old spread only model.
+    """)
     return
 
 
@@ -834,9 +812,9 @@ def _(baseline_error_rates_b2, depths, model_error_rates_b2, np, plt):
 
 @app.cell(hide_code=True)
 def _(mo):
-    mo.md(
-        r"""We can see that the error rate increases much more significantly with depth when accounting for drift."""
-    )
+    mo.md(r"""
+    We can see that the error rate increases much more significantly with depth when accounting for drift.
+    """)
     return
 
 
