@@ -14,7 +14,6 @@ categories = ["cryptography"]
 
 [dependencies]
 anyhow = { workspace = true }
-benchmark_system_info = { workspace = true, optional = true }
 bincode = { workspace = true }
 bumpalo = { workspace = true }
 chrono = { workspace = true }
@@ -46,7 +45,6 @@ wasm-bindgen-test = "0.3"
 [features]
 default = []
 debug = []
-benchmark_system_info = ["dep:benchmark_system_info"]
 
 [[bench]]
 harness = false
@@ -55,7 +53,3 @@ name = "ops"
 [[bench]]
 harness = false
 name = "fhe_ops"
-
-[[bin]]
-name = "op_noise"
-required-features = ["benchmark_system_info"]

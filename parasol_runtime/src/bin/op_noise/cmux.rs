@@ -29,12 +29,6 @@ pub struct CMuxSample {
     pub out_error_rate_base_2_log: f64,
 }
 
-#[derive(Debug, Serialize, Deserialize)]
-pub struct CMuxRun {
-    pub cmux_samples: Vec<CMuxSample>,
-    pub parameters: AnalyzeCMux,
-}
-
 pub fn analyze_cmux(cmd: &AnalyzeCMux) -> Vec<CMuxSample> {
     println!("Running with the following parameters:");
     println!("{}", serde_json::to_string_pretty(cmd).unwrap());
