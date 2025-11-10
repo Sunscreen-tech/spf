@@ -47,6 +47,10 @@ pub struct CMuxTreeRunOptions {
     /// Whether to include the raw data in the output
     #[arg(long, default_value_t = false)]
     include_raw: bool,
+
+    /// Whether to include the processed data in the output (but not the fit)
+    #[arg(long, default_value_t = true)]
+    include_data: bool,
 }
 
 #[derive(Debug, Serialize, Deserialize, Clone)]
@@ -178,7 +182,7 @@ impl CMuxTreeDataFile {
         spread_raw: Vec<Vec<Option<f64>>>,
     ) -> Self {
         Self {
-            version: 2,
+            version: 3,
             time: chrono::Local::now().to_string(),
             cmux_tree_parameters,
             system_info: get_system_info(),
@@ -813,6 +817,9 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         .map(|dp| (dp.depth, dp.std))
         .unzip::<usize, f64, Vec<_>, Vec<_>>();
 
+    let fit = fit_error_rate(&depths, &stds, drift_std, drift_offset_std);
+
+    // Export only requested data
     let spread_raw = if run_options.include_raw {
         spread_raw
     } else {
@@ -825,7 +832,17 @@ pub fn analyze_cmux_tree(cmux_tree_params: &CMuxTreeParameters) -> CMuxTreeDataF
         vec![]
     };
 
-    let fit = fit_error_rate(&depths, &stds, drift_std, drift_offset_std);
+    let drift_data = if run_options.include_data {
+        drift_data
+    } else {
+        vec![]
+    };
+
+    let spread_data = if run_options.include_data {
+        spread_data
+    } else {
+        vec![]
+    };
 
     CMuxTreeDataFile::new(
         cmux_tree_params.clone(),

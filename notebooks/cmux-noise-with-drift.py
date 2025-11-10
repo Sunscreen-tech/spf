@@ -1,6 +1,6 @@
 import marimo
 
-__generated_with = "0.14.16"
+__generated_with = "0.15.2"
 app = marimo.App(width="medium")
 
 
@@ -216,7 +216,7 @@ def _():
             "axes.titlesize": 14,
         }
     )
-    return NormalDist, curve_fit, json, np, plt, stats
+    return NormalDist, curve_fit, json, np, plt
 
 
 @app.cell(hide_code=True)
@@ -261,9 +261,6 @@ def _(json):
     import os
 
     data_files = [
-        "../../../../noise_analysis/analyze_cmux_tree.json",
-        "../../../noise_analysis/analyze_cmux_tree.json",
-        "../../noise_analysis/analyze_cmux_tree.json",
         "../noise_analysis/analyze_cmux_tree.json",
         "analyze_cmux_tree.json",
     ]
@@ -550,7 +547,6 @@ def _(
     gaussian_pdf,
     np,
     plt,
-    stats,
     std_drift,
     std_offset,
 ):
@@ -602,16 +598,6 @@ def _(
     plt.show()
 
     print(f"Drift correlation coefficient: {correlation:.4f}")
-
-    # Statistical tests for drift distributions
-    # Note: With large N, Shapiro-Wilk W statistic is more reliable than p-value
-    (offset_statistic, offset_pvalue) = stats.shapiro(drift_offsets)
-    (slope_statistic, slope_pvalue) = stats.shapiro(drift_slopes)
-
-    print(f"\nShapiro-Wilk Test (N={len(drift_offsets)}):")
-    print(f"  Offset: W={offset_statistic:.4f}")
-    print(f"  Slope:  W={slope_statistic:.4f}")
-    print("Drift components can be modeled as independent Gaussian variables.")
     return
 
 
