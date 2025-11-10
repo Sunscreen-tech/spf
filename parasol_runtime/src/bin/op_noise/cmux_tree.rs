@@ -18,8 +18,7 @@ use sunscreen_tfhe::{
 };
 
 use crate::{
-    ProbabilityAwayMeanGaussianLog, noise::measure_noise_by_keyswitch_glwe_to_lwe,
-    probability_away_from_mean_gaussian_log,
+    noise::measure_noise_by_keyswitch_glwe_to_lwe, probability_away_from_mean_gaussian_log,
 };
 
 const PROGRESS_BAR_TEMPLATE: &str = "{wide_bar} Items {pos:>4}/{len:4} Elapsed {elapsed_precise} ETA {eta_precise} Est Duration {duration_precise}";
@@ -193,21 +192,6 @@ impl CMuxTreeDataFile {
             drift_raw,
             spread_data,
             spread_raw,
-        }
-    }
-}
-
-#[derive(Serialize, Clone)]
-struct PredictedError {
-    base_10: f64,
-    base_2: f64,
-}
-
-impl From<ProbabilityAwayMeanGaussianLog> for PredictedError {
-    fn from(prob: ProbabilityAwayMeanGaussianLog) -> Self {
-        Self {
-            base_10: prob.log_10(),
-            base_2: prob.log_2(),
         }
     }
 }
@@ -578,8 +562,8 @@ fn spread_analysis(
 ) -> (Vec<CMuxTreeStdDataPoint>, Vec<Vec<Option<f64>>>) {
     // We will use the public key for the encryption because it might generate
     // different noise parameters.
-    let secret_key = SecretKey::generate(&params);
-    let compute_key = ComputeKey::generate(&secret_key, &params);
+    let secret_key = SecretKey::generate(params);
+    let compute_key = ComputeKey::generate(&secret_key, params);
 
     // Generate all bootstraps in parallel and in advance. This could take a lot of memory.
     println!("Generating select lines");
@@ -590,7 +574,7 @@ fn spread_analysis(
     let zeros = (0..depth)
         .into_par_iter()
         .map(|_| {
-            let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params));
+            let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, params));
 
             progress.inc(1);
             ggsw
@@ -600,7 +584,7 @@ fn spread_analysis(
     let ones = (0..depth)
         .into_par_iter()
         .map(|_| {
-            let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params));
+            let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, params));
 
             progress.inc(1);
             ggsw
@@ -618,7 +602,7 @@ fn spread_analysis(
     let samples_per_run = (0..sample_count)
         .into_par_iter()
         .map(|_| {
-            let run = run_compute_tree(depth, &ones, &zeros, &secret_key, &compute_key, &params);
+            let run = run_compute_tree(depth, &ones, &zeros, &secret_key, &compute_key, params);
 
             progress.inc(1);
             run
@@ -689,24 +673,14 @@ fn drift_analysis(
     let samples_per_run = (0..sample_count)
         .into_par_iter()
         .map(|_| {
-            let secret_key = SecretKey::generate(&params);
-            let compute_key = ComputeKey::generate(&secret_key, &params);
+            let secret_key = SecretKey::generate(params);
+            let compute_key = ComputeKey::generate(&secret_key, params);
             let zeros = (0..depth)
-                .into_iter()
-                .map(|_| {
-                    let ggsw = Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, &params));
-
-                    ggsw
-                })
+                .map(|_| Arc::new(ggsw_fft_encryption(0, &secret_key, &compute_key, params)))
                 .collect::<Vec<_>>();
 
             let ones = (0..depth)
-                .into_iter()
-                .map(|_| {
-                    let ggsw = Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, &params));
-
-                    ggsw
-                })
+                .map(|_| Arc::new(ggsw_fft_encryption(1, &secret_key, &compute_key, params)))
                 .collect::<Vec<_>>();
 
             let run_results =
@@ -731,12 +705,12 @@ fn drift_analysis(
             let left = x
                 .iter()
                 .enumerate()
-                .map(|(i, (a, _))| a.expect(&noise_decode_error_msg(i)).clone())
+                .map(|(i, (a, _))| a.unwrap_or_else(|| panic!("{}", noise_decode_error_msg(i))))
                 .collect::<Vec<_>>();
             let right = x
                 .iter()
                 .enumerate()
-                .map(|(i, (_, b))| b.expect(&noise_decode_error_msg(i)).clone())
+                .map(|(i, (_, b))| b.unwrap_or_else(|| panic!("{}", noise_decode_error_msg(i))))
                 .collect::<Vec<_>>();
 
             [left, right]
@@ -751,7 +725,7 @@ fn drift_analysis(
         // independent, so we can just flatten the results.
         .map(|samples| {
             // Not sure what to do about the two lines of output. I suppose handle them separately.
-            let (drift, offset, max_error) = linear_regression(&xs, &samples);
+            let (drift, offset, max_error) = linear_regression(&xs, samples);
 
             CMuxTreeDriftDataPoint {
                 drift,
