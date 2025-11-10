@@ -46,6 +46,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-mdBook-
           ${{ runner.os }}-cargo-
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        components: rustfmt
     # Checks are ordered from fastest to slowest so your build fails quickly on invalid PRs
     # We do everything in release mode so tests run quickly and steps cache each other.
     # Check the submitted change meets style guidelines
@@ -98,6 +101,9 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-clippy-
           ${{ runner.os }}-cargo-
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
+      with:
+        components: clippy
     # Check the submitted change passes the clippy linter
     - name: Cargo clippy versio check
       run: cargo clippy --version
@@ -122,6 +128,7 @@ jobs:
         restore-keys: |
           ${{ runner.os }}-cargo-doc-
           ${{ runner.os }}-cargo-
+    - uses: actions-rust-lang/setup-rust-toolchain@v1
     # Check the full documentation builds, links work, etc.
     - name: Cargo doc
       env:
