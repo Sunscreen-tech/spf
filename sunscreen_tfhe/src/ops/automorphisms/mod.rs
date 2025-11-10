@@ -93,7 +93,7 @@ fn eval_auto<S: TorusOps>(
 /// [WHS+24](https://eprint.iacr.org/2024/1318)
 ///
 /// # Deprecated
-/// This function is deprecated. Prefer [`trace_ly25`] instead, which implements
+/// This function is deprecated. Prefer [trace_ly25] instead, which implements
 /// the RevHomTrace algorithm that has much lower error and does not need the
 /// preprocessing step that multiplies by N^-1.
 ///
