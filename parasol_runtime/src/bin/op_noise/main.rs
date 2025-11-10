@@ -5,6 +5,7 @@ use cbs::analyze_cbs;
 use clap::Parser;
 use cmux::analyze_cmux;
 use parasol_runtime::{ComputeKeyNonFft, Params, SecretKey};
+use pbs::analyze_pbs;
 use scheme_switch::{analyze_scheme_switch, search_scheme_switch};
 use secret_key_encryption::run_secret_key_encryption;
 use serde::Serialize;
@@ -13,6 +14,7 @@ mod args;
 mod cbs;
 mod cmux;
 mod error;
+mod pbs;
 pub use error::*;
 mod math;
 pub use math::*;
@@ -56,6 +58,10 @@ fn main() {
         Command::AnalyzeCbs(cmd) => {
             let result = analyze_cbs(&cmd);
             write_results(&path.join("analyze_cbs.json"), &result);
+        }
+        Command::AnalyzePbs(cmd) => {
+            let result = analyze_pbs(&cmd);
+            write_results(&path.join("analyze_pbs.json"), &result);
         }
         Command::AnalyzeCmux(cmd) => {
             if let Err(e) = cmd.load_config() {

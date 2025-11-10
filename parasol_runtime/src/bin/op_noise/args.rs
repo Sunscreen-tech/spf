@@ -21,6 +21,7 @@ pub enum Command {
     AnalyzeSchemeSwitch(AnalyzeSchemeSwitch),
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
+    AnalyzePbs(AnalyzePbs),
     AnalyzeCmux(AnalyzeCMux),
     AnalyzeCmuxTree(AnalyzeCMuxTree),
 }
@@ -147,6 +148,78 @@ pub struct SearchSchemeSwitchCommand {
 
 #[derive(Debug, Args)]
 pub struct AnalyzeCbs {
+    #[arg(default_value_t = 4, long)]
+    /// The radix decomposition base-log of the resulting GGSW.
+    pub cbs_radix_log: usize,
+
+    #[arg(default_value_t = 4, long)]
+    /// The radix decomposition count of the resulting GGSW.
+    pub cbs_radix_count: usize,
+
+    #[arg(default_value_t = 16, long)]
+    /// The radix decomposition base-log of the pbs operation.
+    pub pbs_radix_log: usize,
+
+    #[arg(default_value_t = 2, long)]
+    /// The radix decomposition count of the pbs operation.
+    pub pbs_radix_count: usize,
+
+    #[arg(default_value_t = 3, long)]
+    /// The radix decomposition base-log of the scheme switch operation.
+    pub ss_radix_log: usize,
+
+    #[arg(default_value_t = 15, long)]
+    /// The radix decomposition count of the scheme switch operation.
+    pub ss_radix_count: usize,
+
+    #[arg(default_value_t = 7, long)]
+    /// The radix decomposition base-log of the tr operation.
+    pub tr_radix_log: usize,
+
+    #[arg(default_value_t = 6, long)]
+    /// The radix decomposition count of the tr operation.
+    pub tr_radix_count: usize,
+
+    #[arg(default_value_t = 7.25e-5, long)]
+    /// The std deviation of the L0 LWE instance. See
+    /// `sunscreen_tfhe/src/params.rs` for LWE for parameter sets for what this
+    /// number should be for a given LWE size and security level.
+    pub l0_sigma: f64,
+
+    #[arg(default_value_t = 7e-16, long)]
+    /// The std deviation of the L0 LWE instance.
+    pub l1_sigma: f64,
+
+    #[arg(default_value_t = 7.25e-5, long)]
+    /// The std deviation given to the input L0 LWE ciphertext. See
+    /// `sunscreen_tfhe/src/params.rs` for LWE for parameter sets for what this
+    /// number should be for a given LWE size and security level.
+    pub input_sigma: f64,
+
+    #[arg(default_value_t = 637, long)]
+    /// The number of polynomials in the GLWE problem instance. See
+    /// `sunscreen_tfhe/src/params.rs` for LWE for parameter sets for what this
+    /// number should be for a given LWE size and security level.
+    pub l0_lwe_size: usize,
+
+    #[arg(default_value_t = 1, long)]
+    /// The number of polynomials in the level 1 GLWE problem instance.
+    pub l1_glwe_size: usize,
+
+    #[arg(default_value_t = 2048, long)]
+    /// The polynomial degree to use in the level 1 GLWE problem instance.
+    pub l1_glwe_poly_degree: usize,
+
+    #[arg(default_value_t = 10_000, long)]
+    /// The number of samples to collect in noise analysis
+    pub sample_count: u64,
+
+    #[arg(default_value_t = 1, long)]
+    pub addend_count: u32,
+}
+
+#[derive(Debug, Args)]
+pub struct AnalyzePbs {
     #[arg(default_value_t = 4, long)]
     /// The radix decomposition base-log of the resulting GGSW.
     pub cbs_radix_log: usize,
