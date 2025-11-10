@@ -45,7 +45,6 @@ wasm-bindgen-test = "0.3"
 [features]
 default = []
 debug = []
-benchmark_system_info = []
 
 [[bench]]
 harness = false
