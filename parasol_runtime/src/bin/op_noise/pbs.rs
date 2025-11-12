@@ -1,15 +1,15 @@
 use crate::Result;
-use crate::{args::AnalyzePbs, noise::measure_noise_glwe};
+use crate::{args::AnalyzePbs, noise::measure_noise_glwe_to_lwe};
 use indicatif::ProgressBar;
 use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
     AddendCount, GlweDef, GlweDimension, GlweSize, LweDef, LweDimension, PlaintextBits,
-    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog,
-    entities::{GlweCiphertext, GlweSecretKey, LweSecretKey, Polynomial, UnivariateLookupTable},
+    PolynomialDegree, RadixCount, RadixDecomposition, RadixLog, Torus,
+    entities::{GlweCiphertext, GlweSecretKey, LweCiphertext, LweSecretKey, UnivariateLookupTable},
     high_level::{self, keygen},
-    ops::bootstrapping::generalized_programmable_bootstrap,
+    ops::{bootstrapping::generalized_programmable_bootstrap, homomorphisms::lwe_rotate},
     rand::Stddev,
 };
 
@@ -68,17 +68,18 @@ pub fn analyze_pbs(pbs: &AnalyzePbs) -> Result<PbsSample> {
             let ct0 = l0_sk.encrypt(1, &encryption_params, PlaintextBits(1)).0;
 
             let mut out: GlweCiphertext<u64> = GlweCiphertext::new(&l1_glwe);
-            let lut = UnivariateLookupTable::trivial_from_fn(
-                |idx| {
-                    let qrt = l1_glwe.dim.polynomial_degree.0 as u64 / 4;
-                    if idx >= qrt && idx <= qrt * 3 { 1 } else { 0 }
-                },
-                &l1_glwe,
-                PlaintextBits(1),
+            let mut lwe_rotated = LweCiphertext::zero(&l0_lwe);
+            lwe_rotate(
+                &mut lwe_rotated,
+                &ct0,
+                Torus::encode(1, PlaintextBits(2)),
+                &l0_lwe,
             );
+
+            let lut = UnivariateLookupTable::trivial_from_fn(|x| x, &l1_glwe, PlaintextBits(1));
             generalized_programmable_bootstrap(
                 &mut out,
-                &ct0,
+                &lwe_rotated,
                 &lut,
                 &pbs_key,
                 0,
@@ -89,15 +90,10 @@ pub fn analyze_pbs(pbs: &AnalyzePbs) -> Result<PbsSample> {
                 addend_count,
             );
 
-            let noise = measure_noise_glwe(
+            let noise = measure_noise_glwe_to_lwe(
                 &out,
-                &l1_sk,
-                {
-                    let mut poly = Polynomial::zero(l1_glwe.dim.polynomial_degree.0);
-                    poly.coeffs_mut()[0] = 1;
-                    poly
-                }
-                .as_torus(),
+                l1_sk.to_lwe_secret_key(),
+                1,
                 &l1_glwe,
                 PlaintextBits(1),
             );
@@ -110,10 +106,7 @@ pub fn analyze_pbs(pbs: &AnalyzePbs) -> Result<PbsSample> {
 
     let mut var = RunningMeanVariance::new();
 
-    pbs_samples?
-        .into_iter()
-        .flatten()
-        .for_each(|x| var.add_sample(x));
+    pbs_samples?.into_iter().for_each(|x| var.add_sample(x));
 
     Ok(PbsSample {
         in_sigma: pbs.l0_sigma,

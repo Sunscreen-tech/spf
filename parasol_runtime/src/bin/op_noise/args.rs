@@ -220,14 +220,6 @@ pub struct AnalyzeCbs {
 
 #[derive(Debug, Args)]
 pub struct AnalyzePbs {
-    #[arg(default_value_t = 4, long)]
-    /// The radix decomposition base-log of the resulting GGSW.
-    pub cbs_radix_log: usize,
-
-    #[arg(default_value_t = 4, long)]
-    /// The radix decomposition count of the resulting GGSW.
-    pub cbs_radix_count: usize,
-
     #[arg(default_value_t = 16, long)]
     /// The radix decomposition base-log of the pbs operation.
     pub pbs_radix_log: usize,
@@ -235,22 +227,6 @@ pub struct AnalyzePbs {
     #[arg(default_value_t = 2, long)]
     /// The radix decomposition count of the pbs operation.
     pub pbs_radix_count: usize,
-
-    #[arg(default_value_t = 3, long)]
-    /// The radix decomposition base-log of the scheme switch operation.
-    pub ss_radix_log: usize,
-
-    #[arg(default_value_t = 15, long)]
-    /// The radix decomposition count of the scheme switch operation.
-    pub ss_radix_count: usize,
-
-    #[arg(default_value_t = 7, long)]
-    /// The radix decomposition base-log of the tr operation.
-    pub tr_radix_log: usize,
-
-    #[arg(default_value_t = 6, long)]
-    /// The radix decomposition count of the tr operation.
-    pub tr_radix_count: usize,
 
     #[arg(default_value_t = 7.25e-5, long)]
     /// The std deviation of the L0 LWE instance. See

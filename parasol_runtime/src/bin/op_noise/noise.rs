@@ -37,6 +37,25 @@ pub fn measure_noise_glwe(
         .collect::<Result<Vec<_>>>()
 }
 
+pub fn measure_noise_glwe_to_lwe(
+    ct: &GlweCiphertextRef<u64>,
+    sk: &LweSecretKeyRef<u64>,
+    expected: u64,
+    l1_params: &GlweDef,
+    plaintext_bits: PlaintextBits,
+) -> Result<f64> {
+    let sample_extract_ct = high_level::evaluation::sample_extract(ct, l1_params, 0);
+
+    let decrypted = sk.decrypt_without_decode(&sample_extract_ct, &l1_params.as_lwe_def());
+
+    if decrypted.decode(plaintext_bits) != expected {
+        return Err(Error::TooMuchNoise);
+    }
+
+    let expected_encoded = Torus::<u64>::encode(expected, plaintext_bits);
+    Ok(decrypted.normalized_torus_distance(&expected_encoded))
+}
+
 pub fn measure_noise_by_keyswitch_glwe_to_lwe(
     ct: &GlweCiphertextRef<u64>,
     sk: &LweSecretKeyRef<u64>,
