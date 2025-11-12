@@ -48,7 +48,7 @@ __device__ __inline__ T shfl_down(T value, int par)
 
 /// Forward decimation in time FFT.
 template <class const_params, typename T>
-__inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
+__inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input, cuda::std::complex<T> *twiddles_inv)
 {
 	cuda::std::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
 	cuda::std::complex<T> W;
@@ -96,7 +96,7 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
 		itemp = m_param >> q;
 		parity = ((itemp << 1) - 1);
 
-		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, itemp * m_param);
+		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, itemp * m_param, twiddles_inv);
 
 		Aftemp.real(W.real() * A_DFT_value.real() - W.imag() * A_DFT_value.imag());
 		Aftemp.imag(W.real() * A_DFT_value.imag() + W.imag() * A_DFT_value.real());
@@ -132,7 +132,7 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
 		m_param = threadIdx.x & (PoT - 1);
 		j = threadIdx.x >> q;
 
-		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param);
+		W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param, twiddles_inv);
 
 		A_read_index = j * (PoTp1 << 1) + m_param;
 		B_read_index = j * (PoTp1 << 1) + m_param + PoT;
@@ -166,7 +166,7 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
 	__syncthreads();
 	m_param = threadIdx.x;
 
-	W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param);
+	W = FftTwiddles<T>::Get_W_value_inverse(PoTp1, m_param, twiddles_inv);
 
 	A_read_index = m_param;
 	B_read_index = m_param + PoT;
@@ -196,7 +196,7 @@ __inline__ __device__ void CT_DIT_FFT_4way(cuda::std::complex<T> *s_input)
 }
 
 template <class const_params, typename T>
-__device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input)
+__device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input, cuda::std::complex<T> *twiddles)
 {
 	cuda::std::complex<T> A_DFT_value, B_DFT_value, C_DFT_value, D_DFT_value;
 	cuda::std::complex<T> W;
@@ -254,7 +254,7 @@ __device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input)
 		m_param = threadIdx.x & (PoTm1 - 1);
 		j = threadIdx.x >> q;
 
-		W = FftTwiddles<T>::Get_W_value(PoT, m_param);
+		W = FftTwiddles<T>::Get_W_value(PoT, m_param, twiddles);
 
 		A_read_index = j * (PoT << 1) + m_param;
 		B_read_index = j * (PoT << 1) + m_param + PoTm1;
@@ -297,7 +297,7 @@ __device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input)
 		m_param = (local_id & (PoT - 1));
 		j = m_param >> q;
 		parity = (1 - j * 2);
-		W = FftTwiddles<T>::Get_W_value(PoT, j * (m_param - PoTm1));
+		W = FftTwiddles<T>::Get_W_value(PoT, j * (m_param - PoTm1), twiddles);
 
 		Aftemp.real(parity * A_DFT_value.real() + shfl_xor(A_DFT_value.real(), PoTm1));
 		Aftemp.imag(parity * A_DFT_value.imag() + shfl_xor(A_DFT_value.imag(), PoTm1));
@@ -328,36 +328,4 @@ __device__ inline void CT_DIF_FFT_4way(cuda::std::complex<T> *s_input)
 	s_input[j + 3 * WARP] = D_DFT_value;
 
 	__syncthreads();
-
-#ifdef TESTING
-	__syncthreads();
-	int A_load_id, B_load_id, i, A_n, B_n;
-	A_load_id = threadIdx.x;
-	B_load_id = threadIdx.x + const_params::fft_length_quarter;
-	A_n = threadIdx.x;
-	B_n = threadIdx.x + const_params::fft_length_quarter;
-	for (i = 1; i < const_params::fft_exp; i++)
-	{
-		A_n >>= 1;
-		B_n >>= 1;
-		A_load_id <<= 1;
-		A_load_id |= A_n & 1;
-		B_load_id <<= 1;
-		B_load_id |= B_n & 1;
-	}
-	A_load_id &= const_params::fft_length - 1;
-	B_load_id &= const_params::fft_length - 1;
-
-	//-----> Scrambling input
-	A_DFT_value = s_input[A_load_id];
-	B_DFT_value = s_input[A_load_id + 1];
-	C_DFT_value = s_input[B_load_id];
-	D_DFT_value = s_input[B_load_id + 1];
-	__syncthreads();
-	s_input[threadIdx.x] = A_DFT_value;
-	s_input[threadIdx.x + const_params::fft_length_half] = B_DFT_value;
-	s_input[threadIdx.x + const_params::fft_length_quarter] = C_DFT_value;
-	s_input[threadIdx.x + const_params::fft_length_three_quarters] = D_DFT_value;
-	__syncthreads();
-#endif
 }

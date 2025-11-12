@@ -64,7 +64,9 @@ mod gpu {
         }
 
         for (dir_suffix, inv_val) in [("_", -2.0), ("_INV_", 2.0)] {
-            lines += &format!("const __device__ {complex_ty} TWIDDLES{dir_suffix}{ty}[] = {{");
+            let varname = format!("TWIDDLES{dir_suffix}{ty}");
+
+            lines += &format!("const __device__ {complex_ty} {varname}[] = {{");
 
             for n in [2, 4, 8, 16, 32, 64, 128, 256, 512, 1024, 2048, 4096] {
                 let n_float = rug::Float::with_val(256, n);
@@ -87,6 +89,7 @@ mod gpu {
             }
 
             lines += "\n};\n";
+            lines += &format!("\nconst __device__ u32 {varname}_SIZE = sizeof({varname}) / sizeof({varname}[0]);\n");
         }
 
         let _ = std::fs::write(file, lines);
