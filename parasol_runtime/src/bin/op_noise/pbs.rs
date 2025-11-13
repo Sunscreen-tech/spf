@@ -17,6 +17,7 @@ use sunscreen_tfhe::{
 pub struct PbsSample {
     pub in_sigma: f64,
     pub out_sigma: f64,
+    pub out_mean: f64,
 }
 
 pub fn analyze_pbs(pbs: &AnalyzePbs) -> Result<PbsSample> {
@@ -111,5 +112,6 @@ pub fn analyze_pbs(pbs: &AnalyzePbs) -> Result<PbsSample> {
     Ok(PbsSample {
         in_sigma: pbs.l0_sigma,
         out_sigma: var.std(),
+        out_mean: var.mean(),
     })
 }
