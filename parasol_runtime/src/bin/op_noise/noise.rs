@@ -1,10 +1,10 @@
 use crate::{Error, Result};
 use parasol_runtime::Params;
 use sunscreen_tfhe::{
-    GlweDef, PlaintextBits, RadixDecomposition, Torus,
+    GlweDef, LweDef, PlaintextBits, RadixDecomposition, Torus,
     entities::{
-        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, LweKeyswitchKeyRef,
-        LweSecretKeyRef, Polynomial, PolynomialRef,
+        GgswCiphertextRef, GlweCiphertextRef, GlweSecretKeyRef, LweCiphertextRef,
+        LweKeyswitchKeyRef, LweSecretKeyRef, Polynomial, PolynomialRef,
     },
     high_level::{self},
     ops::encryption::{decrypt_glwe_ciphertext, scale_msg_by_gadget_factor},
@@ -46,7 +46,23 @@ pub fn measure_noise_glwe_to_lwe(
 ) -> Result<f64> {
     let sample_extract_ct = high_level::evaluation::sample_extract(ct, l1_params, 0);
 
-    let decrypted = sk.decrypt_without_decode(&sample_extract_ct, &l1_params.as_lwe_def());
+    measure_noise_lwe(
+        &sample_extract_ct,
+        sk,
+        expected,
+        &l1_params.as_lwe_def(),
+        plaintext_bits,
+    )
+}
+
+pub fn measure_noise_lwe(
+    ct: &LweCiphertextRef<u64>,
+    sk: &LweSecretKeyRef<u64>,
+    expected: u64,
+    l0_params: &LweDef,
+    plaintext_bits: PlaintextBits,
+) -> Result<f64> {
+    let decrypted = sk.decrypt_without_decode(ct, l0_params);
 
     if decrypted.decode(plaintext_bits) != expected {
         return Err(Error::TooMuchNoise);
