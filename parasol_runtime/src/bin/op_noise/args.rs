@@ -19,6 +19,7 @@ pub enum Command {
     /// Analyze scheme switch's noise. Results will be written to a scheme_switch directory.
     SearchSchemeSwitch(SearchSchemeSwitchCommand),
     AnalyzeSchemeSwitch(AnalyzeSchemeSwitch),
+    AnalyzeModulusSwitch(AnalyzeModulusSwitch),
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
     AnalyzePbs(AnalyzePbs),
@@ -84,6 +85,21 @@ pub struct AnalyzeSchemeSwitch {
     #[arg(default_value_t = false, long)]
     /// Use ntt rather than fft, which results in lower noise. Currently simulated with n^2 polynomial multiplication, which is significantly slower.
     pub ntt: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct AnalyzeModulusSwitch {
+    #[arg(default_value_t = 7.25e-5, long)]
+    pub l0_sigma: f64,
+
+    #[arg(default_value_t = 637, long)]
+    pub l0_lwe_size: usize,
+
+    #[arg(default_value_t = 12, long)]
+    pub log_modulus: u32,
+
+    #[arg(default_value_t = 100_000, long)]
+    pub sample_count: u64,
 }
 
 #[derive(Debug, Args)]
