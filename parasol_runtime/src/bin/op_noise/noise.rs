@@ -62,7 +62,7 @@ pub fn measure_noise_lwe(
     l0_params: &LweDef,
     plaintext_bits: PlaintextBits,
 ) -> Result<f64> {
-    let decrypted = sk.decrypt_without_decode(&ct, &l0_params);
+    let decrypted = sk.decrypt_without_decode(ct, l0_params);
 
     if decrypted.decode(plaintext_bits) != expected {
         return Err(Error::TooMuchNoise);
