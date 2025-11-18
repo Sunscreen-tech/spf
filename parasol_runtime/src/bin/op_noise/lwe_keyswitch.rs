@@ -3,11 +3,11 @@ use rayon::iter::{IntoParallelIterator, ParallelIterator};
 use serde::{Deserialize, Serialize};
 use sunscreen_math::stats::RunningMeanVariance;
 use sunscreen_tfhe::{
-    entities::LweSecretKey, high_level, rand::Stddev, LweDef, LweDimension, PlaintextBits,
-    RadixCount, RadixDecomposition, RadixLog, Torus,
+    LweDef, LweDimension, PlaintextBits, RadixCount, RadixDecomposition, RadixLog,
+    entities::LweSecretKey, high_level, rand::Stddev,
 };
 
-use crate::{args::AnalyzeLweKeyswitch, noise::measure_noise_lwe, Result};
+use crate::{Result, args::AnalyzeLweKeyswitch, noise::measure_noise_lwe};
 
 #[derive(Debug, Serialize, Deserialize)]
 pub struct LweKeyswitchAnalysisResult {
@@ -15,7 +15,7 @@ pub struct LweKeyswitchAnalysisResult {
     pub out_std: Result<f64>,
 }
 
-pub fn analyze_lwe_keyswitch(cmd: AnalyzeLweKeyswitch) -> Vec<LweKeyswitchAnalysisResult> {
+pub fn analyze_lwe_keyswitch(cmd: &AnalyzeLweKeyswitch) -> Vec<LweKeyswitchAnalysisResult> {
     let from_lwe = LweDef {
         std: Stddev(cmd.from_key_sigma),
         dim: LweDimension(cmd.from_lwe_size),
@@ -65,13 +65,7 @@ pub fn analyze_lwe_keyswitch(cmd: AnalyzeLweKeyswitch) -> Vec<LweKeyswitchAnalys
                     &ct, &ksk, &from_lwe, &to_lwe, &ks_radix,
                 );
 
-                let samples = measure_noise_lwe(
-                    &result,
-                    &to_sk,
-                    Torus::encode(1u64, PlaintextBits(1)),
-                    &to_lwe,
-                    PlaintextBits(1),
-                );
+                let samples = measure_noise_lwe(&result, &to_sk, 1, &to_lwe, PlaintextBits(1));
 
                 progress.inc(1);
 
@@ -91,7 +85,7 @@ pub fn analyze_lwe_keyswitch(cmd: AnalyzeLweKeyswitch) -> Vec<LweKeyswitchAnalys
 
         results.push(LweKeyswitchAnalysisResult {
             in_std: from_sigma,
-            out_std
+            out_std,
         });
 
         from_sigma *= cmd.sigma_inc;
