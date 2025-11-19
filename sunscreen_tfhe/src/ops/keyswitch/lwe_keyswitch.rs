@@ -1,5 +1,5 @@
 use crate::{
-    LweDef, OverlaySize, PolynomialDegree, RadixDecomposition, TorusOps,
+    LweDef, OverlaySize, PolynomialDegree, RadixDecomposition, Torus, TorusOps,
     dst::{FromMutSlice, FromSlice},
     entities::{LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef, PolynomialRef},
     ops::{
@@ -9,6 +9,37 @@ use crate::{
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
 };
+
+fn mean_compensate_pre_keyswitch_lwe_to_lwe<S: TorusOps>(
+    output: &mut LweCiphertextRef<S>,
+    input: &LweCiphertextRef<S>,
+    params: &LweDef,
+    radix: &RadixDecomposition,
+) {
+    input.assert_is_valid(params.dim);
+    output.assert_is_valid(params.dim);
+
+    let (input_a, input_b) = input.a_b(params);
+    let (output_a, output_b) = output.a_b_mut(params);
+
+    let bits_to_drop = S::BITS as usize - radix.count.0 * radix.radix_log.0;
+    let carrier = <S as sunscreen_math::One>::one() << (bits_to_drop - 1);
+    let mut cum_err = <S as sunscreen_math::Zero>::zero();
+
+    for (i, o) in input_a.iter().zip(output_a.iter_mut()) {
+        *o = Torus::from(i.wrapping_add(&carrier) >> bits_to_drop << bits_to_drop);
+        cum_err = cum_err.wrapping_add(&i.wrapping_sub(&o));
+    }
+
+    // multiply `cum_err` by mean of secret key which is 1/2, so we implement right shift by 1
+    // for this purpose, and note here `cum_err` must be interpreted as signed value so we mask
+    // its MSB to add back later
+    let cum_err_msb = cum_err & (<S as sunscreen_math::One>::one() << (S::BITS as usize - 1));
+    cum_err = cum_err >> 1;
+    cum_err |= cum_err_msb;
+
+    *output_b = Torus::from(input_b.wrapping_sub(&cum_err));
+}
 
 /// Switches a ciphertext under the original key to a ciphertext under the new
 /// key using a keyswitch key.
@@ -37,7 +68,20 @@ pub fn keyswitch_lwe_to_lwe<S>(
     ciphertext_under_original_key.assert_is_valid(old_params.dim);
     keyswitch_key.assert_is_valid((old_params.dim, new_params.dim, radix.count));
 
-    let (ciphertext_a, ciphertext_b) = ciphertext_under_original_key.a_b(old_params);
+    allocate_scratch_ref!(
+        fixed_ciphertext_under_original_key,
+        LweCiphertextRef<S>,
+        (old_params.dim)
+    );
+
+    mean_compensate_pre_keyswitch_lwe_to_lwe(
+        fixed_ciphertext_under_original_key,
+        ciphertext_under_original_key,
+        old_params,
+        radix,
+    );
+
+    let (ciphertext_a, ciphertext_b) = fixed_ciphertext_under_original_key.a_b(old_params);
 
     let keyswitch_levs = keyswitch_key.rows(new_params, radix);
 
