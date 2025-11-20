@@ -90,20 +90,25 @@ pub fn keyswitch_lwe_to_lwe<S>(
     ciphertext_under_original_key.assert_is_valid(old_params.dim);
     keyswitch_key.assert_is_valid((old_params.dim, new_params.dim, radix.count));
 
-    allocate_scratch_ref!(
-        fixed_ciphertext_under_original_key,
-        LweCiphertextRef<S>,
-        (old_params.dim)
-    );
+    // we decide not to use mean compensation, but here is the code to make use of it in case useful
+    if false {
+        allocate_scratch_ref!(
+            fixed_ciphertext_under_original_key,
+            LweCiphertextRef<S>,
+            (old_params.dim)
+        );
 
-    mean_compensate_pre_keyswitch_lwe_to_lwe(
-        fixed_ciphertext_under_original_key,
-        ciphertext_under_original_key,
-        old_params,
-        radix,
-    );
+        mean_compensate_pre_keyswitch_lwe_to_lwe(
+            fixed_ciphertext_under_original_key,
+            ciphertext_under_original_key,
+            old_params,
+            radix,
+        );
 
-    let (ciphertext_a, ciphertext_b) = fixed_ciphertext_under_original_key.a_b(old_params);
+        let (_ciphertext_a, _ciphertext_b) = fixed_ciphertext_under_original_key.a_b(old_params);
+    }
+
+    let (ciphertext_a, ciphertext_b) = ciphertext_under_original_key.a_b(old_params);
 
     let keyswitch_levs = keyswitch_key.rows(new_params, radix);
 
