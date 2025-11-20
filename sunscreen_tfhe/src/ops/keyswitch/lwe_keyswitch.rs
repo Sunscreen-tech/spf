@@ -39,13 +39,16 @@ pub fn mean_compensate_pre_keyswitch_lwe_to_lwe<S: TorusOps>(
     let (output_a, output_b) = output.a_b_mut(params);
 
     let bits_to_drop = S::BITS as usize - radix.count.0 * radix.radix_log.0;
-    // This is a special number (containing only one bit 1 at a specific position);
-    // when you add it to the original number and truncate, it achieves rounding
     let rounder = <S as sunscreen_math::One>::one() << (bits_to_drop - 1);
 
     let mut cum_err = <S as sunscreen_math::Zero>::zero();
 
     for (i, o) in input_a.iter().zip(output_a.iter_mut()) {
+        // variable `rounder` defined above is a special number that has only one bit as `1` at the most
+        // significant position in the dropped section, that position determines if rounding goes up
+        // or down, by adding `1` at that position, an original value of `0` will not generate a carry
+        // while an original value of `1` will generate a carry, this allows use to just "truncate" the
+        // new value to achieve rounding
         *o = Torus::from(i.wrapping_add(&rounder) >> bits_to_drop << bits_to_drop);
         cum_err = cum_err.wrapping_add(&i.wrapping_sub(o));
     }
