@@ -21,7 +21,7 @@ pub enum Command {
     AnalyzeSchemeSwitch(AnalyzeSchemeSwitch),
     AnalyzeModulusSwitch(AnalyzeModulusSwitch),
     AnalyzeLweKeyswitch(AnalyzeLweKeyswitch),
-    AnalyzeMeanCompLweKeyswitch(AnalyzeMeanCompLweKeyswitch),
+    AnalyzeMeanCompRadixDecomp(AnalyzeMeanCompRadixDecomp),
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
     AnalyzePbs(AnalyzePbs),
@@ -117,7 +117,7 @@ pub struct AnalyzeLweKeyswitch {
 }
 
 #[derive(Debug, Args)]
-pub struct AnalyzeMeanCompLweKeyswitch {
+pub struct AnalyzeMeanCompRadixDecomp {
     #[arg(default_value_t = 2, long)]
     pub ks_radix_log: usize,
 

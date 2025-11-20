@@ -9,10 +9,10 @@ use sunscreen_tfhe::{
     rand::Stddev,
 };
 
-use crate::{Result, args::AnalyzeMeanCompLweKeyswitch, noise::measure_noise_lwe};
+use crate::{Result, args::AnalyzeMeanCompRadixDecomp, noise::measure_noise_lwe};
 
 #[derive(Debug, Serialize, Deserialize)]
-pub struct MeanCompLweKeyswitchAnalysisResult {
+pub struct MeanCompRadixDecompAnalysisResult {
     pub in_std: f64,
     pub out_std_with_mc: f64,
     pub out_mean_with_mc: f64,
@@ -20,9 +20,9 @@ pub struct MeanCompLweKeyswitchAnalysisResult {
     pub out_mean_without_mc: f64,
 }
 
-pub fn analyze_mean_compensation_lwe_keyswitch(
-    cmd: &AnalyzeMeanCompLweKeyswitch,
-) -> Result<MeanCompLweKeyswitchAnalysisResult> {
+pub fn analyze_mean_compensation_radix_decomposition(
+    cmd: &AnalyzeMeanCompRadixDecomp,
+) -> Result<MeanCompRadixDecompAnalysisResult> {
     let l0_lwe = LweDef {
         std: Stddev(cmd.l0_sigma),
         dim: LweDimension(cmd.l0_lwe_size),
@@ -74,7 +74,7 @@ pub fn analyze_mean_compensation_lwe_keyswitch(
         var_without_mean_comp.add_sample(x);
     });
 
-    Ok(MeanCompLweKeyswitchAnalysisResult {
+    Ok(MeanCompRadixDecompAnalysisResult {
         in_std: cmd.l0_sigma,
         out_std_with_mc: var_with_mean_comp.std(),
         out_mean_with_mc: var_with_mean_comp.mean(),

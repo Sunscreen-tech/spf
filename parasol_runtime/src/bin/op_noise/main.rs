@@ -5,7 +5,7 @@ use cbs::analyze_cbs;
 use clap::Parser;
 use cmux::analyze_cmux;
 use lwe_keyswitch::analyze_lwe_keyswitch;
-use mean_comp_lwe_keyswitch::analyze_mean_compensation_lwe_keyswitch;
+use mean_comp_radix_decomp::analyze_mean_compensation_radix_decomposition;
 use modulus_switch::analyze_modulus_switch;
 use parasol_runtime::{ComputeKeyNonFft, Params, SecretKey};
 use pbs::analyze_pbs;
@@ -23,7 +23,7 @@ mod math;
 pub use math::*;
 mod cmux_tree;
 mod lwe_keyswitch;
-mod mean_comp_lwe_keyswitch;
+mod mean_comp_radix_decomp;
 mod modulus_switch;
 mod noise;
 mod scheme_switch;
@@ -69,10 +69,10 @@ fn main() {
             let result = analyze_lwe_keyswitch(&cmd);
             write_results(&path.join("analyze_lwe_key_switch.json"), &result);
         }
-        Command::AnalyzeMeanCompLweKeyswitch(cmd) => {
-            let result = analyze_mean_compensation_lwe_keyswitch(&cmd);
+        Command::AnalyzeMeanCompRadixDecomp(cmd) => {
+            let result = analyze_mean_compensation_radix_decomposition(&cmd);
             write_results(
-                &path.join("analyze_mean_compensation_lwe_key_switch.json"),
+                &path.join("analyze_mean_compensation_radix_decomposition.json"),
                 &result,
             );
         }
