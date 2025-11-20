@@ -10,7 +10,7 @@ use crate::{
     scratch::allocate_scratch_ref,
 };
 
-/// Run mean compensation before key switch, see https://eprint.iacr.org/2025/809.pdf
+/// Run mean compensation before key switch, see <https://eprint.iacr.org/2025/809.pdf>
 ///
 /// Basically, we use the radix definition to compute how many bits are dropped, then
 /// we effectively round all A's to that number of bits, for example, if we have 64
