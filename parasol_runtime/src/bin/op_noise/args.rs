@@ -21,6 +21,7 @@ pub enum Command {
     AnalyzeSchemeSwitch(AnalyzeSchemeSwitch),
     AnalyzeModulusSwitch(AnalyzeModulusSwitch),
     AnalyzeLweKeyswitch(AnalyzeLweKeyswitch),
+    AnalyzeMeanCompLweKeyswitch(AnalyzeMeanCompLweKeyswitch),
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
     AnalyzePbs(AnalyzePbs),
@@ -110,6 +111,24 @@ pub struct AnalyzeLweKeyswitch {
 
     #[arg(default_value_t = 7e-16, long)]
     pub input_sigma: f64,
+
+    #[arg(default_value_t = 100_000, long)]
+    pub sample_count: u64,
+}
+
+#[derive(Debug, Args)]
+pub struct AnalyzeMeanCompLweKeyswitch {
+    #[arg(default_value_t = 2, long)]
+    pub ks_radix_log: usize,
+
+    #[arg(default_value_t = 6, long)]
+    pub ks_radix_count: usize,
+
+    #[arg(default_value_t = 7e-16, long)]
+    pub l0_sigma: f64,
+
+    #[arg(default_value_t = 2048, long)]
+    pub l0_lwe_size: usize,
 
     #[arg(default_value_t = 100_000, long)]
     pub sample_count: u64,
