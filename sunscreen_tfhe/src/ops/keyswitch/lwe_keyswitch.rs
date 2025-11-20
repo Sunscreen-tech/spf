@@ -10,7 +10,23 @@ use crate::{
     scratch::allocate_scratch_ref,
 };
 
-fn mean_compensate_pre_keyswitch_lwe_to_lwe<S: TorusOps>(
+/// Run mean compensation before key switch, see https://eprint.iacr.org/2025/809.pdf
+///
+/// Basically, we use the radix definition to compute how many bits are dropped, then
+/// we effectively round all A's to that number of bits, for example, if we have 64
+/// bits total and radix definition says dropping 52 LSBs, then 0xabcd1234567890ef
+/// will be rounded to 0xabd0000000000000, while 0x4321098765abcdef will be rounded
+/// to 0x4320000000000000, this creates an error so we accumulate this error for all
+/// A's and then for B we subtract half of that accumulated error (half because the
+/// mean of secret key is 0.5). These new A's and B will be written to the output
+///
+/// Arguments:
+///
+/// * output: the output ciphertext
+/// * input: the input ciphertext
+/// * params: the LWE definition
+/// * radix: the key switch radix decomposition definition
+pub fn mean_compensate_pre_keyswitch_lwe_to_lwe<S: TorusOps>(
     output: &mut LweCiphertextRef<S>,
     input: &LweCiphertextRef<S>,
     params: &LweDef,
@@ -23,12 +39,15 @@ fn mean_compensate_pre_keyswitch_lwe_to_lwe<S: TorusOps>(
     let (output_a, output_b) = output.a_b_mut(params);
 
     let bits_to_drop = S::BITS as usize - radix.count.0 * radix.radix_log.0;
-    let carrier = <S as sunscreen_math::One>::one() << (bits_to_drop - 1);
+    // This is a special number (containing only one bit 1 at a specific position);
+    // when you add it to the original number and truncate, it achieves rounding
+    let rounder = <S as sunscreen_math::One>::one() << (bits_to_drop - 1);
+
     let mut cum_err = <S as sunscreen_math::Zero>::zero();
 
     for (i, o) in input_a.iter().zip(output_a.iter_mut()) {
-        *o = Torus::from(i.wrapping_add(&carrier) >> bits_to_drop << bits_to_drop);
-        cum_err = cum_err.wrapping_add(&i.wrapping_sub(&o));
+        *o = Torus::from(i.wrapping_add(&rounder) >> bits_to_drop << bits_to_drop);
+        cum_err = cum_err.wrapping_add(&i.wrapping_sub(o));
     }
 
     // multiply `cum_err` by mean of secret key which is 1/2, so we implement right shift by 1
