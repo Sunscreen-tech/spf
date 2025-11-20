@@ -4,6 +4,7 @@ use args::{AnalyzeNoise, Command};
 use cbs::analyze_cbs;
 use clap::Parser;
 use cmux::analyze_cmux;
+use lwe_keyswitch::analyze_lwe_keyswitch;
 use modulus_switch::analyze_modulus_switch;
 use parasol_runtime::{ComputeKeyNonFft, Params, SecretKey};
 use pbs::analyze_pbs;
@@ -20,6 +21,7 @@ pub use error::*;
 mod math;
 pub use math::*;
 mod cmux_tree;
+mod lwe_keyswitch;
 mod modulus_switch;
 mod noise;
 mod scheme_switch;
@@ -61,7 +63,10 @@ fn main() {
             let result = analyze_modulus_switch(&cmd);
             write_results(&path.join("analyze_modulus_switch.json"), &result);
         }
-
+        Command::AnalyzeLweKeyswitch(cmd) => {
+            let result = analyze_lwe_keyswitch(&cmd);
+            write_results(&path.join("analyze_lwe_key_switch.json"), &result);
+        }
         Command::AnalyzeCbs(cmd) => {
             let result = analyze_cbs(&cmd);
             write_results(&path.join("analyze_cbs.json"), &result);

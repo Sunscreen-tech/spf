@@ -20,6 +20,7 @@ pub enum Command {
     SearchSchemeSwitch(SearchSchemeSwitchCommand),
     AnalyzeSchemeSwitch(AnalyzeSchemeSwitch),
     AnalyzeModulusSwitch(AnalyzeModulusSwitch),
+    AnalyzeLweKeyswitch(AnalyzeLweKeyswitch),
     SecretKeyEncryption(SecretKeyEncryptionCommand),
     AnalyzeCbs(AnalyzeCbs),
     AnalyzePbs(AnalyzePbs),
@@ -85,6 +86,33 @@ pub struct AnalyzeSchemeSwitch {
     #[arg(default_value_t = false, long)]
     /// Use ntt rather than fft, which results in lower noise. Currently simulated with n^2 polynomial multiplication, which is significantly slower.
     pub ntt: bool,
+}
+
+#[derive(Debug, Args)]
+pub struct AnalyzeLweKeyswitch {
+    #[arg(default_value_t = 2, long)]
+    pub ks_radix_log: usize,
+
+    #[arg(default_value_t = 6, long)]
+    pub ks_radix_count: usize,
+
+    #[arg(default_value_t = 7e-16, long)]
+    pub from_key_sigma: f64,
+
+    #[arg(default_value_t = 7.25e-5, long)]
+    pub to_key_sigma: f64,
+
+    #[arg(default_value_t = 2048, long)]
+    pub from_lwe_size: usize,
+
+    #[arg(default_value_t = 637, long)]
+    pub to_lwe_size: usize,
+
+    #[arg(default_value_t = 7e-16, long)]
+    pub input_sigma: f64,
+
+    #[arg(default_value_t = 100_000, long)]
+    pub sample_count: u64,
 }
 
 #[derive(Debug, Args)]
