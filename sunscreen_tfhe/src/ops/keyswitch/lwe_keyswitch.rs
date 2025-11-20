@@ -1,5 +1,5 @@
 use crate::{
-    LweDef, OverlaySize, PolynomialDegree, RadixDecomposition, TorusOps,
+    LweDef, OverlaySize, PolynomialDegree, RadixDecomposition, Torus, TorusOps,
     dst::{FromMutSlice, FromSlice},
     entities::{LweCiphertext, LweCiphertextRef, LweKeyswitchKeyRef, PolynomialRef},
     ops::{
@@ -9,6 +9,59 @@ use crate::{
     radix::PolynomialRadixIterator,
     scratch::allocate_scratch_ref,
 };
+
+/// Run mean compensation before key switch, see <https://eprint.iacr.org/2025/809.pdf>
+///
+/// Basically, we use the radix definition to compute how many bits are dropped, then
+/// we effectively round all A's to that number of bits, for example, if we have 64
+/// bits total and radix definition says dropping 52 LSBs, then 0xabcd1234567890ef
+/// will be rounded to 0xabd0000000000000, while 0x4321098765abcdef will be rounded
+/// to 0x4320000000000000, this creates an error so we accumulate this error for all
+/// A's and then for B we subtract half of that accumulated error (half because the
+/// mean of secret key is 0.5). These new A's and B will be written to the output
+///
+/// Arguments:
+///
+/// * output: the output ciphertext
+/// * input: the input ciphertext
+/// * params: the LWE definition
+/// * radix: the key switch radix decomposition definition
+pub fn mean_compensate_pre_keyswitch_lwe_to_lwe<S: TorusOps>(
+    output: &mut LweCiphertextRef<S>,
+    input: &LweCiphertextRef<S>,
+    params: &LweDef,
+    radix: &RadixDecomposition,
+) {
+    input.assert_is_valid(params.dim);
+    output.assert_is_valid(params.dim);
+
+    let (input_a, input_b) = input.a_b(params);
+    let (output_a, output_b) = output.a_b_mut(params);
+
+    let bits_to_drop = S::BITS as usize - radix.count.0 * radix.radix_log.0;
+    let rounder = <S as sunscreen_math::One>::one() << (bits_to_drop - 1);
+
+    let mut cum_err = <S as sunscreen_math::Zero>::zero();
+
+    for (i, o) in input_a.iter().zip(output_a.iter_mut()) {
+        // variable `rounder` defined above is a special number that has only one bit as `1` at the most
+        // significant position in the dropped section, that position determines if rounding goes up
+        // or down, by adding `1` at that position, an original value of `0` will not generate a carry
+        // while an original value of `1` will generate a carry, this allows use to just "truncate" the
+        // new value to achieve rounding
+        *o = Torus::from(i.wrapping_add(&rounder) >> bits_to_drop << bits_to_drop);
+        cum_err = cum_err.wrapping_add(&i.wrapping_sub(o));
+    }
+
+    // multiply `cum_err` by mean of secret key which is 1/2, so we implement right shift by 1
+    // for this purpose, and note here `cum_err` must be interpreted as signed value so we mask
+    // its MSB to add back later
+    let cum_err_msb = cum_err & (<S as sunscreen_math::One>::one() << (S::BITS as usize - 1));
+    cum_err = cum_err >> 1;
+    cum_err |= cum_err_msb;
+
+    *output_b = Torus::from(input_b.wrapping_sub(&cum_err));
+}
 
 /// Switches a ciphertext under the original key to a ciphertext under the new
 /// key using a keyswitch key.
@@ -36,6 +89,24 @@ pub fn keyswitch_lwe_to_lwe<S>(
     output.assert_is_valid(new_params.dim);
     ciphertext_under_original_key.assert_is_valid(old_params.dim);
     keyswitch_key.assert_is_valid((old_params.dim, new_params.dim, radix.count));
+
+    // we decide not to use mean compensation, but here is the code to make use of it in case useful
+    if false {
+        allocate_scratch_ref!(
+            fixed_ciphertext_under_original_key,
+            LweCiphertextRef<S>,
+            (old_params.dim)
+        );
+
+        mean_compensate_pre_keyswitch_lwe_to_lwe(
+            fixed_ciphertext_under_original_key,
+            ciphertext_under_original_key,
+            old_params,
+            radix,
+        );
+
+        let (_ciphertext_a, _ciphertext_b) = fixed_ciphertext_under_original_key.a_b(old_params);
+    }
 
     let (ciphertext_a, ciphertext_b) = ciphertext_under_original_key.a_b(old_params);
 
