@@ -96,17 +96,20 @@ pub struct AnalyzeLweKeyswitch {
     #[arg(default_value_t = 6, long)]
     pub ks_radix_count: usize,
 
-    #[arg(default_value_t = 7.25e-5, long)]
+    #[arg(default_value_t = 7e-16, long)]
     pub from_key_sigma: f64,
 
     #[arg(default_value_t = 7.25e-5, long)]
     pub to_key_sigma: f64,
 
-    #[arg(default_value_t = 637, long)]
+    #[arg(default_value_t = 2048, long)]
     pub from_lwe_size: usize,
 
     #[arg(default_value_t = 637, long)]
     pub to_lwe_size: usize,
+
+    #[arg(default_value_t = 7e-16, long)]
+    pub input_sigma: f64,
 
     #[arg(default_value_t = 100_000, long)]
     pub sample_count: u64,

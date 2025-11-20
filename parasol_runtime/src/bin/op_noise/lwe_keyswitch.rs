@@ -42,12 +42,13 @@ pub fn analyze_lwe_keyswitch(cmd: &AnalyzeLweKeyswitch) -> Result<LweKeyswitchAn
     let samples = (0..cmd.sample_count)
         .into_par_iter()
         .map(|_| {
-            let ct = high_level::encryption::encrypt_lwe_secret(
-                1,
-                &from_sk,
-                &from_lwe,
-                PlaintextBits(1),
-            );
+            let ct_lwe = LweDef {
+                std: Stddev(cmd.input_sigma),
+                ..from_lwe
+            };
+
+            let ct =
+                high_level::encryption::encrypt_lwe_secret(1, &from_sk, &ct_lwe, PlaintextBits(1));
 
             let result = high_level::evaluation::keyswitch_lwe_to_lwe(
                 &ct, &ksk, &from_lwe, &to_lwe, &ks_radix,
