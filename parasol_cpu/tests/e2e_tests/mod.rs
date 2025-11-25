@@ -7,6 +7,7 @@ mod chi_sq;
 mod cmux;
 mod for_loop;
 mod hamming_distance;
+mod large_constants;
 mod payment;
 mod prng;
 mod transfer;

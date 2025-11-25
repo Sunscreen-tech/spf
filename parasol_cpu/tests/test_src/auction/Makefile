@@ -5,3 +5,4 @@ clean:
 
 ../../test_data/auction: auction.c
 	$(LLVM_DIR)/bin/clang -O2 -target parasol -o ../../test_data/auction auction.c
+	$(LLVM_DIR)/bin/llvm-strip --no-strip-all --remove-section .comment ../../test_data/auction
