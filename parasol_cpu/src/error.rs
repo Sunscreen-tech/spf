@@ -234,7 +234,7 @@ pub enum Error {
 // Stupid ParseError isn't Clone, so we gotta stringify it
 impl From<ParseError> for Error {
     fn from(value: ParseError) -> Self {
-        Self::ElfParseError(format!("{value:#?}"))
+        Self::ElfParseError(format!("{value}"))
     }
 }
 
