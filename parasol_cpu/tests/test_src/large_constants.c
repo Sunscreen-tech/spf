@@ -27,3 +27,18 @@ long long sum_array_64(long long *arr, int n) {
 long long add_two_consts_64([[clang::encrypted]] long long a) {
     return (a + 0xAAAABBBBCCCCDDDDLL) + 0x1111222233334444LL;
 }
+
+// Edge case: i64::MAX (largest positive 64-bit signed integer)
+long long add_max_const([[clang::encrypted]] long long a) {
+    return a + 0x7FFFFFFFFFFFFFFFLL;
+}
+
+// Edge case: i64::MIN (smallest negative 64-bit signed integer)
+long long add_min_const([[clang::encrypted]] long long a) {
+    return a + 0x8000000000000000LL;
+}
+
+// Edge case: -1 (all bits set)
+long long add_negative_one([[clang::encrypted]] long long a) {
+    return a + 0xFFFFFFFFFFFFFFFFLL;
+}
