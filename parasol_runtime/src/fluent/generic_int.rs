@@ -228,6 +228,27 @@ where
         }
     }
 
+    /// Encrypt with secret key and pack the given `val` into a single `T` ciphertext.
+    /// See [`PackedDynamicGenericInt`] for more details on packing.
+    pub fn encrypt_secret(
+        val: U::PlaintextType,
+        enc: &Encryption,
+        sk: &SecretKey,
+        n: usize,
+    ) -> Self {
+        val.assert_in_bounds(n);
+
+        let msg = Self::encode(val, enc, n);
+
+        Self {
+            bit_len: n as u32,
+            ct: Arc::new(AtomicRefCell::new(
+                <T as PolynomialCiphertextOps>::encrypt_secret(&msg, enc, sk),
+            )),
+            _phantom: PhantomData,
+        }
+    }
+
     fn encode(val: U::PlaintextType, enc: &Encryption, n: usize) -> Polynomial<u64> {
         assert!(n < T::poly_degree(&enc.params).0);
 

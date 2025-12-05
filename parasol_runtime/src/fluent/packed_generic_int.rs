@@ -109,6 +109,13 @@ where
         }
     }
 
+    /// Encrypt (with secret key) the given integer
+    pub fn encrypt_secret(val: U::PlaintextType, enc: &Encryption, sk: &SecretKey) -> Self {
+        Self {
+            inner: PackedDynamicGenericInt::encrypt_secret(val, enc, sk, N),
+        }
+    }
+
     /// Trivially encrypt the given integer
     pub fn trivial_encrypt(val: U::PlaintextType, enc: &Encryption) -> Self {
         Self {
