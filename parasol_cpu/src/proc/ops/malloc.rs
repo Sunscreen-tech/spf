@@ -11,9 +11,9 @@ impl FheProcessor {
     pub fn malloc(
         &mut self,
         retirement_info: RetirementInfo<DispatchIsaOp>,
+        memory: &Arc<Memory>,
         dst: RobEntryRef<Register>,
         size: RobEntryRef<Register>,
-        memory: &Arc<Memory>,
         instruction_id: usize,
         pc: u32,
     ) {

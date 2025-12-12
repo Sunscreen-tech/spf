@@ -837,7 +837,7 @@ impl Tomasulo for FheProcessor {
                 Self::retire(&retirement_info, Ok(()));
             }
             Malloc(dst, size) => {
-                self.malloc(retirement_info, dst, size, &memory, instruction_id, pc);
+                self.malloc(retirement_info, &memory, dst, size, instruction_id, pc);
             }
             Dbg(src, handler_id) => {
                 self.dbg(&retirement_info, src, handler_id, instruction_id, pc);
