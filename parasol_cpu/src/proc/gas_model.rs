@@ -144,7 +144,7 @@ impl GasModel {
             // instructions that have trivial cost: either they do not deal with any ciphertext at all
             // or they don't compute on ciphertext content (just treat them as vector of opaque objects)
             Load(..) | LoadI(..) | Store(..) | BranchNonZero(..) | BranchZero(..) | Branch(..)
-            | Move(..) | Dbg(..) | Sext(..) | Zext(..) | Trunc(..) => 1,
+            | Move(..) | Dbg(..) | Sext(..) | Zext(..) | Trunc(..) | Malloc(..) => 1,
 
             // Not has only one input and the cost is non-trivial if that input is ciphertext
             Not(_, input) => self.figure_out_gas(&[input], input, op),

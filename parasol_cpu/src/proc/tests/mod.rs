@@ -9,6 +9,7 @@ mod comparisons;
 mod dbg;
 mod faults;
 mod load_store;
+mod malloc;
 mod mov;
 mod mul;
 mod neg;

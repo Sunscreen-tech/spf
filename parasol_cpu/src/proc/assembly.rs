@@ -477,6 +477,9 @@ define_op! {
     // Raw cmux
     [0xC1 Cmux (dst dst, 0, Register) (src cond, 0, Register) (src a, 0, Register) (src b, 0, Register)],
 
+    // Memory allocation
+    [0xD1 Malloc (dst dst, 0, Register) (src size, 0, Register)],
+
     // If the a debug handler with the given id is installed, call it passing the `src` register's value.
     [0xF0 Dbg (src src, 0, Register) (meta handler_id, 32, u32)]
 }

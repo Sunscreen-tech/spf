@@ -23,6 +23,7 @@ mod comparisons;
 mod dbg;
 mod load;
 mod loadi;
+mod malloc;
 mod mov;
 mod mul;
 mod neg;
