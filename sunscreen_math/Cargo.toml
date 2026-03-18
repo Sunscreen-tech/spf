@@ -19,8 +19,7 @@ crypto-bigint = { workspace = true }
 thiserror = { workspace = true }
 serde = { workspace = true }
 sunscreen_math_macros = { workspace = true }
-log.workspace = true
-statrs = { workspace = true }
+libm = "0.2.16"
 subtle = { workspace = true }
 
 [dev-dependencies]

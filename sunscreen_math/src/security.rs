@@ -1,6 +1,3 @@
-use log::warn;
-use statrs::distribution::{ContinuousCDF, Normal};
-
 use crate::geometry::{ConvexPolytope2D, HalfSpace2D, Point2D};
 
 /// Error for when a value is outside the constraints of a polytope.
@@ -49,17 +46,6 @@ pub type StandardDeviationResult = Result<f64, OutsideConstraintsError>;
 /// Result type for [`lwe_std_to_security_level`].
 pub type SecurityLevelResult = Result<f64, OutsideConstraintsError>;
 
-/// Evaluate a polynomial with coefficients in increasing order of degree.
-fn evaluate_polynomial(coeffs: &[f64], x: f64) -> f64 {
-    let mut result = 0.0;
-
-    for (i, c) in coeffs.iter().enumerate() {
-        result += c * x.powi(i as i32);
-    }
-
-    result
-}
-
 /// Evaluate a 2D polynomial with coefficients in increasing order of degree
 /// along both dimensions.
 pub fn evaluate_polynomial_2d<const M: usize, const N: usize>(
@@ -80,45 +66,29 @@ pub fn evaluate_polynomial_2d<const M: usize, const N: usize>(
     result
 }
 
-// Exact probability of being farther than x away from the mean given a standard
-// deviation that works when the ratio of x to the standard deviation is below
-// 7.
-fn probability_away_from_mean_gaussian_low(x: f64, std: f64) -> f64 {
-    let normal = Normal::new(0.0, 1.0).unwrap();
-
-    let single_tail_area = 1.0 - normal.cdf(x / std);
-    let both_tail_area = 2.0 * single_tail_area;
-
-    both_tail_area.log10()
-}
-
-// Very low error approximation when the ratio of how far x is from the mean
-// given the standard deviation is above 7. Works up to a ratio of 30
-// (probability of 1e-197), afterwards it may diverge from the real value.
-fn probability_away_from_mean_gaussian_high(x: f64, std: f64) -> f64 {
-    let ratio = x / std;
-
-    if ratio > 30.0 {
-        warn!("Ratio too high for approximation, not validated for this region");
-    }
-
-    // Quintic interpolation works nicely (a maximum of 0.00145% error). Listed
-    // with highest order first.
-    let coeffs = [
-        -0.31904236601958913,
-        -0.13390834324063405,
-        -0.20902566462352498,
-        -0.0003178660849038345,
-        6.75504783552659e-06,
-        -5.91907446763691e-08,
-    ];
-
-    evaluate_polynomial(&coeffs, ratio)
-}
+/// Number of correction terms in the erfc asymptotic expansion (NIST DLMF
+/// 7.12.1). With n correction terms the relative error is bounded by
+/// (2(n+1)-1)!! / (2z^2)^{n+1}. At the transition point z=26 with n=3,
+/// this gives 105 / (2*676)^4 ~ 3e-11.
+const ERFC_ASYMPTOTIC_CORRECTION_TERMS: usize = 3;
 
 /// Returns the log10 of the probability of being farther than x away from the
 /// mean given a standard deviation. We return the log to handle very low
 /// probabilities.
+///
+/// For moderate ratios (x/std < ~37), uses `libm::erfc` which is exact to
+/// machine precision. For large ratios where erfc underflows f64, uses the
+/// asymptotic expansion (NIST DLMF 7.12.1):
+///
+///   erfc(z) ~ exp(-z^2) / (z * sqrt(pi)) * S_n(z)    as z -> inf
+///
+/// where z = x / (std * sqrt(2)) and S_n is the partial sum:
+///
+///   S_n(z) = sum_{k=0}^{n} (-1)^k * (2k-1)!! / (2z^2)^k
+///          = 1 - 1/(2z^2) + 3/(4z^4) - 15/(8z^6) + ...
+///
+/// The number of correction terms n is controlled by
+/// `ERFC_ASYMPTOTIC_CORRECTION_TERMS`.
 ///
 /// # Arguments
 ///
@@ -141,10 +111,35 @@ fn probability_away_from_mean_gaussian_high(x: f64, std: f64) -> f64 {
 /// assert_eq!(rounded_prob, 0.3173);
 /// ```
 pub fn probability_away_from_mean_gaussian(x: f64, std: f64) -> f64 {
-    if x / std < 7.0 {
-        probability_away_from_mean_gaussian_low(x, std)
+    // P(|X| > x) = erfc(x / (std * sqrt(2))) for X ~ N(0, std).
+    let z = x / (std * std::f64::consts::SQRT_2);
+
+    if z > 26.0 {
+        // erfc(z) underflows f64 for z >= ~26.6. Use the asymptotic expansion
+        // (NIST DLMF 7.12.1):
+        //
+        //   erfc(z) ~ exp(-z^2) / (z * sqrt(pi)) * S_n(z)
+        //
+        // where S_n(z) = sum_{k=0}^{n} (-1)^k (2k-1)!! / (2z^2)^k.
+        //
+        // Taking log10:
+        //   log10(erfc(z)) ~ -z^2*log10(e) - log10(z) - 0.5*log10(pi) + log10(S_n)
+        let log10_e = std::f64::consts::LOG10_E;
+        let leading = -(z * z * log10_e) - z.log10() - 0.5 * std::f64::consts::PI.log10();
+
+        // Compute S_n iteratively. Each term: t_k = t_{k-1} * -(2k-1) / (2z^2).
+        let inv_2z2 = 1.0 / (2.0 * z * z);
+        let mut term = 1.0;
+        let mut sum = 1.0;
+        for k in 1..=ERFC_ASYMPTOTIC_CORRECTION_TERMS {
+            term *= -((2 * k - 1) as f64) * inv_2z2;
+            sum += term;
+        }
+
+        leading + sum.log10()
     } else {
-        probability_away_from_mean_gaussian_high(x, std)
+        // libm::erfc is exact to machine precision for z <= 26.
+        libm::erfc(z).log10()
     }
 }
 
@@ -335,7 +330,98 @@ pub fn lwe_std_to_security_level(dimension: usize, std: f64) -> SecurityLevelRes
 
 #[cfg(test)]
 mod tests {
+    use super::probability_away_from_mean_gaussian;
     use super::{lwe_security_level_to_std, lwe_std_to_security_level};
+
+    /// Compute the asymptotic log10(erfc(z)) with an arbitrary number of
+    /// correction terms for use as a test reference.
+    fn asymptotic_log10_erfc(z: f64, n_terms: usize) -> f64 {
+        let log10_e = std::f64::consts::LOG10_E;
+        let leading = -(z * z * log10_e) - z.log10() - 0.5 * std::f64::consts::PI.log10();
+        let inv_2z2 = 1.0 / (2.0 * z * z);
+        let mut term = 1.0;
+        let mut sum = 1.0;
+        for k in 1..=n_terms {
+            term *= -((2 * k - 1) as f64) * inv_2z2;
+            sum += term;
+        }
+        leading + sum.log10()
+    }
+
+    /// Verify `probability_away_from_mean_gaussian` across both code paths.
+    /// Ratios 1-36 (z <= 25.5) exercise the libm::erfc branch and are checked
+    /// against libm::erfc directly. Ratios 37-50 (z >= 26.2) exercise the
+    /// asymptotic branch and are checked against a higher-order (n=15)
+    /// expansion.
+    #[test]
+    fn erfc_matches_reference_for_ratios_1_to_50() {
+        for ratio in 1..=50 {
+            let distance = 1.0;
+            let std = distance / ratio as f64;
+            let z = ratio as f64 / std::f64::consts::SQRT_2;
+
+            let computed = probability_away_from_mean_gaussian(distance, std);
+
+            let reference = if z <= 26.0 {
+                // libm::erfc is the ground truth for normal-range results.
+                libm::erfc(z).log10()
+            } else {
+                // erfc underflows f64 around z ~ 27, so use a higher-order
+                // asymptotic expansion as reference.
+                asymptotic_log10_erfc(z, 15)
+            };
+
+            let rel_diff = ((computed - reference) / reference).abs();
+
+            assert!(
+                rel_diff < 1e-10,
+                "ratio {ratio} (z={z:.2}): computed={computed:.12}, \
+                 reference={reference:.12}, rel_diff={rel_diff:.2e}"
+            );
+        }
+    }
+
+    /// The previous quintic polynomial approximation, retained as a test
+    /// reference. Validated for ratios 7-30 with max 0.00145% error.
+    fn old_quintic_log10(ratio: f64) -> f64 {
+        let coeffs = [
+            -0.31904236601958913,
+            -0.13390834324063405,
+            -0.20902566462352498,
+            -0.0003178660849038345,
+            6.75504783552659e-06,
+            -5.91907446763691e-08,
+        ];
+        coeffs
+            .iter()
+            .enumerate()
+            .map(|(i, &c)| c * ratio.powi(i as i32))
+            .sum()
+    }
+
+    /// Verify the new erfc-based implementation agrees with the old quintic
+    /// polynomial approximation for all integer ratios from 7 to 30 (the
+    /// quintic's validated range).
+    #[test]
+    fn erfc_matches_old_quintic_for_ratios_7_to_30() {
+        for ratio in 7..=30 {
+            let distance = 1.0;
+            let std = distance / ratio as f64;
+
+            let new_log10 = probability_away_from_mean_gaussian(distance, std);
+            let old_log10 = old_quintic_log10(ratio as f64);
+
+            let rel_diff = ((new_log10 - old_log10) / old_log10).abs();
+
+            // The quintic itself has max 0.00145% error, so allow up to
+            // 0.01% relative difference between the two implementations.
+            assert!(
+                rel_diff < 1e-4,
+                "ratio {ratio}: new={new_log10:.10}, old_quintic={old_log10:.10}, \
+                 rel_diff={rel_diff:.2e}"
+            );
+        }
+    }
 
     #[test]
     fn lwe_security_to_std_and_back() {

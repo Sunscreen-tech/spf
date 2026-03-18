@@ -51,6 +51,29 @@ where
         }
     }
 
+    /// Construct an LWE secret key from raw coefficients.
+    ///
+    /// The caller is responsible for ensuring the coefficients represent a valid
+    /// secret key for the given parameters. No validation is performed on the
+    /// coefficient values (they may be binary, ternary, or uniform).
+    ///
+    /// # Panics
+    ///
+    /// Panics if `coefficients.len() != params.dim.0`.
+    pub fn from_raw(params: &LweDef, coefficients: &[S]) -> Self {
+        let expected_len = LweSecretKeyRef::<S>::size(params.dim);
+        assert_eq!(
+            coefficients.len(),
+            expected_len,
+            "coefficient count ({}) does not match LWE dimension ({})",
+            coefficients.len(),
+            expected_len,
+        );
+        LweSecretKey {
+            data: dst_from_slice(coefficients),
+        }
+    }
+
     /// Generate a random binary LWE secret key
     pub fn generate_binary(params: &LweDef) -> Self {
         Self::generate(params, binary)
@@ -366,5 +389,66 @@ mod tests {
         let sk2 = sk.wrapping_neg();
 
         assert_eq!(sk2_expected, sk2.s())
+    }
+
+    // from_raw tests
+
+    #[test]
+    fn from_raw_binary_key() {
+        use super::LweSecretKey;
+
+        let params = &TEST_LWE_DEF_1;
+        let coefficients: Vec<u64> = (0..params.dim.0).map(|i| (i % 2) as u64).collect();
+
+        let sk = LweSecretKey::<u64>::from_raw(params, &coefficients);
+        assert_eq!(sk.s(), &coefficients);
+    }
+
+    #[test]
+    fn from_raw_ternary_key() {
+        use super::LweSecretKey;
+
+        let params = &TEST_LWE_DEF_1;
+        let coefficients: Vec<u64> = (0..params.dim.0)
+            .map(|i| match i % 3 {
+                0 => 0u64,
+                1 => 1u64,
+                _ => u64::MAX, // -1 mod 2^64
+            })
+            .collect();
+
+        let sk = LweSecretKey::<u64>::from_raw(params, &coefficients);
+        assert_eq!(sk.s(), &coefficients);
+    }
+
+    #[test]
+    fn from_raw_round_trip() {
+        use super::LweSecretKey;
+        use crate::PlaintextBits;
+
+        let params = &TEST_LWE_DEF_1;
+        let bits = PlaintextBits(4);
+
+        let original_sk = keygen::generate_binary_lwe_sk(params);
+        let coefficients: Vec<u64> = original_sk.s().to_vec();
+
+        let reconstructed_sk = LweSecretKey::<u64>::from_raw(params, &coefficients);
+
+        let msg = 7u64;
+        let (ct, _) = original_sk.encrypt(msg, params, bits);
+        let decrypted = reconstructed_sk.decrypt(&ct, params, bits);
+
+        assert_eq!(decrypted, msg);
+    }
+
+    #[test]
+    #[should_panic(expected = "does not match")]
+    fn from_raw_panics_on_wrong_dimension() {
+        use super::LweSecretKey;
+
+        let params = &TEST_LWE_DEF_1;
+        let wrong_len = params.dim.0 + 1;
+        let coefficients: Vec<u64> = vec![0u64; wrong_len];
+        LweSecretKey::<u64>::from_raw(params, &coefficients);
     }
 }
