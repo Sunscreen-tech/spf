@@ -337,8 +337,7 @@ mod tests {
     /// correction terms for use as a test reference.
     fn asymptotic_log10_erfc(z: f64, n_terms: usize) -> f64 {
         let log10_e = std::f64::consts::LOG10_E;
-        let leading =
-            -(z * z * log10_e) - z.log10() - 0.5 * std::f64::consts::PI.log10();
+        let leading = -(z * z * log10_e) - z.log10() - 0.5 * std::f64::consts::PI.log10();
         let inv_2z2 = 1.0 / (2.0 * z * z);
         let mut term = 1.0;
         let mut sum = 1.0;
