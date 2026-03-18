@@ -62,7 +62,7 @@ pub fn generate_private_functional_keyswitch_key<S, F>(
     from_lwe.assert_valid();
     lwe_count.assert_valid();
 
-    let minus_one = [<S as Zero>::zero().wrapping_sub(&<S as num::One>::one())];
+    let minus_one = [<S as Zero>::zero().wrapping_sub(&<S as sunscreen_math::One>::one())];
 
     (0..lwe_count.0)
         .into_par_iter()

@@ -112,10 +112,10 @@ where
             if (position >> j) & 0x1 == 1 {
                 *x
             } else {
-                !*x & <S as num::One>::one()
+                !*x & <S as sunscreen_math::One>::one()
             }
         })
-        .fold(<S as num::One>::one(), |s, x| s & x)
+        .fold(<S as sunscreen_math::One>::one(), |s, x| s & x)
 }
 
 /// Generate a negacyclic LUT for bootstrapping. Another name for this structure

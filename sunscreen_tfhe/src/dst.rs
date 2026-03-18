@@ -68,14 +68,14 @@ macro_rules! dst {
                 }
             }
 
-            impl<T> $ref_t<T> where T: Clone $(+ $t_bounds)*, $wrapper<T>: num::Zero {
+            impl<T> $ref_t<T> where T: Clone $(+ $t_bounds)*, $wrapper<T>: sunscreen_math::Zero {
                 #[allow(unused)]
                 /// Clears the contents of self to contain zero
                 pub fn clear(&mut self) {
                     use crate::dst::AsMutSlice;
 
                     for x in self.as_mut_slice() {
-                        *x = <$wrapper<T> as num::Zero>::zero();
+                        *x = <$wrapper<T> as sunscreen_math::Zero>::zero();
                     }
                 }
             }

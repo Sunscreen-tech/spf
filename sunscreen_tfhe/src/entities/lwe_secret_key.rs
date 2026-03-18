@@ -1,5 +1,5 @@
-use num::Zero;
 use serde::{Deserialize, Serialize};
+use sunscreen_math::Zero;
 
 use crate::{
     LweDef, LweDimension, PlaintextBits, Torus, TorusOps,

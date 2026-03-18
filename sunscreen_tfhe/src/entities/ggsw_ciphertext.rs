@@ -118,7 +118,7 @@ where
 
         GgswCiphertext {
             data: dst_from_iter(std::iter::repeat_n(
-                Torus::from(<S as num::Zero>::zero()),
+                Torus::from(<S as sunscreen_math::Zero>::zero()),
                 len,
             )),
         }

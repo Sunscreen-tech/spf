@@ -20,6 +20,8 @@ pub use basic::*;
 
 pub(crate) mod simd;
 
+mod fgreco;
+
 /// Types where the roots of unity in the given field can be found.
 pub trait RootOfUnity
 where

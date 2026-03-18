@@ -4,7 +4,7 @@ use std::{
 };
 
 use bytemuck::Pod;
-use num::{Complex, Zero};
+use num::Complex;
 use serde::{Deserialize, Serialize};
 
 use crate::{
@@ -19,6 +19,8 @@ use crate::{
 };
 
 use super::PolynomialFftRef;
+
+use sunscreen_math::Zero;
 
 dst! {
     /// A type representing a polynomial.

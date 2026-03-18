@@ -59,7 +59,7 @@ pub trait TorusOps:
     // standard math operator
     Ord + BitAnd<Output = Self> + BitOr<Output = Self> + Not<Output = Self> + BitAndAssign + BitOrAssign +
     // nums trait
-    Num + Bounded + WrappingAdd + WrappingSub + WrappingNeg + WrappingMul + WrappingShl + WrappingShr +
+    Bounded + WrappingAdd + WrappingSub + WrappingNeg + WrappingMul + WrappingShl + WrappingShr +
     // bytemuck
     Pod +
     // sunscreen math
@@ -445,16 +445,6 @@ where
     #[inline(always)]
     fn reinterpret_as_signed(self) -> Self::Output {
         self.0.reinterpret_as_signed()
-    }
-}
-
-impl<S: TorusOps> num::Zero for Torus<S> {
-    fn zero() -> Self {
-        Self(<S as num::Zero>::zero())
-    }
-
-    fn is_zero(&self) -> bool {
-        self.0.is_zero()
     }
 }
 

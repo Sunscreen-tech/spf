@@ -19,6 +19,16 @@ where
     fn one() -> Self;
 }
 
+impl Zero for Complex<f64> {
+    fn zero() -> Self {
+        Self::new(0.0, 0.0)
+    }
+
+    fn vartime_is_zero(&self) -> bool {
+        self.re == 0.0 && self.im == 0.0
+    }
+}
+
 /// Methods for switching elements between finite rings.
 pub trait ModSwitch<R> {
     /// Treat the input value as unsigned in the current Ring and produce
@@ -31,4 +41,5 @@ pub trait ModSwitch<R> {
     fn mod_switch_signed(&self) -> R;
 }
 
+use num::Complex;
 pub use num::traits::ToBytes;
