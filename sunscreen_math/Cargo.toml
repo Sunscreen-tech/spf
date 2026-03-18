@@ -20,8 +20,6 @@ thiserror = { workspace = true }
 serde = { workspace = true }
 sunscreen_math_macros = { workspace = true }
 libm = "0.2.16"
-log.workspace = true
-statrs = { workspace = true }
 subtle = { workspace = true }
 
 [dev-dependencies]

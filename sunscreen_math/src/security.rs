@@ -67,8 +67,9 @@ pub fn evaluate_polynomial_2d<const M: usize, const N: usize>(
 }
 
 /// Number of correction terms in the erfc asymptotic expansion (NIST DLMF
-/// 7.12.1). With n correction terms the relative error is O(z^{-2(n+1)}).
-/// At the transition point z=26 with n=3, the error is ~26^{-8} ~ 5e-12.
+/// 7.12.1). With n correction terms the relative error is bounded by
+/// (2(n+1)-1)!! / (2z^2)^{n+1}. At the transition point z=26 with n=3,
+/// this gives 105 / (2*676)^4 ~ 3e-11.
 const ERFC_ASYMPTOTIC_CORRECTION_TERMS: usize = 3;
 
 /// Returns the log10 of the probability of being farther than x away from the
@@ -87,7 +88,7 @@ const ERFC_ASYMPTOTIC_CORRECTION_TERMS: usize = 3;
 ///          = 1 - 1/(2z^2) + 3/(4z^4) - 15/(8z^6) + ...
 ///
 /// The number of correction terms n is controlled by
-/// [`ERFC_ASYMPTOTIC_CORRECTION_TERMS`].
+/// `ERFC_ASYMPTOTIC_CORRECTION_TERMS`.
 ///
 /// # Arguments
 ///
@@ -329,34 +330,54 @@ pub fn lwe_std_to_security_level(dimension: usize, std: f64) -> SecurityLevelRes
 
 #[cfg(test)]
 mod tests {
-    use super::{lwe_security_level_to_std, lwe_std_to_security_level};
     use super::probability_away_from_mean_gaussian;
+    use super::{lwe_security_level_to_std, lwe_std_to_security_level};
 
-    /// Verify that the erfc-based implementation matches libm::erfc (the
-    /// ground truth for tail probabilities) for all integer ratios from 1
-    /// to 30. For ratios 1-36 our function uses libm::erfc directly, so this
-    /// also serves as a regression test. For ratios beyond the z=26 threshold
-    /// (~37), the asymptotic expansion is tested against the exact value.
+    /// Compute the asymptotic log10(erfc(z)) with an arbitrary number of
+    /// correction terms for use as a test reference.
+    fn asymptotic_log10_erfc(z: f64, n_terms: usize) -> f64 {
+        let log10_e = std::f64::consts::LOG10_E;
+        let leading =
+            -(z * z * log10_e) - z.log10() - 0.5 * std::f64::consts::PI.log10();
+        let inv_2z2 = 1.0 / (2.0 * z * z);
+        let mut term = 1.0;
+        let mut sum = 1.0;
+        for k in 1..=n_terms {
+            term *= -((2 * k - 1) as f64) * inv_2z2;
+            sum += term;
+        }
+        leading + sum.log10()
+    }
+
+    /// Verify `probability_away_from_mean_gaussian` across both code paths.
+    /// Ratios 1-36 (z <= 25.5) exercise the libm::erfc branch and are checked
+    /// against libm::erfc directly. Ratios 37-50 (z >= 26.2) exercise the
+    /// asymptotic branch and are checked against a higher-order (n=15)
+    /// expansion.
     #[test]
-    fn erfc_matches_exact_for_ratios_up_to_30() {
-        for ratio in 1..=30 {
+    fn erfc_matches_reference_for_ratios_1_to_50() {
+        for ratio in 1..=50 {
             let distance = 1.0;
             let std = distance / ratio as f64;
             let z = ratio as f64 / std::f64::consts::SQRT_2;
 
-            // Ground truth: libm::erfc is accurate to machine precision for
-            // these z values (all well below the f64 underflow boundary).
-            let exact_log10 = libm::erfc(z).log10();
+            let computed = probability_away_from_mean_gaussian(distance, std);
 
-            let computed_log10 = probability_away_from_mean_gaussian(distance, std);
+            let reference = if z <= 26.0 {
+                // libm::erfc is the ground truth for normal-range results.
+                libm::erfc(z).log10()
+            } else {
+                // erfc underflows f64 around z ~ 27, so use a higher-order
+                // asymptotic expansion as reference.
+                asymptotic_log10_erfc(z, 15)
+            };
 
-            let abs_diff = (computed_log10 - exact_log10).abs();
-            let rel_diff = abs_diff / exact_log10.abs();
+            let rel_diff = ((computed - reference) / reference).abs();
 
             assert!(
                 rel_diff < 1e-10,
-                "ratio {ratio}: computed={computed_log10:.12}, exact={exact_log10:.12}, \
-                 rel_diff={rel_diff:.2e}"
+                "ratio {ratio} (z={z:.2}): computed={computed:.12}, \
+                 reference={reference:.12}, rel_diff={rel_diff:.2e}"
             );
         }
     }
