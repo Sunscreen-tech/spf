@@ -272,8 +272,8 @@ impl Random for FGreco {
 
         let e = f64::round(sample * GRECO_MODULUS as f64) as i64;
 
-        let pos = FGreco::zero() + FGreco::from(e.abs() as u64);
-        let neg = FGreco::zero() - FGreco::from(e.abs() as u64);
+        let pos = FGreco::zero() + FGreco::from(e.unsigned_abs());
+        let neg = FGreco::zero() - FGreco::from(e.unsigned_abs());
 
         if e < 0 { neg } else { pos }
     }
