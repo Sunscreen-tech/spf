@@ -312,9 +312,9 @@ impl From<u64> for FGreco {
     }
 }
 
-impl Into<u64> for FGreco {
-    fn into(self) -> u64 {
-        self.0.val.as_words()[0]
+impl From<FGreco> for u64 {
+    fn from(x: FGreco) -> u64 {
+        x.0.val.as_words()[0]
     }
 }
 
