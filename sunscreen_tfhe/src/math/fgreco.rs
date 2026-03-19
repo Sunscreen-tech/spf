@@ -396,30 +396,24 @@ mod tests {
 
     #[test]
     fn can_multiply_polys() {
-        let x = Polynomial::new(&vec![
-            FGreco::from(1),
+        let x = Polynomial::new(&[FGreco::from(1),
             FGreco::from(2),
             FGreco::from(3),
-            FGreco::from(4),
-        ]);
+            FGreco::from(4)]);
 
         let y = x.map(|x| Torus::from(*x));
 
-        let mut c = Polynomial::new(&vec![
+        let mut c = Polynomial::new(&[Torus::from(FGreco::from(0)),
             Torus::from(FGreco::from(0)),
             Torus::from(FGreco::from(0)),
-            Torus::from(FGreco::from(0)),
-            Torus::from(FGreco::from(0)),
-        ]);
+            Torus::from(FGreco::from(0))]);
 
         polynomial_external_mad(&mut c, &y, &x);
 
-        let expected = Polynomial::new(&vec![
-            Torus::from(FGreco::from(0x0018AAC9002C1C67)),
+        let expected = Polynomial::new(&[Torus::from(FGreco::from(0x0018AAC9002C1C67)),
             Torus::from(FGreco::from(0x0018AAC9002C1C6B)),
             Torus::from(FGreco::from(0x0018AAC9002C1C79)),
-            Torus::from(FGreco::from(0x0000000000000014)),
-        ]);
+            Torus::from(FGreco::from(0x0000000000000014))]);
 
         assert_eq!(c, expected);
     }
