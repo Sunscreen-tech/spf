@@ -7,9 +7,8 @@ use num::{Complex, traits::MulAdd};
 
 use crate::{
     ToF64, Torus, TorusOps,
-    dst::{AsMutSlice, AsSlice, FromMutSlice},
+    dst::{AsMutSlice, AsSlice},
     entities::{PolynomialFftRef, PolynomialRef},
-    scratch::allocate_scratch,
     simd::{VectorOps, complex_add, complex_add_assign, complex_sub, complex_sub_assign},
 };
 

@@ -5,13 +5,13 @@ use std::{
 
 use bytemuck::{Pod, Zeroable};
 use num::{
-    Bounded, Num,
+    Bounded,
     traits::{WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub},
 };
 use rand::{Rng, rng};
 use rand_distr::Normal;
 use sunscreen_math::{
-    BarrettConfig, One, Zero, refify_binary_op,
+    BarrettConfig, One, Zero,
     ring::{BarrettBackend, Zq},
 };
 
@@ -287,7 +287,7 @@ impl Random for FGreco {
 
 impl Encoding for FGreco {
     fn decode(&self, plaintext_bits: crate::PlaintextBits) -> Self {
-        let val = ((self.0.val.as_words()[0] as u128) << plaintext_bits.0);
+        let val = (self.0.val.as_words()[0] as u128) << plaintext_bits.0;
         let round = (GRECO_MODULUS >> plaintext_bits.0 as u64) as u128;
         let val = val + round;
 
