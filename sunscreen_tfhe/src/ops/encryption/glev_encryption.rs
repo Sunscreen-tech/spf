@@ -154,9 +154,6 @@ pub fn encrypt_rlev_ciphertext<S>(
 
     for (j, glwe) in rlev_ciphertext.glwe_ciphertexts_mut(params).enumerate() {
         scale_msg_by_gadget_factor(scaled_msg, msg, radix.radix_log.0, j);
-
-        dbg!(&scaled_msg.coeffs()[0..16]);
-
         rlwe_encrypt_public(glwe, scaled_msg, rlwe_public_key, params);
     }
 }

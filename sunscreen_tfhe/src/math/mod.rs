@@ -21,6 +21,7 @@ pub use basic::*;
 pub(crate) mod simd;
 
 mod fgreco;
+pub use fgreco::{FGreco, GRECO_MODULUS};
 
 /// Types where the roots of unity in the given field can be found.
 pub trait RootOfUnity

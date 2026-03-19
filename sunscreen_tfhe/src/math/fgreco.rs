@@ -8,16 +8,20 @@ use num::{
     Bounded, Num,
     traits::{WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub},
 };
+use rand::{Rng, rng};
+use rand_distr::Normal;
 use sunscreen_math::{
     BarrettConfig, One, Zero, refify_binary_op,
     ring::{BarrettBackend, Zq},
 };
 
 use crate::{
-    FromF64, FromU64, NumBits, ReinterpretAsSigned, ToF64, ToU64, TorusOps, simd::VectorOps,
+    Encoding, FromF64, FromU64, NumBits, Random, ReinterpretAsSigned, ToF64, ToU64, TorusOps,
+    simd::VectorOps,
 };
 
-const P: u64 = 6943179709095039;
+/// The modulus used for the field used by Greco.
+pub const GRECO_MODULUS: u64 = 6943179709095039;
 
 #[derive(BarrettConfig)]
 #[barrett_config(modulus = "6943179709095039", num_limbs = 1)]
@@ -25,7 +29,8 @@ struct BarrettConfig;
 
 #[derive(Copy, Clone, Debug, PartialEq, Eq, PartialOrd, Ord)]
 #[repr(transparent)]
-struct FGreco(Zq<1, BarrettBackend<1, BarrettConfig>>);
+/// The finite field used in the Greco proof system, which allows generating proofs of encryption.
+pub struct FGreco(Zq<1, BarrettBackend<1, BarrettConfig>>);
 
 impl ToF64 for FGreco {
     fn to_f64(self) -> f64 {
@@ -186,7 +191,7 @@ impl Bounded for FGreco {
     }
 
     fn max_value() -> Self {
-        Self(Zq::from(P) - Zq::one())
+        Self(Zq::from(GRECO_MODULUS) - Zq::one())
     }
 }
 
@@ -250,11 +255,55 @@ impl Default for FGreco {
     }
 }
 
+impl Random for FGreco {
+    fn uniform() -> Self {
+        let dist = rand_distr::Uniform::new(0, GRECO_MODULUS).unwrap();
+
+        Self(Zq::from(rng().sample(dist)))
+    }
+
+    fn normal<F>(std: crate::rand::Stddev, sampler: F) -> Self
+    where
+        F: FnOnce(&rand_distr::Normal<f64>) -> f64,
+    {
+        let dist =
+            Normal::new(0., std.0).expect("Standard deviation must be finite and non-negative");
+        let sample = sampler(&dist);
+
+        let e = f64::round(sample * GRECO_MODULUS as f64) as i64;
+
+        let pos = FGreco::zero() + FGreco::from(e.abs() as u64);
+        let neg = FGreco::zero() - FGreco::from(e.abs() as u64);
+
+        if e < 0 { neg } else { pos }
+    }
+
+    fn binary() -> Self {
+        let dist = rand_distr::Uniform::new(0, 2).unwrap();
+
+        Self(Zq::from(rng().sample(dist)))
+    }
+}
+
+impl Encoding for FGreco {
+    fn decode(&self, plaintext_bits: crate::PlaintextBits) -> Self {
+        let val = ((self.0.val.as_words()[0] as u128) << plaintext_bits.0);
+        let round = (GRECO_MODULUS >> plaintext_bits.0 as u64) as u128;
+        let val = val + round;
+
+        Self(Zq::from((val / GRECO_MODULUS as u128) as u64))
+    }
+
+    fn encode(&self, plaintext_bits: crate::PlaintextBits) -> Self {
+        Self(self.0 * Zq::from(GRECO_MODULUS / (plaintext_bits.0 as u64 + 1)))
+    }
+}
+
 impl TorusOps for FGreco {}
 
 impl NumBits for FGreco {
     /// This is a hack. Don't use any code paths that need this.
-    const BITS: u32 = 0;
+    const BITS: u32 = 53;
 }
 
 impl From<u64> for FGreco {
@@ -263,18 +312,40 @@ impl From<u64> for FGreco {
     }
 }
 
+impl Into<u64> for FGreco {
+    fn into(self) -> u64 {
+        self.0.val.as_words()[0]
+    }
+}
+
+impl FGreco {
+    /// Convert this field element to a [`u64`]`.
+    pub fn to_u64(&self) -> u64 {
+        self.0.val.as_words()[0]
+    }
+}
+
 #[cfg(test)]
 mod tests {
-    use rand::RngCore;
+    use rand::{Rng, RngCore, rng};
+    use sunscreen_math::{One, Zero};
 
-    use crate::math::fgreco::{FGreco, P};
+    use crate::{
+        Encoding, GLWE_1_2048_128, GlweDef, PlaintextBits, PolynomialDegree, Random, Torus,
+        entities::{GlweCiphertext, GlweSecretKey, Polynomial, RlwePublicKey},
+        high_level::encryption::decrypt_glwe,
+        math::fgreco::{FGreco, GRECO_MODULUS},
+        ops::encryption::{rlwe_encrypt_public, rlwe_generate_public_key},
+        polynomial::{polynomial_external_mad, polynomial_mad, polynomial_mad_by_wrap},
+        rand::Stddev,
+    };
 
     #[test]
     fn can_mul_fgreco() {
         for _ in 0..100 {
-            let a = rand::rng().next_u64() % P;
-            let b = rand::rng().next_u64() % P;
-            let expected = (a as u128 * b as u128) % P as u128;
+            let a = rand::rng().next_u64() % GRECO_MODULUS;
+            let b = rand::rng().next_u64() % GRECO_MODULUS;
+            let expected = (a as u128 * b as u128) % GRECO_MODULUS as u128;
 
             assert_eq!(
                 FGreco::from(a) * FGreco::from(b),
@@ -286,14 +357,150 @@ mod tests {
     #[test]
     fn can_add_fgreco() {
         for _ in 0..100 {
-            let a = rand::rng().next_u64() % P;
-            let b = rand::rng().next_u64() % P;
-            let expected = (a as u128 + b as u128) % P as u128;
+            let a = rand::rng().next_u64() % GRECO_MODULUS;
+            let b = rand::rng().next_u64() % GRECO_MODULUS;
+            let expected = (a as u128 + b as u128) % GRECO_MODULUS as u128;
 
             assert_eq!(
                 FGreco::from(a) + FGreco::from(b),
                 FGreco::from(expected as u64)
             );
         }
+    }
+
+    #[test]
+    fn can_encode_fgreco() {
+        let x = FGreco::from(0).encode(PlaintextBits(1));
+
+        assert_eq!(x.0.val.as_words()[0], 0);
+
+        let x = FGreco::from(1).encode(PlaintextBits(1));
+
+        assert_eq!(x.0.val.as_words()[0], GRECO_MODULUS / 2);
+    }
+
+    #[test]
+    fn can_decode_fgreco() {
+        let x = FGreco::from(0)
+            .encode(PlaintextBits(1))
+            .decode(PlaintextBits(1));
+
+        assert_eq!(x.0.val.as_words()[0], 0);
+
+        let x = FGreco::from(1)
+            .encode(PlaintextBits(1))
+            .decode(PlaintextBits(1));
+
+        assert_eq!(x.0.val.as_words()[0], 1);
+    }
+
+    #[test]
+    fn can_multiply_polys() {
+        let x = Polynomial::new(&vec![
+            FGreco::from(1),
+            FGreco::from(2),
+            FGreco::from(3),
+            FGreco::from(4),
+        ]);
+
+        let y = x.map(|x| Torus::from(*x));
+
+        let mut c = Polynomial::new(&vec![
+            Torus::from(FGreco::from(0)),
+            Torus::from(FGreco::from(0)),
+            Torus::from(FGreco::from(0)),
+            Torus::from(FGreco::from(0)),
+        ]);
+
+        polynomial_external_mad(&mut c, &y, &x);
+
+        let expected = Polynomial::new(&vec![
+            Torus::from(FGreco::from(0x0018AAC9002C1C67)),
+            Torus::from(FGreco::from(0x0018AAC9002C1C6B)),
+            Torus::from(FGreco::from(0x0018AAC9002C1C79)),
+            Torus::from(FGreco::from(0x0000000000000014)),
+        ]);
+
+        assert_eq!(c, expected);
+    }
+
+    #[test]
+    fn binary_distribution_is_binary() {
+        let mut mean = 0.0f64;
+        let n = 10_000;
+
+        for _ in 0..n {
+            let val = FGreco::binary();
+
+            assert!(val == FGreco::zero() || val == FGreco::one());
+            mean += val.to_u64() as f64;
+        }
+
+        mean /= n as f64;
+
+        assert!(mean > 0.49 && mean < 0.51);
+    }
+
+    #[test]
+    fn normal_distribution_is_normal() {
+        let mut mean = 0.0f64;
+        let n = 10_000;
+
+        for _ in 0..n {
+            let val = FGreco::normal(Stddev(1e-15), |x| rng().sample(x));
+
+            let val = val.to_u64();
+
+            if val < GRECO_MODULUS / 2 {
+                mean += val as f64;
+            } else {
+                let val = (GRECO_MODULUS - val) as f64;
+                mean -= val;
+            }
+        }
+
+        mean /= n as f64;
+
+        assert!(mean > -0.5 && mean < 0.5);
+    }
+
+    #[test]
+    fn can_public_key_encrypt_greco() {
+        let mut glwe = GLWE_1_2048_128;
+        glwe.dim.polynomial_degree = PolynomialDegree(8);
+        let n = glwe.dim.polynomial_degree.0 as u64;
+
+        let sk = GlweSecretKey::<u64>::generate_binary(&glwe);
+        let sk_greco = sk.to_greco(&glwe);
+
+        let mut pk = RlwePublicKey::new(&glwe);
+        rlwe_generate_public_key(&mut pk, &sk_greco, &glwe);
+
+        let mut ct = GlweCiphertext::new(&glwe);
+
+        let msg = Polynomial::new(
+            (0..n)
+                .map(|x| {
+                    let bit = if x % 2 == 0 {
+                        FGreco::zero()
+                    } else {
+                        FGreco::one()
+                    };
+
+                    Torus::encode(bit, PlaintextBits(1))
+                })
+                .collect::<Vec<_>>()
+                .as_slice(),
+        );
+
+        rlwe_encrypt_public(&mut ct, &msg, &pk, &glwe);
+
+        let expected = Polynomial::new((0..n).map(|x| x % 2).collect::<Vec<_>>().as_slice());
+
+        let res_ct = ct.to_u64(&glwe);
+
+        let res = decrypt_glwe(&res_ct, &sk, &glwe, PlaintextBits(1));
+
+        assert_eq!(res, expected);
     }
 }

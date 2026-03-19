@@ -220,11 +220,6 @@ fn polynomial_mad_impl<S, T, U>(
 
     let coeffs = c.coeffs_mut();
 
-    let mut poly_f64 = allocate_scratch::<f64>(a.len());
-    let poly_f64_ref = PolynomialRef::from_mut_slice(poly_f64.as_mut_slice());
-
-    a.map_into(poly_f64_ref, |x| x.to_f64());
-
     for (i, l) in a.coeffs().iter().copied().enumerate() {
         for (j, r) in b.coeffs().iter().copied().enumerate() {
             if i + j >= len {

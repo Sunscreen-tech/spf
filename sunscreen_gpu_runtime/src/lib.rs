@@ -900,8 +900,6 @@ mod tests {
 
             let z_gpu = z_gpu.as_slice();
 
-            dbg!(z_gpu);
-
             for (z, (x, y)) in z_gpu.iter().zip(x.iter().zip(y.iter())) {
                 assert_eq!(*z, *x + *y);
             }

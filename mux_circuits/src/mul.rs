@@ -599,8 +599,6 @@ mod tests {
         fn case(n: usize, m: usize) {
             let circuit = unsigned_multiplier(n, m);
 
-            dbg!(circuit.metrics());
-
             for _ in 0..100 {
                 let a_raw = rng().next_u64() % (0x1 << n) as u64;
                 let b_raw = rng().next_u64() % (0x1 << m) as u64;

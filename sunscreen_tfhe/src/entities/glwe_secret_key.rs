@@ -2,7 +2,7 @@ use serde::{Deserialize, Serialize};
 
 use crate::{
     GlweDef, GlweDimension, PlaintextBits, RadixDecomposition, Torus, TorusOps,
-    dst::{FromSlice, NoWrapper, OverlaySize, dst_from_iter},
+    dst::{FromSlice, NoWrapper, OverlaySize, dst_allocate, dst_from_iter},
     entities::{
         DstIterator, DstIteratorMut, GgswCiphertext, ParallelDstIterator, ParallelDstIteratorMut,
     },
@@ -48,6 +48,19 @@ impl<S> GlweSecretKey<S>
 where
     S: TorusOps,
 {
+    /// Create an empty secret key.
+    ///
+    /// # Security
+    /// The key is zero, which is insecure. You must initialize the key with an appropriate
+    /// distribution.
+    pub(crate) fn insecure_zero(params: &GlweDef) -> Self {
+        let len = GlweSecretKeyRef::<S>::size(params.dim);
+
+        Self {
+            data: dst_allocate(len),
+        }
+    }
+
     fn generate(params: &GlweDef, torus_element_generator: impl Fn() -> S) -> GlweSecretKey<S> {
         params.assert_valid();
 

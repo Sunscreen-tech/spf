@@ -50,8 +50,6 @@ fn can_programmable_bootstrap() {
 
             encrypt_lwe_ciphertext(ct, &lwe_sk, msg, &lwe);
             // trivially_encrypt_lwe_ciphertext(ct, &msg, &lwe);
-
-            dbg!(ct.a_b(&lwe).1);
         }
 
         // Fill the LUT with nonsense and we'll overwrite it with
@@ -83,7 +81,6 @@ fn can_programmable_bootstrap() {
             let mut dbg_msg = Polynomial::zero(glwe.dim.polynomial_degree.0);
             decrypt_glwe_ciphertext(&mut dbg_msg, &out, &glwe_sk, &glwe);
 
-            dbg!(i);
             for c in dbg_msg.coeffs().iter().take(8) {
                 println!("pt {:0>64b}", c.inner());
             }

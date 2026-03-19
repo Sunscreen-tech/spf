@@ -1,9 +1,10 @@
 use bytemuck::{Pod, Zeroable};
 use num::traits::{
-    Bounded, MulAdd, Num, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr,
-    WrappingSub,
+    Bounded, MulAdd, WrappingAdd, WrappingMul, WrappingNeg, WrappingShl, WrappingShr, WrappingSub,
 };
 
+use rand::{RngCore, rng};
+use rand_distr::Normal;
 use serde::{Deserialize, Serialize};
 use std::{
     fmt::{Binary, Debug, LowerHex, UpperHex},
@@ -18,6 +19,7 @@ use sunscreen_math::{One, Zero, refify_binary_op};
 use crate::{
     PlaintextBits,
     math::{ReinterpretAsSigned, ReinterpretAsUnsigned},
+    rand::Stddev,
     simd::VectorOps,
 };
 
@@ -50,6 +52,29 @@ where
     fn from_f64(x: f64) -> Self;
 }
 
+/// Generate a random element of this type.
+pub trait Random {
+    /// Generate a uniform element of this type.
+    fn uniform() -> Self;
+
+    /// Generate an element from a normal distribution characterized by the given [Stddev].
+    fn normal<F>(std: Stddev, sampler: F) -> Self
+    where
+        F: FnOnce(&Normal<f64>) -> f64;
+
+    /// Generate a binary element of this type.
+    fn binary() -> Self;
+}
+
+/// Methods for encoding and decoding to the torus.
+pub trait Encoding {
+    /// Convert a ring element to the torus.
+    fn encode(&self, plaintext_bits: PlaintextBits) -> Self;
+
+    /// Convert a Torus element to a ring.
+    fn decode(&self, plaintext_bits: PlaintextBits) -> Self;
+}
+
 /// A type that supports operations on a Torus.
 pub trait TorusOps:
     // boilerplate
@@ -69,7 +94,7 @@ pub trait TorusOps:
     // custom operations
     ReinterpretAsSigned + VectorOps +
     // misc
-    NumBits
+    NumBits + Random + Encoding
 {
 }
 
@@ -198,6 +223,82 @@ where
     }
 }
 
+impl Random for u64 {
+    fn uniform() -> Self {
+        rng().next_u64()
+    }
+
+    fn normal<F>(std: Stddev, sampler: F) -> Self
+    where
+        F: FnOnce(&Normal<f64>) -> f64,
+    {
+        let dist =
+            Normal::new(0., std.0).expect("Standard deviation must be finite and non-negative");
+        let sample = sampler(&dist);
+        let q = (u64::BITS as f64).exp2();
+        let e = f64::round(sample * q) as i64;
+        let e: u64 = i64::cast_unsigned(e);
+        u64::from_u64(e)
+    }
+
+    fn binary() -> Self {
+        Self::uniform() & 0x1
+    }
+}
+
+impl Random for u32 {
+    fn uniform() -> Self {
+        rng().next_u32()
+    }
+
+    fn normal<F>(std: Stddev, sampler: F) -> Self
+    where
+        F: FnOnce(&Normal<f64>) -> f64,
+    {
+        let dist =
+            Normal::new(0., std.0).expect("Standard deviation must be finite and non-negative");
+        let sample = sampler(&dist);
+        let q = (u32::BITS as f64).exp2();
+        let e = f64::round(sample * q) as i32;
+        let e: u32 = i32::cast_unsigned(e);
+        u32::from_u64(e as u64)
+    }
+
+    fn binary() -> Self {
+        Self::uniform() & 0x1
+    }
+}
+
+impl Encoding for u64 {
+    fn decode(&self, plaintext_bits: PlaintextBits) -> Self {
+        let round_bit = self.wrapping_shr(Self::BITS - plaintext_bits.0 - 1) & Self::from_u64(0x1);
+        let mask = Self::from_u64((0x1 << plaintext_bits.0) - 1);
+
+        (self.wrapping_shr(Self::BITS - plaintext_bits.0) + round_bit) & mask
+    }
+
+    fn encode(&self, plaintext_bits: PlaintextBits) -> Self {
+        assert!(plaintext_bits.0 < Self::BITS);
+
+        self.wrapping_shl(Self::BITS - plaintext_bits.0)
+    }
+}
+
+impl Encoding for u32 {
+    fn decode(&self, plaintext_bits: PlaintextBits) -> Self {
+        let round_bit = self.wrapping_shr(Self::BITS - plaintext_bits.0 - 1) & Self::from_u64(0x1);
+        let mask = Self::from_u64((0x1 << plaintext_bits.0) - 1);
+
+        (self.wrapping_shr(Self::BITS - plaintext_bits.0) + round_bit) & mask
+    }
+
+    fn encode(&self, plaintext_bits: PlaintextBits) -> Self {
+        assert!(plaintext_bits.0 < Self::BITS);
+
+        self.wrapping_shl(Self::BITS - plaintext_bits.0)
+    }
+}
+
 impl TorusOps for u64 {}
 impl TorusOps for u32 {}
 
@@ -270,21 +371,12 @@ impl<S: TorusOps> Torus<S> {
     /// We encode messages in FHE as noise grows in the lower bits of a ciphertext as
     /// computation unfolds.
     pub fn encode(val: S, plain_bits: PlaintextBits) -> Self {
-        assert!(plain_bits.0 < S::BITS);
-
-        let encoded = val.wrapping_shl(S::BITS - plain_bits.0);
-
-        Self(encoded)
+        Self(val.encode(plain_bits))
     }
 
     /// Decode a value from a [Torus] that supports up to plain_bits of values.
     pub fn decode(&self, plain_bits: PlaintextBits) -> S {
-        assert!(plain_bits.0 < S::BITS);
-
-        let round_bit = self.0.wrapping_shr(S::BITS - plain_bits.0 - 1) & S::from_u64(0x1);
-        let mask = S::from_u64((0x1 << plain_bits.0) - 1);
-
-        (self.0.wrapping_shr(S::BITS - plain_bits.0) + round_bit) & mask
+        self.0.decode(plain_bits)
     }
 
     /// Scale a Torus element to a different modulus. Assumes that the two moduli are
@@ -318,7 +410,7 @@ impl<S: TorusOps> From<S> for Torus<S> {
 
 impl<S: TorusOps> Zero for Torus<S> {
     fn zero() -> Self {
-        Self(S::from_u64(0))
+        Self(S::zero())
     }
 
     fn vartime_is_zero(&self) -> bool {
