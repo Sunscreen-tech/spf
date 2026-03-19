@@ -47,7 +47,7 @@ impl ReinterpretAsSigned for FGreco {
 }
 
 impl FromF64 for FGreco {
-    fn from_f64(x: f64) -> Self {
+    fn from_f64(_x: f64) -> Self {
         unimplemented!()
     }
 }
@@ -75,27 +75,27 @@ impl One for FGreco {
 }
 
 impl VectorOps for FGreco {
-    fn vector_add(c: &mut [Self], a: &[Self], b: &[Self]) {
+    fn vector_add(_c: &mut [Self], _a: &[Self], _b: &[Self]) {
         unimplemented!()
     }
 
-    fn vector_mod_pow2_q_f64(c: &mut [Self], a: &[f64], log2_q: u64) {
+    fn vector_mod_pow2_q_f64(_c: &mut [Self], _a: &[f64], _log2_q: u64) {
         unimplemented!()
     }
 
-    fn vector_next_decomp(c: &mut [Self], a: &mut [Self], radix_log: usize) {
+    fn vector_next_decomp(_c: &mut [Self], _a: &mut [Self], _radix_log: usize) {
         unimplemented!()
     }
 
-    fn vector_scalar_mad(c: &mut [Self], a: &[Self], s: Self) {
+    fn vector_scalar_mad(_c: &mut [Self], _a: &[Self], _s: Self) {
         unimplemented!()
     }
 
-    fn vector_shr_round(c: &mut [Self], a: &[Self], n: u32) {
+    fn vector_shr_round(_c: &mut [Self], _a: &[Self], _n: u32) {
         unimplemented!()
     }
 
-    fn vector_sub(c: &mut [Self], a: &[Self], b: &[Self]) {
+    fn vector_sub(_c: &mut [Self], _a: &[Self], _b: &[Self]) {
         unimplemented!()
     }
 }
@@ -106,7 +106,7 @@ unsafe impl Pod for FGreco {}
 impl Shl<usize> for FGreco {
     type Output = Self;
 
-    fn shl(self, rhs: usize) -> Self::Output {
+    fn shl(self, _rhs: usize) -> Self::Output {
         unimplemented!()
     }
 }
@@ -114,25 +114,25 @@ impl Shl<usize> for FGreco {
 impl Shr<usize> for FGreco {
     type Output = Self;
 
-    fn shr(self, rhs: usize) -> Self::Output {
+    fn shr(self, _rhs: usize) -> Self::Output {
         unimplemented!()
     }
 }
 
 impl WrappingShl for FGreco {
-    fn wrapping_shl(&self, rhs: u32) -> Self {
+    fn wrapping_shl(&self, _rhs: u32) -> Self {
         unimplemented!()
     }
 }
 
 impl WrappingShr for FGreco {
-    fn wrapping_shr(&self, rhs: u32) -> Self {
+    fn wrapping_shr(&self, _rhs: u32) -> Self {
         unimplemented!()
     }
 }
 
 impl FromU64 for FGreco {
-    fn from_u64(val: u64) -> Self {
+    fn from_u64(_val: u64) -> Self {
         unimplemented!()
     }
 }
@@ -196,13 +196,13 @@ impl Bounded for FGreco {
 }
 
 impl BitOrAssign for FGreco {
-    fn bitor_assign(&mut self, rhs: Self) {
+    fn bitor_assign(&mut self, _rhs: Self) {
         unimplemented!()
     }
 }
 
 impl BitAndAssign for FGreco {
-    fn bitand_assign(&mut self, rhs: Self) {
+    fn bitand_assign(&mut self, _rhs: Self) {
         unimplemented!()
     }
 }
@@ -218,7 +218,7 @@ impl Not for FGreco {
 impl BitOr for FGreco {
     type Output = Self;
 
-    fn bitor(self, rhs: Self) -> Self::Output {
+    fn bitor(self, _rhs: Self) -> Self::Output {
         unimplemented!()
     }
 }
@@ -226,25 +226,25 @@ impl BitOr for FGreco {
 impl BitAnd for FGreco {
     type Output = Self;
 
-    fn bitand(self, rhs: Self) -> Self::Output {
+    fn bitand(self, _rhs: Self) -> Self::Output {
         unimplemented!()
     }
 }
 
 impl UpperHex for FGreco {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unimplemented!()
     }
 }
 
 impl LowerHex for FGreco {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unimplemented!()
     }
 }
 
 impl Binary for FGreco {
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+    fn fmt(&self, _f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         unimplemented!()
     }
 }
@@ -331,12 +331,12 @@ mod tests {
     use sunscreen_math::{One, Zero};
 
     use crate::{
-        Encoding, GLWE_1_2048_128, GlweDef, PlaintextBits, PolynomialDegree, Random, Torus,
+        Encoding, GLWE_1_2048_128, PlaintextBits, PolynomialDegree, Random, Torus,
         entities::{GlweCiphertext, GlweSecretKey, Polynomial, RlwePublicKey},
         high_level::encryption::decrypt_glwe,
         math::fgreco::{FGreco, GRECO_MODULUS},
         ops::encryption::{rlwe_encrypt_public, rlwe_generate_public_key},
-        polynomial::{polynomial_external_mad, polynomial_mad, polynomial_mad_by_wrap},
+        polynomial::polynomial_external_mad,
         rand::Stddev,
     };
 
