@@ -41,3 +41,5 @@ pub use error::*;
 #[cfg(feature = "gpu")]
 /// GPU acceleraton for TFHE
 pub mod gpu;
+
+mod zkp;

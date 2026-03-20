@@ -1,4 +1,4 @@
-use num::Zero;
+use sunscreen_math::Zero;
 
 use crate::{
     GlweDef, Torus, TorusOps,

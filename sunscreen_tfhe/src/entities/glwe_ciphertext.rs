@@ -168,7 +168,7 @@ where
             .nth(index)
             .unwrap()
             .coeffs_mut()
-            .fill(Torus::from(<S as num::Zero>::zero()));
+            .fill(Torus::from(<S as sunscreen_math::Zero>::zero()));
     }
 
     /// Copies the coefficients from the provided polynomial into the GLWE
@@ -243,7 +243,7 @@ where
             } else {
                 // Zero out all other positions
                 poly.coeffs_mut()
-                    .fill(Torus::from(<S as num::Zero>::zero()));
+                    .fill(Torus::from(<S as sunscreen_math::Zero>::zero()));
             }
         }
     }
@@ -257,7 +257,7 @@ where
         // should be zero.
         GlweCiphertext {
             data: dst_from_iter(std::iter::repeat_n(
-                Torus::from(<S as num::Zero>::zero()),
+                Torus::from(<S as sunscreen_math::Zero>::zero()),
                 len,
             )),
         }

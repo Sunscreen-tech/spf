@@ -111,7 +111,7 @@ fn generate_encrypted_secret_key_component<S>(
     output
         .b_mut(params)
         .coeffs_mut()
-        .fill(Torus::from(<S as num::Zero>::zero()));
+        .fill(Torus::from(<S as sunscreen_math::Zero>::zero()));
 }
 
 /// This is the same as `generate_encrypted_secret_key_component` but it assumes
@@ -380,7 +380,7 @@ mod tests {
                 assert!(
                     a_i.coeffs()
                         .iter()
-                        .all(|x| *x == Torus::from(<S as num::Zero>::zero())),
+                        .all(|x| *x == Torus::from(<S as sunscreen_math::Zero>::zero())),
                     "Non-zero coefficients found at index {i} (should be all zero)"
                 );
             }
@@ -391,7 +391,7 @@ mod tests {
             glwe.b(params)
                 .coeffs()
                 .iter()
-                .all(|x| *x == Torus::from(<S as num::Zero>::zero())),
+                .all(|x| *x == Torus::from(<S as sunscreen_math::Zero>::zero())),
             "Output body contains non-zero values"
         );
     }
