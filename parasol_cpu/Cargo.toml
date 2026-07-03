@@ -66,3 +66,12 @@ name = "prng"
 [[bench]]
 harness = false
 name = "transfer"
+
+[[bin]]
+name = "inst_runtime"
+
+[[bin]]
+name = "cipher_runtime"
+
+[[bin]]
+name = "shift_runtime"
