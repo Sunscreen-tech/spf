@@ -42,4 +42,5 @@ pub use error::*;
 /// GPU acceleraton for TFHE
 pub mod gpu;
 
+#[cfg(not(target_arch = "wasm32"))]
 mod zkp;

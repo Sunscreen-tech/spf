@@ -20,7 +20,9 @@ pub use basic::*;
 
 pub(crate) mod simd;
 
+#[cfg(not(target_arch = "wasm32"))]
 mod fgreco;
+#[cfg(not(target_arch = "wasm32"))]
 pub use fgreco::{FGreco, GRECO_MODULUS};
 
 /// Types where the roots of unity in the given field can be found.
